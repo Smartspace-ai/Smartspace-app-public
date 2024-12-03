@@ -12,8 +12,8 @@ export default defineConfig({
         production: 'nx run smartspace:preview',
       },
       ciWebServerCommand: 'nx run smartspace:preview',
-      ciBaseUrl: 'http://localhost:4300',
+      ciBaseUrl: 'http://localhost:4400',
     }),
-    baseUrl: 'http://localhost:4200',
+    baseUrl: 'http://localhost:4300',
   },
 });

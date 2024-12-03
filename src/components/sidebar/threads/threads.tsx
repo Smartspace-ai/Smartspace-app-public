@@ -15,14 +15,15 @@ import {
 import { Button } from '../../ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useState } from 'react';
+import { get } from 'http';
+import { getInitials } from '../../../utils/initials';
+import { getInitialsBackground } from '../../../utils/initials-background';
 
 const threads: ThreadItemProps[] = [
   {
     title: 'What hammers have you used?',
     replies: 2,
     time: '1 month ago',
-    initial: 'W',
-    color: 'bg-purple-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -40,8 +41,6 @@ const threads: ThreadItemProps[] = [
     title: 'Best practices for React hooks',
     replies: 15,
     time: '2 weeks ago',
-    initial: 'B',
-    color: 'bg-indigo-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -59,8 +58,6 @@ const threads: ThreadItemProps[] = [
     title: 'Tailwind vs. CSS-in-JS',
     replies: 8,
     time: '3 days ago',
-    initial: 'T',
-    color: 'bg-pink-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -78,8 +75,6 @@ const threads: ThreadItemProps[] = [
     title: 'GraphQL or REST for new projects',
     replies: 23,
     time: '1 week ago',
-    initial: 'G',
-    color: 'bg-green-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -97,8 +92,6 @@ const threads: ThreadItemProps[] = [
     title: 'Favorite state management library',
     replies: 31,
     time: '4 days ago',
-    initial: 'F',
-    color: 'bg-yellow-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -116,8 +109,6 @@ const threads: ThreadItemProps[] = [
     title: 'Docker vs Kubernetes for small te',
     replies: 12,
     time: '2 months ago',
-    initial: 'D',
-    color: 'bg-red-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -135,8 +126,6 @@ const threads: ThreadItemProps[] = [
     title: 'Best practices for API security',
     replies: 19,
     time: '3 weeks ago',
-    initial: 'B',
-    color: 'bg-blue-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -154,8 +143,6 @@ const threads: ThreadItemProps[] = [
     title: 'Micro-frontends: Yay or nay?',
     replies: 27,
     time: '5 days ago',
-    initial: 'M',
-    color: 'bg-indigo-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -173,8 +160,6 @@ const threads: ThreadItemProps[] = [
     title: 'Serverless: Experiences and pitfall',
     replies: 14,
     time: '1 month ago',
-    initial: 'S',
-    color: 'bg-purple-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -192,8 +177,6 @@ const threads: ThreadItemProps[] = [
     title: 'TypeScript: Tips and tricks',
     replies: 42,
     time: '2 days ago',
-    initial: 'T',
-    color: 'bg-pink-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -211,8 +194,6 @@ const threads: ThreadItemProps[] = [
     title: 'React Server Components: First in',
     replies: 36,
     time: '1 week ago',
-    initial: 'R',
-    color: 'bg-red-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -230,8 +211,6 @@ const threads: ThreadItemProps[] = [
     title: 'CI/CD pipeline optimizations',
     replies: 9,
     time: '3 days ago',
-    initial: 'C',
-    color: 'bg-green-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -249,8 +228,6 @@ const threads: ThreadItemProps[] = [
     title: 'Monorepo vs polyrepo for startup',
     replies: 18,
     time: '2 weeks ago',
-    initial: 'M',
-    color: 'bg-yellow-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -268,8 +245,6 @@ const threads: ThreadItemProps[] = [
     title: 'NextJS 13 app dir: Production rea',
     replies: 29,
     time: '4 days ago',
-    initial: 'N',
-    color: 'bg-blue-500',
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -289,8 +264,6 @@ interface ThreadItemProps {
   title: string;
   replies: number;
   time: string;
-  initial: string;
-  color: string;
   onClick: () => void;
   onMarkFavorite: () => void;
   onRename: () => void;
@@ -301,14 +274,13 @@ const ThreadItem: React.FC<ThreadItemProps> = ({
   title,
   replies,
   time,
-  initial,
-  color,
   onClick,
   onMarkFavorite,
   onRename,
   onDelete,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { backgroundColor, textColor } = getInitialsBackground(title);
 
   return (
     <div className="sidebar__thread-item group relative flex items-center space-x-3 py-2 px-3 rounded-lg cursor-pointer transition-colors duration-200 ease-in-out hover:bg-purple-100">
@@ -317,9 +289,10 @@ const ThreadItem: React.FC<ThreadItemProps> = ({
         onClick={onClick}
       >
         <div
-          className={`sidebar__thread-item-avatar w-8 h-8 ${color} rounded-full flex items-center justify-center text-white font-semibold transition-transform duration-200 ease-in-out group-hover:scale-110`}
+          style={{ backgroundColor: backgroundColor, color: textColor }}
+          className={`sidebar__thread-item-avatar w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold transition-transform duration-200 ease-in-out group-hover:scale-110`}
         >
-          {initial}
+          {getInitials(title)}
         </div>
         <div className="sidebar__thread-item-content flex-grow min-w-0">
           <p className="sidebar__thread-item-title text-sm font-medium truncate text-gray-800">

@@ -11,47 +11,33 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { ChevronsUpDown, Check } from 'lucide-react';
+import { ChevronsUpDown } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../ui/button';
 import styles from './workspaces.module.scss';
-import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar';
 
-const frameworks = [
-  {
-    value: 'next.js',
-    label: 'Next.js',
-  },
-  {
-    value: 'sveltekit',
-    label: 'SvelteKit',
-  },
-  {
-    value: 'nuxt.js',
-    label: 'Nuxt.js',
-  },
-  {
-    value: 'remix',
-    label: 'Remix',
-  },
-  {
-    value: 'astro',
-    label: 'Astro',
-  },
-];
+import { useQueryWorkspaces } from '../../../hooks/use-workspaces';
+import { Workspace } from '../../../models/workspace';
+import { getInitials } from '../../../utils/initials';
+import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 
 export function Workspaces() {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState('');
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(
+    null
+  );
 
-  const selectedFramework = frameworks.find(
-    (framework) => framework.value === value
+  const { queryWorkspaces } = useQueryWorkspaces();
+  const { data: workspaces } = queryWorkspaces;
+
+  const currentWorkspace = (workspaces || []).find(
+    (workspace) => workspace.id === selectedWorkspace?.id
   );
 
   return (
     <div className={`sidebar__workspaces my-5 w-full`}>
       <label
-        htmlFor="framework-combobox"
+        htmlFor="available-workspaces"
         className="block text-xs font-medium text-gray-700 mb-1"
       >
         Workspace
@@ -64,19 +50,18 @@ export function Workspaces() {
             aria-expanded={open}
             className="w-full justify-between"
           >
-            {selectedFramework ? (
+            {selectedWorkspace ? (
               <div className="flex items-center">
                 <Avatar className="mr-2 h-6 w-6 rounded-full bg-slate-400 flex items-center justify-center">
-                  <AvatarImage className="rounded-full" alt="@shadcn" />
-                  <AvatarFallback>CB</AvatarFallback>
+                  {getInitials(selectedWorkspace.name)}
                 </Avatar>
-                <span className="block truncate text-base text-xs font-semibold">
-                  {selectedFramework.label}
+                <span className="block truncate text-base font-semibold">
+                  {selectedWorkspace.name}
                 </span>
               </div>
             ) : (
               <span className="block truncate text-base font-semibold text-gray-400">
-                Select framework...
+                Select workspace...
               </span>
             )}
             <ChevronsUpDown className="ml-auto h-4 w-4 text-gray-400" />
@@ -84,32 +69,27 @@ export function Workspaces() {
         </PopoverTrigger>
         <PopoverContent className="w-[250px] p-0">
           <Command>
-            <CommandInput placeholder="Search framework..." />
+            <CommandInput placeholder="Search workspace..." />
             <CommandList>
-              <CommandEmpty>No framework found.</CommandEmpty>
+              <CommandEmpty>No workspace found.</CommandEmpty>
               <CommandGroup>
-                {frameworks.map((framework) => (
+                {(workspaces || []).map((workspace) => (
                   <CommandItem
                     className="cursor-pointer"
-                    key={framework.value}
-                    value={framework.value}
-                    onSelect={(currentValue) => {
-                      setValue(currentValue === value ? '' : currentValue);
+                    key={workspace.id}
+                    value={workspace.id}
+                    onSelect={(workspace) => {
+                      console.log(workspace);
                       setOpen(false);
                     }}
                   >
                     <Avatar className="mr-2 h-6 w-6">
-                      <AvatarImage
-                        className="rounded-full"
-                        src="https://github.com/shadcn.png"
-                        alt="@shadcn"
-                      />
                       <AvatarFallback>
-                        {framework.label.charAt(0)}
+                        {getInitials(workspace.name)}
                       </AvatarFallback>
                     </Avatar>
 
-                    {framework.label}
+                    {workspace.name}
                   </CommandItem>
                 ))}
               </CommandGroup>

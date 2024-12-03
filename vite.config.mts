@@ -9,12 +9,12 @@ export default defineConfig({
   cacheDir: './node_modules/.vite/smartspace',
 
   server: {
-    port: 4200,
+    port: 4300,
     host: 'localhost',
   },
 
   preview: {
-    port: 4300,
+    port: 4400,
     host: 'localhost',
   },
 

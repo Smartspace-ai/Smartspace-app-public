@@ -5,27 +5,48 @@ import {
   MsalProvider,
   UnauthenticatedTemplate,
 } from '@azure/msal-react';
-import { PublicClientApplication } from '@azure/msal-browser';
+import {
+  AuthenticationResult,
+  EventMessage,
+  EventType,
+  PublicClientApplication,
+} from '@azure/msal-browser';
 
 import App from './app/app';
 import msalConfig from './app/msalConfig';
 import Login from './pages/Login/Login';
 
-const msalInstance = new PublicClientApplication(msalConfig);
+export const msalInstance = new PublicClientApplication(msalConfig);
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
+msalInstance.initialize().then(() => {
+  // Account selection logic is app dependent. Adjust as needed for different use cases.
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    msalInstance.setActiveAccount(accounts[0]);
+  }
 
-root.render(
-  <StrictMode>
-    <MsalProvider instance={msalInstance}>
-      <AuthenticatedTemplate>
-        <App />
-      </AuthenticatedTemplate>
-      <UnauthenticatedTemplate>
-        <Login />
-      </UnauthenticatedTemplate>
-    </MsalProvider>
-  </StrictMode>
-);
+  msalInstance.addEventCallback((event: EventMessage) => {
+    if (event.eventType === EventType.LOGIN_SUCCESS && event.payload) {
+      const payload = event.payload as AuthenticationResult;
+      const account = payload.account;
+      msalInstance.setActiveAccount(account);
+    }
+  });
+
+  const root = ReactDOM.createRoot(
+    document.getElementById('root') as HTMLElement
+  );
+
+  root.render(
+    <StrictMode>
+      <MsalProvider instance={msalInstance}>
+        <AuthenticatedTemplate>
+          <App />
+        </AuthenticatedTemplate>
+        <UnauthenticatedTemplate>
+          <Login />
+        </UnauthenticatedTemplate>
+      </MsalProvider>
+    </StrictMode>
+  );
+});

@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import styles from './chat-body.module.scss';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger } from '../../ui/dropdown-menu';
 import { ScrollArea } from '../../ui/scroll-area';
 import { Button } from '../../ui/button';
-import { Copy, Delete, Trash, Trash2 } from 'lucide-react';
+import { Copy, Trash2 } from 'lucide-react';
 import { Separator } from '../../ui/separator';
 
 interface Message {
@@ -107,7 +102,7 @@ export function ChatBody() {
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`message w-full ${
+                  className={`message w-full mb-5 ${
                     message.sender === 'user' ? 'text-left' : 'text-right'
                   }`}
                 >

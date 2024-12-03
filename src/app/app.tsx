@@ -1,10 +1,11 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import styles from './app.module.scss';
-import queryClient from './reactQueryClient';
 
 import Chat from '../components/chat/chat';
 import Sidebar from '../components/sidebar/sidebar';
+
+const queryClient = new QueryClient();
 
 export function App() {
   return (

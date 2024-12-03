@@ -12,9 +12,7 @@ export function Sidebar() {
       className="sidebar w-[300px] h-screen flex flex-col bg-card border "
     >
       <div className="sidebar__logo-workspaces p-4">
-        <div className="h-2">
-          <Logo></Logo>
-        </div>
+        <Logo></Logo>
         <Workspaces></Workspaces>
       </div>
       <Threads></Threads>

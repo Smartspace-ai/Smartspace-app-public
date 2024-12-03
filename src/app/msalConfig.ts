@@ -1,9 +1,9 @@
 import { Configuration, PopupRequest } from '@azure/msal-browser';
 
-const SCOPES = import.meta.env.VITE_Client_Scopes.split(',');
-const CLIENT_ID = import.meta.env.VITE_Client_Id;
-const AUTHORITY = import.meta.env.VITE_Client_Authority;
-const CHAT_API_URI = import.meta.env.VITE_Chat_Api_Uri;
+const SCOPES = import.meta.env.VITE_CLIENT_SCOPES.split(',');
+const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
+const AUTHORITY = import.meta.env.VITE_CLIENT_AUTHORITY;
+const CHAT_API_URI = import.meta.env.VITE_CHAT_API_URI;
 
 // GRAPH API
 const GRAPH_ME_ENDPOINT = 'https://graph.microsoft.com/v1.0/me';
