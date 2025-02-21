@@ -3,17 +3,20 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import styles from './app.module.scss';
 
 import Chat from '../components/chat/chat';
-import Sidebar from '../components/sidebar/sidebar';
+import { SidebarInset, SidebarProvider } from '../components/ui/sidebar';
+import MainSidebar from '../components/sidebar/main-sidebar';
 
 const queryClient = new QueryClient();
 
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div id="main" className="main flex ">
-        <Sidebar></Sidebar>
-        <Chat></Chat>
-      </div>
+      <SidebarProvider>
+        <MainSidebar></MainSidebar>
+        <SidebarInset>
+          <Chat></Chat>
+        </SidebarInset>
+      </SidebarProvider>
     </QueryClientProvider>
   );
 }
