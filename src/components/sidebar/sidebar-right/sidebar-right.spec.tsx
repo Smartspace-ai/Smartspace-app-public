@@ -1,10 +1,10 @@
 import { render } from '@testing-library/react';
 
-import Sidebar from './sidebar';
+import SidebarRight from './sidebar-right';
 
-describe('Sidebar', () => {
+describe('SidebarRight', () => {
   it('should render successfully', () => {
-    const { baseElement } = render(<Sidebar />);
+    const { baseElement } = render(<SidebarRight />);
     expect(baseElement).toBeTruthy();
   });
 });

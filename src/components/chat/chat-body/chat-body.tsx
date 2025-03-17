@@ -1,169 +1,259 @@
-import { useState } from 'react';
-import styles from './chat-body.module.scss';
-import { DropdownMenu, DropdownMenuTrigger } from '../../ui/dropdown-menu';
-import { ScrollArea } from '../../ui/scroll-area';
+import { Check, Copy } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Button } from '../../ui/button';
-import { Copy, Trash2 } from 'lucide-react';
-import { Separator } from '../../ui/separator';
+import { ScrollArea } from '../../ui/scroll-area';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../../ui/tooltip';
 
-interface Message {
-  id: number;
-  text: string;
-  sender: 'user' | 'bot';
-}
+// Sample message data
+const sampleMessages = [
+  {
+    id: 1,
+    sender: {
+      name: 'John Doe',
+      avatar: '/placeholder.svg?height=40&width=40',
+    },
+    content:
+      "Hey team, I've just pushed the latest updates to the repository. Can someone review my PR?",
+    timestamp: '10:32 AM',
+    isCurrentUser: false,
+  },
+  {
+    id: 2,
+    sender: {
+      name: 'Sarah Johnson',
+      avatar: '/placeholder.svg?height=40&width=40',
+    },
+    content:
+      "I'll take a look at it in about an hour, currently finishing up the documentation.",
+    timestamp: '10:45 AM',
+    isCurrentUser: false,
+  },
+  {
+    id: 3,
+    sender: {
+      name: 'You',
+      avatar: '/placeholder.svg?height=40&width=40',
+    },
+    content:
+      "Thanks Sarah! No rush, just wanted to make sure it's reviewed before the end of the day.",
+    timestamp: '10:47 AM',
+    isCurrentUser: true,
+  },
+  {
+    id: 4,
+    sender: {
+      name: 'Alex Chen',
+      avatar: '/placeholder.svg?height=40&width=40',
+    },
+    content:
+      "I noticed we're still having that issue with the navigation component on mobile. Has anyone had a chance to look into it?",
+    timestamp: '11:15 AM',
+    isCurrentUser: false,
+  },
+  {
+    id: 5,
+    sender: {
+      name: 'You',
+      avatar: '/placeholder.svg?height=40&width=40',
+    },
+    content:
+      "I think it's related to the overflow handling. I'll create a ticket to track it and we can discuss during the next standup.",
+    timestamp: '11:22 AM',
+    isCurrentUser: true,
+  },
+  {
+    id: 6,
+    sender: {
+      name: 'Maria Garcia',
+      avatar: '/placeholder.svg?height=40&width=40',
+    },
+    content:
+      'Just a reminder that we have a client demo tomorrow at 2 PM. Make sure the staging environment is updated with all the latest features.',
+    timestamp: '12:01 PM',
+    isCurrentUser: false,
+  },
+  {
+    id: 7,
+    sender: {
+      name: 'John Doe',
+      avatar: '/placeholder.svg?height=40&width=40',
+    },
+    content: "I'll handle the deployment to staging this afternoon.",
+    timestamp: '12:05 PM',
+    isCurrentUser: false,
+  },
+  {
+    id: 8,
+    sender: {
+      name: 'You',
+      avatar: '/placeholder.svg?height=40&width=40',
+    },
+    content:
+      'Perfect, thanks John! Let me know if you need any help with that.',
+    timestamp: '12:10 PM',
+    isCurrentUser: true,
+  },
+  {
+    id: 9,
+    sender: {
+      name: 'Sarah Johnson',
+      avatar: '/placeholder.svg?height=40&width=40',
+    },
+    content:
+      "By the way, I've completed the review of the design system documentation. I've added some comments and suggestions. When you have time, could you take a look?",
+    timestamp: '1:30 PM',
+    isCurrentUser: false,
+  },
+  {
+    id: 10,
+    sender: {
+      name: 'You',
+      avatar: '/placeholder.svg?height=40&width=40',
+    },
+    content: "Will do! I'll check it out right after lunch.",
+    timestamp: '1:35 PM',
+    isCurrentUser: true,
+  },
+];
 
+// Generate more messages for testing scrolling
+const generateMoreMessages = (count: number) => {
+  const additionalMessages = [];
+  for (let i = 0; i < count; i++) {
+    const baseMessage = sampleMessages[i % sampleMessages.length];
+    additionalMessages.push({
+      ...baseMessage,
+      id: sampleMessages.length + i + 1,
+      content: `${baseMessage.content} (${i + 1})`,
+      timestamp: `${(i % 12) + 1}:${(i % 60).toString().padStart(2, '0')} ${
+        i % 24 < 12 ? 'AM' : 'PM'
+      }`,
+    });
+  }
+  return additionalMessages;
+};
+
+const allMessages = [...sampleMessages, ...generateMoreMessages(30)];
 export function ChatBody() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      text: `I'm sorry for any misunderstanding, but as an AI text-based assistant, I don't have the capability to plot graphs or charts. My primary function is to provide information and answer questions based on the data and functions available to me. I recommend using specialized software or tools for data visualization, such as Excel, Google Sheets, or a programming language like Python with libraries for data visualization (e.g., matplotlib, seaborn).`,
-      sender: 'bot',
-    },
-    {
-      id: 2,
-      text: 'I need some information about your services.',
-      sender: 'user',
-    },
-    {
-      id: 3,
-      text: `Sure! I'd be happy to help. Please provide me with more details or specific questions about our services, and I'll do my best to assist you.`,
-      sender: 'bot',
-    },
-    {
-      id: 4,
-      text: 'What are your office hours?',
-      sender: 'user',
-    },
-    {
-      id: 5,
-      text: `Our office hours are from 9:00 AM to 5:00 PM, Monday to Friday. We are closed on weekends and public holidays. If you have any urgent inquiries outside of these hours, please send us an email, and we'll get back to you as soon as possible.`,
-      sender: 'bot',
-    },
-    {
-      id: 6,
-      text: 'Can I schedule a meeting with you?',
-      sender: 'user',
-    },
-    {
-      id: 7,
-      text: `Of course! I'd be happy to schedule a meeting with you. Please provide me with your availability, preferred meeting date and time, and any specific topics or questions you'd like to discuss. I'll do my best to accommodate your request and arrange a meeting that works for both of us.`,
-      sender: 'bot',
-    },
-    {
-      id: 8,
-      text: 'Thank you for your help!',
-      sender: 'user',
-    },
-    {
-      id: 9,
-      text: `You're welcome! If you have any more questions or need further assistance, feel free to ask. I'm here to help. Have a great day!`,
-      sender: 'bot',
-    },
-    {
-      id: 10,
-      text: 'This is a test message from the user.',
-      sender: 'user',
-    },
-    {
-      id: 11,
-      text: 'This is a response from the bot.',
-      sender: 'bot',
-    },
-  ]);
-  const [newMessage, setNewMessage] = useState<string>('');
+  const [messages, setMessages] = useState(allMessages);
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Auto-scroll to bottom on initial load
+  useEffect(() => {
+    scrollToBottom();
+  }, []);
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      const userMessage: Message = {
-        id: messages.length + 1,
-        text: newMessage,
-        sender: 'user',
-      };
-      setMessages([
-        ...messages,
-        userMessage,
-        {
-          id: messages.length + 2,
-          text: 'This is a response from the bot.',
-          sender: 'bot',
-        },
-      ]);
-      setNewMessage('');
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Reset copied state after a delay
+  useEffect(() => {
+    if (copiedMessageId !== null) {
+      const timer = setTimeout(() => {
+        setCopiedMessageId(null);
+      }, 2000);
+      return () => clearTimeout(timer);
     }
+  }, [copiedMessageId]);
+
+  const copyMessageToClipboard = (message: string, id: number) => {
+    navigator.clipboard.writeText(message).then(() => {
+      setCopiedMessageId(id);
+      toast('Message copied to clipboard', {
+        icon: <Copy className="h-4 w-4" />,
+        duration: 2000,
+      });
+    });
   };
 
   return (
     <div className="chat__body flex-grow flex flex-col min-h-0 bg-white">
-      <ScrollArea className="chat__scroll-area flex-grow">
-        <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-slate-100 to-transparent pointer-events-none"></div>
-        <div className="chat__messages-list p-8">
-          <div className="messages">
-            <ScrollArea className="messages__scroll-area flex-grow">
-              {messages.map((message) => (
+      <ScrollArea className="chat__scroll-area flex-grow p-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`group flex items-start gap-3 mb-8 ${
+              message.isCurrentUser ? 'justify-end' : ''
+            }`}
+          >
+            {!message.isCurrentUser && (
+              <Avatar className="h-8 w-8 mt-0.5">
+                <AvatarFallback>{message.sender.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+            )}
+
+            <div
+              className={`relative flex flex-col max-w-[75%] ${
+                message.isCurrentUser ? 'items-end' : ''
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs text-muted-foreground">
+                  {message.sender.name}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {message.timestamp}
+                </span>
+              </div>
+              <div
+                className={`group-hover:shadow-sm transition-shadow duration-200 rounded-lg px-4 py-2 text-sm ${
+                  message.isCurrentUser
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted'
+                }`}
+              >
+                {message.content}
+
+                {/* Message hover actions - right aligned with no rounded corners */}
                 <div
-                  key={message.id}
-                  className={`message w-full mb-5 ${
-                    message.sender === 'user' ? 'text-left' : 'text-right'
-                  }`}
+                  className="absolute right-0 -top-[6px] opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 
+                    transition-all duration-150 ease-in-out flex items-center bg-background/90 backdrop-blur-sm 
+                    border shadow-sm rounded-md"
                 >
-                  <div
-                    className={`inline-block p-3 max-w-4xl rounded-lg shadow-lg group  ${
-                      message.sender === 'user'
-                        ? 'bg-primary border border-primary'
-                        : 'text-left border border-secondary '
-                    }`}
-                  >
-                    <div className="message__text text-md relative  ">
-                      {/* Toolbar - Hidden by default, visible on hover */}
-                      <div className="absolute top-0 -right-2 mt-[-45px] z-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <div className="flex gap-3 px-4 py-3 bg-card rounded-md shadow-md border">
-                              <Button
-                                className="hover:bg-transparent h-4 w-4 hover:text-primary"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  navigator.clipboard.writeText(message.text)
-                                }
-                              >
-                                <Copy />
-                              </Button>
-                              <Separator orientation="vertical" />
-                              <Button
-                                className="hover:bg-transparent h-4 w-4 hover:text-destructive"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  setMessages(
-                                    messages.filter(
-                                      (msg) => msg.id !== message.id
-                                    )
-                                  )
-                                }
-                              >
-                                <Trash2 />
-                              </Button>
-                            </div>
-                          </DropdownMenuTrigger>
-                        </DropdownMenu>
-                      </div>
-                      <div
-                        className={`message-text ${
-                          message.sender === 'user'
-                            ? 'text-white'
-                            : 'text-gray-800'
-                        }`}
-                      >
-                        {message.text}
-                      </div>
-                    </div>
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-foreground rounded-none"
+                          onClick={() =>
+                            copyMessageToClipboard(message.content, message.id)
+                          }
+                        >
+                          {copiedMessageId === message.id ? (
+                            <Check className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                          <span className="sr-only">Copy message</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs py-1 px-2">
+                        {copiedMessageId === message.id ? 'Copied!' : 'Copy'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
-              ))}
-            </ScrollArea>
+              </div>
+            </div>
+
+            {message.isCurrentUser && (
+              <Avatar className="h-8 w-8 mt-0.5">
+                <AvatarFallback>{message.sender.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+            )}
           </div>
-        </div>
+        ))}
+        <div ref={messagesEndRef} />
       </ScrollArea>
     </div>
   );

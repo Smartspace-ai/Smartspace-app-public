@@ -6,10 +6,7 @@ import styles from './chat.module.scss';
 
 export function Chat() {
   return (
-    <div
-      id="chat"
-      className="sidebar flex-grow h-screen flex flex-col bg-card border "
-    >
+    <div id="chat" className="flex-grow h-screen flex flex-col bg-card border ">
       <ChatHeader></ChatHeader>
       <ChatBody></ChatBody>
       <ChatComposer></ChatComposer>

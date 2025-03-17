@@ -2,10 +2,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Check,
   ChevronDown,
+  Edit,
   Filter,
   MoreHorizontal,
   Pencil,
@@ -18,12 +21,20 @@ import { useState } from 'react';
 import { get } from 'http';
 import { getInitials } from '../../../utils/initials';
 import { getInitialsBackground } from '../../../utils/initials-background';
+import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar';
+import {
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+} from '../../ui/sidebar';
 
 const threads: ThreadItemProps[] = [
   {
+    id: '1',
     title: 'What hammers have you used?',
     replies: 2,
-    time: '1 month ago',
+    lastActivity: '1 month ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -38,9 +49,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '2',
     title: 'Best practices for React hooks',
     replies: 15,
-    time: '2 weeks ago',
+    lastActivity: '2 weeks ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -55,9 +68,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '3',
     title: 'Tailwind vs. CSS-in-JS',
     replies: 8,
-    time: '3 days ago',
+    lastActivity: '3 days ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -72,9 +87,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '4',
     title: 'GraphQL or REST for new projects',
     replies: 23,
-    time: '1 week ago',
+    lastActivity: '1 week ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -89,9 +106,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '5',
     title: 'Favorite state management library',
     replies: 31,
-    time: '4 days ago',
+    lastActivity: '4 days ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -106,9 +125,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '6',
     title: 'Docker vs Kubernetes for small te',
     replies: 12,
-    time: '2 months ago',
+    lastActivity: '2 months ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -123,9 +144,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '7',
     title: 'Best practices for API security',
     replies: 19,
-    time: '3 weeks ago',
+    lastActivity: '3 weeks ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -140,9 +163,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '8',
     title: 'Micro-frontends: Yay or nay?',
     replies: 27,
-    time: '5 days ago',
+    lastActivity: '5 days ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -157,9 +182,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '9',
     title: 'Serverless: Experiences and pitfall',
     replies: 14,
-    time: '1 month ago',
+    lastActivity: '1 month ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -174,9 +201,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '10',
     title: 'TypeScript: Tips and tricks',
     replies: 42,
-    time: '2 days ago',
+    lastActivity: '2 days ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -191,9 +220,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
-    title: 'React Server Components: First in',
+    id: '11',
+    title: 'React Server Components: First in first sserve',
     replies: 36,
-    time: '1 week ago',
+    lastActivity: '1 week ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -208,9 +239,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '12',
     title: 'CI/CD pipeline optimizations',
     replies: 9,
-    time: '3 days ago',
+    lastActivity: '3 days ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -225,9 +258,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '13',
     title: 'Monorepo vs polyrepo for startup',
     replies: 18,
-    time: '2 weeks ago',
+    lastActivity: '2 weeks ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -242,9 +277,11 @@ const threads: ThreadItemProps[] = [
     },
   },
   {
+    id: '14',
     title: 'NextJS 13 app dir: Production rea',
     replies: 29,
-    time: '4 days ago',
+    lastActivity: '4 days ago',
+    isFavorite: true,
     onClick: function (): void {
       throw new Error('Function not implemented.');
     },
@@ -261,9 +298,11 @@ const threads: ThreadItemProps[] = [
 ];
 
 interface ThreadItemProps {
+  id?: string;
   title: string;
   replies: number;
-  time: string;
+  lastActivity: string;
+  isFavorite: boolean;
   onClick: () => void;
   onMarkFavorite: () => void;
   onRename: () => void;
@@ -271,60 +310,87 @@ interface ThreadItemProps {
 }
 
 const ThreadItem: React.FC<ThreadItemProps> = ({
+  id,
   title,
   replies,
-  time,
+  lastActivity,
+  isFavorite,
   onClick,
   onMarkFavorite,
   onRename,
   onDelete,
 }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { backgroundColor, textColor } = getInitialsBackground(title);
-
+  const [hoveredThreadId, setHoveredThreadId] = useState<string | undefined>(
+    ''
+  );
+  const [openMenuId, setOpenMenuId] = useState<string | undefined>('');
   return (
-    <div className="sidebar__thread-item group relative flex items-center space-x-3 py-2 px-3 rounded-lg cursor-pointer transition-colors duration-200 ease-in-out hover:bg-purple-100">
-      <div
-        className="flex-grow flex items-center space-x-3 min-w-0"
-        onClick={onClick}
+    <div
+      key={id}
+      className="group relative flex items-start gap-2 rounded-md p-2 hover:bg-accent"
+      onMouseEnter={() => setHoveredThreadId(id)}
+      onMouseLeave={() =>
+        hoveredThreadId === id && openMenuId !== id
+          ? setHoveredThreadId('')
+          : null
+      }
+      onClick={onClick}
+    >
+      <Avatar
+        style={{ backgroundColor: backgroundColor, color: textColor }}
+        className={`sidebar__thread-item-avatar w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold`}
       >
-        <div
-          style={{ backgroundColor: backgroundColor, color: textColor }}
-          className={`sidebar__thread-item-avatar w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold transition-transform duration-200 ease-in-out group-hover:scale-110`}
-        >
-          {getInitials(title)}
-        </div>
-        <div className="sidebar__thread-item-content flex-grow min-w-0">
-          <p className="sidebar__thread-item-title text-sm font-medium truncate text-gray-800">
-            {title}
-          </p>
-          <p className="sidebar__thread-item-meta text-xs text-gray-500">
-            {replies} replies • {time}
-          </p>
-        </div>
+        <AvatarFallback>{getInitials(title)}</AvatarFallback>
+      </Avatar>
+
+      <div className="sidebar__thread-item-content flex-grow min-w-0 overflow-hidden">
+        <h3 className="sidebar__thread-item-title text-sm font-medium truncate text-gray-800">
+          {title}
+        </h3>
+
+        <p className="sidebar__thread-item-meta text-xs text-gray-500">
+          {replies} {replies === 1 ? 'reply' : 'replies'} · {lastActivity}
+        </p>
       </div>
-      <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+
+      <DropdownMenu
+        open={openMenuId === id}
+        onOpenChange={(open) => {
+          if (open) {
+            setOpenMenuId(id);
+          } else {
+            setOpenMenuId('');
+          }
+        }}
+      >
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            size="sm"
-            className={`h-8 w-8 p-0 rounded-full transition-opacity duration-200 absolute right-3 top-1/2 transform -translate-y-1/2 ${
-              isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            size="icon"
+            className={`h-7 w-7 rounded-full absolute right-3 top-1/2 -translate-y-1/2 ${
+              hoveredThreadId === id || openMenuId === id
+                ? 'opacity-100'
+                : 'opacity-0'
             }`}
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreHorizontal className="h-3.5 w-3.5" />
+            <span className="sr-only">More options</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={onMarkFavorite}>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem>
             <Star className="mr-2 h-4 w-4" />
-            <span>Mark as favorite</span>
+            <span>
+              {isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            </span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onRename}>
-            <Pencil className="mr-2 h-4 w-4" />
+          <DropdownMenuItem>
+            <Edit className="mr-2 h-4 w-4" />
             <span>Rename</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onDelete}>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="text-red-500 focus:text-red-500">
             <Trash2 className="mr-2 h-4 w-4" />
             <span>Delete</span>
           </DropdownMenuItem>
@@ -335,12 +401,15 @@ const ThreadItem: React.FC<ThreadItemProps> = ({
 };
 
 export function Threads() {
+  const [sortOrder, setSortOrder] = useState('newest');
+
   return (
     <div className="sidebar__threads flex-grow flex flex-col min-h-0 bg-white">
       <div className="sidebar__threads-header px-4 py-2 flex justify-between items-center bg-white border-y">
-        <h2 className="sidebar__threads-title text-sm font-medium text-gray-600">
+        <SidebarGroupLabel className="px-0 text-sm font-medium text-foreground">
           Threads
-        </h2>
+        </SidebarGroupLabel>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -353,16 +422,26 @@ export function Threads() {
               <ChevronDown className="h-4 w-4 ml-2" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem>Most Recent</DropdownMenuItem>
-            <DropdownMenuItem>Most Replies</DropdownMenuItem>
-            <DropdownMenuItem>Newest</DropdownMenuItem>
-            <DropdownMenuItem>Oldest</DropdownMenuItem>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setSortOrder('newest')}>
+              Newest first
+              {sortOrder === 'newest' && <Check className="ml-auto h-4 w-4" />}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSortOrder('oldest')}>
+              Oldest first
+              {sortOrder === 'oldest' && <Check className="ml-auto h-4 w-4" />}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSortOrder('mostReplies')}>
+              Most replies
+              {sortOrder === 'mostReplies' && (
+                <Check className="ml-auto h-4 w-4" />
+              )}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
       <ScrollArea className="sidebar__scroll-area flex-grow">
-        <div className="sidebar__thread-list ">
+        <div className="sidebar__thread-list w-[300px] ">
           {threads.map((thread, index) => (
             <ThreadItem key={index} {...thread} />
           ))}
