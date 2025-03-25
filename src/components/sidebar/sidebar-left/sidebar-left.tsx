@@ -1,16 +1,8 @@
-import { ChevronDown, LogOut, Plus, Search } from 'lucide-react';
+import { LogOut, Plus } from 'lucide-react';
+import { ComponentProps } from 'react';
 import { Logo } from '../../../assets/logo';
+import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { Button } from '../../ui/button';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-} from '../../ui/sidebar';
-import Threads from '../threads/threads';
-import Workspaces from '../workspaces/workspaces';
-import styles from './sidebar-left.module.scss';
-import { ComponentProps, useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,9 +11,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu';
-import { Separator } from '../../ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
-import { Input } from '../../ui/input';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarHeader,
+} from '../../ui/sidebar';
+import Threads from '../threads/threads';
+import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
   const workspaces = [
@@ -36,65 +34,39 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
     avatar: '/placeholder.svg?height=32&width=32',
   };
 
-  const [selectedWorkspace, setSelectedWorkspace] = useState(workspaces[0]);
-
   const handleLogout = () => {
     // Add your logout logic here
     console.log('Logging out...');
   };
   return (
-    <Sidebar side="left">
-      <div
-        id="sidebar"
-        className="sidebar sidebar__left h-screen flex flex-col bg-card border-r-0"
-      >
-        <SidebarHeader className="h-14 flex justify-between border-b p-0">
-          {/* Logo Section */}
-          <div className="p-4 pb-2">
-            <div className="flex items-center gap-2 mb-2">
-              {/* Logo */}
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-5 w-5 text-primary-foreground"
-                >
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                  <path d="M2 17l10 5 10-5" />
-                  <path d="M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <h1 className="text-lg font-semibold">Project Hub</h1>
-            </div>
-          </div>
+    <Sidebar
+      side="left"
+      className="ss-sidebar__left border-r border-gray-100 bg-white"
+    >
+      <SidebarHeader className="h-14 flex items-center px-4 bg-white border-b px-4">
+        {/* Logo Section */}
+        <div className="flex items-center justify-between w-full gap-8">
+          {/* logo */}
+          <Logo />
 
-          {/* User Profile - More subtle */}
+          {/* User Profile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 rounded-full absolute top-4 right-4"
-              >
-                <Avatar className="h-7 w-7">
+              <div className="cursor-pointer">
+                <Avatar className="h-8 w-8">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  <AvatarFallback className="text-xs">
                     {user.name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-              </Button>
+              </div>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 p-2">
-              <DropdownMenuLabel className="font-normal p-0">
-                <div className="flex items-center gap-3 p-2">
-                  <Avatar className="h-10 w-10 border-2 border-primary/10">
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                    <AvatarFallback className="text-xs">
                       {user.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
@@ -108,81 +80,32 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
                   </div>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="my-1" />
-              <div className="p-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start text-muted-foreground hover:text-foreground"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
-                </Button>
-              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-xs">
+                <LogOut className="mr-2 h-3.5 w-3.5" />
+                Log out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </SidebarHeader>
-        {/* <Workspaces></Workspaces> */}
-        <SidebarContent className="p-0">
-          {/* Workspace Selector */}
-          <div className="px-4 py-8 pb-6 ">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
-                  <span className="truncate">{selectedWorkspace.name}</span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                <div className="p-2">
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search workspaces..."
-                      className="pl-8"
-                    />
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                {workspaces.map((workspace) => (
-                  <DropdownMenuItem
-                    key={workspace.id}
-                    onClick={() => setSelectedWorkspace(workspace)}
-                  >
-                    {workspace.name}
-                    {workspace.id === selectedWorkspace.id && (
-                      <span className="ml-auto">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                        >
-                          <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        </div>
+      </SidebarHeader>
 
+      {/* Workspace Selector */}
+      <WorkspaceSelector></WorkspaceSelector>
+
+      <SidebarContent className="px-0 py-0 overflow-auto pb-16">
+        {/* Threads Section */}
+        <SidebarGroup>
           <Threads></Threads>
-        </SidebarContent>
-        <SidebarFooter>
-          <div className="sidebar__footer p-4">
-            <Button className="sidebar__new-thread-button w-full">
-              <Plus className="mr-2 h-4 w-4" /> New Thread
-            </Button>
-          </div>
-        </SidebarFooter>
-      </div>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t p-4 mt-auto sticky bottom-0 bg-background">
+        <Button className="w-full gap-2 text-xs h-9">
+          <Plus className="h-3.5 w-3.5" />
+          New Thread
+        </Button>
+      </SidebarFooter>
     </Sidebar>
   );
 }

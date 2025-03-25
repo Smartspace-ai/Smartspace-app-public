@@ -5,28 +5,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@radix-ui/react-avatar';
 import {
   Check,
   ChevronDown,
   Edit,
   Filter,
   MoreHorizontal,
-  Pencil,
   Star,
   Trash2,
 } from 'lucide-react';
-import { Button } from '../../ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useState } from 'react';
-import { get } from 'http';
+import { useSmartSpaceChat } from '../../../contexts/smartspace-context';
 import { getInitials } from '../../../utils/initials';
 import { getInitialsBackground } from '../../../utils/initials-background';
-import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar';
-import {
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupLabel,
-} from '../../ui/sidebar';
+import { Button } from '../../ui/button';
+import { SidebarGroupLabel } from '../../ui/sidebar';
 
 const threads: ThreadItemProps[] = [
   {
@@ -325,10 +320,11 @@ const ThreadItem: React.FC<ThreadItemProps> = ({
     ''
   );
   const [openMenuId, setOpenMenuId] = useState<string | undefined>('');
+
   return (
     <div
       key={id}
-      className="group relative flex items-start gap-2 rounded-md p-2 hover:bg-accent"
+      className="group relative flex items-start gap-2 rounded-md p-2 hover:bg-accent cursor-pointer"
       onMouseEnter={() => setHoveredThreadId(id)}
       onMouseLeave={() =>
         hoveredThreadId === id && openMenuId !== id
@@ -402,6 +398,7 @@ const ThreadItem: React.FC<ThreadItemProps> = ({
 
 export function Threads() {
   const [sortOrder, setSortOrder] = useState('newest');
+  const { setActiveThread } = useSmartSpaceChat();
 
   return (
     <div className="sidebar__threads flex-grow flex flex-col min-h-0 bg-white">
@@ -441,9 +438,13 @@ export function Threads() {
         </DropdownMenu>
       </div>
       <ScrollArea className="sidebar__scroll-area flex-grow">
-        <div className="sidebar__thread-list w-[300px] ">
+        <div className="sidebar__thread-list w-[300px] xxxxxxxxxxxxxxxxxxxxxxxxx ">
           {threads.map((thread, index) => (
-            <ThreadItem key={index} {...thread} />
+            <ThreadItem
+              key={index}
+              {...thread}
+              onClick={() => setActiveThread(thread)}
+            />
           ))}
         </div>
       </ScrollArea>

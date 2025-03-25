@@ -1,163 +1,127 @@
-import {
-  FileText,
-  Image,
-  Mic,
-  Paperclip,
-  PlusCircle,
-  Send,
-  Smile,
-} from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import { Button } from '../../ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '../../ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { CircleDot, FileText, Mic, Paperclip, Smile } from 'lucide-react';
+import type React from 'react';
+import { useEffect, useRef } from 'react';
 
-export function ChatComposer() {
-  const [newMessage, setNewMessage] = useState('');
+type ChatComposerProps = {
+  newMessage: string;
+  setNewMessage: (message: string) => void;
+  handleSendMessage: () => void;
+  handleKeyDown: (e: React.KeyboardEvent) => void;
+  isSending: boolean;
+  disabled: boolean;
+};
+
+export default function ChatComposer({
+  newMessage,
+  setNewMessage,
+  handleSendMessage,
+  handleKeyDown,
+  isSending,
+  disabled,
+}: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea based on content
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      textareaRef.current.style.height = `${Math.min(
+        textareaRef.current.scrollHeight,
+        120
+      )}px`;
     }
   }, [newMessage]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-    }
-  };
-
   return (
-    <div className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)]">
-      <div className="flex flex-col rounded-lg border bg-background">
-        <div className="relative">
+    <div className="w-full mt-auto bg-background border-t px-4 py-4">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex flex-col rounded-md border shadow-sm overflow-hidden">
+          {/* Message Input Area - larger with subtle background */}
           <textarea
             ref={textareaRef}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="min-h-[60px] max-h-[200px] w-full resize-none rounded-t-lg border-0 bg-transparent px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-0"
+            placeholder={
+              disabled
+                ? 'Select a thread to start chatting...'
+                : 'Type a message...'
+            }
+            className="min-h-[60px] max-h-[120px] w-full resize-none border-0 bg-muted/10 px-5 py-4 text-sm focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
             rows={1}
+            disabled={disabled}
           />
-        </div>
 
-        <div className="flex items-center justify-between border-t px-3 py-2">
-          <div className="flex items-center gap-1">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() =>
-                          toast.info('Attachment feature coming soon')
-                        }
-                      >
-                        <PlusCircle className="h-5 w-5" />
-                        <span className="sr-only">Add attachment</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent side="top" className="w-56 p-2">
-                      <div className="grid grid-cols-3 gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex flex-col h-auto gap-1 p-2"
-                          onClick={() => toast.info('Image upload coming soon')}
-                        >
-                          <Image className="h-5 w-5" />
-                          <span className="text-xs">Image</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex flex-col h-auto gap-1 p-2"
-                          onClick={() => toast.info('File upload coming soon')}
-                        >
-                          <FileText className="h-5 w-5" />
-                          <span className="text-xs">File</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex flex-col h-auto gap-1 p-2"
-                          onClick={() =>
-                            toast.info('Audio recording coming soon')
-                          }
-                        >
-                          <Mic className="h-5 w-5" />
-                          <span className="text-xs">Audio</span>
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </TooltipTrigger>
-                <TooltipContent side="top">Add attachment</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          {/* Action Buttons - smaller and more compact */}
+          <div className="flex items-center justify-between px-4 py-2 bg-background">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                disabled={disabled}
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                disabled={disabled}
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                disabled={disabled}
+              >
+                <Mic className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                disabled={disabled}
+              >
+                <CircleDot className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                disabled={disabled}
+              >
+                <Smile className="h-4 w-4" />
+              </Button>
+            </div>
 
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => toast.info('File attachment coming soon')}
-                  >
-                    <Paperclip className="h-5 w-5" />
-                    <span className="sr-only">Attach file</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Attach file</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => toast.info('Emoji picker coming soon')}
-                  >
-                    <Smile className="h-5 w-5" />
-                    <span className="sr-only">Add emoji</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Add emoji</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Button
+              onClick={handleSendMessage}
+              variant="default"
+              size="sm"
+              className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
+                !newMessage.trim() || disabled
+                  ? 'opacity-50 cursor-not-allowed'
+                  : ''
+              }`}
+              disabled={!newMessage.trim() || disabled}
+            >
+              {isSending ? (
+                <span className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce [animation-delay:-0.3s]"></span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce [animation-delay:-0.15s]"></span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce"></span>
+                </span>
+              ) : (
+                'Send'
+              )}
+            </Button>
           </div>
-
-          <Button
-            size="sm"
-            className={`gap-2 ${
-              !newMessage.trim() ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            disabled={!newMessage.trim()}
-          >
-            <span>Send</span>
-            <Send className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>
   );
 }
-
-export default ChatComposer;

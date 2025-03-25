@@ -1,6 +1,6 @@
-import { Bell, MessageSquare } from 'lucide-react';
+import { Bell, MessageSquare, PanelLeft } from 'lucide-react';
 
-import { useSmartSpaceChat } from '../../../app/contexts/smartspace-context';
+import { useSmartSpaceChat } from '../../../contexts/smartspace-context';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,43 +15,42 @@ export function ChatHeader() {
   const { activeThread } = useSmartSpaceChat();
 
   return (
-    <div className="chat__header">
-      <div className="sticky top-0 flex h-14 shrink-0 items-center gap-2 bg-background">
-        <div className="flex flex-1 items-center gap-2 px-3 justify-between">
-          <div className="chat__header_breadcrumb">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger side="left" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbPage className="line-clamp-1">
-                      {activeThread
-                        ? activeThread.title
-                        : 'Please select a thread'}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </div>
-          <div className="chat__header_actions">
-            <div className="flex items-center gap-2 px-3">
-              <Button variant="ghost" size="icon" className="h-8 w-8 relative">
-                <Bell className="h-4 w-4" />
-                <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-primary"></span>
-                <span className="sr-only">Notifications</span>
-              </Button>
-              <Separator orientation="vertical" className="h-4" />
-              <SidebarTrigger
-                side="right"
-                icon={<MessageSquare className="h-4 w-4" />}
-              />
-            </div>
-          </div>
-        </div>
+    <header className="ss-chat__header flex h-[55px] shrink-0 items-center gap-2 bg-background border-b">
+      <div className="flex flex-1 items-center gap-2 px-4">
+        <SidebarTrigger
+          side="left"
+          icon={<PanelLeft className="h-4 w-4" />}
+          className="text-muted-foreground hover:text-foreground h-8 w-8"
+        />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage className="line-clamp-1 font-medium text-sm">
+                {activeThread ? activeThread.title : 'SmartSpace Chat'}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
-    </div>
+      <div className="flex items-center gap-2 px-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 relative text-muted-foreground hover:text-foreground"
+        >
+          <Bell className="h-4 w-4" />
+          <span className="absolute top-1 right-1 flex h-1.5 w-1.5 bg-primary rounded-full"></span>
+          <span className="sr-only">Notifications</span>
+        </Button>
+        <Separator orientation="vertical" className="h-4" />
+        <SidebarTrigger
+          side="right"
+          icon={<MessageSquare className="h-4 w-4" />}
+          className="text-muted-foreground hover:text-foreground h-8 w-8"
+        />
+      </div>
+    </header>
   );
 }
 

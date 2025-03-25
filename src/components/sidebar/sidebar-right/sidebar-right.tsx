@@ -198,7 +198,7 @@ function SidebarRight() {
   };
 
   return (
-    <Sidebar side="right" className="border-l">
+    <Sidebar side="right" className="ss-sidebar__right border-l">
       <SidebarHeader className="h-14 shrink-0 flex justify-between border-b px-3">
         <div className="flex flex-1 items-center gap-2">
           <Breadcrumb>
