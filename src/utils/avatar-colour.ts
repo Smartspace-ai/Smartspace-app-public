@@ -38,7 +38,7 @@ function getBrightness({
   return (r * 299 + g * 587 + b * 114) / 1000;
 }
 
-export function getInitialsBackground(name: string): {
+export function getAvatarColour(name: string): {
   backgroundColor: string;
   textColor: string;
 } {

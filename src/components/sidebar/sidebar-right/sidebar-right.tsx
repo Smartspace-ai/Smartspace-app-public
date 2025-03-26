@@ -1,5 +1,3 @@
-'use client';
-
 import type React from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,7 +24,7 @@ const sampleComments = [
     id: 1,
     user: {
       name: 'John Doe',
-      avatar: '/placeholder.svg?height=40&width=40',
+      avatar: '',
       initials: 'JD',
     },
     content:
@@ -37,7 +35,7 @@ const sampleComments = [
     id: 2,
     user: {
       name: 'Jane Smith',
-      avatar: '/placeholder.svg?height=40&width=40',
+      avatar: '',
       initials: 'JS',
     },
     content:
@@ -48,7 +46,7 @@ const sampleComments = [
     id: 3,
     user: {
       name: 'Alex Johnson',
-      avatar: '/placeholder.svg?height=40&width=40',
+      avatar: '',
       initials: 'AJ',
     },
     content: 'Can we schedule a quick call to discuss the upcoming milestones?',
@@ -58,7 +56,7 @@ const sampleComments = [
     id: 4,
     user: {
       name: 'Maria Garcia',
-      avatar: '/placeholder.svg?height=40&width=40',
+      avatar: '',
       initials: 'MG',
     },
     content:
@@ -69,7 +67,7 @@ const sampleComments = [
     id: 5,
     user: {
       name: 'Robert Chen',
-      avatar: '/placeholder.svg?height=40&width=40',
+      avatar: '',
       initials: 'RC',
     },
     content:
@@ -80,7 +78,7 @@ const sampleComments = [
     id: 6,
     user: {
       name: 'Sarah Williams',
-      avatar: '/placeholder.svg?height=40&width=40',
+      avatar: '',
       initials: 'SW',
     },
     content:
@@ -91,7 +89,7 @@ const sampleComments = [
     id: 7,
     user: {
       name: 'David Kim',
-      avatar: '/placeholder.svg?height=40&width=40',
+      avatar: '',
       initials: 'DK',
     },
     content:
@@ -102,7 +100,7 @@ const sampleComments = [
     id: 8,
     user: {
       name: 'Emily Johnson',
-      avatar: '/placeholder.svg?height=40&width=40',
+      avatar: '',
       initials: 'EJ',
     },
     content:
@@ -178,7 +176,7 @@ function SidebarRight() {
       id: comments.length + 1,
       user: {
         name: 'You',
-        avatar: '/placeholder.svg?height=40&width=40',
+        avatar: '',
         initials: 'YO',
       },
       content: newComment,

@@ -1,22 +1,24 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Copy, MessageSquare } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { useSmartSpaceChat } from '../../contexts/smartspace-context';
-import { useWorkspaceMessages } from '../../hooks/use-workspace-messages';
+
+import { Button } from '@/components/ui/button';
+import { useSmartSpaceChat } from '@/contexts/smartspace-context';
+import { useWorkspaceMessages } from '@/hooks/use-workspace-messages';
+import { Copy, MessageSquare } from 'lucide-react';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
 
-export function ChatArea() {
+export function Chat() {
   const { activeThread, activeWorkspace } = useSmartSpaceChat();
   const {
     messages,
     isLoading: isLoadingMessages,
     sendMessage,
+    addInputToMessage,
     isSendingMessage,
     isBotResponding,
   } = useWorkspaceMessages();
@@ -24,10 +26,10 @@ export function ChatArea() {
   // Get local drafts from context
   const { getDraft, saveDraft, clearDraft } = useSmartSpaceChat();
 
-  // Debug the ChatArea component to ensure the header and messages are rendering properly
+  // Debug the Chat component to ensure the header and messages are rendering properly
   console.log(
-    'ChatArea rendering - activeThread:',
-    activeThread?.title,
+    'Chat rendering - activeThread:',
+    activeThread?.name,
     'messages:',
     messages?.length,
     'isLoadingMessages:',
@@ -139,9 +141,34 @@ export function ChatArea() {
     return message.content;
   };
 
-  // Check if we have an active thread but no messages
-  const hasEmptyThread =
-    activeThread && messages.length === 0 && !isLoadingMessages;
+  // Function to add a reaction to a message
+  const handleAddReaction = (messageId: string, reaction: string) => {
+    if (!activeThread) return;
+
+    // Use the addInputToMessage mutation to add a reaction
+    addInputToMessage.mutate({
+      messageId,
+      name: 'reactions',
+      value: reaction,
+    });
+  };
+
+  // Memoize the UI state to prevent flickering
+  const uiState = useMemo(() => {
+    if (!activeThread) {
+      return 'no-thread';
+    }
+
+    if (isLoadingMessages) {
+      return 'loading';
+    }
+
+    if (messages.length > 0 || isBotResponding) {
+      return 'has-messages';
+    }
+
+    return 'empty-thread';
+  }, [activeThread, isLoadingMessages, messages.length, isBotResponding]);
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -157,7 +184,7 @@ export function ChatArea() {
         ></div>
 
         {/* Empty state when no thread is selected */}
-        {!activeThread && !isLoadingMessages && (
+        {uiState === 'no-thread' && (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <div className="rounded-full bg-primary/10 p-4 mb-4">
               <MessageSquare className="h-8 w-8 text-primary" />
@@ -173,7 +200,7 @@ export function ChatArea() {
         )}
 
         {/* Empty state when thread is selected but has no messages */}
-        {hasEmptyThread && (
+        {uiState === 'empty-thread' && (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <div className="rounded-full bg-primary/10 p-4 mb-4">
               <MessageSquare className="h-8 w-8 text-primary" />
@@ -181,7 +208,7 @@ export function ChatArea() {
             <h2 className="text-xl font-semibold mb-2">
               {activeWorkspace?.name}
             </h2>
-            <h3 className="text-lg text-gray-700 mb-2">{activeThread.title}</h3>
+            <h3 className="text-lg text-gray-700 mb-2">{activeThread?.name}</h3>
             <p className="text-gray-500 mb-6 max-w-md">
               There are no messages in this thread yet. Start a conversation by
               asking SmartSpace anything.
@@ -205,7 +232,7 @@ export function ChatArea() {
         )}
 
         {/* Chat Body - only show if we have messages or are loading */}
-        {(messages.length > 0 || isLoadingMessages) && (
+        {(uiState === 'loading' || uiState === 'has-messages') && (
           <ChatBody
             messages={messages}
             copiedMessageId={copiedMessageId}
@@ -219,6 +246,7 @@ export function ChatArea() {
             getMessageContent={getMessageContent}
             isLoading={isLoadingMessages}
             isBotResponding={isBotResponding}
+            onAddReaction={handleAddReaction}
           />
         )}
 
@@ -235,5 +263,3 @@ export function ChatArea() {
     </div>
   );
 }
-
-export default ChatArea;

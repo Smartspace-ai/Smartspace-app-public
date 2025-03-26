@@ -1,8 +1,8 @@
-import * as React from 'react';
 import * as AvatarPrimitive from '@radix-ui/react-avatar';
+import * as React from 'react';
 
 import { cn } from '@/lib/utils';
-import { getInitialsBackground } from '../../utils/initials-background';
+import { getAvatarColour } from '../../utils/avatar-colour';
 
 const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
@@ -35,7 +35,7 @@ const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
 >(({ className, ...props }, ref) => {
-  const { backgroundColor, textColor } = getInitialsBackground(
+  const { backgroundColor, textColor } = getAvatarColour(
     props.children as string
   );
 
@@ -53,4 +53,4 @@ const AvatarFallback = React.forwardRef<
 });
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
 
-export { Avatar, AvatarImage, AvatarFallback };
+export { Avatar, AvatarFallback, AvatarImage };

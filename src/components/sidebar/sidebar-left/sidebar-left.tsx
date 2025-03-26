@@ -15,23 +15,16 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
   SidebarHeader,
 } from '../../ui/sidebar';
 import Threads from '../threads/threads';
 import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
-  const workspaces = [
-    { id: 1, name: 'Personal Workspace' },
-    { id: 2, name: 'Team Alpha' },
-    { id: 3, name: 'Project X' },
-    { id: 4, name: 'Marketing' },
-  ];
   const user = {
     name: 'John Doe',
     email: 'john.doe@example.com',
-    avatar: '/placeholder.svg?height=32&width=32',
+    avatar: '',
   };
 
   const handleLogout = () => {
@@ -90,14 +83,11 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
 
-      {/* Workspace Selector */}
-      <WorkspaceSelector></WorkspaceSelector>
-
-      <SidebarContent className="px-0 py-0 overflow-auto pb-16">
+      <SidebarContent className="px-0 py-0 overflow-auto  h-full">
+        {/* Workspace Selector */}
+        <WorkspaceSelector></WorkspaceSelector>
         {/* Threads Section */}
-        <SidebarGroup>
-          <Threads></Threads>
-        </SidebarGroup>
+        <Threads></Threads>
       </SidebarContent>
 
       <SidebarFooter className="border-t p-4 mt-auto sticky bottom-0 bg-background">

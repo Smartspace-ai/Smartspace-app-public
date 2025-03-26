@@ -1,18 +1,12 @@
 import { Bell, MessageSquare, PanelLeft } from 'lucide-react';
 
 import { useSmartSpaceChat } from '../../../contexts/smartspace-context';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from '../../ui/breadcrumb';
 import { Button } from '../../ui/button';
 import { Separator } from '../../ui/separator';
 import { SidebarTrigger } from '../../ui/sidebar';
 
 export function ChatHeader() {
-  const { activeThread } = useSmartSpaceChat();
+  const { activeWorkspace, activeThread } = useSmartSpaceChat();
 
   return (
     <header className="ss-chat__header flex h-[55px] shrink-0 items-center gap-2 bg-background border-b">
@@ -23,15 +17,24 @@ export function ChatHeader() {
           className="text-muted-foreground hover:text-foreground h-8 w-8"
         />
         <Separator orientation="vertical" className="mr-2 h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbPage className="line-clamp-1 font-medium text-sm">
-                {activeThread ? activeThread.title : 'SmartSpace Chat'}
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+        {/* Workspace and thread display */}
+        <div className="flex items-center">
+          <span className="font-medium text-sm">
+            {activeWorkspace?.name || 'Workspace'}
+          </span>
+          {activeThread && (
+            <>
+              <span className="mx-2 text-gray-400">/</span>
+              <span
+                className="text-sm font-medium text-neutral-500 truncate max-w-[300px]"
+                title={activeThread.name}
+                key={`thread-title-${activeThread.id}`} // Force re-render when thread changes
+              >
+                {activeThread.name}
+              </span>
+            </>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2 px-4">
         <Button

@@ -2,7 +2,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { useState } from 'react';
-import Chat from '../components/chat/chat';
+import { Chat } from '../components/chat/chat';
 import SidebarLeft from '../components/sidebar/sidebar-left/sidebar-left';
 import SidebarRight from '../components/sidebar/sidebar-right/sidebar-right';
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar';

@@ -10,8 +10,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWorkspaces } from '@/hooks/use-workspaces';
-import type { Workspace } from '@/lib/api';
+
 import { ChevronDown } from 'lucide-react';
+import { Workspace } from '../../../models/workspace';
+import { getAvatarColour } from '../../../utils/avatar-colour';
+import { getInitials } from '../../../utils/initials';
 
 export function WorkspaceSelector() {
   const { workspaces, activeWorkspace, isLoading, handleWorkspaceChange } =
@@ -39,10 +42,12 @@ export function WorkspaceSelector() {
           >
             <div className="flex items-center gap-2">
               <Avatar
-                className={`h-5 w-5 ${activeWorkspace?.color} text-white shadow-sm`}
+                className={`h-5 w-5 ${getAvatarColour(
+                  activeWorkspace?.name || ''
+                )} text-white shadow-sm`}
               >
                 <AvatarFallback className="text-[10px] font-medium">
-                  {activeWorkspace?.name.charAt(0)}
+                  {getInitials(activeWorkspace?.name || '')}
                 </AvatarFallback>
               </Avatar>
               <span className="truncate font-medium">
@@ -78,9 +83,13 @@ function WorkspaceItem({ workspace, onSelect }: WorkspaceItemProps) {
       className="text-xs py-2 px-2 rounded-md hover:bg-gray-50"
     >
       <div className="flex items-center gap-2 w-full">
-        <Avatar className={`h-5 w-5 ${workspace.color} text-white shadow-sm`}>
+        <Avatar
+          className={`h-5 w-5 ${getAvatarColour(
+            workspace.name
+          )} text-white shadow-sm`}
+        >
           <AvatarFallback className="text-[10px] font-medium">
-            {workspace.name.charAt(0)}
+            {getInitials(workspace.name)}
           </AvatarFallback>
         </Avatar>
         <span className="font-medium">{workspace.name}</span>

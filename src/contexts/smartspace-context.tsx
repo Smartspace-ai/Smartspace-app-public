@@ -1,38 +1,9 @@
-'use client';
-
 import type React from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
+import { MessageThread } from '../models/message-threads';
+import type { Workspace } from '../models/workspace';
 
-// Define the comment type
-export type Comment = {
-  id: number;
-  user: {
-    name: string;
-    avatar: string;
-    initials: string;
-  };
-  content: string;
-  timestamp: string;
-};
-
-// Update the Thread and Workspace types to match the API types
-export type Thread = {
-  id: number;
-  workspaceId: number;
-  title: string;
-  avatar: string;
-  replies: number;
-  lastActivity: string;
-  isFavorite: boolean;
-};
-
-export type Workspace = {
-  id: number;
-  name: string;
-  color: string;
-};
-
-// Update the context type to match the updated Thread and Workspace types
+// Update the context type to match the updated MessageThread class
 type SmartSpaceChatContextType = {
   // UI state that isn't handled by React Query
   isDarkMode: boolean;
@@ -49,16 +20,16 @@ type SmartSpaceChatContextType = {
   ) => void;
 
   // Any local-only functionality not tied to API
-  localDrafts: Record<number, string>; // threadId -> draft message
-  saveDraft: (threadId: number, content: string) => void;
-  getDraft: (threadId: number) => string;
-  clearDraft: (threadId: number) => void;
+  localDrafts: Record<string, string>; // threadId -> draft message
+  saveDraft: (threadId: string, content: string) => void;
+  getDraft: (threadId: string) => string;
+  clearDraft: (threadId: string) => void;
 
   // Workspace selection state (moved from WorkspaceSelectionProvider)
   activeWorkspace: Workspace | null;
-  activeThread: Thread | null;
+  activeThread: MessageThread | null;
   setActiveWorkspace: (workspace: Workspace) => void;
-  setActiveThread: (thread: Thread | null) => void;
+  setActiveThread: (thread: MessageThread | null) => void;
 };
 
 // Create the context with a default value
@@ -85,13 +56,13 @@ export const SmartSpaceChatProvider: React.FC<{
   );
 
   // Local drafts
-  const [localDrafts, setLocalDrafts] = useState<Record<number, string>>({});
+  const [localDrafts, setLocalDrafts] = useState<Record<string, string>>({});
 
   // Workspace selection state (moved from WorkspaceSelectionProvider)
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
     null
   );
-  const [activeThread, setActiveThread] = useState<Thread | null>(null);
+  const [activeThread, setActiveThread] = useState<MessageThread | null>(null);
 
   // Toggle dark mode
   const toggleDarkMode = () => {
@@ -109,7 +80,7 @@ export const SmartSpaceChatProvider: React.FC<{
   };
 
   // Save draft message
-  const saveDraft = (threadId: number, content: string) => {
+  const saveDraft = (threadId: string, content: string) => {
     setLocalDrafts((prev) => ({
       ...prev,
       [threadId]: content,
@@ -117,12 +88,12 @@ export const SmartSpaceChatProvider: React.FC<{
   };
 
   // Get draft message
-  const getDraft = (threadId: number) => {
+  const getDraft = (threadId: string) => {
     return localDrafts[threadId] || '';
   };
 
   // Clear draft message
-  const clearDraft = (threadId: number) => {
+  const clearDraft = (threadId: string) => {
     setLocalDrafts((prev) => {
       const newDrafts = { ...prev };
       delete newDrafts[threadId];
@@ -132,14 +103,43 @@ export const SmartSpaceChatProvider: React.FC<{
 
   // When workspace changes, clear the active thread if it doesn't belong to the new workspace
   useEffect(() => {
-    if (
-      activeThread &&
-      activeWorkspace &&
-      activeThread.workspaceId !== activeWorkspace.id
-    ) {
-      setActiveThread(null);
+    console.log(
+      'Checking thread-workspace relationship:',
+      'Thread:',
+      activeThread?.name,
+      'Thread ID:',
+      activeThread?.id,
+      'Workspace:',
+      activeWorkspace?.name,
+      'Workspace ID:',
+      activeWorkspace?.id
+    );
+
+    // Check if we need to clear the thread when workspace changes
+    if (activeThread && activeWorkspace) {
+      // Get the thread's workspace ID from the thread object or from a related property
+      // Since we don't have a direct workspaceId property, we need to check if the thread
+      // belongs to the current workspace in a different way
+
+      // Option 1: If threads are fetched per workspace, we can assume any active thread
+      // from a previous workspace should be cleared when workspace changes
+      const previousWorkspaceId = activeThread.messageThreadId?.split('-')[0];
+      const threadWorkspaceId = previousWorkspaceId || null;
+
+      console.log(
+        'Thread workspace check:',
+        'Thread workspace ID:',
+        threadWorkspaceId,
+        'Current workspace ID:',
+        activeWorkspace.id
+      );
+
+      if (threadWorkspaceId && threadWorkspaceId !== activeWorkspace.id) {
+        console.log('Clearing active thread - belongs to different workspace');
+        setActiveThread(null);
+      }
     }
-  }, [activeWorkspace, activeThread]);
+  }, [activeWorkspace]); // Only run when workspace changes, not when thread changes
 
   // Provide the context value
   const contextValue = {
@@ -154,7 +154,33 @@ export const SmartSpaceChatProvider: React.FC<{
     activeWorkspace,
     activeThread,
     setActiveWorkspace,
-    setActiveThread,
+    setActiveThread: (thread: MessageThread | null) => {
+      console.log(
+        'SmartSpaceContext BEFORE setting activeThread:',
+        activeThread?.name,
+        'ID:',
+        activeThread?.id,
+        'TO:',
+        thread?.name,
+        'ID:',
+        thread?.id
+      );
+
+      // Only update if the thread is different or if we're explicitly setting to null
+      if (thread?.id !== activeThread?.id) {
+        setActiveThread(thread);
+        console.log(
+          'SmartSpaceContext AFTER setting activeThread:',
+          thread?.name,
+          'ID:',
+          thread?.id
+        );
+      } else {
+        console.log(
+          'SmartSpaceContext - Prevented redundant activeThread update'
+        );
+      }
+    },
   };
 
   return (
@@ -165,7 +191,7 @@ export const SmartSpaceChatProvider: React.FC<{
 };
 
 // Custom hook to use the context
-const useSmartSpaceChat = () => {
+export const useSmartSpaceChat = () => {
   const context = useContext(SmartSpaceChatContext);
   if (context === undefined) {
     throw new Error(
@@ -176,5 +202,4 @@ const useSmartSpaceChat = () => {
 };
 
 // Export both as named export and default export
-export { useSmartSpaceChat };
 export default useSmartSpaceChat;

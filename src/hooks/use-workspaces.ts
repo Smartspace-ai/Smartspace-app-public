@@ -1,9 +1,8 @@
-'use client';
-
-import { fetchWorkspaces } from '@/lib/api';
+import { fetchWorkspaces } from '@/apis/workspaces';
+import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { useSmartSpaceChat } from '../contexts/smartspace-context';
+import { Workspace } from '../models/workspace';
 
 export function useWorkspaces() {
   const { activeWorkspace, setActiveWorkspace } = useSmartSpaceChat();
@@ -28,7 +27,7 @@ export function useWorkspaces() {
   }, [workspaces, activeWorkspace, setActiveWorkspace]);
 
   // Handle workspace change
-  const handleWorkspaceChange = (workspace: (typeof workspaces)[0]) => {
+  const handleWorkspaceChange = (workspace: Workspace) => {
     console.log('Changing workspace to:', workspace.name);
     setActiveWorkspace(workspace);
   };

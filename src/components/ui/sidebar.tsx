@@ -1,13 +1,11 @@
-'use client';
-
-import * as React from 'react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import { Slot } from '@radix-ui/react-slot';
 import { PanelLeft } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import * as React from 'react';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
@@ -657,24 +655,24 @@ const SidebarFooter = React.forwardRef<
 SidebarFooter.displayName = 'SidebarFooter';
 
 export {
-  SidebarProvider,
   Sidebar,
-  SidebarHeader,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
   SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarMenuAction,
   SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarMenuSub,
-  SidebarMenuSubItem,
   SidebarMenuSubButton,
-  SidebarInset,
-  SidebarTrigger,
+  SidebarMenuSubItem,
+  SidebarProvider,
   SidebarRail,
   SidebarSeparator,
-  SidebarFooter,
+  SidebarTrigger,
 };
