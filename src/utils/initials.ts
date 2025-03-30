@@ -4,7 +4,7 @@ export function getInitials(name: string): string {
   }
 
   name = name || '';
-  const nameParts = name.split(' ');
+  const nameParts = name?.split(' ');
   let initials = '';
 
   if (nameParts.length === 1) {

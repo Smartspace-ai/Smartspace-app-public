@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { CircleDot, FileText, Mic, Paperclip, Smile } from 'lucide-react';
+import { FileText, Paperclip } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef } from 'react';
 
@@ -34,7 +34,7 @@ export default function ChatComposer({
   }, [newMessage]);
 
   return (
-    <div className="w-full mt-auto bg-background border-t px-4 py-4">
+    <div className="w-full mt-auto bg-background border-t p-4 h-55">
       <div className="max-w-3xl mx-auto">
         <div className="flex flex-col rounded-md border shadow-sm overflow-hidden">
           {/* Message Input Area - larger with subtle background */}
@@ -48,12 +48,12 @@ export default function ChatComposer({
                 ? 'Select a thread to start chatting...'
                 : 'Type a message...'
             }
-            className="min-h-[60px] max-h-[120px] w-full resize-none border-0 bg-muted/10 px-5 py-4 text-sm focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="min-h-[60px] max-h-[200px] w-full resize-none rounded-t-lg border-0 bg-transparent px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-0"
             rows={1}
             disabled={disabled}
           />
 
-          {/* Action Buttons - smaller and more compact */}
+          {/* Action Buttons - simplified to only essential buttons */}
           <div className="flex items-center justify-between px-4 py-2 bg-background">
             <div className="flex items-center gap-3">
               <Button
@@ -71,30 +71,6 @@ export default function ChatComposer({
                 disabled={disabled}
               >
                 <Paperclip className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                disabled={disabled}
-              >
-                <Mic className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                disabled={disabled}
-              >
-                <CircleDot className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                disabled={disabled}
-              >
-                <Smile className="h-4 w-4" />
               </Button>
             </div>
 

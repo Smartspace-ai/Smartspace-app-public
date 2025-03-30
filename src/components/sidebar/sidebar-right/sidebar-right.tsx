@@ -1,6 +1,8 @@
+'use client';
+
 import type React from 'react';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,126 +10,22 @@ import {
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
 } from '@/components/ui/sidebar';
-import { Send } from 'lucide-react';
+
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useWorkspaceThreadComments } from '../../../hooks/use-workspace-thread-comments';
+import { MessageComment } from '../../../models/message-comment';
 
-// Sample comments data
-const sampleComments = [
-  {
-    id: 1,
-    user: {
-      name: 'John Doe',
-      avatar: '',
-      initials: 'JD',
-    },
-    content:
-      'This project is coming along nicely. I think we should be able to meet the deadline.',
-    timestamp: '2 hours ago',
-  },
-  {
-    id: 2,
-    user: {
-      name: 'Jane Smith',
-      avatar: '',
-      initials: 'JS',
-    },
-    content:
-      "I've added some new design assets to the shared folder. Please take a look when you get a chance.",
-    timestamp: 'Yesterday',
-  },
-  {
-    id: 3,
-    user: {
-      name: 'Alex Johnson',
-      avatar: '',
-      initials: 'AJ',
-    },
-    content: 'Can we schedule a quick call to discuss the upcoming milestones?',
-    timestamp: '3 days ago',
-  },
-  {
-    id: 4,
-    user: {
-      name: 'Maria Garcia',
-      avatar: '',
-      initials: 'MG',
-    },
-    content:
-      "The new API documentation looks great! I've shared it with the frontend team.",
-    timestamp: '1 week ago',
-  },
-  {
-    id: 5,
-    user: {
-      name: 'Robert Chen',
-      avatar: '',
-      initials: 'RC',
-    },
-    content:
-      "I'm having trouble with the authentication flow. Could someone help me debug this issue?",
-    timestamp: '1 week ago',
-  },
-  {
-    id: 6,
-    user: {
-      name: 'Sarah Williams',
-      avatar: '',
-      initials: 'SW',
-    },
-    content:
-      'Just pushed a fix for the navigation bug. Please test it on your end.',
-    timestamp: '2 weeks ago',
-  },
-  {
-    id: 7,
-    user: {
-      name: 'David Kim',
-      avatar: '',
-      initials: 'DK',
-    },
-    content:
-      "The client loved our presentation! They're excited to move forward with the project.",
-    timestamp: '2 weeks ago',
-  },
-  {
-    id: 8,
-    user: {
-      name: 'Emily Johnson',
-      avatar: '',
-      initials: 'EJ',
-    },
-    content:
-      "I've updated the project timeline to reflect the new requirements.",
-    timestamp: '3 weeks ago',
-  },
-];
-
-// Generate more comments for testing
-const generateMoreComments = (count: number) => {
-  const additionalComments = [];
-  for (let i = 0; i < count; i++) {
-    const baseComment = sampleComments[i % sampleComments.length];
-    additionalComments.push({
-      ...baseComment,
-      id: sampleComments.length + i + 1,
-      content: `${baseComment.content} (${i + 1})`,
-      timestamp: `${i + 1} ${i < 1 ? 'hour' : 'hours'} ago`,
-    });
-  }
-  return additionalComments;
-};
-
-const allComments = [...sampleComments, ...generateMoreComments(20)];
-
-function SidebarRight() {
-  const [comments, setComments] = useState(allComments);
+export function SidebarRight() {
+  const { comments, isLoading, addComment, isAddingComment } =
+    useWorkspaceThreadComments();
   const [newComment, setNewComment] = useState('');
   const [charCount, setCharCount] = useState(0);
   const MAX_CHAR_LIMIT = 350;
@@ -139,13 +37,6 @@ function SidebarRight() {
   useEffect(() => {
     setCharCount(newComment.length);
   }, [newComment]);
-
-  // Focus input when component mounts
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, []);
 
   // Auto-resize textarea based on content
   useEffect(() => {
@@ -164,7 +55,7 @@ function SidebarRight() {
     }
   };
 
-  const handleSubmitComment = () => {
+  const handleAddComment = () => {
     if (!newComment.trim()) return;
 
     if (newComment.length > MAX_CHAR_LIMIT) {
@@ -172,18 +63,7 @@ function SidebarRight() {
       return;
     }
 
-    const newCommentObj = {
-      id: comments.length + 1,
-      user: {
-        name: 'You',
-        avatar: '',
-        initials: 'YO',
-      },
-      content: newComment,
-      timestamp: 'Just now',
-    };
-
-    setComments([newCommentObj, ...comments]);
+    addComment(newComment);
     setNewComment('');
     toast.success('Comment added');
   };
@@ -191,13 +71,25 @@ function SidebarRight() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmitComment();
+      handleAddComment();
     }
   };
 
+  const formatDate = (date: Date | string) => {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   return (
-    <Sidebar side="right" className="ss-sidebar__right border-l">
-      <SidebarHeader className="h-14 shrink-0 flex justify-between border-b px-3">
+    <Sidebar side="right" className="border-l">
+      <SidebarHeader className="h-[55px] shrink-0 flex justify-between border-b px-3">
         <div className="flex flex-1 items-center gap-2">
           <Breadcrumb>
             <BreadcrumbList>
@@ -215,51 +107,63 @@ function SidebarRight() {
       </SidebarHeader>
 
       <SidebarContent className="p-0">
-        <div className="space-y-3 p-4">
-          {comments.map((comment) => (
-            <div
-              key={comment.id}
-              className="rounded-lg border p-3 transition-all hover:shadow-sm"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={comment.user.avatar}
-                    alt={comment.user.name}
-                  />
-                  <AvatarFallback>{comment.user.initials}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {comment.user.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {comment.timestamp}
-                  </p>
-                </div>
+        <ScrollArea className="h-full">
+          <div className="space-y-3 p-4">
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center">
+                <p className="text-sm text-muted-foreground">
+                  Loading comments...
+                </p>
               </div>
-              <p className="text-sm leading-relaxed">{comment.content}</p>
-            </div>
-          ))}
-          <div ref={commentsEndRef} />
-        </div>
+            ) : comments.length === 0 ? (
+              <div className="flex h-full items-center justify-center">
+                <p className="text-sm text-muted-foreground">No comments yet</p>
+              </div>
+            ) : (
+              comments.map((comment: MessageComment) => (
+                <div
+                  key={comment.id}
+                  className="rounded-lg border p-3 transition-all hover:shadow-sm"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        {comment.createdBy
+                          ? comment.createdBy.substring(0, 2).toUpperCase()
+                          : 'UN'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {comment.createdBy}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(comment.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm leading-relaxed">{comment.content}</p>
+                </div>
+              ))
+            )}
+            <div ref={commentsEndRef} />
+          </div>
+        </ScrollArea>
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)]">
+      <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)] h-55">
         <div className="flex flex-col rounded-lg border bg-background">
-          <div className="relative">
-            <textarea
-              ref={textareaRef}
-              value={newComment}
-              onChange={handleCommentChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Add a comment..."
-              className="min-h-[60px] max-h-[200px] w-full resize-none rounded-t-lg border-0 bg-transparent px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-0"
-              rows={1}
-            />
-          </div>
+          <textarea
+            ref={textareaRef}
+            value={newComment}
+            onChange={handleCommentChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Add a comment..."
+            className="min-h-[60px] max-h-[200px] w-full resize-none rounded-t-lg border-0 bg-transparent px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-0"
+            rows={1}
+          />
 
-          <div className="flex items-center justify-between border-t px-3 py-2">
+          <div className="flex items-center justify-between px-4 py-2 bg-background">
             <div className="flex items-center">
               <span
                 className={`text-xs ${
@@ -275,9 +179,9 @@ function SidebarRight() {
             </div>
 
             <Button
-              onClick={handleSubmitComment}
+              variant="default"
               size="sm"
-              className={`gap-2 ${
+              className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
                 !newComment.trim() ? 'opacity-50 cursor-not-allowed' : ''
               }`}
               disabled={
@@ -285,7 +189,6 @@ function SidebarRight() {
               }
             >
               <span>Send</span>
-              <Send className="h-4 w-4" />
             </Button>
           </div>
         </div>

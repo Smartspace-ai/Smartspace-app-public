@@ -1,6 +1,8 @@
 import { LogOut, Plus } from 'lucide-react';
 import { ComponentProps } from 'react';
 import { Logo } from '../../../assets/logo';
+import { getAvatarColour } from '../../../utils/avatar-colour';
+import { getInitials } from '../../../utils/initials';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
 import { Button } from '../../ui/button';
 import {
@@ -22,8 +24,8 @@ import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
   const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
+    name: 'Amit Kamble',
+    email: 'amit.kamble@smartspace.ai',
     avatar: '',
   };
 
@@ -34,9 +36,9 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
       side="left"
-      className="ss-sidebar__left border-r border-gray-100 bg-white"
+      className="ss-sidebar__left  border-r border-gray-100 bg-white"
     >
-      <SidebarHeader className="h-14 flex items-center px-4 bg-white border-b px-4">
+      <SidebarHeader className="h-[55px] flex items-center px-4 bg-white border-b">
         {/* Logo Section */}
         <div className="flex items-center justify-between w-full gap-8">
           {/* logo */}
@@ -47,9 +49,10 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
             <DropdownMenuTrigger asChild>
               <div className="cursor-pointer">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="text-xs">
-                    {user.name.charAt(0)}
+                  <AvatarFallback
+                    className={`text-xs ${getAvatarColour(user.name)}`}
+                  >
+                    {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
               </div>

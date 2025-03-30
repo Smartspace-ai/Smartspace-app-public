@@ -9,7 +9,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
   }
   :root {
     --sidebar-background: 0 0% 98%;

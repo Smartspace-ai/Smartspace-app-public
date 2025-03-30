@@ -1,16 +1,16 @@
-import { StrictMode } from 'react';
-import * as ReactDOM from 'react-dom/client';
-import {
-  AuthenticatedTemplate,
-  MsalProvider,
-  UnauthenticatedTemplate,
-} from '@azure/msal-react';
 import {
   AuthenticationResult,
   EventMessage,
   EventType,
   PublicClientApplication,
 } from '@azure/msal-browser';
+import {
+  AuthenticatedTemplate,
+  MsalProvider,
+  UnauthenticatedTemplate,
+} from '@azure/msal-react';
+import { StrictMode } from 'react';
+import * as ReactDOM from 'react-dom/client';
 
 import App from './app/app';
 import msalConfig from './app/msalConfig';
