@@ -1,4 +1,5 @@
 import { useMsal } from '@azure/msal-react';
+import { loginRequest } from '../../app/msalConfig';
 import { Logo } from '../../assets/logo';
 import { Button } from '../../components/ui/button';
 import styles from './Login.module.scss';
@@ -7,7 +8,7 @@ export function Login() {
   const { instance } = useMsal();
 
   const handleLogin = () => {
-    instance.loginRedirect();
+    instance.loginRedirect(loginRequest);
   };
 
   return (

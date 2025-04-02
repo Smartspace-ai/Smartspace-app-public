@@ -1,44 +1,34 @@
-import { useMsal } from '@azure/msal-react';
 import axios from 'axios';
 import { loginRequest } from '../app/msalConfig';
+import { msalInstance } from '../main';
 
-/**
- *
- * @deprecated
- */
 function getBaseUrl(): string {
-  const baseUrl = import.meta.env.VITE_Admin_Api_Uri;
-  return baseUrl ? baseUrl : '';
+  return import.meta.env.VITE_CHAT_API_URI || '';
 }
 
 export const API = axios.create({
   baseURL: getBaseUrl(),
 });
 
-axios.interceptors.request.use(async (config) => {
+API.interceptors.request.use(async (config) => {
   try {
-    const activeAccount = useMsal().instance.getActiveAccount();
-    if (!activeAccount) {
-      throw Error(
+    const account = msalInstance.getActiveAccount();
+    if (!account) {
+      throw new Error(
         'No active account! Verify a user has been signed in and setActiveAccount has been called.'
       );
     }
-    const response = await useMsal().instance.acquireTokenSilent({
-      ...loginRequest,
-      account: activeAccount,
-    });
-    const bearer = `Bearer ${response.accessToken}`;
-    config.headers.Authorization = bearer;
 
-    if (config.url) {
-      const url = new URL(config.url, getBaseUrl());
-      if (!url.href.startsWith('https')) {
-        config.baseURL = getBaseUrl();
-      }
-    }
+    const tokenResponse = await msalInstance.acquireTokenSilent({
+      ...loginRequest,
+      account,
+    });
+
+    config.headers?.set('Authorization', `Bearer ${tokenResponse.accessToken}`);
+
     return config;
   } catch (error) {
-    console.error('Error getting access token:', error);
+    console.error('[MSAL] Token acquisition failed:', error);
     return config;
   }
 });

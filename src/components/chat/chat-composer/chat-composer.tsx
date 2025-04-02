@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { FileText, Paperclip } from 'lucide-react';
 import type React from 'react';
@@ -22,7 +24,6 @@ export default function ChatComposer({
 }: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea based on content
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -34,10 +35,9 @@ export default function ChatComposer({
   }, [newMessage]);
 
   return (
-    <div className="w-full mt-auto bg-background border-t p-4 h-55">
+    <div className="w-full mt-auto bg-background border-t px-4 py-4">
       <div className="max-w-3xl mx-auto">
         <div className="flex flex-col rounded-md border shadow-sm overflow-hidden">
-          {/* Message Input Area - larger with subtle background */}
           <textarea
             ref={textareaRef}
             value={newMessage}
@@ -48,12 +48,11 @@ export default function ChatComposer({
                 ? 'Select a thread to start chatting...'
                 : 'Type a message...'
             }
-            className="min-h-[60px] max-h-[200px] w-full resize-none rounded-t-lg border-0 bg-transparent px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-0"
+            className="min-h-[60px] max-h-[120px] w-full resize-none border-0 bg-muted/10 px-5 py-4 text-sm focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
             rows={1}
             disabled={disabled}
           />
 
-          {/* Action Buttons - simplified to only essential buttons */}
           <div className="flex items-center justify-between px-4 py-2 bg-background">
             <div className="flex items-center gap-3">
               <Button
@@ -87,9 +86,9 @@ export default function ChatComposer({
             >
               {isSending ? (
                 <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce [animation-delay:-0.3s]"></span>
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce [animation-delay:-0.15s]"></span>
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce"></span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce" />
                 </span>
               ) : (
                 'Send'

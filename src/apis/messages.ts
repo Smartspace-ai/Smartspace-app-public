@@ -1,15 +1,14 @@
-import { Message } from '../models/message';
-import webApi from '../utils/axios-setup';
+import { Message, MessageCreateContent, MessageFile } from '@/models/message';
+import webApi from '@/utils/axios-setup';
 
 /**
- * Fetches messages for a specific thread
+ * Fetches messages for a specific thread.
  */
 export async function fetchMessages(threadId: string): Promise<Message[]> {
   try {
     const response = await webApi.get(`messagethreads/${threadId}/messages`);
     const messages = (response.data.data as Message[]) || [];
-    // Map the API response to Message objects
-    return messages.map((message: Message) => new Message(message));
+    return messages.map((message) => new Message(message));
   } catch (error) {
     console.error('Error fetching messages:', error);
     throw new Error('Failed to fetch messages');
@@ -17,91 +16,100 @@ export async function fetchMessages(threadId: string): Promise<Message[]> {
 }
 
 /**
- * Adds a user message to a thread
+ * Posts a user message to a thread (supporting contentList/files).
  */
-export async function addMessage(
-  threadId: string,
-  content: string
-): Promise<Message> {
-  const response = await fetch(`/messageThreads/${threadId}/messages`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      // Add any authentication headers here
-    },
-    body: JSON.stringify({
-      content,
-      // Add any other required fields here
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to add message: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-
-  // Map the API response to a Message object
-  return new Message(data);
-}
-
-/**
- * Sends a message and returns the user message
- */
-export async function sendMessage(
-  threadId: string,
-  content: string
-): Promise<Message> {
+export async function postMessage({
+  workSpaceId,
+  threadId,
+  contentList,
+  files,
+}: {
+  workSpaceId: string;
+  threadId: string;
+  contentList?: MessageCreateContent[];
+  files?: MessageFile[];
+}): Promise<Message> {
   try {
-    // First add the user message
-    const userMessage = await addMessage(threadId, content);
+    const inputs: any[] = [];
 
-    // Return the user message immediately
-    return userMessage;
+    if (contentList?.length) {
+      inputs.push({
+        name: 'prompt',
+        value: contentList,
+      });
+    }
+
+    if (files?.length) {
+      inputs.push({
+        name: 'files',
+        value: files,
+      });
+    }
+
+    const payload = {
+      inputs,
+      messageThreadId: threadId,
+      workspaceId: workSpaceId,
+    };
+
+    const response = await webApi.post(
+      `/messages/${workSpaceId}/${threadId}`,
+      payload
+    );
+    const message = response.data;
+    return new Message(message);
   } catch (error) {
-    console.error('Error sending message:', error);
-    throw new Error('Error sending message');
+    console.error('Error posting message:', error);
+    throw new Error('Failed to post message');
   }
 }
 
 /**
- * Adds a bot response to a thread
+ * Updates a specific message with a new input value.
+ */
+export async function addInputToMessage({
+  messageId,
+  name,
+  value,
+  channels,
+}: {
+  messageId: string;
+  name: string;
+  value: any;
+  channels?: Record<string, number> | null;
+}): Promise<Message> {
+  try {
+    const response = await webApi.post(`/messages/${messageId}/values`, {
+      name,
+      value,
+      channels,
+    });
+
+    return new Message(response.data);
+  } catch (error) {
+    console.error('Error updating message input:', error);
+    throw new Error('Failed to update message input');
+  }
+}
+
+/**
+ * Adds a bot response to a thread.
  */
 export async function addBotResponse(
   threadId: string,
   threadTitle: string
 ): Promise<Message> {
-  const response = await fetch(`/messageThreads/${threadId}/botResponse`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      threadTitle,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to get bot response: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-
-  // Map the API response to a Message object
-  return new Message(data);
-}
-
-/**
- * Gets a bot response for a message
- */
-export async function getBotResponse(
-  threadId: string,
-  threadTitle: string
-): Promise<Message> {
   try {
-    return await addBotResponse(threadId, threadTitle);
+    const response = await webApi.post(
+      `/messageThreads/${threadId}/botResponse`,
+      {
+        threadTitle,
+      }
+    );
+
+    return new Message(response.data);
   } catch (error) {
     console.error('Error getting bot response:', error);
-    throw new Error('Error getting bot response:');
+    throw new Error('Failed to get bot response');
   }
 }

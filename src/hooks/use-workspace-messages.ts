@@ -1,19 +1,30 @@
 'use client';
 
-import { addMessage, fetchMessages } from '@/apis/messages';
+import {
+  addBotResponse,
+  addInputToMessage,
+  fetchMessages,
+  postMessage,
+} from '@/apis/messages';
 import { useSmartSpaceChat } from '@/contexts/smartspace-context';
+import {
+  Message,
+  MessageCreateContent,
+  MessageFile,
+  MessageValueType,
+} from '@/models/message';
+import { MessageThread } from '@/models/message-threads';
+import { Workspace } from '@/models/workspace';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { Message } from '../models/message';
-import { MessageThread } from '../models/message-threads';
-import { Workspace } from '../models/workspace';
 
 export function useWorkspaceMessages(
   passedWorkspace?: Workspace | null,
   passedThread?: MessageThread | null
 ) {
   const context = useSmartSpaceChat();
-
   const activeThread = passedThread ?? context?.activeThread;
   const activeWorkspace = passedWorkspace ?? context?.activeWorkspace;
 
@@ -43,58 +54,73 @@ export function useWorkspaceMessages(
     Error,
     {
       message?: string;
-      contentList?: any[];
-      files?: any[];
+      contentList?: MessageCreateContent[];
+      files?: MessageFile[];
       threadId?: string;
     }
   >({
-    mutationFn: ({ message, contentList, files, threadId }) => {
-      return new Promise(async (resolve, reject) => {
-        const finalThreadId = threadId ?? activeThread?.id;
+    mutationFn: async ({ message, contentList, files, threadId }) => {
+      const finalThreadId = threadId ?? activeThread?.id;
+      const finalWorkspaceId = activeWorkspace?.id || '0';
 
-        if (!finalThreadId) {
-          reject(new Error('Thread ID is required to post message'));
-          return;
-        }
+      if (!finalThreadId)
+        throw new Error('Thread ID is required to post message');
 
-        const optimisticMessage = new Message({
-          id: `temp-${Date.now()}`,
-          content: message || '',
-          createdAt: new Date(),
-          createdBy: 'You',
-          createdByUserId: 'you',
-          messageThreadId: finalThreadId,
-          optimistic: true,
-        });
-
-        queryClient.setQueryData(
-          ['messages', finalThreadId],
-          (oldMessages: Message[] = []) => [...oldMessages, optimisticMessage]
-        );
-
-        try {
-          await queryClient.cancelQueries({
-            queryKey: ['messages', finalThreadId],
-          });
-
-          const response = await addMessage(finalThreadId, message || '');
-
-          queryClient.setQueryData(
-            ['messages', finalThreadId],
-            (oldMessages: Message[] = []) =>
-              oldMessages.filter((msg) => !msg.optimistic).concat([response])
-          );
-
-          resolve(response);
-        } catch (error) {
-          queryClient.setQueryData(
-            ['messages', finalThreadId],
-            (oldMessages: Message[] = []) =>
-              oldMessages.filter((msg) => !msg.optimistic)
-          );
-          reject(error);
-        }
+      const optimisticMessage = new Message({
+        id: `temp-${Date.now()}`,
+        values: [
+          ...(contentList?.length
+            ? [
+                {
+                  type: MessageValueType.INPUT,
+                  name: 'prompt',
+                  value: contentList,
+                  channels: {},
+                  createdAt: '',
+                  createdBy: 'You',
+                },
+              ]
+            : []),
+          ...(files?.length
+            ? [
+                {
+                  type: MessageValueType.INPUT,
+                  name: 'files',
+                  value: files,
+                  channels: {},
+                  createdAt: '',
+                  createdBy: 'You',
+                },
+              ]
+            : []),
+        ],
+        createdAt: new Date(),
+        createdBy: 'You',
+        optimistic: true,
       });
+
+      queryClient.setQueryData<Message[]>(
+        ['messages', finalThreadId],
+        (old = []) => [...old, optimisticMessage]
+      );
+
+      await queryClient.cancelQueries({
+        queryKey: ['messages', finalThreadId],
+      });
+
+      const response = await postMessage({
+        workSpaceId: finalWorkspaceId,
+        threadId: finalThreadId,
+        contentList,
+        files,
+      });
+
+      queryClient.setQueryData<Message[]>(
+        ['messages', finalThreadId],
+        (old = []) => old.filter((m) => !m.optimistic).concat(response)
+      );
+
+      return response;
     },
     onError: async () => {
       toast.error('There was an error posting your message');
@@ -113,53 +139,66 @@ export function useWorkspaceMessages(
       channels?: Record<string, number> | null;
     }
   >({
-    mutationFn: ({ messageId, name, value }) => {
-      return new Promise(async (resolve, reject) => {
-        const finalThreadId = activeThread?.id;
+    mutationFn: async ({ messageId, name, value, channels }) => {
+      const finalThreadId = activeThread?.id;
+      if (!finalThreadId) throw new Error('Thread ID is required');
 
-        if (!finalThreadId) {
-          reject(new Error('Thread ID is required to update message'));
-          return;
-        }
-
-        queryClient.cancelQueries({ queryKey: ['messages', finalThreadId] });
-
-        queryClient.setQueryData(
-          ['messages', finalThreadId],
-          (oldMessages: Message[] = []) =>
-            oldMessages.map((msg) =>
-              msg.id === messageId
-                ? new Message({
-                    ...msg,
-                    [name]: value,
-                  })
-                : msg
-            )
-        );
-
-        try {
-          await new Promise((res) => setTimeout(res, 300));
-
-          const updatedMessage = queryClient
-            .getQueryData<Message[]>(['messages', finalThreadId])
-            ?.find((m) => m.id === messageId);
-
-          if (!updatedMessage) throw new Error('Message not found');
-          resolve(updatedMessage);
-        } catch (error) {
-          queryClient.invalidateQueries({
-            queryKey: ['messages', finalThreadId],
-          });
-          reject(error);
-        }
+      await queryClient.cancelQueries({
+        queryKey: ['messages', finalThreadId],
       });
+
+      queryClient.setQueryData<Message[]>(
+        ['messages', finalThreadId],
+        (old = []) =>
+          old.map((msg) =>
+            msg.id === messageId
+              ? new Message({
+                  ...msg,
+                  values: [
+                    ...(msg.values || []),
+                    {
+                      type: MessageValueType.INPUT,
+                      name,
+                      value,
+                      channels: channels ?? {},
+                      createdAt: '',
+                      createdBy: 'You',
+                    },
+                  ],
+                })
+              : msg
+          )
+      );
+
+      const response = await addInputToMessage({
+        messageId,
+        name,
+        value,
+        channels,
+      });
+
+      queryClient.setQueryData<Message[]>(
+        ['messages', finalThreadId],
+        (old = []) =>
+          old.map((msg) => (msg.id === response.id ? response : msg))
+      );
+
+      return response;
     },
     onError: (error) => {
       console.error('Error updating message:', error);
       toast.error('Failed to update message. Please try again.');
+      if (activeThread?.id) {
+        queryClient.setQueryData<Message[]>(
+          ['messages', activeThread.id],
+          (old = []) => old.filter((msg) => !msg.optimistic)
+        );
+      }
     },
     retry: false,
   });
+
+  const [isBotResponding, setIsBotResponding] = useState(false);
 
   const addBotResponseMutation = useMutation<
     Message,
@@ -170,33 +209,47 @@ export function useWorkspaceMessages(
     }
   >({
     mutationFn: async ({ threadId, threadTitle }) => {
-      // Simulate bot response
-      await new Promise((res) => setTimeout(res, 1000));
-      return new Message({
-        id: `bot-${Date.now()}`,
-        content: `Auto reply to "${threadTitle}"`,
-        createdAt: new Date(),
-        createdBy: 'SmartBot',
-        createdByUserId: 'bot',
-        messageThreadId: threadId,
-      });
+      setIsBotResponding(true);
+      return await addBotResponse(threadId, threadTitle);
+    },
+    onSuccess: (response) => {
+      queryClient.setQueryData<Message[]>(
+        ['messages', response.messageThreadId],
+        (old = []) => [...old, response]
+      );
+      setIsBotResponding(false);
+    },
+    onError: () => {
+      setIsBotResponding(false);
     },
   });
 
-  const sendMessage = (content: string) => {
-    if (!activeThread || !content.trim()) return;
+  const sendMessage = (
+    message?: string,
+    contentList?: MessageCreateContent[],
+    files?: MessageFile[]
+  ) => {
+    if (!activeThread) return;
 
+    setIsBotResponding(true);
     postMessageMutation.mutate(
       {
         threadId: activeThread.id,
-        message: content,
+        message,
+        contentList,
+        files,
       },
       {
         onSuccess: () => {
-          addBotResponseMutation.mutate({
-            threadId: activeThread.id,
-            threadTitle: activeThread.name,
-          });
+          if (activeThread.name) {
+            addBotResponseMutation.mutate({
+              threadId: activeThread.id,
+              threadTitle: activeThread.name,
+            });
+          }
+        },
+        onError: () => {
+          setIsBotResponding(false);
         },
       }
     );
@@ -209,7 +262,7 @@ export function useWorkspaceMessages(
     postMessageMutation,
     addInputToMessageMutation,
     isSendingMessage: postMessageMutation.isPending,
-    isBotResponding: addBotResponseMutation.isPending,
+    isBotResponding,
     queryMessages: { data: messages, isLoading, error, refetch },
   };
 }

@@ -14,13 +14,19 @@ export async function fetchComments(
       throw new Error(`Failed to fetch comments: ${response.statusText}`);
     }
 
+    // Sort comments by createdAt ascending (oldest first)
+    const sortedComments = response.data.data.sort(
+      (a: MessageComment, b: MessageComment) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
     // Map the API response to MessageComment objects
-    return response.data.data.map(
+    return sortedComments.map(
       (comment: MessageComment) => new MessageComment(comment)
     );
   } catch (error) {
     console.error('Error fetching comments:', error);
-    throw new Error('Error fetching comments:');
+    throw new Error('Error fetching comments');
   }
 }
 
@@ -37,21 +43,22 @@ export async function addComment(
 
     const response = await webApi.post(`/messageThreads/${threadId}/comments`, {
       content,
-      // Add any other required fields here
+      mentionedUsers: [],
     });
 
-    if (!response.data.data) {
-      throw new Error(`Failed to add comment: ${response.statusText}`);
+    const responseData = response?.data;
+
+    if (!responseData?.id) {
+      throw new Error('Invalid response from server while adding comment.');
     }
 
-    // Map the API response to a MessageComment object
     return new MessageComment({
-      id: response.data.data.id,
-      content: response.data.data.content,
-      createdAt: response.data.data.createdAt,
-      createdBy: response.data.data.createdBy,
-      createdByUserId: response.data.data.createdByUserId,
-      mentionedUsers: response.data.data.mentionedUsers || [],
+      id: responseData.id,
+      content: responseData.content,
+      createdAt: responseData.createdAt,
+      createdBy: responseData.createdBy,
+      createdByUserId: responseData.createdByUserId,
+      mentionedUsers: responseData.mentionedUsers || [],
     });
   } catch (error) {
     console.error('Error adding comment:', error);

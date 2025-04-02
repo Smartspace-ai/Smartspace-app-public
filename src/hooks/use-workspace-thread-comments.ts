@@ -3,16 +3,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useSmartSpaceChat } from '@/contexts/smartspace-context';
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 
 import { toast } from 'sonner';
 import { addComment, fetchComments } from '../apis/message-comments';
 import { MessageComment } from '../models/message-comment';
+import { UserContext } from './use-user-information';
 
 export function useWorkspaceThreadComments() {
   const { activeThread } = useSmartSpaceChat();
   const queryClient = useQueryClient();
   const previousThreadIdRef = useRef<string | null>(null);
+  const { graphData, graphPhoto } = useContext(UserContext);
+
+  const activeUser = {
+    name: graphData?.displayName ?? 'User',
+    email: graphData?.mail ?? '',
+    profilePhoto: graphPhoto || '',
+  };
 
   // Fetch comments for the active thread
   const {
@@ -45,71 +53,50 @@ export function useWorkspaceThreadComments() {
 
   // Mutation to add a new comment with optimistic updates
   const addCommentMutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       threadId,
       content,
     }: {
       threadId: string;
       content: string;
     }) => {
-      return new Promise<MessageComment>((resolve, reject) => {
-        try {
-          // Cancel any in-flight queries to avoid race conditions
-          queryClient.cancelQueries({
-            queryKey: ['comments', threadId],
-          });
+      const optimisticComment = new MessageComment({
+        id: `temp-${Date.now()}`,
+        content,
+        createdAt: new Date(),
+        createdBy: activeUser.name || 'You',
+        createdByUserId: 'current-user-id',
+        mentionedUsers: [],
+      } as MessageComment);
 
-          // Create an optimistic comment
-          const optimisticComment = new MessageComment({
-            id: `temp-${Date.now()}`,
-            content,
-            createdAt: new Date(),
-            createdBy: 'You',
-            createdByUserId: 'current-user-id',
-            mentionedUsers: [],
-          } as MessageComment);
+      // Add a flag to identify it as optimistic
+      (optimisticComment as any).optimistic = true;
 
-          // Add a flag to identify it as optimistic
-          (optimisticComment as any).optimistic = true;
+      // Add the optimistic comment to the cache
+      queryClient.setQueryData(
+        ['comments', threadId],
+        (old: MessageComment[] = []) => [...old, optimisticComment]
+      );
 
-          // Add the optimistic comment to the cache
-          queryClient.setQueryData(
-            ['comments', threadId],
-            (oldComments: MessageComment[] = []) => [
-              ...oldComments,
-              optimisticComment,
-            ]
-          );
+      // Do the actual mutation
+      const realComment = await addComment(threadId, content);
 
-          // Make the actual API call
-          const response = addComment(threadId, content);
-
-          // Update the cache with the real comment
-          queryClient.setQueryData(
-            ['comments', threadId],
-            (oldComments: MessageComment[] = []) => {
-              // Filter out the optimistic comment
-              const filteredComments = oldComments.filter(
-                (comment) => !(comment as any).optimistic
-              );
-              return [...filteredComments, response];
-            }
-          );
-
-          resolve(response);
-        } catch (error) {
-          // Remove the optimistic comment on error
-          queryClient.setQueryData(
-            ['comments', threadId],
-            (oldComments: MessageComment[] = []) =>
-              oldComments.filter((comment) => !(comment as any).optimistic)
-          );
-          reject(error);
+      // Replace the optimistic comment with the real one
+      queryClient.setQueryData(
+        ['comments', threadId],
+        (old: MessageComment[] = []) => {
+          return old.filter((c) => !(c as any).optimistic).concat(realComment);
         }
-      });
+      );
+
+      return realComment;
     },
-    onError: (error) => {
-      console.error('Error adding comment:', error);
+    onError: (_error, variables) => {
+      queryClient.setQueryData(
+        ['comments', variables.threadId],
+        (old: MessageComment[] = []) =>
+          old.filter((c) => !(c as any).optimistic)
+      );
       toast.error('Failed to add comment. Please try again.');
     },
   });
@@ -119,9 +106,9 @@ export function useWorkspaceThreadComments() {
     isLoading,
     error,
     refetch,
-    addComment: (content: string) => {
+    addComment: async (content: string) => {
       if (!activeThread || !content.trim()) return;
-      return addCommentMutation.mutate({
+      return await addCommentMutation.mutateAsync({
         threadId: activeThread.id,
         content,
       });

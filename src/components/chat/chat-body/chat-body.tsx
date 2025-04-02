@@ -19,6 +19,7 @@ interface ChatBodyProps {
   copyMessageToClipboard: (message: string, id: number) => void;
   isLoading: boolean;
   isBotResponding: boolean;
+  isSendingMessage: boolean;
   commentsDraw: Draw;
   waitingResponse: boolean;
   addValueToMessage: (
@@ -36,6 +37,7 @@ export default function ChatBody({
   copyMessageToClipboard,
   isLoading,
   isBotResponding,
+  isSendingMessage,
   commentsDraw,
   waitingResponse,
   addValueToMessage,
@@ -43,6 +45,7 @@ export default function ChatBody({
   // Auto-scroll to bottom when bot starts responding
   const prevBotRespondingRef = useRef(isBotResponding);
   const { graphData } = useContext(UserContext);
+
   useEffect(() => {
     if (!prevBotRespondingRef.current && isBotResponding) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -51,9 +54,6 @@ export default function ChatBody({
   }, [isBotResponding, messagesEndRef]);
 
   const scrollRef = useRef<SimpleBarCore | null>(null);
-
-  // Remove this debug log
-  // console.log("ChatBody rendering with messages:", messages)
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -99,7 +99,6 @@ export default function ChatBody({
             </div>
           ))}
 
-          {/* Bot typing indicator */}
           {isBotResponding && (
             <div className="rounded-lg border bg-background shadow-md p-3 mb-8 mt-8">
               <div className="flex items-center gap-2 mb-2">

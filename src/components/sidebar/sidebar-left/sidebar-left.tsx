@@ -1,6 +1,8 @@
+import { useMsal } from '@azure/msal-react';
 import { LogOut, Plus } from 'lucide-react';
-import { ComponentProps } from 'react';
+import { ComponentProps, useContext } from 'react';
 import { Logo } from '../../../assets/logo';
+import { UserContext } from '../../../hooks/use-user-information';
 import { getAvatarColour } from '../../../utils/avatar-colour';
 import { getInitials } from '../../../utils/initials';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
@@ -23,16 +25,29 @@ import Threads from '../threads/threads';
 import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
-  const user = {
-    name: 'Amit Kamble',
-    email: 'amit.kamble@smartspace.ai',
-    avatar: '',
+  const { graphData, graphPhoto } = useContext(UserContext);
+  const { instance } = useMsal();
+
+  const activeUser = {
+    name: graphData?.displayName ?? 'User',
+    email: graphData?.mail ?? '',
+    profilePhoto: graphPhoto || '',
   };
 
   const handleLogout = () => {
-    // Add your logout logic here
-    console.log('Logging out...');
+    const account = instance.getActiveAccount();
+
+    if (!account) {
+      console.warn('No active account to log out.');
+      return;
+    }
+
+    instance.logoutRedirect({
+      account,
+      postLogoutRedirectUri: window.location.origin,
+    });
   };
+
   return (
     <Sidebar
       side="left"
@@ -49,10 +64,14 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
             <DropdownMenuTrigger asChild>
               <div className="cursor-pointer">
                 <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={activeUser.profilePhoto}
+                    alt={activeUser.name}
+                  />
                   <AvatarFallback
-                    className={`text-xs ${getAvatarColour(user.name)}`}
+                    className={`text-xs ${getAvatarColour(activeUser.name)}`}
                   >
-                    {getInitials(user.name)}
+                    {getInitials(activeUser.name)}
                   </AvatarFallback>
                 </Avatar>
               </div>
@@ -61,17 +80,20 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarImage
+                      src={activeUser.profilePhoto}
+                      alt={activeUser.name}
+                    />
                     <AvatarFallback className="text-xs">
-                      {user.name.charAt(0)}
+                      {getInitials(activeUser.name)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="text-sm font-medium leading-none mb-1">
-                      {user.name}
+                      {activeUser.name}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
+                      {activeUser.email}
                     </p>
                   </div>
                 </div>

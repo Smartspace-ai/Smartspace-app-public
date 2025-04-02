@@ -4,15 +4,9 @@ import {
   materialRenderers,
 } from '@jsonforms/material-renderers';
 import { JsonForms } from '@jsonforms/react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@radix-ui/react-tooltip';
 import { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import _ from 'lodash';
-import { Badge, Check, Copy, Eye } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { cn } from '../../../lib/utils';
 import {
@@ -27,8 +21,6 @@ import { parseDateTime } from '../../../utils/parse-date-time';
 import { MyMarkdown } from '../../markdown/my-markdown';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Button } from '../../ui/button';
-import { Card, CardContent } from '../../ui/card';
-import { ChatMessageAttachmentList } from '../chat-message-attachment-list/chat-message-attachment-list';
 import { ChatMessageImage } from '../chat-message-image/chat-message-image';
 import { ChatMessageSources } from '../chat-message-sources/chat-message-sources';
 
@@ -73,11 +65,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
     sources,
     userOutput,
     userInput,
-    files,
-    containerRef,
     useQueryFiles,
-    downloadFile,
-    saveFile,
     useMessageFile,
     addValueToMessage,
   } = props;
@@ -97,326 +85,298 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
     setResponseFormData(defaultValues);
   }, [userOutput, userInput]);
 
-  const copyContent = (content?.map((c) => c.text ?? '') || []).join('');
-
-  const hasAnyCodeBlocks =
-    content?.find((c) => startsAndEndsWithTripleBackticks(c.text ?? '')) !=
-    null;
-
-  const handleCopy = () => {
-    if (copyContent) {
-      navigator.clipboard.writeText(copyContent);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    }
-  };
-
-  {
-    /** Render the actual message */
-  }
-  if (isBotResponse || !isBotResponse) {
-    return (
+  return (
+    <div
+      className={cn(
+        isBotResponse ? 'border bg-background shadow-md' : '',
+        'rounded-lg mb-4 group'
+      )}
+    >
+      {/* Message header with avatar, name, time, and actions */}
       <div
         className={cn(
-          isBotResponse ? 'border bg-background shadow-md' : '',
-          'rounded-lg mb-4 group'
+          isBotResponse ? 'border-b' : '',
+          'flex items-center justify-between p-3 '
         )}
       >
-        {/* Message header with avatar, name, time, and actions */}
-        <div
-          className={cn(
-            isBotResponse ? 'border-b' : '',
-            'flex items-center justify-between p-3 '
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <Avatar className="h-7 w-7 mt-0.5">
-              <AvatarFallback
-                className={cn(
-                  'text-xs',
-                  isBotResponse
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                )}
-              >
-                {getInitials(isBotResponse ? 'Chatbot' : createdBy)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-xs  font-medium">
-                {isBotResponse ? 'Chatbot' : createdBy}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {parseDateTime(createdAt)}
-              </span>
-            </div>
-          </div>
-
-          {/* Action buttons - simplified to only Preview/Raw toggle and Copy */}
-          <div className="flex items-center gap-1">
-            {isBotResponse && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-2 text-xs gap-1 rounded-md"
-              >
-                <Eye className="h-3.5 w-3.5" />
-                Preview
-              </Button>
-            )}
-
-            <Button
-              variant="ghost"
-              size="icon"
+        <div className="flex items-center gap-2">
+          <Avatar className="h-7 w-7 mt-0.5">
+            <AvatarFallback
               className={cn(
+                'text-xs',
                 isBotResponse
-                  ? ''
-                  : 'hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity',
-                'h-7 w-7 text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
               )}
-              title="Copy"
             >
-              <Copy className="h-3.5 w-3.5" />
-              {/* {copiedMessageId === message.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} */}
-            </Button>
-          </div>
-        </div>
-
-        {/* Message content */}
-        <div className={cn(isBotResponse ? 'p-3' : 'px-3 py-1')}>
-          <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
-            {content &&
-              (content as MessageContent[]).map((item, i) => {
-                if (item.text) {
-                  // <-- ADDED KEY
-                  return <MyMarkdown key={`content-${i}`} text={item.text} />;
-                } else if (item.image) {
-                  // <-- ADDED KEY
-                  return (
-                    <ChatMessageImage
-                      key={`image-${i}`}
-                      image={item.image}
-                      name={item.image.name}
-                      useMessageFile={useMessageFile}
-                    />
-                  );
-                }
-                return null;
-              })}
-
-            {/* Form section */}
-            {showForm && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <JsonForms
-                  schema={userOutput.schema as JsonSchema}
-                  data={responseFormData}
-                  renderers={materialRenderers}
-                  cells={materialCells}
-                  readonly={userInput !== undefined}
-                  onChange={({ data, errors }) => {
-                    setResponseFormData(data);
-                    setResponseFormValid(!errors?.length);
-                  }}
-                />
-                <div className="flex justify-end mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!responseFormValid}
-                    onClick={() =>
-                      addValueToMessage?.('_user', responseFormData)
-                    }
-                  >
-                    Send
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/** Souyrces */}
-            {(sources || []).map((source, idx) => (
-              <ChatMessageSources
-                key={idx}
-                source={source}
-                useQueryFiles={useQueryFiles}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  } else {
-    return (
-      <div
-        className="flex items-start gap-3 py-3 mb-6"
-        onMouseEnter={() => setShowCopyButton(true)}
-        onMouseLeave={() => setShowCopyButton(false)}
-      >
-        <div className="flex-1 max-w-[calc(100%-3rem)]">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium">{createdBy || 'You'}</span>
+              {getInitials(isBotResponse ? 'Chatbot' : createdBy)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="text-xs  font-medium">
+              {isBotResponse ? 'Chatbot' : createdBy}
+            </span>
             <span className="text-xs text-muted-foreground">
               {createdAt
                 ? parseDateTime(createdAt, 'Do MMMM YYYY, h:mm a')
                 : ''}
             </span>
           </div>
+        </div>
 
-          {isBotResponse ? (
-            <Card className="bg-card border shadow-sm relative">
-              <CardContent className="p-4">
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  {content &&
-                    (content as MessageContent[]).map((item, i) => {
-                      if (item.text) {
-                        // <-- ADDED KEY
-                        return (
-                          <MyMarkdown key={`content-${i}`} text={item.text} />
-                        );
-                      } else if (item.image) {
-                        // <-- ADDED KEY
-                        return (
-                          <ChatMessageImage
-                            key={`image-${i}`}
-                            image={item.image}
-                            name={item.image.name}
-                            useMessageFile={useMessageFile}
-                          />
-                        );
-                      }
-                      return null;
-                    })}
-                </div>
-
-                {/* Copy button */}
-                {showCopyButton && copyContent && (
-                  <div className="absolute top-2 right-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 rounded-full"
-                            onClick={handleCopy}
-                          >
-                            {isCopied ? (
-                              <Check className="h-4 w-4" />
-                            ) : (
-                              <Copy className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{isCopied ? 'Copied!' : 'Copy to clipboard'}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                )}
-
-                {/* Sources section */}
-                {isBotResponse && (sources || []).length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-medium">Sources</span>
-                      <Badge className="text-xs px-1.5 py-0">
-                        {sources?.length}
-                      </Badge>
-                    </div>
-                    <ul className="space-y-2">
-                      {(sources || []).map((source, idx) => (
-                        <ChatMessageSources
-                          key={idx}
-                          source={source}
-                          useQueryFiles={useQueryFiles}
-                        />
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Form section */}
-                {showForm && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <JsonForms
-                      schema={userOutput.schema as JsonSchema}
-                      data={responseFormData}
-                      renderers={materialRenderers}
-                      cells={materialCells}
-                      readonly={userInput !== undefined}
-                      onChange={({ data, errors }) => {
-                        setResponseFormData(data);
-                        setResponseFormValid(!errors?.length);
-                      }}
-                    />
-                    <div className="flex justify-end mt-2">
-                      <Button
-                        size="sm"
-                        disabled={!responseFormValid}
-                        onClick={() =>
-                          addValueToMessage?.('_user', responseFormData)
-                        }
-                      >
-                        Send
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Files section */}
-                {files?.[0]?.id && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <ChatMessageAttachmentList
-                      downloadFile={downloadFile}
-                      saveFile={saveFile}
-                      files={files ?? []}
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="text-sm">
-              <div className="prose prose-sm max-w-none dark:prose-invert">
-                {content &&
-                  (content as MessageContent[]).map((item, i) => {
-                    if (item.text) {
-                      // <-- ADDED KEY
-                      return (
-                        <MyMarkdown key={`content-${i}`} text={item.text} />
-                      );
-                    } else if (item.image) {
-                      // <-- ADDED KEY
-                      return (
-                        <ChatMessageImage
-                          key={`image-${i}`}
-                          image={item.image}
-                          name={item.image.name}
-                          useMessageFile={useMessageFile}
-                        />
-                      );
-                    }
-                    return null;
-                  })}
-              </div>
-
-              {/* Files section for user messages */}
-              {files?.[0]?.id && (
-                <div className="mt-2">
-                  <ChatMessageAttachmentList
-                    downloadFile={downloadFile}
-                    saveFile={saveFile}
-                    files={files ?? []}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+        {/* Action buttons - simplified to only Preview/Raw toggle and Copy */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              isBotResponse
+                ? ''
+                : 'hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity',
+              'h-7 w-7 text-muted-foreground hover:text-foreground'
+            )}
+            title="Copy"
+          >
+            <Copy className="h-3.5 w-3.5" />
+            {/* {copiedMessageId === message.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} */}
+          </Button>
         </div>
       </div>
-    );
-  }
+
+      {/* Message content */}
+      <div className={cn(isBotResponse ? 'p-3' : 'px-3 py-1')}>
+        <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
+          {content &&
+            (content as MessageContent[]).map((item, i) => {
+              if (item.text) {
+                // <-- ADDED KEY
+                return <MyMarkdown key={`content-${i}`} text={item.text} />;
+              } else if (item.image) {
+                // <-- ADDED KEY
+                return (
+                  <ChatMessageImage
+                    key={`image-${i}`}
+                    image={item.image}
+                    name={item.image.name}
+                    useMessageFile={useMessageFile}
+                  />
+                );
+              }
+              return null;
+            })}
+
+          {/* Form section */}
+          {showForm && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <JsonForms
+                schema={userOutput.schema as JsonSchema}
+                data={responseFormData}
+                renderers={materialRenderers}
+                cells={materialCells}
+                readonly={userInput !== undefined}
+                onChange={({ data, errors }) => {
+                  setResponseFormData(data);
+                  setResponseFormValid(!errors?.length);
+                }}
+              />
+              <div className="flex justify-end mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!responseFormValid}
+                  onClick={() => addValueToMessage?.('_user', responseFormData)}
+                >
+                  Send
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/** Souyrces */}
+          {(sources || []).map((source, idx) => (
+            <ChatMessageSources
+              key={idx}
+              source={source}
+              useQueryFiles={useQueryFiles}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // else {
+  //   return (
+  //     <div
+  //       className="flex items-start gap-3 py-3 mb-6"
+  //       onMouseEnter={() => setShowCopyButton(true)}
+  //       onMouseLeave={() => setShowCopyButton(false)}
+  //     >
+  //       <div className="flex-1 max-w-[calc(100%-3rem)]">
+  //         <div className="flex items-center gap-2 mb-1">
+  //           <span className="text-sm font-medium">{createdBy || 'You'}</span>
+  //           <span className="text-xs text-muted-foreground">
+  //             {createdAt
+  //               ? parseDateTime(createdAt, 'Do MMMM YYYY, h:mm a')
+  //               : ''}
+  //           </span>
+  //         </div>
+
+  //         {isBotResponse ? (
+  //           <Card className="bg-card border shadow-sm relative">
+  //             <CardContent className="p-4">
+  //               <div className="prose prose-sm max-w-none dark:prose-invert">
+  //                 {content &&
+  //                   (content as MessageContent[]).map((item, i) => {
+  //                     if (item.text) {
+  //                       // <-- ADDED KEY
+  //                       return (
+  //                         <MyMarkdown key={`content-${i}`} text={item.text} />
+  //                       );
+  //                     } else if (item.image) {
+  //                       // <-- ADDED KEY
+  //                       return (
+  //                         <ChatMessageImage
+  //                           key={`image-${i}`}
+  //                           image={item.image}
+  //                           name={item.image.name}
+  //                           useMessageFile={useMessageFile}
+  //                         />
+  //                       );
+  //                     }
+  //                     return null;
+  //                   })}
+  //               </div>
+
+  //               {/* Copy button */}
+  //               {showCopyButton && copyContent && (
+  //                 <div className="absolute top-2 right-2">
+  //                   <TooltipProvider>
+  //                     <Tooltip>
+  //                       <TooltipTrigger asChild>
+  //                         <Button
+  //                           variant="ghost"
+  //                           size="icon"
+  //                           className="h-7 w-7 rounded-full"
+  //                           onClick={handleCopy}
+  //                         >
+  //                           {isCopied ? (
+  //                             <Check className="h-4 w-4" />
+  //                           ) : (
+  //                             <Copy className="h-4 w-4" />
+  //                           )}
+  //                         </Button>
+  //                       </TooltipTrigger>
+  //                       <TooltipContent>
+  //                         <p>{isCopied ? 'Copied!' : 'Copy to clipboard'}</p>
+  //                       </TooltipContent>
+  //                     </Tooltip>
+  //                   </TooltipProvider>
+  //                 </div>
+  //               )}
+
+  //               {/* Sources section */}
+  //               {isBotResponse && (sources || []).length > 0 && (
+  //                 <div className="mt-4 pt-4 border-t border-border">
+  //                   <div className="flex items-center gap-2 mb-2">
+  //                     <span className="text-xs font-medium">Sources</span>
+  //                     <Badge className="text-xs px-1.5 py-0">
+  //                       {sources?.length}
+  //                     </Badge>
+  //                   </div>
+  //                   <ul className="space-y-2">
+  //                     {(sources || []).map((source, idx) => (
+  //                       <ChatMessageSources
+  //                         key={idx}
+  //                         source={source}
+  //                         useQueryFiles={useQueryFiles}
+  //                       />
+  //                     ))}
+  //                   </ul>
+  //                 </div>
+  //               )}
+
+  //               {/* Form section */}
+  //               {showForm && (
+  //                 <div className="mt-4 pt-4 border-t border-border">
+  //                   <JsonForms
+  //                     schema={userOutput.schema as JsonSchema}
+  //                     data={responseFormData}
+  //                     renderers={materialRenderers}
+  //                     cells={materialCells}
+  //                     readonly={userInput !== undefined}
+  //                     onChange={({ data, errors }) => {
+  //                       setResponseFormData(data);
+  //                       setResponseFormValid(!errors?.length);
+  //                     }}
+  //                   />
+  //                   <div className="flex justify-end mt-2">
+  //                     <Button
+  //                       size="sm"
+  //                       disabled={!responseFormValid}
+  //                       onClick={() =>
+  //                         addValueToMessage?.('_user', responseFormData)
+  //                       }
+  //                     >
+  //                       Send
+  //                     </Button>
+  //                   </div>
+  //                 </div>
+  //               )}
+
+  //               {/* Files section */}
+  //               {files?.[0]?.id && (
+  //                 <div className="mt-4 pt-4 border-t border-border">
+  //                   <ChatMessageAttachmentList
+  //                     downloadFile={downloadFile}
+  //                     saveFile={saveFile}
+  //                     files={files ?? []}
+  //                   />
+  //                 </div>
+  //               )}
+  //             </CardContent>
+  //           </Card>
+  //         ) : (
+  //           <div className="text-sm">
+  //             <div className="prose prose-sm max-w-none dark:prose-invert">
+  //               {content &&
+  //                 (content as MessageContent[]).map((item, i) => {
+  //                   if (item.text) {
+  //                     // <-- ADDED KEY
+  //                     return (
+  //                       <MyMarkdown key={`content-${i}`} text={item.text} />
+  //                     );
+  //                   } else if (item.image) {
+  //                     // <-- ADDED KEY
+  //                     return (
+  //                       <ChatMessageImage
+  //                         key={`image-${i}`}
+  //                         image={item.image}
+  //                         name={item.image.name}
+  //                         useMessageFile={useMessageFile}
+  //                       />
+  //                     );
+  //                   }
+  //                   return null;
+  //                 })}
+  //             </div>
+
+  //             {/* Files section for user messages */}
+  //             {files?.[0]?.id && (
+  //               <div className="mt-2">
+  //                 <ChatMessageAttachmentList
+  //                   downloadFile={downloadFile}
+  //                   saveFile={saveFile}
+  //                   files={files ?? []}
+  //                 />
+  //               </div>
+  //             )}
+  //           </div>
+  //         )}
+  //       </div>
+  //     </div>
+  //   );
+  // }
 };
 
 interface ChatMessageProps {
@@ -668,7 +628,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
       if (!skip) {
         valuesSavedToCollection = false;
         createdAt = value.createdAt;
-        createdBy = userId === value.createdByUserId ? 'You' : value.createdBy;
+        createdBy = value.createdBy;
       }
     }
   }
@@ -696,13 +656,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
   }
 
   return results;
-};
-
-const startsAndEndsWithTripleBackticks = (text: string): boolean => {
-  if (typeof text !== 'string') {
-    return false;
-  }
-  return text.startsWith('```') && text.endsWith('```');
 };
 
 const getDefaultValues = (schema: JsonSchema): any => {

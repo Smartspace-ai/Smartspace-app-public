@@ -16,15 +16,17 @@ import App from './app/app';
 import msalConfig from './app/msalConfig';
 import Login from './pages/Login/Login';
 
+// 🔑 MSAL instance creation
 export const msalInstance = new PublicClientApplication(msalConfig);
 
+// ✅ Initialize and set active account if one exists
 msalInstance.initialize().then(() => {
-  // Account selection logic is app dependent. Adjust as needed for different use cases.
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length > 0) {
     msalInstance.setActiveAccount(accounts[0]);
   }
 
+  // 🔁 Set active account on login success
   msalInstance.addEventCallback((event: EventMessage) => {
     if (event.eventType === EventType.LOGIN_SUCCESS && event.payload) {
       const payload = event.payload as AuthenticationResult;
@@ -33,10 +35,13 @@ msalInstance.initialize().then(() => {
     }
   });
 
-  const root = ReactDOM.createRoot(
-    document.getElementById('root') as HTMLElement
-  );
+  // check if root element exists when unit testing
+  const rootElement =
+    (document.getElementById('root') as HTMLElement) ??
+    document.body.appendChild(document.createElement('div'));
+  rootElement.id = 'root';
 
+  const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
       <MsalProvider instance={msalInstance}>

@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useWorkspaceThreadComments } from '../../../hooks/use-workspace-thread-comments';
 import { MessageComment } from '../../../models/message-comment';
+import { getInitials } from '../../../utils/initials';
 
 export function SidebarRight() {
   const { comments, isLoading, addComment, isAddingComment } =
@@ -55,7 +56,7 @@ export function SidebarRight() {
     }
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!newComment.trim()) return;
 
     if (newComment.length > MAX_CHAR_LIMIT) {
@@ -63,9 +64,13 @@ export function SidebarRight() {
       return;
     }
 
-    addComment(newComment);
-    setNewComment('');
-    toast.success('Comment added');
+    try {
+      await addComment(newComment); // ✅ this uses mutateAsync now
+      setNewComment('');
+      toast.success('Comment added');
+    } catch {
+      // Error toast is handled in useWorkspaceThreadComments
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -86,6 +91,13 @@ export function SidebarRight() {
       hour12: true,
     });
   };
+
+  // Scroll to bottom when comments change
+  useEffect(() => {
+    if (commentsEndRef.current) {
+      commentsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [comments]);
 
   return (
     <Sidebar side="right" className="border-l">
@@ -123,18 +135,16 @@ export function SidebarRight() {
               comments.map((comment: MessageComment) => (
                 <div
                   key={comment.id}
-                  className="rounded-lg border p-3 transition-all hover:shadow-sm"
+                  className="rounded-lg border p-3 transition-all shadow-md hover:shadow-lg"
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        {comment.createdBy
-                          ? comment.createdBy.substring(0, 2).toUpperCase()
-                          : 'UN'}
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                        {getInitials(comment.createdBy)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
+                      <p className="text-xs font-medium truncate">
                         {comment.createdBy}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -179,6 +189,7 @@ export function SidebarRight() {
             </div>
 
             <Button
+              onClick={handleAddComment}
               variant="default"
               size="sm"
               className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
