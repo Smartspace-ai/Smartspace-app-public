@@ -38,10 +38,6 @@ export function useWorkspaceThreadComments() {
   // Effect to refetch comments when thread changes - with protection against loops
   useEffect(() => {
     if (activeThread?.id && activeThread.id !== previousThreadIdRef.current) {
-      console.log(
-        'Thread changed, refetching comments for thread ID:',
-        activeThread.id
-      );
       previousThreadIdRef.current = activeThread.id;
 
       // Only refetch if we have a valid thread ID and it's different from the previous one

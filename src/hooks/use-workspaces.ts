@@ -24,7 +24,6 @@ export function useWorkspaces() {
   // Set the first workspace as active if none is selected
   useEffect(() => {
     if (!activeWorkspace && workspaces.length > 0) {
-      console.log('Setting initial workspace:', workspaces[0].name);
       setActiveWorkspace(workspaces[0]);
       //navigate(`/${workspaces[0].id}`, { replace: true });
     }
@@ -32,7 +31,6 @@ export function useWorkspaces() {
 
   // Handle workspace change
   const handleWorkspaceChange = (workspace: Workspace) => {
-    console.log('Changing workspace to:', workspace.name);
     setActiveWorkspace(workspace);
     setActiveThread(null); // Clear active thread when changing workspace
   };

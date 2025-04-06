@@ -26,7 +26,6 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { renameThread } from '../../../apis/message-threads';
 import useSmartSpaceChat from '../../../contexts/smartspace-context';
@@ -47,8 +46,6 @@ export function Threads() {
   const [sortOrder, setSortOrder] = useState('newest');
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const { threadId } = useParams<{ threadId?: string }>();
-  const navigate = useNavigate();
 
   const handleNewThread = () => {
     console.log('Creating new thread...');
@@ -56,13 +53,6 @@ export function Threads() {
 
   // Improve the thread selection handling
   const handleThreadClick = (thread: MessageThread) => {
-    console.log(
-      'Thread clicked in ThreadsList:',
-      thread.name,
-      'ID:',
-      thread.id
-    );
-
     // Add a visual indication that the thread is being selected
     const threadElement = document.getElementById(`thread-${thread.id}`);
     if (threadElement) {

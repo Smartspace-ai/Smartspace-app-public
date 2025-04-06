@@ -146,12 +146,7 @@ export function useWorkspaceThreads() {
       !initialThreadSetRef.current[activeWorkspace.id]
     ) {
       let threadToSelect = threads[0];
-      console.log(
-        'Setting initial thread to first thread in workspace:',
-        threadId
-      );
-      // If a threadId exists in the URL, try to find it in the threads array
-      console.log('xxxxxxxxxxxxxxxxxxx threadId:', threadId);
+
       if (threadId) {
         const found = threads.find((thread) => thread.id === threadId);
         if (found) {
@@ -171,14 +166,14 @@ export function useWorkspaceThreads() {
   ]);
 
   // useEffect to check if activeThread is being reset
-  useEffect(() => {
-    console.log(
-      'activeThread in useEffect:',
-      activeThread?.name,
-      'ID:',
-      activeThread?.id
-    );
-  }, [activeThread]);
+  // useEffect(() => {
+  //   console.log(
+  //     'activeThread in useEffect:',
+  //     activeThread?.name,
+  //     'ID:',
+  //     activeThread?.id
+  //   );
+  // }, [activeThread]);
 
   return {
     threads,

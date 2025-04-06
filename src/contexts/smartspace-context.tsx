@@ -108,47 +108,6 @@ export const SmartSpaceChatProvider: React.FC<{
     });
   };
 
-  // When workspace changes, clear the active thread if it doesn't belong to the new workspace
-  // useEffect(() => {
-  //   console.log(
-  //     'Checking thread-workspace relationship:',
-  //     'Thread:',
-  //     activeThread?.name,
-  //     'Thread ID:',
-  //     activeThread?.id,
-  //     'Workspace:',
-  //     activeWorkspace?.name,
-  //     'Workspace ID:',
-  //     activeWorkspace?.id
-  //   );
-
-  //   // Check if we need to clear the thread when workspace changes
-  //   if (activeThread && activeWorkspace) {
-  //     // Get the thread's workspace ID from the thread object or from a related property
-  //     // Since we don't have a direct workspaceId property, we need to check if the thread
-  //     // belongs to the current workspace in a different way
-
-  //     // Option 1: If threads are fetched per workspace, we can assume any active thread
-  //     // from a previous workspace should be cleared when workspace changes
-  //     const previousWorkspaceId = activeThread.messageThreadId?.split('-')[0];
-  //     const threadWorkspaceId = previousWorkspaceId || null;
-
-  //     console.log(
-  //       'Thread workspace check:',
-  //       'Thread workspace ID:',
-  //       threadWorkspaceId,
-  //       'Current workspace ID:',
-  //       activeWorkspace.id
-  //     );
-
-  //     if (threadWorkspaceId && threadWorkspaceId !== activeWorkspace.id) {
-  //       console.log('Clearing active thread - belongs to different workspace');
-  //       setActiveThread(null);
-  //     }
-  //   }
-  // }, [activeThread, activeWorkspace]);
-  // Only run when workspace changes, not when thread changes
-
   // Provide the context value
   const contextValue = {
     isDarkMode,
@@ -163,26 +122,9 @@ export const SmartSpaceChatProvider: React.FC<{
     activeThread,
     setActiveWorkspace,
     setActiveThread: (thread: MessageThread | null) => {
-      console.log(
-        'SmartSpaceContext BEFORE setting activeThread:',
-        activeThread?.name,
-        'ID:',
-        activeThread?.id,
-        'TO:',
-        thread?.name,
-        'ID:',
-        thread?.id
-      );
-
       // Only update if the thread is different or if we're explicitly setting to null
       if (thread?.id !== activeThread?.id) {
         setActiveThread(thread);
-        console.log(
-          'SmartSpaceContext AFTER setting activeThread:',
-          thread?.name,
-          'ID:',
-          thread?.id
-        );
       } else {
         console.log(
           'SmartSpaceContext - Prevented redundant activeThread update'
