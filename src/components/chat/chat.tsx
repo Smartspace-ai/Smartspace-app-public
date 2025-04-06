@@ -1,5 +1,3 @@
-'use client';
-
 import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,7 +20,6 @@ export function Chat() {
     sendMessage,
     isSendingMessage,
     isBotResponding,
-    addInputToMessageMutation,
   } = useWorkspaceMessages(activeWorkspace, activeThread);
 
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
@@ -83,15 +80,6 @@ export function Chat() {
     },
     [handleSendMessage]
   );
-
-  const addValueToMessage = (
-    messageId: string,
-    name: string,
-    value: any,
-    channels: Record<string, number>
-  ) => {
-    addInputToMessageMutation.mutate({ messageId, name, value, channels });
-  };
 
   // Add these drag event handlers before the return statement
   const handleDragEnterChat = (e: React.DragEvent) => {
@@ -183,7 +171,6 @@ export function Chat() {
         isBotResponding={isBotResponding}
         commentsDraw={{} as any}
         waitingResponse={false}
-        addValueToMessage={addValueToMessage}
       />
 
       <ChatComposer

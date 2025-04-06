@@ -22,12 +22,6 @@ interface ChatBodyProps {
   isSendingMessage: boolean;
   commentsDraw: Draw;
   waitingResponse: boolean;
-  addValueToMessage: (
-    messageId: string,
-    name: string,
-    value: any,
-    channels: Record<string, number>
-  ) => void;
 }
 
 export default function ChatBody({
@@ -40,7 +34,6 @@ export default function ChatBody({
   isSendingMessage,
   commentsDraw,
   waitingResponse,
-  addValueToMessage,
 }: ChatBodyProps) {
   // Auto-scroll to bottom when bot starts responding
   const prevBotRespondingRef = useRef(isBotResponding);
@@ -94,7 +87,6 @@ export default function ChatBody({
                 downloadFile={downloadFile}
                 saveFile={saveFile}
                 useQueryFiles={useQueryFiles}
-                addValueToMessage={addValueToMessage}
               />
             </div>
           ))}

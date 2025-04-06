@@ -1,5 +1,3 @@
-'use client';
-
 import type React from 'react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -25,12 +23,22 @@ import {
   Star,
   Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { renameThread } from '../../../apis/message-threads';
 import { MessageThread } from '../../../models/message-threads';
 import { getAvatarColour } from '../../../utils/avatar-colour';
 import { getInitials } from '../../../utils/initials';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../ui/alert-dialog';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
 export function Threads() {
@@ -40,14 +48,11 @@ export function Threads() {
     isLoading,
     handleThreadChange,
     updateThreadMetadata,
+    handleDeleteThread,
   } = useWorkspaceThreads();
   const [sortOrder, setSortOrder] = useState('newest');
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-  const handleNewThread = () => {
-    console.log('Creating new thread...');
-  };
 
   // Improve the thread selection handling
   const handleThreadClick = (thread: MessageThread) => {
@@ -63,6 +68,19 @@ export function Threads() {
     // Force a re-render of the header by updating the thread
     handleThreadChange(thread);
   };
+
+  useEffect(() => {
+    // Check if the active thread is still in the updated threads list
+    if (
+      activeThread &&
+      !threads.some((thread) => thread.id === activeThread.id)
+    ) {
+      // If not, select the first thread in the list (if available)
+      if (threads.length > 0) {
+        handleThreadChange(threads[0]);
+      }
+    }
+  }, [threads, activeThread, handleThreadChange]);
 
   return (
     <>
@@ -96,10 +114,11 @@ export function Threads() {
                 onHover={setHoveredThreadId}
                 onMenuOpenChange={setOpenMenuId}
                 updateThreadMetadata={updateThreadMetadata}
+                handleDeleteThread={handleDeleteThread}
               />
             ))
           ) : (
-            <EmptyThreadsState onNewThread={handleNewThread} />
+            <EmptyThreadsState />
           )}
         </div>
       </SidebarContent>
@@ -178,11 +197,7 @@ function ThreadsLoadingSkeleton() {
   );
 }
 
-type EmptyThreadsStateProps = {
-  onNewThread: () => void;
-};
-
-function EmptyThreadsState({ onNewThread }: EmptyThreadsStateProps) {
+function EmptyThreadsState() {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center h-full">
       <div className="rounded-full bg-gray-100 p-3 mb-3">
@@ -210,6 +225,7 @@ type ThreadItemProps = {
     threadId: string,
     updates: Partial<MessageThread>
   ) => void;
+  handleDeleteThread: (threadId: string) => void;
 };
 
 function ThreadItem({
@@ -221,9 +237,11 @@ function ThreadItem({
   onHover,
   onMenuOpenChange,
   updateThreadMetadata,
+  handleDeleteThread,
 }: ThreadItemProps) {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [newThreadName, setNewThreadName] = useState(thread.name);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
     // Prevent click if we're clicking on the menu
@@ -259,6 +277,22 @@ function ThreadItem({
         console.error('Error renaming thread:', error);
         toast.error('Failed to rename thread. Please try again.');
       }
+    }
+  };
+
+  const handleDeleteThreadItem = async () => {
+    try {
+      // Call the API to delete the thread
+      handleDeleteThread(thread.id);
+
+      // Close the dialog
+      setIsDeleteDialogOpen(false);
+
+      // Show success message
+      toast.success('Thread deleted successfully');
+    } catch (error) {
+      console.error('Error deleting thread:', error);
+      toast.error('Failed to delete thread. Please try again.');
     }
   };
 
@@ -323,6 +357,7 @@ function ThreadItem({
           }
         }}
         onRename={handleOpenRenameModal}
+        onDelete={() => setIsDeleteDialogOpen(true)}
       />
 
       {/* Rename Modal - Scoped to this thread item */}
@@ -333,6 +368,31 @@ function ThreadItem({
         setThreadName={setNewThreadName}
         onSubmit={handleRenameSubmit}
       />
+
+      {/* Modal for deleting the thread */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent className="sm:max-w-[425px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Thread</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{thread.name}"? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="pt-5">
+            <AlertDialogCancel className="text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteThreadItem}
+              className="bg-red-500 hover:bg-red-600 text-white text-sm"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -344,6 +404,7 @@ type ThreadItemMenuProps = {
   isMenuOpen: boolean;
   onMenuOpenChange: (open: boolean) => void;
   onRename: () => void;
+  onDelete: () => void;
 };
 
 function ThreadItemMenu({
@@ -353,6 +414,7 @@ function ThreadItemMenu({
   isMenuOpen,
   onMenuOpenChange,
   onRename,
+  onDelete,
 }: ThreadItemMenuProps) {
   return (
     <DropdownMenu open={isMenuOpen} onOpenChange={onMenuOpenChange}>
@@ -394,7 +456,13 @@ function ThreadItemMenu({
           <span>Rename</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator className="my-1 bg-gray-100" />
-        <DropdownMenuItem className="text-xs py-1.5 px-2 rounded-md text-red-500">
+        <DropdownMenuItem
+          className="text-xs py-1.5 px-2 rounded-md text-red-500"
+          onClick={(e) => {
+            e.preventDefault();
+            onDelete();
+          }}
+        >
           <Trash2 className="mr-2 h-3.5 w-3.5" />
           <span>Delete</span>
         </DropdownMenuItem>

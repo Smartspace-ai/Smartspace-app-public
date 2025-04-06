@@ -26,7 +26,7 @@ export interface MessageValue {
   value: any;
   type: MessageValueType;
   channels: Record<string, number>;
-  createdAt: string;
+  createdAt: Date | string;
   createdBy: string;
   createdByUserId?: string;
 }

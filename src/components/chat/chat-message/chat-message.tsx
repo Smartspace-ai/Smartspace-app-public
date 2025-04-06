@@ -31,7 +31,7 @@ export interface ContentItem {
 
 interface MessageValueProps {
   createdBy: string;
-  createdAt: string;
+  createdAt: Date | string;
   type: MessageValueType;
   content: MessageContent[] | null;
   sources: MessageResponseSource[] | null;
@@ -215,12 +215,7 @@ interface ChatMessageProps {
   useMessageFile: (id: string) => {
     useMessageFileRaw: UseQueryResult<Blob, Error>;
   };
-  addValueToMessage: (
-    messageId: string,
-    name: string,
-    value: any,
-    channels: Record<string, number>
-  ) => void;
+
   useQueryFiles: () => {
     downloadFileMutation: UseMutationResult<
       void,
@@ -242,7 +237,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
     downloadFile,
     saveFile,
     useMessageFile,
-    addValueToMessage,
   } = props;
 
   const values =
@@ -259,7 +253,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
   let files: MessageFile[] | null = null;
   let requestedSchema: Record<string, any> | null = null;
   let currentType: MessageValueType = MessageValueType.INPUT;
-  let createdAt = '';
+  let createdAt: Date | string = '';
   let createdBy = '';
   let valuesSavedToCollection = false;
   let channels: Record<string, number> = {};
@@ -302,9 +296,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
         userOutput={null}
         containerRef={containerRef}
         useMessageFile={useMessageFile}
-        addValueToMessage={(name: string, val: any) => {
-          addValueToMessage(message.id ?? '', name, val, channels);
-        }}
         downloadFile={downloadFile}
         saveFile={saveFile}
         useQueryFiles={useQueryFiles}
@@ -398,14 +389,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
                   userInput={userInput?.value}
                   containerRef={containerRef}
                   useMessageFile={useMessageFile}
-                  addValueToMessage={(name: string, data: any) => {
-                    addValueToMessage(
-                      message.id ?? '',
-                      name,
-                      data,
-                      value.channels
-                    );
-                  }}
                   downloadFile={downloadFile}
                   saveFile={saveFile}
                   useQueryFiles={useQueryFiles}

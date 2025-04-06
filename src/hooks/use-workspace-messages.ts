@@ -1,6 +1,4 @@
-'use client';
-
-import { addInputToMessage, fetchMessages, postMessage } from '@/apis/messages';
+import { fetchMessages, postMessage } from '@/apis/messages';
 import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import {
   Message,
@@ -12,9 +10,10 @@ import { MessageThread } from '@/models/message-threads';
 import { Workspace } from '@/models/workspace';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useContext, useState } from 'react';
+import { useParams } from 'react-router';
 import { toast } from 'sonner';
+import { UserContext } from './use-user-information';
 
 export function useWorkspaceMessages(
   passedWorkspace?: Workspace | null,
@@ -25,7 +24,14 @@ export function useWorkspaceMessages(
   const activeWorkspace = passedWorkspace ?? context?.activeWorkspace;
 
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+
+  const { graphData, graphPhoto } = useContext(UserContext);
+
+  const activeUser = {
+    name: graphData?.displayName ?? 'User',
+    email: graphData?.mail ?? '',
+    profilePhoto: graphPhoto || '',
+  };
 
   const { threadId: urlThreadId } = useParams<{ threadId: string }>();
 
@@ -61,6 +67,7 @@ export function useWorkspaceMessages(
     mutationFn: async ({ message, contentList, files, threadId }) => {
       const finalThreadId = threadId ?? activeThread?.id;
       const finalWorkspaceId = activeWorkspace?.id || '0';
+      const createdBy = activeUser ? activeUser.name : 'You'; // Replace with actual user ID or name
 
       if (!finalThreadId)
         throw new Error('Thread ID is required to post message');
@@ -75,8 +82,8 @@ export function useWorkspaceMessages(
                   name: 'prompt',
                   value: contentList,
                   channels: {},
-                  createdAt: '',
-                  createdBy: 'You',
+                  createdAt: new Date(),
+                  createdBy: createdBy,
                 },
               ]
             : []),
@@ -87,14 +94,14 @@ export function useWorkspaceMessages(
                   name: 'files',
                   value: files,
                   channels: {},
-                  createdAt: '',
-                  createdBy: 'You',
+                  createdAt: new Date(),
+                  createdBy: createdBy,
                 },
               ]
             : []),
         ],
         createdAt: new Date(),
-        createdBy: 'You',
+        createdBy: createdBy,
         optimistic: true,
       });
 
@@ -124,75 +131,6 @@ export function useWorkspaceMessages(
     onError: async () => {
       toast.error('There was an error posting your message');
       await refetch();
-    },
-    retry: false,
-  });
-
-  const addInputToMessageMutation = useMutation<
-    Message,
-    Error,
-    {
-      messageId: string;
-      name: string;
-      value: any;
-      channels?: Record<string, number> | null;
-    }
-  >({
-    mutationFn: async ({ messageId, name, value, channels }) => {
-      const finalThreadId = activeThread?.id;
-      if (!finalThreadId) throw new Error('Thread ID is required');
-
-      await queryClient.cancelQueries({
-        queryKey: ['messages', finalThreadId],
-      });
-
-      queryClient.setQueryData<Message[]>(
-        ['messages', finalThreadId],
-        (old = []) =>
-          old.map((msg) =>
-            msg.id === messageId
-              ? new Message({
-                  ...msg,
-                  values: [
-                    ...(msg.values || []),
-                    {
-                      type: MessageValueType.INPUT,
-                      name,
-                      value,
-                      channels: channels ?? {},
-                      createdAt: '',
-                      createdBy: 'You',
-                    },
-                  ],
-                })
-              : msg
-          )
-      );
-
-      const response = await addInputToMessage({
-        messageId,
-        name,
-        value,
-        channels,
-      });
-
-      queryClient.setQueryData<Message[]>(
-        ['messages', finalThreadId],
-        (old = []) =>
-          old.map((msg) => (msg.id === response.id ? response : msg))
-      );
-
-      return response;
-    },
-    onError: (error) => {
-      console.error('Error updating message:', error);
-      toast.error('Failed to update message. Please try again.');
-      if (activeThread?.id) {
-        queryClient.setQueryData<Message[]>(
-          ['messages', activeThread.id],
-          (old = []) => old.filter((msg) => !msg.optimistic)
-        );
-      }
     },
     retry: false,
   });
@@ -239,7 +177,7 @@ export function useWorkspaceMessages(
     isLoading: isLoading || isFetching,
     sendMessage,
     postMessageMutation,
-    addInputToMessageMutation,
+
     isSendingMessage: postMessageMutation.isPending,
     isBotResponding,
     queryMessages: { data: messages, isLoading, error, refetch },

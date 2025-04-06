@@ -1,7 +1,6 @@
-'use client';
-
 import {
   createThread,
+  deleteThread,
   fetchThreads,
   updateThread,
 } from '@/apis/message-threads';
@@ -76,6 +75,23 @@ export function useWorkspaceThreads() {
             thread.id === updatedThread.id ? updatedThread : thread
           )
       );
+    },
+  });
+
+  const deleteThreadMutation = useMutation({
+    mutationFn: (threadId: string) => deleteThread(threadId),
+    onSuccess: (_, threadId) => {
+      // Remove the thread from the cache
+      queryClient.setQueryData(
+        ['threads', activeWorkspace?.id],
+        (oldThreads: MessageThread[] = []) =>
+          oldThreads.filter((thread) => thread.id !== threadId)
+      );
+
+      // If the deleted thread was active, clear it
+      if (activeThread?.id === threadId) {
+        setActiveThread(null);
+      }
     },
   });
 
@@ -182,5 +198,7 @@ export function useWorkspaceThreads() {
     handleCancelThread,
     handleToggleFavorite,
     updateThreadMetadata,
+    handleDeleteThread: (threadId: string) =>
+      deleteThreadMutation.mutate(threadId),
   };
 }

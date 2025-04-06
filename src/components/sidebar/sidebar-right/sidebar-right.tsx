@@ -1,5 +1,3 @@
-'use client';
-
 import type React from 'react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -18,11 +16,13 @@ import {
   SidebarHeader,
 } from '@/components/ui/sidebar';
 
+import { MessageSquare } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useWorkspaceThreadComments } from '../../../hooks/use-workspace-thread-comments';
 import { MessageComment } from '../../../models/message-comment';
 import { getInitials } from '../../../utils/initials';
+import { Skeleton } from '../../ui/skeleton';
 
 export function SidebarRight() {
   const { comments, isLoading, addComment, isAddingComment } =
@@ -123,15 +123,34 @@ export function SidebarRight() {
           <ScrollArea className="h-full">
             <div className="space-y-3 p-4">
               {isLoading ? (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-sm text-muted-foreground">
-                    Loading comments...
-                  </p>
+                <div className="flex flex-col space-y-4 p-4">
+                  {Array(3)
+                    .fill(0)
+                    .map((_, index) => (
+                      <div
+                        key={index}
+                        className="rounded-lg border p-3 animate-pulse"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                          <div className="flex-1 space-y-1">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-3 w-16" />
+                          </div>
+                        </div>
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4 mt-1" />
+                      </div>
+                    ))}
                 </div>
               ) : comments.length === 0 ? (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-sm text-muted-foreground">
-                    No comments yet
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                  <div className="rounded-full bg-primary/10 p-4 mb-4">
+                    <MessageSquare className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">No comments yet</h3>
+                  <p className="text-muted-foreground mb-6 max-w-xs">
+                    Be the first to add a comment to this thread.
                   </p>
                 </div>
               ) : (

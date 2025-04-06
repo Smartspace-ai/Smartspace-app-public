@@ -1,5 +1,3 @@
-'use client';
-
 import { Button } from '@/components/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FileText, Paperclip, X } from 'lucide-react';
@@ -48,7 +46,7 @@ export default function ChatComposer({
     // Clear previous preview URLs to avoid memory leaks
     imagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
 
-    // Create new preview URLs based on selectedImages only
+    // Create new preview URLs based solely on selectedImages
     const newPreviewUrls = selectedImages.map((file) =>
       URL.createObjectURL(file)
     );
@@ -58,7 +56,8 @@ export default function ChatComposer({
     return () => {
       newPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [imagePreviewUrls, selectedImages]); // Removed imagePreviewUrls from dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedImages]);
 
   // Handle file selection from the file input
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

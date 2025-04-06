@@ -63,31 +63,3 @@ export async function postMessage({
     throw new Error('Failed to post message');
   }
 }
-
-/**
- * Updates a specific message with a new input value.
- */
-export async function addInputToMessage({
-  messageId,
-  name,
-  value,
-  channels,
-}: {
-  messageId: string;
-  name: string;
-  value: any;
-  channels?: Record<string, number> | null;
-}): Promise<Message> {
-  try {
-    const response = await webApi.post(`/messages/${messageId}/values`, {
-      name,
-      value,
-      channels,
-    });
-
-    return new Message(response.data);
-  } catch (error) {
-    console.error('Error updating message input:', error);
-    throw new Error('Failed to update message input');
-  }
-}
