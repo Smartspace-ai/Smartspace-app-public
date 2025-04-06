@@ -165,16 +165,6 @@ export function useWorkspaceThreads() {
     threadId,
   ]);
 
-  // useEffect to check if activeThread is being reset
-  // useEffect(() => {
-  //   console.log(
-  //     'activeThread in useEffect:',
-  //     activeThread?.name,
-  //     'ID:',
-  //     activeThread?.id
-  //   );
-  // }, [activeThread]);
-
   return {
     threads,
     isLoading,

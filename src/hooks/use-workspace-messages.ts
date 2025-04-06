@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  addBotResponse,
-  addInputToMessage,
-  fetchMessages,
-  postMessage,
-} from '@/apis/messages';
+import { addInputToMessage, fetchMessages, postMessage } from '@/apis/messages';
 import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import {
   Message,
@@ -18,6 +13,7 @@ import { Workspace } from '@/models/workspace';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 
 export function useWorkspaceMessages(
@@ -29,6 +25,9 @@ export function useWorkspaceMessages(
   const activeWorkspace = passedWorkspace ?? context?.activeWorkspace;
 
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  const { threadId: urlThreadId } = useParams<{ threadId: string }>();
 
   const {
     data: messages = [],
@@ -200,52 +199,32 @@ export function useWorkspaceMessages(
 
   const [isBotResponding, setIsBotResponding] = useState(false);
 
-  const addBotResponseMutation = useMutation<
-    Message,
-    Error,
-    {
-      threadId: string;
-      threadTitle: string;
-    }
-  >({
-    mutationFn: async ({ threadId, threadTitle }) => {
-      setIsBotResponding(true);
-      return await addBotResponse(threadId, threadTitle);
-    },
-    onSuccess: (response) => {
-      queryClient.setQueryData<Message[]>(
-        ['messages', response.messageThreadId],
-        (old = []) => [...old, response]
-      );
-      setIsBotResponding(false);
-    },
-    onError: () => {
-      setIsBotResponding(false);
-    },
-  });
-
   const sendMessage = (
     message?: string,
     contentList?: MessageCreateContent[],
     files?: MessageFile[]
   ) => {
-    if (!activeThread) return;
+    const threadId = activeThread?.id || urlThreadId;
 
     setIsBotResponding(true);
     postMessageMutation.mutate(
       {
-        threadId: activeThread.id,
+        threadId: threadId,
         message,
         contentList,
         files,
       },
       {
         onSuccess: () => {
-          if (activeThread.name) {
-            addBotResponseMutation.mutate({
-              threadId: activeThread.id,
-              threadTitle: activeThread.name,
-            });
+          setIsBotResponding(false);
+
+          if (!activeThread) {
+            // We are creating a new thread, so refresh
+            if (activeWorkspace?.id) {
+              queryClient.invalidateQueries({
+                queryKey: ['threads', activeWorkspace?.id],
+              });
+            }
           }
         },
         onError: () => {

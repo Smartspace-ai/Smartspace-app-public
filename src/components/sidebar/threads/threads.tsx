@@ -28,14 +28,12 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { renameThread } from '../../../apis/message-threads';
-import useSmartSpaceChat from '../../../contexts/smartspace-context';
 import { MessageThread } from '../../../models/message-threads';
 import { getAvatarColour } from '../../../utils/avatar-colour';
 import { getInitials } from '../../../utils/initials';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
 export function Threads() {
-  const { activeWorkspace } = useSmartSpaceChat();
   const {
     threads,
     activeThread,

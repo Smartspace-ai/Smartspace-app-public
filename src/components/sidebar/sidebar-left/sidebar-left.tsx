@@ -1,7 +1,9 @@
 import { useMsal } from '@azure/msal-react';
 import { LogOut, Plus } from 'lucide-react';
 import { ComponentProps, useContext } from 'react';
+import { useNavigate } from 'react-router';
 import { Logo } from '../../../assets/logo';
+import useSmartSpaceChat from '../../../contexts/smartspace-context';
 import { UserContext } from '../../../hooks/use-user-information';
 import { getAvatarColour } from '../../../utils/avatar-colour';
 import { getInitials } from '../../../utils/initials';
@@ -25,13 +27,24 @@ import Threads from '../threads/threads';
 import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
+  const { activeWorkspace, setActiveThread } = useSmartSpaceChat();
   const { graphData, graphPhoto } = useContext(UserContext);
   const { instance } = useMsal();
+  const navigate = useNavigate();
 
   const activeUser = {
     name: graphData?.displayName ?? 'User',
     email: graphData?.mail ?? '',
     profilePhoto: graphPhoto || '',
+  };
+
+  // Function to add a new thread
+  const handleNewThread = () => {
+    const newThreadId = crypto.randomUUID();
+    if (activeWorkspace) {
+      setActiveThread(null);
+      navigate(`/${activeWorkspace.id}/${newThreadId}`, { replace: true });
+    }
   };
 
   const handleLogout = () => {
@@ -49,11 +62,11 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
   };
 
   return (
-    <Sidebar side="left" className="ss-sidebar__left  border-r ">
-      <SidebarHeader className="h-[55px] flex items-center px-4  border-b bg-background">
+    <Sidebar side="left" className="ss-sidebar__left border-r" {...props}>
+      <SidebarHeader className="h-[55px] flex items-center px-4 border-b bg-background">
         {/* Logo Section */}
         <div className="flex items-center justify-between w-full gap-8">
-          {/* logo */}
+          {/* Logo */}
           <Logo />
 
           {/* User Profile */}
@@ -105,15 +118,15 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-0 py-0 overflow-auto  h-full">
+      <SidebarContent className="px-0 py-0 overflow-auto h-full">
         {/* Workspace Selector */}
-        <WorkspaceSelector></WorkspaceSelector>
+        <WorkspaceSelector />
         {/* Threads Section */}
-        <Threads></Threads>
+        <Threads />
       </SidebarContent>
 
       <SidebarFooter className="border-t p-4 mt-auto sticky bottom-0 bg-background">
-        <Button className="w-full gap-2 text-xs h-9">
+        <Button onClick={handleNewThread} className="w-full gap-2 text-xs h-9">
           <Plus className="h-3.5 w-3.5" />
           New Thread
         </Button>

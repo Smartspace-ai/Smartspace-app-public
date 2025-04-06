@@ -28,6 +28,7 @@ export interface ContentItem {
   text?: string;
   image?: MessageFile;
 }
+
 interface MessageValueProps {
   createdBy: string;
   createdAt: string;
@@ -113,7 +114,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <span className="text-xs  font-medium">
+            <span className="text-xs font-medium">
               {isBotResponse ? 'Chatbot' : createdBy}
             </span>
             <span className="text-xs text-muted-foreground">
@@ -138,7 +139,6 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
             title="Copy"
           >
             <Copy className="h-3.5 w-3.5" />
-            {/* {copiedMessageId === message.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} */}
           </Button>
         </div>
       </div>
@@ -149,10 +149,8 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
           {content &&
             (content as MessageContent[]).map((item, i) => {
               if (item.text) {
-                // <-- ADDED KEY
                 return <MyMarkdown key={`content-${i}`} text={item.text} />;
               } else if (item.image) {
-                // <-- ADDED KEY
                 return (
                   <ChatMessageImage
                     key={`image-${i}`}
@@ -192,7 +190,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
             </div>
           )}
 
-          {/** Souyrces */}
+          {/** Sources */}
           {(sources || []).map((source, idx) => (
             <ChatMessageSources
               key={idx}
@@ -204,179 +202,6 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
       </div>
     </div>
   );
-
-  // else {
-  //   return (
-  //     <div
-  //       className="flex items-start gap-3 py-3 mb-6"
-  //       onMouseEnter={() => setShowCopyButton(true)}
-  //       onMouseLeave={() => setShowCopyButton(false)}
-  //     >
-  //       <div className="flex-1 max-w-[calc(100%-3rem)]">
-  //         <div className="flex items-center gap-2 mb-1">
-  //           <span className="text-sm font-medium">{createdBy || 'You'}</span>
-  //           <span className="text-xs text-muted-foreground">
-  //             {createdAt
-  //               ? parseDateTime(createdAt, 'Do MMMM YYYY, h:mm a')
-  //               : ''}
-  //           </span>
-  //         </div>
-
-  //         {isBotResponse ? (
-  //           <Card className="bg-card border shadow-sm relative">
-  //             <CardContent className="p-4">
-  //               <div className="prose prose-sm max-w-none dark:prose-invert">
-  //                 {content &&
-  //                   (content as MessageContent[]).map((item, i) => {
-  //                     if (item.text) {
-  //                       // <-- ADDED KEY
-  //                       return (
-  //                         <MyMarkdown key={`content-${i}`} text={item.text} />
-  //                       );
-  //                     } else if (item.image) {
-  //                       // <-- ADDED KEY
-  //                       return (
-  //                         <ChatMessageImage
-  //                           key={`image-${i}`}
-  //                           image={item.image}
-  //                           name={item.image.name}
-  //                           useMessageFile={useMessageFile}
-  //                         />
-  //                       );
-  //                     }
-  //                     return null;
-  //                   })}
-  //               </div>
-
-  //               {/* Copy button */}
-  //               {showCopyButton && copyContent && (
-  //                 <div className="absolute top-2 right-2">
-  //                   <TooltipProvider>
-  //                     <Tooltip>
-  //                       <TooltipTrigger asChild>
-  //                         <Button
-  //                           variant="ghost"
-  //                           size="icon"
-  //                           className="h-7 w-7 rounded-full"
-  //                           onClick={handleCopy}
-  //                         >
-  //                           {isCopied ? (
-  //                             <Check className="h-4 w-4" />
-  //                           ) : (
-  //                             <Copy className="h-4 w-4" />
-  //                           )}
-  //                         </Button>
-  //                       </TooltipTrigger>
-  //                       <TooltipContent>
-  //                         <p>{isCopied ? 'Copied!' : 'Copy to clipboard'}</p>
-  //                       </TooltipContent>
-  //                     </Tooltip>
-  //                   </TooltipProvider>
-  //                 </div>
-  //               )}
-
-  //               {/* Sources section */}
-  //               {isBotResponse && (sources || []).length > 0 && (
-  //                 <div className="mt-4 pt-4 border-t border-border">
-  //                   <div className="flex items-center gap-2 mb-2">
-  //                     <span className="text-xs font-medium">Sources</span>
-  //                     <Badge className="text-xs px-1.5 py-0">
-  //                       {sources?.length}
-  //                     </Badge>
-  //                   </div>
-  //                   <ul className="space-y-2">
-  //                     {(sources || []).map((source, idx) => (
-  //                       <ChatMessageSources
-  //                         key={idx}
-  //                         source={source}
-  //                         useQueryFiles={useQueryFiles}
-  //                       />
-  //                     ))}
-  //                   </ul>
-  //                 </div>
-  //               )}
-
-  //               {/* Form section */}
-  //               {showForm && (
-  //                 <div className="mt-4 pt-4 border-t border-border">
-  //                   <JsonForms
-  //                     schema={userOutput.schema as JsonSchema}
-  //                     data={responseFormData}
-  //                     renderers={materialRenderers}
-  //                     cells={materialCells}
-  //                     readonly={userInput !== undefined}
-  //                     onChange={({ data, errors }) => {
-  //                       setResponseFormData(data);
-  //                       setResponseFormValid(!errors?.length);
-  //                     }}
-  //                   />
-  //                   <div className="flex justify-end mt-2">
-  //                     <Button
-  //                       size="sm"
-  //                       disabled={!responseFormValid}
-  //                       onClick={() =>
-  //                         addValueToMessage?.('_user', responseFormData)
-  //                       }
-  //                     >
-  //                       Send
-  //                     </Button>
-  //                   </div>
-  //                 </div>
-  //               )}
-
-  //               {/* Files section */}
-  //               {files?.[0]?.id && (
-  //                 <div className="mt-4 pt-4 border-t border-border">
-  //                   <ChatMessageAttachmentList
-  //                     downloadFile={downloadFile}
-  //                     saveFile={saveFile}
-  //                     files={files ?? []}
-  //                   />
-  //                 </div>
-  //               )}
-  //             </CardContent>
-  //           </Card>
-  //         ) : (
-  //           <div className="text-sm">
-  //             <div className="prose prose-sm max-w-none dark:prose-invert">
-  //               {content &&
-  //                 (content as MessageContent[]).map((item, i) => {
-  //                   if (item.text) {
-  //                     // <-- ADDED KEY
-  //                     return (
-  //                       <MyMarkdown key={`content-${i}`} text={item.text} />
-  //                     );
-  //                   } else if (item.image) {
-  //                     // <-- ADDED KEY
-  //                     return (
-  //                       <ChatMessageImage
-  //                         key={`image-${i}`}
-  //                         image={item.image}
-  //                         name={item.image.name}
-  //                         useMessageFile={useMessageFile}
-  //                       />
-  //                     );
-  //                   }
-  //                   return null;
-  //                 })}
-  //             </div>
-
-  //             {/* Files section for user messages */}
-  //             {files?.[0]?.id && (
-  //               <div className="mt-2">
-  //                 <ChatMessageAttachmentList
-  //                   downloadFile={downloadFile}
-  //                   saveFile={saveFile}
-  //                   files={files ?? []}
-  //                 />
-  //               </div>
-  //             )}
-  //           </div>
-  //         )}
-  //       </div>
-  //     </div>
-  //   );
-  // }
 };
 
 interface ChatMessageProps {
@@ -466,7 +291,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
   const saveCollection = (nextType: MessageValueType) => {
     results.push(
       <ValueCollection
-        key={`collection-${collectionKey++}`} // <-- ADDED KEY
+        key={`collection-${collectionKey++}`}
         createdBy={createdBy}
         createdAt={createdAt}
         type={currentType}
@@ -502,8 +327,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
         currentType = value.type;
       }
 
-      // If we detect a type change mid-iteration,
-      // "commit" the previous chunk before continuing
+      // If we detect a type change mid-iteration, "commit" the previous chunk before continuing
       if (currentType !== value.type) {
         if (!valuesSavedToCollection) {
           saveCollection(value.type);
@@ -563,7 +387,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
 
               results.push(
                 <ValueCollection
-                  key={`collection-${collectionKey++}`} // <-- ADDED KEY
+                  key={`collection-${collectionKey++}`}
                   createdBy={createdBy}
                   createdAt={createdAt}
                   type={currentType}
@@ -637,7 +461,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
   if (!valuesSavedToCollection) {
     results.push(
       <ValueCollection
-        key={`collection-final-${collectionKey++}`} // <-- ADDED KEY
+        key={`collection-final-${collectionKey++}`}
         createdBy={createdBy}
         createdAt={createdAt}
         type={currentType}

@@ -91,25 +91,3 @@ export async function addInputToMessage({
     throw new Error('Failed to update message input');
   }
 }
-
-/**
- * Adds a bot response to a thread.
- */
-export async function addBotResponse(
-  threadId: string,
-  threadTitle: string
-): Promise<Message> {
-  try {
-    const response = await webApi.post(
-      `/messageThreads/${threadId}/botResponse`,
-      {
-        threadTitle,
-      }
-    );
-
-    return new Message(response.data);
-  } catch (error) {
-    console.error('Error getting bot response:', error);
-    throw new Error('Failed to get bot response');
-  }
-}
