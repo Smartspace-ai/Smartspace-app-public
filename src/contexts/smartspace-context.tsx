@@ -1,5 +1,5 @@
 import type React from 'react';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { MessageThread } from '../models/message-threads';
 import type { Workspace } from '../models/workspace';
 
@@ -30,6 +30,8 @@ type SmartSpaceChatContextType = {
   activeThread: MessageThread | null;
   setActiveWorkspace: (workspace: Workspace) => void;
   setActiveThread: (thread: MessageThread | null) => void;
+  setActiveWorkspaceId: (workspaceId: string | null) => void;
+  setActiveThreadId: (threadId: string | null) => void;
 };
 
 // Create the context with a default value
@@ -57,6 +59,11 @@ export const SmartSpaceChatProvider: React.FC<{
 
   // Local drafts
   const [localDrafts, setLocalDrafts] = useState<Record<string, string>>({});
+
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(
+    null
+  );
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 
   // Workspace selection state (moved from WorkspaceSelectionProvider)
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
@@ -102,44 +109,45 @@ export const SmartSpaceChatProvider: React.FC<{
   };
 
   // When workspace changes, clear the active thread if it doesn't belong to the new workspace
-  useEffect(() => {
-    console.log(
-      'Checking thread-workspace relationship:',
-      'Thread:',
-      activeThread?.name,
-      'Thread ID:',
-      activeThread?.id,
-      'Workspace:',
-      activeWorkspace?.name,
-      'Workspace ID:',
-      activeWorkspace?.id
-    );
+  // useEffect(() => {
+  //   console.log(
+  //     'Checking thread-workspace relationship:',
+  //     'Thread:',
+  //     activeThread?.name,
+  //     'Thread ID:',
+  //     activeThread?.id,
+  //     'Workspace:',
+  //     activeWorkspace?.name,
+  //     'Workspace ID:',
+  //     activeWorkspace?.id
+  //   );
 
-    // Check if we need to clear the thread when workspace changes
-    if (activeThread && activeWorkspace) {
-      // Get the thread's workspace ID from the thread object or from a related property
-      // Since we don't have a direct workspaceId property, we need to check if the thread
-      // belongs to the current workspace in a different way
+  //   // Check if we need to clear the thread when workspace changes
+  //   if (activeThread && activeWorkspace) {
+  //     // Get the thread's workspace ID from the thread object or from a related property
+  //     // Since we don't have a direct workspaceId property, we need to check if the thread
+  //     // belongs to the current workspace in a different way
 
-      // Option 1: If threads are fetched per workspace, we can assume any active thread
-      // from a previous workspace should be cleared when workspace changes
-      const previousWorkspaceId = activeThread.messageThreadId?.split('-')[0];
-      const threadWorkspaceId = previousWorkspaceId || null;
+  //     // Option 1: If threads are fetched per workspace, we can assume any active thread
+  //     // from a previous workspace should be cleared when workspace changes
+  //     const previousWorkspaceId = activeThread.messageThreadId?.split('-')[0];
+  //     const threadWorkspaceId = previousWorkspaceId || null;
 
-      console.log(
-        'Thread workspace check:',
-        'Thread workspace ID:',
-        threadWorkspaceId,
-        'Current workspace ID:',
-        activeWorkspace.id
-      );
+  //     console.log(
+  //       'Thread workspace check:',
+  //       'Thread workspace ID:',
+  //       threadWorkspaceId,
+  //       'Current workspace ID:',
+  //       activeWorkspace.id
+  //     );
 
-      if (threadWorkspaceId && threadWorkspaceId !== activeWorkspace.id) {
-        console.log('Clearing active thread - belongs to different workspace');
-        setActiveThread(null);
-      }
-    }
-  }, [activeWorkspace]); // Only run when workspace changes, not when thread changes
+  //     if (threadWorkspaceId && threadWorkspaceId !== activeWorkspace.id) {
+  //       console.log('Clearing active thread - belongs to different workspace');
+  //       setActiveThread(null);
+  //     }
+  //   }
+  // }, [activeThread, activeWorkspace]);
+  // Only run when workspace changes, not when thread changes
 
   // Provide the context value
   const contextValue = {
@@ -181,6 +189,8 @@ export const SmartSpaceChatProvider: React.FC<{
         );
       }
     },
+    setActiveWorkspaceId,
+    setActiveThreadId,
   };
 
   return (

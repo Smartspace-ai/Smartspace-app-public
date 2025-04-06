@@ -100,110 +100,114 @@ export function SidebarRight() {
   }, [comments]);
 
   return (
-    <Sidebar side="right" className="border-l">
-      <SidebarHeader className="h-[55px] shrink-0 flex justify-between border-b px-3">
-        <div className="flex flex-1 items-center gap-2">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbPage className="line-clamp-1 flex items-center gap-2">
-                  Comments
-                  <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-xs font-medium">
-                    {comments.length}
-                  </div>
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent className="p-0">
-        <ScrollArea className="h-full">
-          <div className="space-y-3 p-4">
-            {isLoading ? (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-sm text-muted-foreground">
-                  Loading comments...
-                </p>
-              </div>
-            ) : comments.length === 0 ? (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-sm text-muted-foreground">No comments yet</p>
-              </div>
-            ) : (
-              comments.map((comment: MessageComment) => (
-                <div
-                  key={comment.id}
-                  className="rounded-lg border p-3 transition-all shadow-md hover:shadow-lg"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Avatar className="h-7 w-7">
-                      <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                        {getInitials(comment.createdBy)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">
-                        {comment.createdBy}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(comment.createdAt)}
-                      </p>
+    <Sidebar side="right" className="border-l bg-background shadow-md">
+      <div className="bg-white flex flex-col h-full">
+        <SidebarHeader className="h-[55px] shrink-0 flex justify-between border-b px-3">
+          <div className="flex flex-1 items-center gap-2">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="line-clamp-1 flex items-center gap-2">
+                    Comments
+                    <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-xs font-medium">
+                      {comments.length}
                     </div>
-                  </div>
-                  <p className="text-sm leading-relaxed">{comment.content}</p>
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent className="p-0">
+          <ScrollArea className="h-full">
+            <div className="space-y-3 p-4">
+              {isLoading ? (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-sm text-muted-foreground">
+                    Loading comments...
+                  </p>
                 </div>
-              ))
-            )}
-            <div ref={commentsEndRef} />
-          </div>
-        </ScrollArea>
-      </SidebarContent>
-
-      <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)] h-55">
-        <div className="flex flex-col rounded-lg border bg-background">
-          <textarea
-            ref={textareaRef}
-            value={newComment}
-            onChange={handleCommentChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Add a comment..."
-            className="min-h-[60px] max-h-[200px] w-full resize-none rounded-t-lg border-0 bg-transparent px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-0"
-            rows={1}
-          />
-
-          <div className="flex items-center justify-between px-4 py-2 bg-background">
-            <div className="flex items-center">
-              <span
-                className={`text-xs ${
-                  charCount > MAX_CHAR_LIMIT * 0.8
-                    ? charCount > MAX_CHAR_LIMIT
-                      ? 'text-red-500'
-                      : 'text-amber-500'
-                    : 'text-muted-foreground'
-                }`}
-              >
-                {charCount}/{MAX_CHAR_LIMIT}
-              </span>
+              ) : comments.length === 0 ? (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-sm text-muted-foreground">
+                    No comments yet
+                  </p>
+                </div>
+              ) : (
+                comments.map((comment: MessageComment) => (
+                  <div
+                    key={comment.id}
+                    className="rounded-lg border p-3 transition-all shadow-md hover:shadow-lg"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Avatar className="h-7 w-7">
+                        <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                          {getInitials(comment.createdBy)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">
+                          {comment.createdBy}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(comment.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm leading-relaxed">{comment.content}</p>
+                  </div>
+                ))
+              )}
+              <div ref={commentsEndRef} />
             </div>
+          </ScrollArea>
+        </SidebarContent>
 
-            <Button
-              onClick={handleAddComment}
-              variant="default"
-              size="sm"
-              className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
-                !newComment.trim() ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              disabled={
-                !newComment.trim() || newComment.length > MAX_CHAR_LIMIT
-              }
-            >
-              <span>Send</span>
-            </Button>
+        <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)] h-55">
+          <div className="flex flex-col rounded-lg border bg-background">
+            <textarea
+              ref={textareaRef}
+              value={newComment}
+              onChange={handleCommentChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Add a comment..."
+              className="min-h-[60px] max-h-[200px] w-full resize-none rounded-t-lg border-0 bg-transparent px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-0"
+              rows={1}
+            />
+
+            <div className="flex items-center justify-between px-4 py-2 bg-background">
+              <div className="flex items-center">
+                <span
+                  className={`text-xs ${
+                    charCount > MAX_CHAR_LIMIT * 0.8
+                      ? charCount > MAX_CHAR_LIMIT
+                        ? 'text-red-500'
+                        : 'text-amber-500'
+                      : 'text-muted-foreground'
+                  }`}
+                >
+                  {charCount}/{MAX_CHAR_LIMIT}
+                </span>
+              </div>
+
+              <Button
+                onClick={handleAddComment}
+                variant="default"
+                size="sm"
+                className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
+                  !newComment.trim() ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                disabled={
+                  !newComment.trim() || newComment.length > MAX_CHAR_LIMIT
+                }
+              >
+                <span>Send</span>
+              </Button>
+            </div>
           </div>
-        </div>
-      </SidebarFooter>
+        </SidebarFooter>
+      </div>
     </Sidebar>
   );
 }

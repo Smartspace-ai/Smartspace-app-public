@@ -26,14 +26,29 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { renameThread } from '../../../apis/message-threads';
+import useSmartSpaceChat from '../../../contexts/smartspace-context';
 import { MessageThread } from '../../../models/message-threads';
+import { getAvatarColour } from '../../../utils/avatar-colour';
+import { getInitials } from '../../../utils/initials';
+import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
 export function Threads() {
-  const { threads, activeThread, isLoading, handleThreadChange } =
-    useWorkspaceThreads();
+  const { activeWorkspace } = useSmartSpaceChat();
+  const {
+    threads,
+    activeThread,
+    isLoading,
+    handleThreadChange,
+    updateThreadMetadata,
+  } = useWorkspaceThreads();
   const [sortOrder, setSortOrder] = useState('newest');
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const { threadId } = useParams<{ threadId?: string }>();
+  const navigate = useNavigate();
 
   const handleNewThread = () => {
     console.log('Creating new thread...');
@@ -64,7 +79,7 @@ export function Threads() {
   return (
     <>
       {/* Fixed Threads Header with Filter */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm">
+      <div className="sticky top-0 z-10  border-b border-gray-100 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <h2 className="text-xs text-gray-500 font-medium uppercase tracking-wide">
             Threads
@@ -77,7 +92,7 @@ export function Threads() {
       </div>
 
       {/* Scrollable Thread List */}
-      <SidebarContent className="px-0 py-0 overflow-auto pb-16 bg-white">
+      <SidebarContent className="px-0 py-0 overflow-auto pb-16 ">
         <div className="space-y-1 px-3 pt-2">
           {isLoading ? (
             <ThreadsLoadingSkeleton />
@@ -92,6 +107,7 @@ export function Threads() {
                 onThreadClick={handleThreadClick}
                 onHover={setHoveredThreadId}
                 onMenuOpenChange={setOpenMenuId}
+                updateThreadMetadata={updateThreadMetadata}
               />
             ))
           ) : (
@@ -202,6 +218,10 @@ type ThreadItemProps = {
   onThreadClick: (thread: MessageThread) => void;
   onHover: (id: string | null) => void;
   onMenuOpenChange: (id: string | null) => void;
+  updateThreadMetadata: (
+    threadId: string,
+    updates: Partial<MessageThread>
+  ) => void;
 };
 
 function ThreadItem({
@@ -212,38 +232,10 @@ function ThreadItem({
   onThreadClick,
   onHover,
   onMenuOpenChange,
+  updateThreadMetadata,
 }: ThreadItemProps) {
-  // Use the avatarName from the MessageThread model
-  const getInitials = () => {
-    return thread.avatarName || 'NA';
-  };
-
-  // Generate a consistent color based on the thread name
-  const getAvatarColor = (name: string) => {
-    const colors = [
-      'bg-[#7C3AED]', // Purple
-      'bg-[#10B981]', // Green
-      'bg-[#3B82F6]', // Blue
-      'bg-[#F59E0B]', // Amber
-      'bg-[#EF4444]', // Red
-      'bg-[#EC4899]', // Pink
-      'bg-[#6366F1]', // Indigo
-      'bg-[#F97316]', // Orange
-      'bg-[#14B8A6]', // Teal
-      'bg-[#06B6D4]', // Cyan
-      'bg-[#84CC16]', // Lime
-      'bg-[#10B981]', // Emerald
-    ];
-
-    // Simple hash function to get a consistent index
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
-  };
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [newThreadName, setNewThreadName] = useState(thread.name);
 
   const handleClick = (e: React.MouseEvent) => {
     // Prevent click if we're clicking on the menu
@@ -256,11 +248,37 @@ function ThreadItem({
     onThreadClick(thread);
   };
 
+  const handleOpenRenameModal = () => {
+    setNewThreadName(thread.name);
+    setIsRenameModalOpen(true);
+  };
+
+  const handleRenameSubmit = async () => {
+    if (newThreadName.trim()) {
+      try {
+        // Call the API to rename the thread
+        await renameThread(thread, newThreadName);
+
+        // Update the thread name in the UI
+        updateThreadMetadata(thread.id, {
+          name: newThreadName,
+        });
+
+        // Close the modal
+        setIsRenameModalOpen(false);
+        toast.success('Thread renamed successfully');
+      } catch (error) {
+        console.error('Error renaming thread:', error);
+        toast.error('Failed to rename thread. Please try again.');
+      }
+    }
+  };
+
   return (
     <div
       id={`thread-${thread.id}`}
-      className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-gray-50 cursor-pointer transition-all rounded-lg ${
-        isActive ? 'bg-slate-200 text-slate-900 shadow-sm' : 'bg-white'
+      className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-gray-200 cursor-pointer transition-all rounded-lg ${
+        isActive ? 'bg-indigo-100 text-slate-900 shadow-sm' : ''
       }`}
       onClick={handleClick}
       onMouseEnter={() => onHover(thread.id)}
@@ -272,12 +290,12 @@ function ThreadItem({
     >
       {/* Thread Avatar with Initials */}
       <Avatar
-        className={`h-8 w-8 flex-shrink-0 text-white shadow-sm ${getAvatarColor(
+        className={`h-8 w-8 flex-shrink-0 text-white shadow-sm ${getAvatarColour(
           thread.name
         )}`}
       >
         <AvatarFallback className="text-xs font-medium">
-          {getInitials()}
+          {getInitials(thread.name)}
         </AvatarFallback>
       </Avatar>
 
@@ -316,6 +334,16 @@ function ThreadItem({
             onMenuOpenChange(null);
           }
         }}
+        onRename={handleOpenRenameModal}
+      />
+
+      {/* Rename Modal - Scoped to this thread item */}
+      <ThreadRenameModal
+        isOpen={isRenameModalOpen}
+        onClose={() => setIsRenameModalOpen(false)}
+        threadName={newThreadName}
+        setThreadName={setNewThreadName}
+        onSubmit={handleRenameSubmit}
       />
     </div>
   );
@@ -327,6 +355,7 @@ type ThreadItemMenuProps = {
   isHovered: boolean;
   isMenuOpen: boolean;
   onMenuOpenChange: (open: boolean) => void;
+  onRename: () => void;
 };
 
 function ThreadItemMenu({
@@ -335,6 +364,7 @@ function ThreadItemMenu({
   isHovered,
   isMenuOpen,
   onMenuOpenChange,
+  onRename,
 }: ThreadItemMenuProps) {
   return (
     <DropdownMenu open={isMenuOpen} onOpenChange={onMenuOpenChange}>
@@ -365,7 +395,13 @@ function ThreadItemMenu({
             {thread.favorited ? 'Remove from favorites' : 'Add to favorites'}
           </span>
         </DropdownMenuItem>
-        <DropdownMenuItem className="text-xs py-1.5 px-2 rounded-md">
+        <DropdownMenuItem
+          className="text-xs py-1.5 px-2 rounded-md"
+          onClick={(e) => {
+            e.preventDefault();
+            onRename();
+          }}
+        >
           <Edit className="mr-2 h-3.5 w-3.5 text-gray-500" />
           <span>Rename</span>
         </DropdownMenuItem>

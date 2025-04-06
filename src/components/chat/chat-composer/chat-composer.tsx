@@ -35,9 +35,9 @@ export default function ChatComposer({
   }, [newMessage]);
 
   return (
-    <div className="w-full mt-auto bg-background border-t px-4 py-4">
+    <div className="w-full mt-auto bg-background border-t px-4 py-4 bg-sidebar">
       <div className="max-w-3xl mx-auto">
-        <div className="flex flex-col rounded-md border shadow-sm overflow-hidden">
+        <div className="flex flex-col rounded-md border shadow-sm overflow-hidden bg-white">
           <textarea
             ref={textareaRef}
             value={newMessage}

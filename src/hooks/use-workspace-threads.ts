@@ -11,17 +11,22 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Import the context directly from the file
 import { useSmartSpaceChat } from '@/contexts/smartspace-context';
+import { useNavigate, useParams } from 'react-router-dom';
 import { MessageThread } from '../models/message-threads';
 
 export function useWorkspaceThreads() {
   const queryClient = useQueryClient();
   const { activeWorkspace, setActiveThread, activeThread } =
     useSmartSpaceChat();
-
+  const navigate = useNavigate();
   const [isCreatingThread, setIsCreatingThread] = useState(false);
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const initialThreadSetRef = useRef<Record<string, boolean>>({});
+  const { workspaceId, threadId } = useParams<{
+    workspaceId: string;
+    threadId?: string;
+  }>();
 
   // Fetch threads for the active workspace
   const {
@@ -74,39 +79,16 @@ export function useWorkspaceThreads() {
     },
   });
 
-  // Handle thread selection
   const handleThreadChange = useCallback(
     (thread: MessageThread) => {
-      console.log('Setting active thread:', thread.name, 'ID:', thread.id);
-
       // Create a stable reference to the thread to prevent issues with object identity
       const stableThread = { ...thread };
 
       // Set the active thread with the stable reference
       setActiveThread(stableThread);
-
-      // Store the thread ID to check if it's reset
-      const threadId = thread.id;
-
-      // Check if the thread is still selected after a delay
-      setTimeout(() => {
-        console.log(
-          'Active thread after timeout:',
-          activeThread?.name,
-          'ID:',
-          activeThread?.id,
-          'Expected:',
-          threadId
-        );
-
-        // If the thread was reset, try to set it again
-        if (!activeThread && threadId) {
-          console.log('Thread was reset, attempting to restore');
-          setActiveThread(stableThread);
-        }
-      }, 500);
+      navigate(`/${activeWorkspace?.id}/${stableThread.id}`, { replace: true });
     },
-    [setActiveThread]
+    [activeWorkspace?.id, navigate, setActiveThread]
   );
 
   // Create a new thread
@@ -163,12 +145,30 @@ export function useWorkspaceThreads() {
       !activeThread &&
       !initialThreadSetRef.current[activeWorkspace.id]
     ) {
-      // Set the first thread as active
-      handleThreadChange(threads[0]);
-      // Mark this workspace as having its initial thread set
+      let threadToSelect = threads[0];
+      console.log(
+        'Setting initial thread to first thread in workspace:',
+        threadId
+      );
+      // If a threadId exists in the URL, try to find it in the threads array
+      console.log('xxxxxxxxxxxxxxxxxxx threadId:', threadId);
+      if (threadId) {
+        const found = threads.find((thread) => thread.id === threadId);
+        if (found) {
+          threadToSelect = found;
+        }
+      }
+      handleThreadChange(threadToSelect);
+      // Mark that this workspace has had its initial thread set
       initialThreadSetRef.current[activeWorkspace.id] = true;
     }
-  }, [activeWorkspace?.id, threads, activeThread, handleThreadChange]);
+  }, [
+    activeWorkspace?.id,
+    threads,
+    activeThread,
+    handleThreadChange,
+    threadId,
+  ]);
 
   // useEffect to check if activeThread is being reset
   useEffect(() => {

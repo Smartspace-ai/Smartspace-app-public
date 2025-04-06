@@ -49,11 +49,8 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
   };
 
   return (
-    <Sidebar
-      side="left"
-      className="ss-sidebar__left  border-r border-gray-100 bg-white"
-    >
-      <SidebarHeader className="h-[55px] flex items-center px-4 bg-white border-b">
+    <Sidebar side="left" className="ss-sidebar__left  border-r ">
+      <SidebarHeader className="h-[55px] flex items-center px-4  border-b bg-background">
         {/* Logo Section */}
         <div className="flex items-center justify-between w-full gap-8">
           {/* logo */}

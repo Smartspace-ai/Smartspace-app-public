@@ -1,85 +1,100 @@
-// Feel free to generate your own theme at
-// 1. https://oxidus.vercel.app/ (Preferred)
-// **** Note: Check the line ending for styles --chart-1, they are missing ; when copied from the above link.
-// 2. https://ui.shadcn.com/themes
-// 3. https://javisperez.github.io/tailwindcolorshades
-// 4. https://ui.shadcn.com/colors
+// _theme.scss
 
-// Primary: #6443f4
+// Primary input color
+$primary-hex: #6443f4;
+
+// Extract HSL from HEX
+$hue: hue($primary-hex);
+$saturation: saturation($primary-hex);
+$lightness: lightness($primary-hex);
+
+// Helper to produce "H S% L%" string
+@function hsl-token($h, $s, $l) {
+  @return '#{$h} #{$s} #{$l}';
+}
 
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 250.59 54.84% 6.08%;
+    --foreground: #{hsl-token(250.59, 54.84%, 6.08%)};
 
-    --primary: 251.19 88.94% 60.98%;
-    --primary-foreground: 253.33 90% 96.08%;
+    --primary: #{hsl-token($hue, $saturation, $lightness)};
+    --primary-foreground: #{hsl-token($hue + 2.14, 90%, 96.08%)};
 
-    --card: 247.5 80% 98.04%;
-    --card-foreground: 250.59 54.84% 6.08%;
+    --card: #{hsl-token(247.5, 80%, 98.04%)};
+    --card-foreground: #{hsl-token(250.59, 54.84%, 6.08%)};
 
     --popover: 0 0% 100%;
-    --popover-foreground: 250.59 54.84% 6.08%;
+    --popover-foreground: #{hsl-token(250.59, 54.84%, 6.08%)};
 
-    --secondary: 251.54 86.67% 94.12%;
+    --secondary: #{hsl-token($hue + 0.35, 86.67%, 94.12%)};
     --secondary-foreground: 0 0% 0%;
 
-    --muted: 253.33 90% 96.08%;
+    --muted: #{hsl-token($hue + 2.14, 90%, 96.08%)};
     --muted-foreground: 0 0% 40%;
 
-    --accent: 253.33 90% 96.08%;
-    --accent-foreground: 251.11 57.45% 9.22%;
+    --accent: #{hsl-token($hue + 2.14, 90%, 96.08%)};
+    --accent-foreground: #{hsl-token($hue - 0.08, 57.45%, 9.22%)};
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 251.67 90% 92.16%;
-    --input: 250.91 25% 82.75%;
-    --ring: 251.19 88.94% 60.98%;
+    --border: #{hsl-token($hue + 0.48, 90%, 92.16%)};
+    --input: #{hsl-token($hue - 0.28, 25%, 82.75%)};
+    --ring: #{hsl-token($hue, $saturation, $lightness)};
 
-    --chart-1: 251.19 88.94% 60.98%;
-    --chart-2: 251.13 89.35% 66.86%;
-    --chart-3: 250.96 89.15% 74.71%;
-    --chart-4: 251.13 88.99% 78.63%;
-    --chart-5: 251.25 88.89% 82.35%;
+    --chart-1: #{hsl-token($hue, $saturation, $lightness)};
+    --chart-2: #{hsl-token($hue - 0.06, 89.35%, 66.86%)};
+    --chart-3: #{hsl-token($hue - 0.23, 89.15%, 74.71%)};
+    --chart-4: #{hsl-token($hue - 0.06, 88.99%, 78.63%)};
+    --chart-5: #{hsl-token($hue + 0.06, 88.89%, 82.35%)};
 
     --radius: 0.5rem;
+
+    --sidebar-background: #{hsl-token($hue, 100%, 99.22%)};
+    --sidebar-foreground: #{hsl-token(250.59, 54.84%, 6.08%)};
+    --sidebar-primary: #{hsl-token($hue, $saturation, $lightness)};
+    --sidebar-primary-foreground: #{hsl-token($hue + 2.14, 90%, 96.08%)};
+    --sidebar-accent: #{hsl-token($hue, $saturation, $lightness)};
+    --sidebar-accent-foreground: #{hsl-token($hue + 2.14, 90%, 96.08%)};
+    --sidebar-border: #{hsl-token($hue + 0.48, 90%, 92.16%)};
+    --sidebar-ring: #{hsl-token($hue, $saturation, $lightness)};
   }
 
   .dark {
     --background: 0 0% 0%;
-    --foreground: 251.54 86.67% 94.12%;
+    --foreground: #{hsl-token($hue + 0.35, 86.67%, 94.12%)};
 
-    --primary: 251.19 88.94% 60.98%;
-    --primary-foreground: 253.33 90% 96.08%;
+    --primary: #{hsl-token($hue, $saturation, $lightness)};
+    --primary-foreground: #{hsl-token($hue + 2.14, 90%, 96.08%)};
 
-    --card: 257.14 22.58% 6.08%;
-    --card-foreground: 251.54 86.67% 94.12%;
+    --card: #{hsl-token(257.14, 22.58%, 6.08%)};
+    --card-foreground: #{hsl-token($hue + 0.35, 86.67%, 94.12%)};
 
     --popover: 0 0% 0%;
-    --popover-foreground: 251.54 86.67% 94.12%;
+    --popover-foreground: #{hsl-token($hue + 0.35, 86.67%, 94.12%)};
 
-    --secondary: 251.61 57.41% 21.18%;
+    --secondary: #{hsl-token($hue + 0.42, 57.41%, 21.18%)};
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 9.8%;
     --muted-foreground: 0 0% 50.2%;
 
-    --accent: 251.61 57.41% 21.18%;
-    --accent-foreground: 251.54 86.67% 94.12%;
+    --accent: #{hsl-token($hue + 0.42, 57.41%, 21.18%)};
+    --accent-foreground: #{hsl-token($hue + 0.35, 86.67%, 94.12%)};
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 251.67 58.06% 12.16%;
-    --input: 250 16.67% 21.18%;
-    --ring: 251.19 88.94% 60.98%;
+    --border: #{hsl-token($hue + 0.48, 58.06%, 12.16%)};
+    --input: #{hsl-token(250, 16.67%, 21.18%)};
+    --ring: #{hsl-token($hue, $saturation, $lightness)};
 
-    --chart-1: 251.19 88.94% 60.98%;
-    --chart-2: 251.2 60.98% 51.76%;
-    --chart-3: 250.96 56.65% 39.8%;
-    --chart-4: 251.13 56.73% 33.53%;
-    --chart-5: 251.25 57.14% 27.45%;
+    --chart-1: #{hsl-token($hue, $saturation, $lightness)};
+    --chart-2: #{hsl-token($hue + 0.01, 60.98%, 51.76%)};
+    --chart-3: #{hsl-token($hue - 0.23, 56.65%, 39.8%)};
+    --chart-4: #{hsl-token($hue - 0.06, 56.73%, 33.53%)};
+    --chart-5: #{hsl-token($hue + 0.06, 57.14%, 27.45%)};
 
     --radius: 0.5rem;
   }

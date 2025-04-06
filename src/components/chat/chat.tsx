@@ -85,7 +85,7 @@ export function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-neutral-100">
+    <div className="flex flex-col h-full bg-gradient-to-b from-background from-10% via-background via-50% to-primary/10 to-100%">
       <ChatHeader />
 
       <ChatBody

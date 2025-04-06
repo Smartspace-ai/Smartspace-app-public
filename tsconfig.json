@@ -15,8 +15,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/components/*": ["./src/components/*"],
-      "@/hooks/*": ["./src/hooks/*"],
       "@/contexts/*": ["./src/contexts/*"],
+      "@/hooks/*": ["./src/hooks/*"]
     },
     "composite": true,
     "jsx": "react-jsx",
