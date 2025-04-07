@@ -9,7 +9,7 @@ export function ChatHeader() {
   const { activeWorkspace, activeThread } = useSmartSpaceChat();
 
   return (
-    <header className="ss-chat__header flex h-[55px] shrink-0 items-center gap-2 bg-background border-b shadow">
+    <header className="ss-chat__header flex h-[54px] shrink-0 items-center gap-2 bg-background border-b ">
       <div className="flex flex-1 items-center gap-2 px-4">
         <SidebarTrigger
           side="left"

@@ -144,7 +144,7 @@ export default function ChatComposer({
       <div className="max-w-3xl mx-auto">
         <div
           ref={dropzoneRef}
-          className={`flex flex-col rounded-md border shadow-sm overflow-hidden bg-white ${
+          className={`flex flex-col rounded-md border shadow-sm overflow-hidden bg-background ${
             isDragging
               ? 'border-primary border-dashed ring-2 ring-primary/20'
               : ''
@@ -263,9 +263,9 @@ export default function ChatComposer({
             >
               {isSending ? (
                 <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce" />
                 </span>
               ) : (
                 'Send'

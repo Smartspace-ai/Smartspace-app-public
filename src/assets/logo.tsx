@@ -1,4 +1,9 @@
-export const Logo = () => {
+import React from 'react';
+
+interface LogoProps {
+  className?: string;
+}
+export const Logo: React.FC<LogoProps> = ({ className }) => {
   return (
     <svg width="100%" height="41px" viewBox="0 0 296 43" version="1.1">
       <title>SmartspaceAi-purple</title>

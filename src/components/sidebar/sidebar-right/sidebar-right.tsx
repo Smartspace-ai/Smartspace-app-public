@@ -101,7 +101,7 @@ export function SidebarRight() {
 
   return (
     <Sidebar side="right" className="border-l bg-background shadow-md">
-      <div className="bg-white flex flex-col h-full">
+      <div className="bg-background flex flex-col h-full">
         <SidebarHeader className="h-[55px] shrink-0 flex justify-between border-b px-3">
           <div className="flex flex-1 items-center gap-2">
             <Breadcrumb>
@@ -157,7 +157,7 @@ export function SidebarRight() {
                 comments.map((comment: MessageComment) => (
                   <div
                     key={comment.id}
-                    className="rounded-lg border p-3 transition-all shadow-md hover:shadow-lg"
+                    className="rounded-lg border bg-card p-3 transition-all shadow-md hover:shadow-lg"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <Avatar className="h-7 w-7">

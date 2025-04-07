@@ -39,7 +39,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../ui/alert-dialog';
+import { ScrollArea } from '../../ui/scroll-area';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
+
+enum SortOrder {
+  NEWEST = 'newest',
+  OLDEST = 'oldest',
+  MOST_REPLIES = 'mostReplies',
+}
 
 export function Threads() {
   const {
@@ -50,9 +57,12 @@ export function Threads() {
     updateThreadMetadata,
     handleDeleteThread,
   } = useWorkspaceThreads();
-  const [sortOrder, setSortOrder] = useState('newest');
+  const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.NEWEST);
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Sort the threads based on the current sort order
+  const sortedThreads = sortThreads(threads, sortOrder);
 
   // Improve the thread selection handling
   const handleThreadClick = (thread: MessageThread) => {
@@ -82,10 +92,40 @@ export function Threads() {
     }
   }, [threads, activeThread, handleThreadChange]);
 
+  function sortThreads(
+    threads: MessageThread[],
+    sortOrder: SortOrder
+  ): MessageThread[] {
+    return [...threads].sort((a, b) => {
+      switch (sortOrder) {
+        case SortOrder.NEWEST:
+          // Sort by most recent (assuming lastUpdatedAt is a Date or timestamp)
+          return (
+            new Date(b.lastUpdatedAt || b.createdAt).getTime() -
+            new Date(a.lastUpdatedAt || a.createdAt).getTime()
+          );
+        case SortOrder.OLDEST:
+          // Sort by oldest
+          return (
+            new Date(a.lastUpdatedAt || a.createdAt).getTime() -
+            new Date(b.lastUpdatedAt || b.createdAt).getTime()
+          );
+        case SortOrder.MOST_REPLIES:
+          // Sort by number of replies/messages
+          return (
+            (b.totalMessages || b.totalMessages) -
+            (a.totalMessages || a.totalMessages)
+          );
+        default:
+          return 0;
+      }
+    });
+  }
+
   return (
     <>
       {/* Fixed Threads Header with Filter */}
-      <div className="sticky top-0 z-10  border-b border-gray-100 shadow-sm">
+      <div className="sticky top-0 z-10 border-t border-b">
         <div className="flex items-center justify-between px-4 py-3">
           <h2 className="text-xs text-gray-500 font-medium uppercase tracking-wide">
             Threads
@@ -98,29 +138,31 @@ export function Threads() {
       </div>
 
       {/* Scrollable Thread List */}
-      <SidebarContent className="px-0 py-0 overflow-auto pb-16 ">
-        <div className="space-y-1 px-3 pt-2">
-          {isLoading ? (
-            <ThreadsLoadingSkeleton />
-          ) : threads.length > 0 ? (
-            threads.map((thread) => (
-              <ThreadItem
-                key={thread.id}
-                thread={thread}
-                isActive={activeThread?.id === thread.id}
-                hoveredThreadId={hoveredThreadId}
-                openMenuId={openMenuId}
-                onThreadClick={handleThreadClick}
-                onHover={setHoveredThreadId}
-                onMenuOpenChange={setOpenMenuId}
-                updateThreadMetadata={updateThreadMetadata}
-                handleDeleteThread={handleDeleteThread}
-              />
-            ))
-          ) : (
-            <EmptyThreadsState />
-          )}
-        </div>
+      <SidebarContent className="p-0">
+        <ScrollArea className="h-full">
+          <div className="space-y-1 px-3 pt-2">
+            {isLoading ? (
+              <ThreadsLoadingSkeleton />
+            ) : threads.length > 0 ? (
+              (sortedThreads || []).map((thread) => (
+                <ThreadItem
+                  key={thread.id}
+                  thread={thread}
+                  isActive={activeThread?.id === thread.id}
+                  hoveredThreadId={hoveredThreadId}
+                  openMenuId={openMenuId}
+                  onThreadClick={handleThreadClick}
+                  onHover={setHoveredThreadId}
+                  onMenuOpenChange={setOpenMenuId}
+                  updateThreadMetadata={updateThreadMetadata}
+                  handleDeleteThread={handleDeleteThread}
+                />
+              ))
+            ) : (
+              <EmptyThreadsState />
+            )}
+          </div>
+        </ScrollArea>
       </SidebarContent>
     </>
   );
@@ -128,7 +170,7 @@ export function Threads() {
 
 type ThreadsFilterProps = {
   sortOrder: string;
-  onSortOrderChange: (value: string) => void;
+  onSortOrderChange: (value: SortOrder) => void;
 };
 
 function ThreadsFilter({ sortOrder, onSortOrderChange }: ThreadsFilterProps) {
@@ -151,23 +193,23 @@ function ThreadsFilter({ sortOrder, onSortOrderChange }: ThreadsFilterProps) {
       >
         <DropdownMenuRadioGroup
           value={sortOrder}
-          onValueChange={onSortOrderChange}
+          onValueChange={(value) => onSortOrderChange(value as SortOrder)}
         >
           <DropdownMenuRadioItem
-            value="newest"
-            className="text-xs py-1.5 px-2 rounded-md flex items-center gap-2"
+            value={SortOrder.NEWEST}
+            className="text-xs cursor-pointer"
           >
             <span>Newest first</span>
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
-            value="oldest"
-            className="text-xs py-1.5 px-2 rounded-md flex items-center gap-2"
+            value={SortOrder.OLDEST}
+            className="text-xs cursor-pointer"
           >
             <span>Oldest first</span>
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
-            value="mostReplies"
-            className="text-xs py-1.5 px-2 rounded-md flex items-center gap-2"
+            value={SortOrder.MOST_REPLIES}
+            className="text-xs cursor-pointer"
           >
             <span>Most replies</span>
           </DropdownMenuRadioItem>
@@ -299,8 +341,8 @@ function ThreadItem({
   return (
     <div
       id={`thread-${thread.id}`}
-      className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-gray-200 cursor-pointer transition-all rounded-lg ${
-        isActive ? 'bg-indigo-100 text-slate-900 shadow-sm' : ''
+      className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-accent cursor-pointer transition-all rounded-lg ${
+        isActive ? 'bg-accent  shadow-sm' : ''
       }`}
       onClick={handleClick}
       onMouseEnter={() => onHover(thread.id)}
@@ -312,7 +354,7 @@ function ThreadItem({
     >
       {/* Thread Avatar with Initials */}
       <Avatar
-        className={`h-8 w-8 flex-shrink-0 text-white shadow-sm ${getAvatarColour(
+        className={`h-8 w-8 flex-shrink-0 shadow-sm ${getAvatarColour(
           thread.name
         )}`}
       >
@@ -323,20 +365,10 @@ function ThreadItem({
 
       <div className="flex-1 min-w-0">
         {/* Thread Title */}
-        <h3
-          className={`text-xs font-medium truncate ${
-            isActive ? 'text-slate-900' : 'text-gray-800'
-          }`}
-        >
-          {thread.name}
-        </h3>
+        <h3 className={`text-xs font-medium truncate `}>{thread.name}</h3>
 
         {/* Thread Details */}
-        <p
-          className={`text-[11px] mt-0.5 ${
-            isActive ? 'text-slate-700' : 'text-gray-500'
-          }`}
-        >
+        <p className={`text-[11px] mt-0.5`}>
           {thread.totalMessages}{' '}
           {thread.totalMessages === 1 ? 'message' : 'messages'} ·{' '}
           {thread.lastUpdated}

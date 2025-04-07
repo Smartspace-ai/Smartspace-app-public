@@ -39,7 +39,7 @@ interface MessageValueProps {
   userInput?: any;
   files: MessageFile[] | null;
   position?: 'left' | 'right';
-  containerRef: React.MutableRefObject<any | null>;
+
   responseData?: any | null;
   useMessageFile: (id: string) => {
     useMessageFileRaw: UseQueryResult<Blob, Error>;
@@ -72,7 +72,6 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
   } = props;
   const [responseFormData, setResponseFormData] = useState<any>(userInput);
   const [responseFormValid, setResponseFormValid] = useState<boolean>(false);
-  const [showCopyButton, setShowCopyButton] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
   const isBotResponse = type === MessageValueType.OUTPUT;
@@ -208,7 +207,7 @@ interface ChatMessageProps {
   userId: string;
   avatar?: string | JSX.Element;
   message: Message;
-  containerRef: React.MutableRefObject<any | null>;
+
   messageId?: string;
   isLast?: boolean;
   responseData?: any | null;
@@ -232,7 +231,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
   const {
     userId,
     message,
-    containerRef,
+
     useQueryFiles,
     downloadFile,
     saveFile,
@@ -294,7 +293,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
         sources={sources}
         userInput={null}
         userOutput={null}
-        containerRef={containerRef}
         useMessageFile={useMessageFile}
         downloadFile={downloadFile}
         saveFile={saveFile}
@@ -387,7 +385,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
                   sources={[]}
                   userOutput={value.value}
                   userInput={userInput?.value}
-                  containerRef={containerRef}
                   useMessageFile={useMessageFile}
                   downloadFile={downloadFile}
                   saveFile={saveFile}
@@ -453,7 +450,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
         sources={sources}
         userOutput={null}
         userInput={null}
-        containerRef={containerRef}
         useMessageFile={useMessageFile}
         downloadFile={downloadFile}
         saveFile={saveFile}

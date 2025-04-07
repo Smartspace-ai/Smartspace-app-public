@@ -36,13 +36,13 @@ export function WorkspaceSelector() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="w-full justify-between text-xs h-9 border border-gray-200 rounded-lg px-3 shadow-sm hover:shadow-md transition-shadow"
+            className="w-full justify-between text-xs h-9 border rounded-lg px-3 shadow-sm hover:shadow-md transition-shadow"
           >
             <div className="flex items-center gap-2 overflow-hidden">
               <Avatar
                 className={`h-5 w-5 ${getAvatarColour(
                   activeWorkspace?.name || ''
-                )} text-white shadow-sm`}
+                )} shadow-sm`}
               >
                 <AvatarFallback className="text-[10px] font-medium">
                   {getInitials(activeWorkspace?.name || '')}
@@ -55,7 +55,7 @@ export function WorkspaceSelector() {
             <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] rounded-lg p-1 shadow-lg border-gray-100 ">
+        <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] rounded-lg p-1 shadow-lg border">
           {workspaces.map((workspace) => (
             <WorkspaceItem
               key={workspace.id}
@@ -82,9 +82,7 @@ function WorkspaceItem({ workspace, onSelect }: WorkspaceItemProps) {
     >
       <div className="flex items-center gap-2 w-full">
         <Avatar
-          className={`h-5 w-5 ${getAvatarColour(
-            workspace.name
-          )} text-white shadow-sm`}
+          className={`h-5 w-5 ${getAvatarColour(workspace.name)} shadow-sm`}
         >
           <AvatarFallback className="text-[10px] font-medium">
             {getInitials(workspace.name)}

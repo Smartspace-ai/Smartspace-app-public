@@ -67,7 +67,7 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
         {/* Logo Section */}
         <div className="flex items-center justify-between w-full gap-8">
           {/* Logo */}
-          <Logo />
+          <Logo className="h-[40px]" />
 
           {/* User Profile */}
           <DropdownMenu>
@@ -125,7 +125,7 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
         <Threads />
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4 mt-auto sticky bottom-0 bg-background">
+      <SidebarFooter className="border-t p-4 mt-auto sticky bottom-0 ">
         <Button onClick={handleNewThread} className="w-full gap-2 text-xs h-9">
           <Plus className="h-3.5 w-3.5" />
           New Thread
