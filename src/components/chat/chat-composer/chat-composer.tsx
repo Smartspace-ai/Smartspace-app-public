@@ -133,7 +133,7 @@ export default function ChatComposer({
           className={`flex flex-col rounded-md border shadow-sm overflow-hidden bg-background transition-all ${
             isDragging
               ? 'border-primary border-dashed ring-2 ring-primary/20'
-              : 'border-muted/30'
+              : ''
           }`}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
@@ -159,7 +159,7 @@ export default function ChatComposer({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 text-xs text-muted-foreground hover:text-destructive"
+                      className="h-6 text-xs text-muted-foreground hover:text-destructive transition-colors"
                       onClick={handleRemoveAllFiles}
                       disabled={isUploadingFiles}
                     >
@@ -226,17 +226,17 @@ export default function ChatComposer({
                 ? 'Select a thread to start chatting...'
                 : 'Type a message...'
             }
-            className="min-h-[60px] max-h-[120px] w-full resize-none border-0 bg-transparent px-5 py-4 text-sm focus:outline-none disabled:opacity-50"
+            className="min-h-[60px] max-h-[120px] w-full resize-none border-0 bg-transparent px-5 py-4 text-sm focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             rows={1}
             disabled={disabled}
           />
 
-          <div className="flex items-center justify-between px-4 py-2.5 bg-background/80 border-t border-muted/20">
+          <div className="flex items-center justify-between px-4 py-2 bg-background">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/20"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
                 disabled={disabled || isUploadingFiles}
                 onClick={handlePaperclipClick}
               >
@@ -255,24 +255,18 @@ export default function ChatComposer({
               onClick={handleSendMessage}
               variant="default"
               size="sm"
-              className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-4 py-1 h-8 transition-all ${
-                (!newMessage.trim() && selectedFiles.length === 0) ||
-                disabled ||
-                isUploadingFiles
+              className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
+                !newMessage.trim() || disabled
                   ? 'opacity-50 cursor-not-allowed'
-                  : 'shadow-md hover:shadow-lg'
+                  : ''
               }`}
-              disabled={
-                (!newMessage.trim() && selectedFiles.length === 0) ||
-                disabled ||
-                isUploadingFiles
-              }
+              disabled={!newMessage.trim() || disabled}
             >
-              {isSending || isUploadingFiles ? (
+              {isSending ? (
                 <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce" />
                 </span>
               ) : (
                 'Send'
