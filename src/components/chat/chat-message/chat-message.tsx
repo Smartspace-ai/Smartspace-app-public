@@ -6,7 +6,7 @@ import {
 import { JsonForms } from '@jsonforms/react';
 import { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import _ from 'lodash';
-import { Copy } from 'lucide-react';
+import { Copy, Download, FileText } from 'lucide-react';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { cn } from '../../../lib/utils';
 import {
@@ -64,6 +64,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
     type,
     content,
     sources,
+    files,
     userOutput,
     userInput,
     useQueryFiles,
@@ -162,6 +163,43 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
               return null;
             })}
 
+          {files && files.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground mb-1">
+                Attachments
+              </h4>
+              {files.map((file, idx) => (
+                <div
+                  key={file.id || idx}
+                  className="flex items-center justify-between gap-3 p-1 bg-muted/60 border border-muted rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="bg-muted rounded-md p-1.5">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-foreground truncate max-w-[220px] sm:max-w-xs">
+                        {file.name || 'Untitled'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    onClick={async () => {
+                      const blob = await props.downloadFile(file.id);
+                      props.saveFile(blob, file.name || 'download');
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Form section */}
           {showForm && (
             <div className="mt-4 pt-4 border-t border-border">
@@ -231,7 +269,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
   const {
     userId,
     message,
-
     useQueryFiles,
     downloadFile,
     saveFile,
@@ -244,7 +281,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     ) || [];
 
-  // We will store the <ValueCollection> components in this array
   const results: ReactNode[] = [];
 
   let content: ContentItem[] | null = null;
@@ -256,15 +292,10 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
   let createdBy = '';
   let valuesSavedToCollection = false;
   let channels: Record<string, number> = {};
-
-  // We need a stable key each time we push a <ValueCollection>.
-  // We'll track an index so each push can include a unique key.
   let collectionKey = 0;
 
   const addValueToContent = (value: any) => {
-    if (content === null) {
-      content = [];
-    }
+    if (content === null) content = [];
 
     if (typeof value === 'string') {
       content.push({ text: value });
@@ -280,7 +311,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
     }
   };
 
-  // Helper to "commit" the current content/files/etc. as a ValueCollection
   const saveCollection = (nextType: MessageValueType) => {
     results.push(
       <ValueCollection
@@ -300,7 +330,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
       />
     );
 
-    // Reset for next collection
     content = null;
     files = null;
     sources = null;
@@ -312,11 +341,8 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
 
   if (values.length) {
     for (const value of values) {
-      if (currentType === null) {
-        currentType = value.type;
-      }
+      if (currentType === null) currentType = value.type;
 
-      // If we detect a type change mid-iteration, "commit" the previous chunk before continuing
       if (currentType !== value.type) {
         if (!valuesSavedToCollection) {
           saveCollection(value.type);
@@ -324,16 +350,8 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
         currentType = value.type;
       }
 
-      // Collect channel indexes (we use them for addValueToMessage)
-      const updateChannels = ([ch, index]: [string, number]) => {
-        if (!channels[ch] || index > channels[ch]) {
-          channels[ch] = index;
-        }
-      };
-
-      Object.entries(value.channels).forEach(updateChannels);
-
       let skip = false;
+
       if (value.value != null) {
         const valueName = value.name.toLowerCase();
 
@@ -341,9 +359,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
           case 'prompt':
           case 'response':
           case 'content':
-            if (content) {
-              saveCollection(value.type);
-            }
+            if (content) saveCollection(value.type);
             if (
               valueName === 'response' &&
               typeof value.value === 'object' &&
@@ -366,7 +382,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
             if (value.type === MessageValueType.INPUT) {
               break;
             } else {
-              // Look for the matching _user for input
               const userInput = values.find(
                 (v) =>
                   v.name === '_user' &&
@@ -381,7 +396,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
                   createdAt={createdAt}
                   type={currentType}
                   content={[{ text: value.value.message }]}
-                  files={[]}
+                  files={files}
                   sources={[]}
                   userOutput={value.value}
                   userInput={userInput?.value}
@@ -396,10 +411,8 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
 
           case 'files':
             if (value.value) {
-              if (files) {
-                saveCollection(value.type);
-              }
-              if (value.value.length) {
+              if (files) saveCollection(value.type);
+              if (Array.isArray(value.value)) {
                 files = value.value;
               } else {
                 files = [value.value];
@@ -409,9 +422,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
             break;
 
           case 'sources':
-            if (sources) {
-              saveCollection(value.type);
-            }
+            if (sources) saveCollection(value.type);
             sources = value.value;
             valuesSavedToCollection = false;
             break;
@@ -421,9 +432,7 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
             break;
 
           default:
-            if (content) {
-              saveCollection(value.type);
-            }
+            if (content) saveCollection(value.type);
             addValueToContent(value.value);
             break;
         }
@@ -437,7 +446,28 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
     }
   }
 
-  // If there's uncommitted data after the loop, push it
+  if (!valuesSavedToCollection && files && !content && !sources) {
+    results.push(
+      <ValueCollection
+        key={`collection-files-only-${collectionKey++}`}
+        createdBy={createdBy}
+        createdAt={createdAt}
+        type={currentType}
+        content={[]}
+        files={files}
+        sources={[]}
+        userOutput={null}
+        userInput={null}
+        useMessageFile={useMessageFile}
+        downloadFile={downloadFile}
+        saveFile={saveFile}
+        useQueryFiles={useQueryFiles}
+      />
+    );
+    files = null;
+    valuesSavedToCollection = true;
+  }
+
   if (!valuesSavedToCollection) {
     results.push(
       <ValueCollection

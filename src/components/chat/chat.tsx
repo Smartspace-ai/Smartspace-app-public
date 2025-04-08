@@ -1,11 +1,11 @@
 import { useSmartSpaceChat } from '@/contexts/smartspace-context';
+import { useWorkspaceMessages } from '@/hooks/use-workspace-messages';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Upload } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-
-import { AnimatePresence, motion } from 'framer-motion';
-import { Upload } from 'lucide-react';
-import { useWorkspaceMessages } from '../../hooks/use-workspace-messages';
+import { MessageCreateContent } from '../../models/message';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
@@ -18,8 +18,10 @@ export function Chat() {
     messages,
     isLoading,
     sendMessage,
+    uploadFiles,
     isSendingMessage,
     isBotResponding,
+    isUploadingFiles,
   } = useWorkspaceMessages(activeWorkspace, activeThread);
 
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
@@ -29,10 +31,8 @@ export function Chat() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Update state for multiple images
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-
-  // Add state for drag and drop at the top of the Chat component, after other state declarations
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [isDraggingOverChat, setIsDraggingOverChat] = useState(false);
 
   useEffect(() => {
@@ -41,7 +41,6 @@ export function Chat() {
     }
   }, [messages.length]);
 
-  // Save draft as user types
   useEffect(() => {
     if (activeThread) {
       saveDraft(activeThread.id, newMessage);
@@ -61,15 +60,49 @@ export function Chat() {
     );
   };
 
-  const handleSendMessage = useCallback(() => {
-    if (newMessage.trim() === '') return;
+  const handleFilesSelected = useCallback(
+    async (files: File[]) => {
+      if (!activeThread) return;
 
-    sendMessage(newMessage, [{ text: newMessage }]);
-    setNewMessage('');
-    if (activeThread) {
-      clearDraft(activeThread.id);
+      try {
+        const result = await uploadFiles(files);
+        if (Array.isArray(result)) {
+          setUploadedFiles((prev) => [...prev, ...result]);
+        } else {
+          console.error('uploadFiles did not return an array');
+        }
+        toast.success(
+          `${files.length} file${
+            files.length > 1 ? 's' : ''
+          } uploaded successfully`
+        );
+      } catch (error) {
+        console.error('File upload error:', error);
+        toast.error('Failed to upload files');
+      }
+    },
+    [uploadFiles, activeThread]
+  );
+
+  const handleSendMessage = useCallback(() => {
+    if ((!newMessage.trim() && uploadedFiles.length === 0) || !activeThread)
+      return;
+
+    const contentList: MessageCreateContent[] = [];
+
+    if (newMessage.trim()) {
+      contentList.push({
+        text: newMessage.trim(),
+      });
     }
-  }, [newMessage, activeThread, sendMessage, clearDraft]);
+
+    sendMessage(newMessage.trim(), contentList, uploadedFiles);
+
+    setNewMessage('');
+    setSelectedFiles([]);
+    setUploadedFiles([]);
+    clearDraft(activeThread.id);
+  }, [newMessage, uploadedFiles, activeThread, sendMessage, clearDraft]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -81,7 +114,6 @@ export function Chat() {
     [handleSendMessage]
   );
 
-  // Add these drag event handlers before the return statement
   const handleDragEnterChat = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -91,7 +123,6 @@ export function Chat() {
   const handleDragLeaveChat = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set to false if we're leaving the chat area (not entering a child element)
     if (e.currentTarget.contains(e.relatedTarget as Node)) return;
     setIsDraggingOverChat(false);
   };
@@ -108,16 +139,8 @@ export function Chat() {
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const filesArray = Array.from(e.dataTransfer.files);
-      const imageFiles = filesArray.filter((file) =>
-        file.type.startsWith('image/')
-      );
-
-      if (imageFiles.length === 0) {
-        toast.error('Please drop image files');
-        return;
-      }
-
-      setSelectedImages([...selectedImages, ...imageFiles]);
+      setSelectedFiles((prev) => [...prev, ...filesArray]);
+      handleFilesSelected(filesArray);
     }
   };
 
@@ -130,7 +153,7 @@ export function Chat() {
       onDrop={handleDropChat}
     >
       <ChatHeader />
-      {/* Modern drop zone overlay with animation */}
+
       <AnimatePresence>
         {isDraggingOverChat && (
           <motion.div
@@ -151,10 +174,10 @@ export function Chat() {
                 <Upload className="h-10 w-10 text-primary" />
               </div>
               <h3 className="text-2xl font-medium mb-3 text-center">
-                Drop images here
+                Drop files here
               </h3>
               <p className="text-muted-foreground text-center max-w-xs">
-                Release to upload your images to the conversation
+                Release to upload your files to the conversation
               </p>
             </motion.div>
           </motion.div>
@@ -180,8 +203,12 @@ export function Chat() {
         handleKeyDown={handleKeyDown}
         isSending={isSendingMessage}
         disabled={isSendingMessage}
-        selectedImages={selectedImages}
-        setSelectedImages={setSelectedImages}
+        selectedFiles={selectedFiles}
+        setSelectedFiles={setSelectedFiles}
+        uploadedFiles={uploadedFiles}
+        setUploadedFiles={setUploadedFiles}
+        isUploadingFiles={isUploadingFiles}
+        onFilesSelected={handleFilesSelected}
       />
     </div>
   );

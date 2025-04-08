@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useState } from 'react';
 import { useParams } from 'react-router';
 import { toast } from 'sonner';
+import { uploadFiles } from '../apis/message-threads';
 import { UserContext } from './use-user-information';
 
 export function useWorkspaceMessages(
@@ -142,6 +143,14 @@ export function useWorkspaceMessages(
 
   const [isBotResponding, setIsBotResponding] = useState(false);
 
+  const uploadFilesMutation = useMutation<MessageFile[], Error, File[]>({
+    mutationFn: async (files: File[]) => {
+      const result = await uploadFiles(files, activeWorkspace?.id ?? '');
+      console.log('✅ Upload result:', result);
+      return result;
+    },
+  });
+
   const sendMessage = (
     message?: string,
     contentList?: MessageCreateContent[],
@@ -186,6 +195,8 @@ export function useWorkspaceMessages(
     isLoading: isLoading || isFetching,
     sendMessage,
     postMessageMutation,
+    uploadFiles: uploadFilesMutation.mutateAsync,
+    isUploadingFiles: uploadFilesMutation.isPending,
     isSendingMessage: postMessageMutation.isPending,
     isBotResponding,
     queryMessages: { data: messages, isLoading, error, refetch },

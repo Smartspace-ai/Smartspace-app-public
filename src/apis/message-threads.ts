@@ -1,4 +1,3 @@
-import { MessageFile } from '../models/message';
 import { MessageThread } from '../models/message-threads';
 import webApi from '../utils/axios-setup';
 
@@ -82,20 +81,30 @@ export async function deleteThread(threadId: string): Promise<void> {
 /**
  * Uploads files
  */
-export async function uploadFiles(files: File[]): Promise<MessageFile[]> {
+export async function uploadFiles(
+  files: File[],
+  workspaceId: string
+): Promise<any[]> {
   try {
     const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
+    files.forEach((file) => formData.append('files', file));
+    formData.append('workspaceId', workspaceId);
 
-    const response = await webApi.post(`/messageThreads/files`, formData, {
+    const response = await webApi.post(`/files`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
 
-    return response.data as MessageFile[];
+    console.log('Response from uploadFiles:', response.data);
+
+    const data = response.data;
+
+    if (data && data.length > 0) {
+      return data;
+    }
+
+    throw new Error('uploadFiles did not return a valid file object or array');
   } catch (error) {
     console.error('Error uploading files:', error);
     throw new Error('Failed to upload files');
