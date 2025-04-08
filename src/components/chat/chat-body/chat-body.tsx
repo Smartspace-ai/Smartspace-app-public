@@ -9,6 +9,8 @@ import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
 import { UserContext } from '../../../hooks/use-user-information';
 import { Draw } from '../../../models/draw';
 import { getInitials } from '../../../utils/initials';
+import { parseDateTime } from '../../../utils/parse-date-time';
+import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { ScrollArea } from '../../ui/scroll-area';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
@@ -41,10 +43,7 @@ export default function ChatBody({
   const { graphData } = useContext(UserContext);
 
   useEffect(() => {
-    if (!prevBotRespondingRef.current && isBotResponding) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-    prevBotRespondingRef.current = isBotResponding;
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [isBotResponding, messagesEndRef]);
 
   return (
@@ -76,7 +75,7 @@ export default function ChatBody({
           </div>
         ) : (
           // Messages
-          <div className="space-y-2 max-w-3xl mx-auto">
+          <div className="space-y-2 max-w-3xl mx-auto p-2">
             {messages.map((message, index) => (
               <div key={message.id}>
                 <ChatMessage
@@ -95,18 +94,25 @@ export default function ChatBody({
             ))}
 
             {isBotResponding && (
-              <div className="rounded-lg border bg-background shadow-md p-3 mb-8 mt-8">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground">
-                    SS
+              <div className="rounded-lg border bg-background shadow-md mb-4 group">
+                <div className="flex items-center justify-between p-3 border-b">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-7 w-7 mt-0.5">
+                      <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                        {getInitials('Chatbot')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium">Chatbot</span>
+                      <span className="text-xs text-muted-foreground">
+                        {parseDateTime(new Date(), 'Do MMMM YYYY, h:mm a')}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-sm font-medium">SmartSpace</span>
-                  <span className="text-xs text-muted-foreground">
-                    Just now
-                  </span>
                 </div>
-                <div className="pl-8">
-                  <div className="flex space-x-2">
+
+                <div className="p-3 min-h-3">
+                  <div className="flex space-x-2 p-1">
                     <div
                       className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
                       style={{ animationDelay: '0ms' }}
@@ -123,6 +129,7 @@ export default function ChatBody({
                 </div>
               </div>
             )}
+
             <div ref={messagesEndRef} className="h-4" />
           </div>
         )}

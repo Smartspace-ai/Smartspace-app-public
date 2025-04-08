@@ -41,9 +41,12 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
   // Function to add a new thread
   const handleNewThread = () => {
     const newThreadId = crypto.randomUUID();
+
     if (activeWorkspace) {
       setActiveThread(null);
-      navigate(`/${activeWorkspace.id}/${newThreadId}`, { replace: true });
+      navigate(`/${activeWorkspace.id}/${newThreadId}?isNew=true`, {
+        replace: true,
+      });
     }
   };
 

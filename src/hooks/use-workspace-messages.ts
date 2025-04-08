@@ -24,16 +24,16 @@ export function useWorkspaceMessages(
   const activeWorkspace = passedWorkspace ?? context?.activeWorkspace;
 
   const queryClient = useQueryClient();
-
   const { graphData, graphPhoto } = useContext(UserContext);
+  const { threadId: urlThreadId } = useParams<{ threadId: string }>();
+
+  const threadId = activeThread?.id || urlThreadId;
 
   const activeUser = {
     name: graphData?.displayName ?? 'User',
     email: graphData?.mail ?? '',
     profilePhoto: graphPhoto || '',
   };
-
-  const { threadId: urlThreadId } = useParams<{ threadId: string }>();
 
   const {
     data: messages = [],
@@ -42,13 +42,13 @@ export function useWorkspaceMessages(
     refetch,
     isFetching,
   } = useQuery<Message[], Error>({
-    queryKey: ['messages', activeThread?.id],
+    queryKey: ['messages', threadId],
     queryFn: async () => {
-      if (!activeThread || activeThread.id === 'new') return [];
-      const result = await fetchMessages(activeThread.id);
+      if (!threadId) return [];
+      const result = await fetchMessages(threadId);
       return result.reverse();
     },
-    enabled: !!activeThread,
+    enabled: !!threadId,
     retry: false,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
@@ -65,9 +65,9 @@ export function useWorkspaceMessages(
     }
   >({
     mutationFn: async ({ message, contentList, files, threadId }) => {
-      const finalThreadId = threadId ?? activeThread?.id;
+      const finalThreadId = threadId ?? urlThreadId;
       const finalWorkspaceId = activeWorkspace?.id || '0';
-      const createdBy = activeUser ? activeUser.name : 'You'; // Replace with actual user ID or name
+      const createdBy = activeUser.name;
 
       if (!finalThreadId)
         throw new Error('Thread ID is required to post message');
@@ -83,7 +83,7 @@ export function useWorkspaceMessages(
                   value: contentList,
                   channels: {},
                   createdAt: new Date(),
-                  createdBy: createdBy,
+                  createdBy,
                 },
               ]
             : []),
@@ -95,13 +95,13 @@ export function useWorkspaceMessages(
                   value: files,
                   channels: {},
                   createdAt: new Date(),
-                  createdBy: createdBy,
+                  createdBy,
                 },
               ]
             : []),
         ],
         createdAt: new Date(),
-        createdBy: createdBy,
+        createdBy,
         optimistic: true,
       });
 
@@ -123,11 +123,16 @@ export function useWorkspaceMessages(
 
       queryClient.setQueryData<Message[]>(
         ['messages', finalThreadId],
-        (old = []) => old.filter((m) => !m.optimistic).concat(response)
+        (old = []) => {
+          const withoutOptimistic = (old || []).filter((m) => !m.optimistic);
+          const exists = withoutOptimistic.some((m) => m.id === response.id);
+          return exists ? withoutOptimistic : [...withoutOptimistic, response];
+        }
       );
 
       return response;
     },
+
     onError: async () => {
       toast.error('There was an error posting your message');
       await refetch();
@@ -142,12 +147,18 @@ export function useWorkspaceMessages(
     contentList?: MessageCreateContent[],
     files?: MessageFile[]
   ) => {
-    const threadId = activeThread?.id || urlThreadId;
+    const currentThreadId = threadId;
+
+    if (!currentThreadId) {
+      toast.error('No thread ID found. Cannot send message.');
+      return;
+    }
 
     setIsBotResponding(true);
+
     postMessageMutation.mutate(
       {
-        threadId: threadId,
+        threadId: currentThreadId,
         message,
         contentList,
         files,
@@ -156,13 +167,11 @@ export function useWorkspaceMessages(
         onSuccess: () => {
           setIsBotResponding(false);
 
-          if (!activeThread) {
-            // We are creating a new thread, so refresh
-            if (activeWorkspace?.id) {
-              queryClient.invalidateQueries({
-                queryKey: ['threads', activeWorkspace?.id],
-              });
-            }
+          // Only invalidate threads if this was a new thread
+          if (!activeThread && activeWorkspace?.id) {
+            queryClient.invalidateQueries({
+              queryKey: ['threads', activeWorkspace.id],
+            });
           }
         },
         onError: () => {
@@ -177,7 +186,6 @@ export function useWorkspaceMessages(
     isLoading: isLoading || isFetching,
     sendMessage,
     postMessageMutation,
-
     isSendingMessage: postMessageMutation.isPending,
     isBotResponding,
     queryMessages: { data: messages, isLoading, error, refetch },

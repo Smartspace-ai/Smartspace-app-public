@@ -96,7 +96,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
       <div
         className={cn(
           isBotResponse ? 'border-b' : '',
-          'flex items-center justify-between p-3 '
+          'flex items-center justify-between p-3'
         )}
       >
         <div className="flex items-center gap-2">
@@ -143,7 +143,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
       </div>
 
       {/* Message content */}
-      <div className={cn(isBotResponse ? 'p-3' : 'px-3 py-1')}>
+      <div className={cn(isBotResponse ? 'p-3 min-h-3' : 'px-3 py-1')}>
         <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
           {content &&
             (content as MessageContent[]).map((item, i) => {
