@@ -47,7 +47,7 @@ export default function ChatBody({
   }, [isBotResponding, messagesEndRef]);
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="ss-chat__body flex-1 overflow-y-auto">
       <ScrollArea className="h-full">
         {isLoading ? (
           // Loading skeleton
@@ -77,7 +77,7 @@ export default function ChatBody({
           // Messages
           <div className="space-y-2 max-w-3xl mx-auto p-2">
             {messages.map((message, index) => (
-              <div key={message.id}>
+              <div className="ss-chat__message" key={message.id}>
                 <ChatMessage
                   key={message.id}
                   userId={(graphData as any)?.id}

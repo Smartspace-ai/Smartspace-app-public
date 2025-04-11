@@ -126,7 +126,7 @@ export default function ChatComposer({
   };
 
   return (
-    <div className="w-full mt-auto bg-sidebar border-t px-4 py-4">
+    <div className="ss-chat__composer w-full mt-auto bg-sidebar border-t px-4 py-4">
       <div className="max-w-3xl mx-auto">
         <div
           ref={dropzoneRef}

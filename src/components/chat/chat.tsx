@@ -146,7 +146,7 @@ export function Chat() {
 
   return (
     <div
-      className="flex flex-col h-full border bg-card text-card-foreground shadow-sm bg-gradient-to-b from-background from-10% via-background via-50% to-primary/20 to-100%"
+      className="ss-chat flex flex-col h-full border bg-card text-card-foreground shadow-sm bg-gradient-to-b from-background from-10% via-background via-50% to-primary/20 to-100%"
       onDragEnter={handleDragEnterChat}
       onDragLeave={handleDragLeaveChat}
       onDragOver={handleDragOverChat}

@@ -1,82 +1,206 @@
-# Smartspace
+# SmartSpace Chat UI
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A modern, customizable chat interface built with React 18.3, utilizing [shadcn UI](https://ui.shadcn.com/) components and [Tailwind CSS](https://tailwindcss.com/) for styling. This project is designed to integrate seamlessly with [smartspace.ai](https://smartspace.ai).
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+---
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/react-standalone-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## 📦 Project Information
 
-## Finish your CI setup
+- **Package Name:** `@smartspace/source`
+- **Version:** `1.0.0`
+- **License:** [MIT](LICENSE)
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/XuDpQXoidH)
+---
 
+## 🚀 Features
 
-## Run tasks
+- **React 18.3:** Leverages the latest features of React for building robust and efficient components.
+- **shadcn UI Components:** Utilizes a set of accessible and customizable UI components.
+- **Tailwind CSS:** Provides utility-first CSS for rapid UI development.
+- **Theming Support:** Easily customize the primary color and other theme aspects.
+- **Logo Customization:** Simple process to update the application logo.
 
-To run the dev server for your app, use:
+---
 
-```sh
-npx nx serve smartspace
-```
+## 🛠️ Getting Started
 
-To create a production bundle:
+### Prerequisites
 
-```sh
-npx nx build smartspace
-```
+Ensure you have the following installed:
 
-To see all available targets to run for a project, run:
+- [Node.js](https://nodejs.org/en/download/) (version 14 or higher)
+- [npm](https://www.npmjs.com/get-npm) or [yarn](https://yarnpkg.com/getting-started/install)
 
-```sh
-npx nx show project smartspace
-```
-        
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+### Installation
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+1. **Clone the repository:**
 
-## Add new projects
+   ```bash
+   git clone https://github.com/smartspace-ai/chat-ui.git
+   ```
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+2. **Navigate to the project directory:**
 
-Use the plugin's generator to create new projects.
+   ```bash
+   cd chat-ui
+   ```
 
-To generate a new application, use:
+3. **Install the dependencies:**
 
-```sh
-npx nx g @nx/react:app demo
-```
+   ```bash
+   npm install
+   ```
 
-To generate a new library, use:
+   or
 
-```sh
-npx nx g @nx/react:lib mylib
-```
+   ```bash
+   yarn install
+   ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+---
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## 📜 Available Scripts
 
+In the project directory, you can run the following scripts:
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- **Start the development server:**
 
-## Install Nx Console
+  ```bash
+  npm run start
+  ```
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+  or
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+  ```bash
+  yarn start
+  ```
 
-## Useful links
+- **Build the application for production:**
 
-Learn more:
+  ```bash
+  npm run build
+  ```
 
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/react-standalone-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+  or
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+  ```bash
+  yarn build
+  ```
+
+- **Run tests:**
+
+  ```bash
+  npm run test
+  ```
+
+  or
+
+  ```bash
+  yarn test
+  ```
+
+- **Environment-Specific Commands:**
+
+  - **Development:**
+
+    - Start: `npm run start:dev` or `yarn start:dev`
+    - Build: `npm run build:dev` or `yarn build:dev`
+    - Test: `npm run test:dev` or `yarn test:dev`
+
+  - **Local:**
+
+    - Start: `npm run start:local` or `yarn start:local`
+    - Build: `npm run build:local` or `yarn build:local`
+    - Test: `npm run test:local` or `yarn test:local`
+
+---
+
+## 🎨 Theming
+
+The application uses CSS variables for theming, allowing easy customization of colors and styles. The primary color is defined in the `theme.scss` file.
+
+### Changing the Primary Color
+
+To update the primary color of the application:
+
+1. **Open the `theme.scss` file located in the styles directory.**
+
+2. **Locate the `$primary-hex` variable:**
+
+   ```scss
+   // Primary input color
+   $primary-hex: #6443f4;
+   ```
+
+3. **Replace the `#6443f4` value with your desired hex color code.**
+
+4. **Save the file.** The application's primary color will now reflect the new value.
+
+> **Note:** The `theme.scss` file uses HSL (Hue, Saturation, Lightness) values derived from the `$primary-hex` to define various color variables. Ensure that the new primary color provides sufficient contrast and accessibility.
+
+For more detailed information on theming with shadcn UI and Tailwind CSS, refer to the [shadcn UI Theming Documentation](https://ui.shadcn.com/docs/theming).
+
+---
+
+## 🖼️ Updating the Logo
+
+The logo component is located at `components/Logo.tsx`. To update the logo:
+
+1. **Open the `Logo.tsx` file.**
+
+2. **Modify the `Logo` component to return your desired logo.** For example, to use an image file:
+
+   ```tsx
+   import React from 'react';
+   import logo from '../assets/logo.png'; // Adjust the path as necessary
+
+   interface LogoProps {
+     className?: string;
+   }
+
+   export const Logo: React.FC<LogoProps> = ({ className }) => {
+     return <img src={logo} alt="SmartSpace Logo" className={className} />;
+   };
+   ```
+
+3. **Replace `'../assets/logo.png'` with the path to your logo file.**
+
+4. **Save the file.** The application will now display the updated logo.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions to the SmartSpace Chat UI project! To contribute:
+
+1. **Fork the repository.**
+
+2. **Create a new branch:**
+
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **Make your changes and commit them:**
+
+   ```bash
+   git commit -m "Add your commit message here"
+   ```
+
+4. **Push to your fork:**
+
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+5. **Open a pull request with a detailed description of your changes.**
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
+
+---
+
+*For any issues or questions, please open an issue on the [GitHub repository](https://github.com/smartspace-ai/chat-ui/issues).*

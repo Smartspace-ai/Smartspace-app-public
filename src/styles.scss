@@ -46,3 +46,17 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
+
+/** Tailwind overrides */
+.ss {
+  &-chat__message {
+    @layer base {
+      ul,
+      ol {
+        margin: revert-layer;
+        padding-left: revert-layer;
+        list-style: revert-layer;
+      }
+    }
+  }
+}
