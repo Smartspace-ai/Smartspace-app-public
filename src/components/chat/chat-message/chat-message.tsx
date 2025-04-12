@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Button } from '../../ui/button';
 import { ChatMessageImage } from '../chat-message-image/chat-message-image';
 import { ChatMessageSources } from '../chat-message-sources/chat-message-sources';
+import { TextInputControl, textInputTester } from './text-renderer';
 
 export interface ContentItem {
   text?: string;
@@ -39,7 +40,6 @@ interface MessageValueProps {
   userInput?: any;
   files: MessageFile[] | null;
   position?: 'left' | 'right';
-
   responseData?: any | null;
   useMessageFile: (id: string) => {
     useMessageFileRaw: UseQueryResult<Blob, Error>;
@@ -71,17 +71,15 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
     useMessageFile,
     addValueToMessage,
   } = props;
+
   const [responseFormData, setResponseFormData] = useState<any>(userInput);
   const [responseFormValid, setResponseFormValid] = useState<boolean>(false);
-  const [isCopied, setIsCopied] = useState(false);
 
   const isBotResponse = type === MessageValueType.OUTPUT;
-
   const showForm = userOutput && addValueToMessage;
 
   useEffect(() => {
     if (!userOutput || userInput !== undefined) return;
-
     const defaultValues = getDefaultValues(userOutput.schema as JsonSchema);
     setResponseFormData(defaultValues);
   }, [userOutput, userInput]);
@@ -93,7 +91,6 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
         'rounded-lg mb-4 group'
       )}
     >
-      {/* Message header with avatar, name, time, and actions */}
       <div
         className={cn(
           isBotResponse ? 'border-b' : '',
@@ -124,8 +121,6 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
             </span>
           </div>
         </div>
-
-        {/* Action buttons - simplified to only Preview/Raw toggle and Copy */}
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -136,32 +131,29 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
                 : 'hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity',
               'h-7 w-7 text-muted-foreground hover:text-foreground'
             )}
-            title="Copy"
           >
             <Copy className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
 
-      {/* Message content */}
-      <div className={cn(isBotResponse ? 'p-3 min-h-3' : 'px-3 py-1')}>
+      <div className={cn(isBotResponse ? 'p-3' : 'px-3 py-1')}>
         <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
-          {content &&
-            (content as MessageContent[]).map((item, i) => {
-              if (item.text) {
-                return <MyMarkdown key={`content-${i}`} text={item.text} />;
-              } else if (item.image) {
-                return (
-                  <ChatMessageImage
-                    key={`image-${i}`}
-                    image={item.image}
-                    name={item.image.name}
-                    useMessageFile={useMessageFile}
-                  />
-                );
-              }
-              return null;
-            })}
+          {content?.map((item, i) => {
+            if (item.text)
+              return <MyMarkdown key={`content-${i}`} text={item.text} />;
+            if (item.image) {
+              return (
+                <ChatMessageImage
+                  key={`image-${i}`}
+                  image={item.image}
+                  name={item.image.name}
+                  useMessageFile={useMessageFile}
+                />
+              );
+            }
+            return null;
+          })}
 
           {files && files.length > 0 && (
             <div className="mt-4 space-y-2">
@@ -183,7 +175,6 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
                       </span>
                     </div>
                   </div>
-
                   <Button
                     size="icon"
                     variant="ghost"
@@ -200,13 +191,15 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
             </div>
           )}
 
-          {/* Form section */}
           {showForm && (
             <div className="mt-4 pt-4 border-t border-border">
               <JsonForms
                 schema={userOutput.schema as JsonSchema}
                 data={responseFormData}
-                renderers={materialRenderers}
+                renderers={[
+                  { tester: textInputTester, renderer: TextInputControl },
+                  ...materialRenderers,
+                ]}
                 cells={materialCells}
                 readonly={userInput !== undefined}
                 onChange={({ data, errors }) => {
@@ -218,7 +211,10 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!responseFormValid}
+                  disabled={userInput !== undefined || !responseFormValid}
+                  className={cn(
+                    userInput !== undefined && 'opacity-60 cursor-not-allowed'
+                  )}
                   onClick={() => addValueToMessage?.('_user', responseFormData)}
                 >
                   Send
@@ -227,7 +223,6 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
             </div>
           )}
 
-          {/** Sources */}
           {(sources || []).map((source, idx) => (
             <ChatMessageSources
               key={idx}
@@ -245,14 +240,18 @@ interface ChatMessageProps {
   userId: string;
   avatar?: string | JSX.Element;
   message: Message;
-
   messageId?: string;
   isLast?: boolean;
   responseData?: any | null;
   useMessageFile: (id: string) => {
     useMessageFileRaw: UseQueryResult<Blob, Error>;
   };
-
+  addValueToMessage: (
+    messageId: string,
+    name: string,
+    value: any,
+    channels: Record<string, number>
+  ) => void;
   useQueryFiles: () => {
     downloadFileMutation: UseMutationResult<
       void,
@@ -265,16 +264,15 @@ interface ChatMessageProps {
   saveFile: (blob: Blob, fileName: string) => void;
 }
 
-export const ChatMessage: FC<ChatMessageProps> = (props) => {
-  const {
-    userId,
-    message,
-    useQueryFiles,
-    downloadFile,
-    saveFile,
-    useMessageFile,
-  } = props;
-
+export const ChatMessage: FC<ChatMessageProps> = ({
+  userId,
+  message,
+  useQueryFiles,
+  downloadFile,
+  saveFile,
+  useMessageFile,
+  addValueToMessage,
+}) => {
   const values =
     message.values?.sort(
       (a, b) =>
@@ -286,7 +284,6 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
   let content: ContentItem[] | null = null;
   let sources: any[] | null = null;
   let files: MessageFile[] | null = null;
-  let requestedSchema: Record<string, any> | null = null;
   let currentType: MessageValueType = MessageValueType.INPUT;
   let createdAt: Date | string = '';
   let createdBy = '';
@@ -295,14 +292,11 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
   let collectionKey = 0;
 
   const addValueToContent = (value: any) => {
-    if (content === null) content = [];
+    if (!content) content = [];
 
     if (typeof value === 'string') {
       content.push({ text: value });
-    } else if (
-      Array.isArray(value) &&
-      value.every((v) => v.text !== undefined || v.image !== undefined)
-    ) {
+    } else if (Array.isArray(value)) {
       content = content.concat(value);
     } else if (value.text || value.image) {
       content.push(value);
@@ -321,151 +315,113 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
         content={content}
         files={files}
         sources={sources}
-        userInput={null}
         userOutput={null}
+        userInput={null}
         useMessageFile={useMessageFile}
         downloadFile={downloadFile}
         saveFile={saveFile}
         useQueryFiles={useQueryFiles}
       />
     );
-
     content = null;
     files = null;
     sources = null;
-    requestedSchema = null;
     currentType = nextType;
     valuesSavedToCollection = true;
     channels = {};
   };
 
-  if (values.length) {
-    for (const value of values) {
-      if (currentType === null) currentType = value.type;
+  for (const value of values) {
+    if (currentType !== value.type && !valuesSavedToCollection) {
+      saveCollection(value.type);
+    }
 
-      if (currentType !== value.type) {
+    currentType = value.type;
+
+    Object.entries(value.channels).forEach(([ch, index]) => {
+      if (!channels[ch] || index > channels[ch]) {
+        channels[ch] = index;
+      }
+    });
+
+    const valueName = value.name.toLowerCase();
+
+    switch (valueName) {
+      case 'prompt':
+      case 'response':
+      case 'content':
+        if (content) saveCollection(value.type);
+        if (
+          valueName === 'response' &&
+          typeof value.value === 'object' &&
+          ('content' in value.value || 'sources' in value.value)
+        ) {
+          addValueToContent(value.value?.content);
+          sources = value.value?.sources;
+        } else {
+          addValueToContent(value.value);
+        }
+        valuesSavedToCollection = false;
+        break;
+
+      case '_user':
         if (!valuesSavedToCollection) {
           saveCollection(value.type);
         }
-        currentType = value.type;
-      }
 
-      let skip = false;
+        if (value.type !== MessageValueType.INPUT) {
+          const userInput = values.find(
+            (v) =>
+              v.name === '_user' &&
+              v.type === MessageValueType.INPUT &&
+              _.isEqual(v.channels, value.channels)
+          );
 
-      if (value.value != null) {
-        const valueName = value.name.toLowerCase();
-
-        switch (valueName) {
-          case 'prompt':
-          case 'response':
-          case 'content':
-            if (content) saveCollection(value.type);
-            if (
-              valueName === 'response' &&
-              typeof value.value === 'object' &&
-              ('content' in value.value || 'sources' in value.value)
-            ) {
-              addValueToContent(value.value?.content);
-              sources = value.value?.sources;
-            } else {
-              addValueToContent(value.value);
-            }
-            valuesSavedToCollection = false;
-            break;
-
-          case '_user':
-            skip = true;
-            if (!valuesSavedToCollection) {
-              saveCollection(value.type);
-            }
-
-            if (value.type === MessageValueType.INPUT) {
-              break;
-            } else {
-              const userInput = values.find(
-                (v) =>
-                  v.name === '_user' &&
-                  v.type === MessageValueType.INPUT &&
-                  _.isEqual(v.channels, value.channels)
-              );
-
-              results.push(
-                <ValueCollection
-                  key={`collection-${collectionKey++}`}
-                  createdBy={createdBy}
-                  createdAt={createdAt}
-                  type={currentType}
-                  content={[{ text: value.value.message }]}
-                  files={files}
-                  sources={[]}
-                  userOutput={value.value}
-                  userInput={userInput?.value}
-                  useMessageFile={useMessageFile}
-                  downloadFile={downloadFile}
-                  saveFile={saveFile}
-                  useQueryFiles={useQueryFiles}
-                />
-              );
-            }
-            break;
-
-          case 'files':
-            if (value.value) {
-              if (files) saveCollection(value.type);
-              if (Array.isArray(value.value)) {
-                files = value.value;
-              } else {
-                files = [value.value];
+          results.push(
+            <ValueCollection
+              key={`collection-${collectionKey++}`}
+              createdBy={value.createdBy}
+              createdAt={value.createdAt}
+              type={value.type}
+              content={[{ text: value.value.message }]}
+              files={[]}
+              sources={[]}
+              userOutput={value.value}
+              userInput={userInput?.value}
+              useMessageFile={useMessageFile}
+              downloadFile={downloadFile}
+              saveFile={saveFile}
+              useQueryFiles={useQueryFiles}
+              addValueToMessage={(name: string, val: any) =>
+                addValueToMessage(message.id ?? '', name, val, value.channels)
               }
-              valuesSavedToCollection = false;
-            }
-            break;
-
-          case 'sources':
-            if (sources) saveCollection(value.type);
-            sources = value.value;
-            valuesSavedToCollection = false;
-            break;
-
-          case 'userinfo':
-            skip = true;
-            break;
-
-          default:
-            if (content) saveCollection(value.type);
-            addValueToContent(value.value);
-            break;
+            />
+          );
         }
-      }
+        break;
 
-      if (!skip) {
+      case 'files':
+        if (Array.isArray(value.value)) {
+          files = value.value;
+        } else {
+          files = [value.value];
+        }
         valuesSavedToCollection = false;
-        createdAt = value.createdAt;
-        createdBy = value.createdBy;
-      }
-    }
-  }
+        break;
 
-  if (!valuesSavedToCollection && files && !content && !sources) {
-    results.push(
-      <ValueCollection
-        key={`collection-files-only-${collectionKey++}`}
-        createdBy={createdBy}
-        createdAt={createdAt}
-        type={currentType}
-        content={[]}
-        files={files}
-        sources={[]}
-        userOutput={null}
-        userInput={null}
-        useMessageFile={useMessageFile}
-        downloadFile={downloadFile}
-        saveFile={saveFile}
-        useQueryFiles={useQueryFiles}
-      />
-    );
-    files = null;
-    valuesSavedToCollection = true;
+      case 'sources':
+        sources = value.value;
+        valuesSavedToCollection = false;
+        break;
+
+      default:
+        if (content) saveCollection(value.type);
+        addValueToContent(value.value);
+        break;
+    }
+
+    createdAt = value.createdAt;
+    createdBy = value.createdBy;
   }
 
   if (!valuesSavedToCollection) {
@@ -488,20 +444,17 @@ export const ChatMessage: FC<ChatMessageProps> = (props) => {
     );
   }
 
-  return results;
+  return <>{results}</>;
 };
 
 const getDefaultValues = (schema: JsonSchema): any => {
-  const isType = (schemaType: any, typeName: string) => {
-    if (Array.isArray(schemaType)) {
-      return schemaType.includes(typeName);
-    }
-    return schemaType === typeName;
-  };
+  const isType = (schemaType: any, typeName: string) =>
+    Array.isArray(schemaType)
+      ? schemaType.includes(typeName)
+      : schemaType === typeName;
 
   if (isType(schema.type, 'object') && schema.properties) {
     const defaults: { [key: string]: any } = {};
-
     for (const [key, property] of Object.entries(schema.properties)) {
       if ('default' in property) {
         defaults[key] = property.default;
@@ -515,6 +468,7 @@ const getDefaultValues = (schema: JsonSchema): any => {
     }
     return defaults;
   }
+
   return null;
 };
 
