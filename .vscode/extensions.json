@@ -1,0 +1,14 @@
+{
+  "recommendations": [ 
+  "nrwl.angular-console",             // Nx Console
+  "dbaeumer.vscode-eslint",           // ESLint
+  "esbenp.prettier-vscode",           // Prettier - Code Formatter
+  "bradlc.vscode-tailwindcss",        // Tailwind CSS IntelliSense
+  "tannerlinsley.react-query-devtools", // React Query Devtools
+  "steoates.autoimport",              // Auto Import
+  "christian-kohler.path-intellisense", // Path Intellisense
+  "eamodio.gitlens",                  // GitLens
+  "Orta.vscode-jest",                 // Jest
+  "aaron-bond.better-comments"        // Better Comments
+  ]
+}
