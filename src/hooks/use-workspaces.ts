@@ -25,7 +25,7 @@ export function useWorkspaces() {
   useEffect(() => {
     if (!activeWorkspace && workspaces.length > 0) {
       setActiveWorkspace(workspaces[0]);
-      //navigate(`/${workspaces[0].id}`, { replace: true });
+      navigate(`/workspace/${workspaces[0].id}`, { replace: true });
     }
   }, [workspaces, activeWorkspace, setActiveWorkspace, navigate]);
 
@@ -33,6 +33,7 @@ export function useWorkspaces() {
   const handleWorkspaceChange = (workspace: Workspace) => {
     setActiveWorkspace(workspace);
     setActiveThread(null); // Clear active thread when changing workspace
+    navigate(`/workspace/${workspace.id}`, { replace: true });
   };
 
   return {

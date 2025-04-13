@@ -44,9 +44,12 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
 
     if (activeWorkspace) {
       setActiveThread(null);
-      navigate(`/${activeWorkspace.id}/${newThreadId}?isNew=true`, {
-        replace: true,
-      });
+      navigate(
+        `/workspace/${activeWorkspace.id}/thread/${newThreadId}?isNew=true`,
+        {
+          replace: true,
+        }
+      );
     }
   };
 

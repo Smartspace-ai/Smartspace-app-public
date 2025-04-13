@@ -22,6 +22,7 @@ export function Chat() {
     isSendingMessage,
     isBotResponding,
     isUploadingFiles,
+    addValueToMessage,
   } = useWorkspaceMessages(activeWorkspace, activeThread);
 
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
@@ -194,6 +195,7 @@ export function Chat() {
         isBotResponding={isBotResponding}
         commentsDraw={{} as any}
         waitingResponse={false}
+        addValueToMessage={addValueToMessage}
       />
 
       <ChatComposer

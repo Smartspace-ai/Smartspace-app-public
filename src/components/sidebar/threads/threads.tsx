@@ -23,9 +23,11 @@ import {
   Star,
   Trash2,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { renameThread } from '../../../apis/message-threads';
+import useSmartSpaceChat from '../../../contexts/smartspace-context';
 import { MessageThread } from '../../../models/message-threads';
 import { getAvatarColour } from '../../../utils/avatar-colour';
 import { getInitials } from '../../../utils/initials';
@@ -49,6 +51,7 @@ enum SortOrder {
 }
 
 export function Threads() {
+  const { activeWorkspace, setActiveThread } = useSmartSpaceChat();
   const {
     threads,
     activeThread,
@@ -60,7 +63,7 @@ export function Threads() {
   const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.NEWEST);
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
+  const navigate = useNavigate();
   // Sort the threads based on the current sort order
   const sortedThreads = sortThreads(threads, sortOrder);
 
@@ -79,6 +82,21 @@ export function Threads() {
     handleThreadChange(thread);
   };
 
+  // Function to add a new thread
+  const handleNewThread = useCallback(() => {
+    const newThreadId = crypto.randomUUID();
+
+    if (activeWorkspace) {
+      setActiveThread(null);
+      navigate(
+        `/workspace/${activeWorkspace.id}/thread/${newThreadId}?isNew=true`,
+        {
+          replace: true,
+        }
+      );
+    }
+  }, [activeWorkspace, navigate, setActiveThread]);
+
   useEffect(() => {
     // Check if the active thread is still in the updated threads list
     if (
@@ -88,9 +106,18 @@ export function Threads() {
       // If not, select the first thread in the list (if available)
       if (threads.length > 0) {
         handleThreadChange(threads[0]);
+      } else if (threads.length === 0) {
+        console.log('No threads available');
+        handleNewThread();
       }
     }
-  }, [threads, activeThread, handleThreadChange]);
+  }, [
+    threads,
+    activeThread,
+    handleThreadChange,
+    setActiveThread,
+    handleNewThread,
+  ]);
 
   function sortThreads(
     threads: MessageThread[],

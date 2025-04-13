@@ -1,4 +1,4 @@
-import { fetchMessages, postMessage } from '@/apis/messages';
+import { addInputToMessage, fetchMessages, postMessage } from '@/apis/messages';
 import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import {
   Message,
@@ -54,6 +54,8 @@ export function useWorkspaceMessages(
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
+
+  const [isBotResponding, setIsBotResponding] = useState(false);
 
   const postMessageMutation = useMutation<
     Message,
@@ -125,7 +127,7 @@ export function useWorkspaceMessages(
       queryClient.setQueryData<Message[]>(
         ['messages', finalThreadId],
         (old = []) => {
-          const withoutOptimistic = (old || []).filter((m) => !m.optimistic);
+          const withoutOptimistic = old.filter((m) => !m.optimistic);
           const exists = withoutOptimistic.some((m) => m.id === response.id);
           return exists ? withoutOptimistic : [...withoutOptimistic, response];
         }
@@ -141,12 +143,98 @@ export function useWorkspaceMessages(
     retry: false,
   });
 
-  const [isBotResponding, setIsBotResponding] = useState(false);
+  const addInputToMessageMutation = useMutation<
+    Message,
+    Error,
+    {
+      messageId: string;
+      name: string;
+      value: any;
+      channels: Record<string, number> | null;
+    }
+  >({
+    mutationFn: async ({ messageId, name, value, channels }) => {
+      // Optimistic update
+      queryClient.setQueryData<Message[]>(['messages', threadId], (old = []) =>
+        old.map((m) => {
+          if (m.id === messageId) {
+            return new Message({
+              ...m,
+              values: [
+                ...(m.values ?? []),
+                {
+                  type: MessageValueType.INPUT,
+                  name,
+                  value,
+                  channels: channels ?? {},
+                  createdAt: new Date(),
+                  createdBy: activeUser.name,
+                },
+              ],
+            });
+          }
+          return m;
+        })
+      );
+
+      await queryClient.cancelQueries({
+        queryKey: ['messages', threadId],
+      });
+
+      return await addInputToMessage({ messageId, name, value, channels });
+    },
+
+    onSuccess: (message) => {
+      queryClient.setQueryData<Message[]>(
+        ['messages', threadId],
+        (old = []) => {
+          const withoutOptimistic = old.filter((m) => !m.optimistic);
+          const exists = withoutOptimistic.some((m) => m.id === message.id);
+
+          return exists
+            ? withoutOptimistic.map((m) => (m.id === message.id ? message : m))
+            : [...withoutOptimistic, message];
+        }
+      );
+    },
+
+    onError: (error) => {
+      console.error(error);
+      toast.error('There was an error posting your form input');
+      queryClient.setQueryData<Message[]>(['messages', threadId], (old = []) =>
+        old.filter((m) => !m.optimistic)
+      );
+    },
+    retry: false,
+  });
+
+  const addValueToMessage = (
+    messageId: string,
+    name: string,
+    value: any,
+    channels: Record<string, number>
+  ) => {
+    setIsBotResponding(true);
+
+    addInputToMessageMutation.mutate(
+      { messageId, name, value, channels },
+      {
+        onSettled: () => {
+          setIsBotResponding(false);
+
+          // Scroll to bottom on form submit
+          const anchor = document.getElementById('chat-bottom-anchor');
+          if (anchor) {
+            anchor.scrollIntoView({ behavior: 'smooth' });
+          }
+        },
+      }
+    );
+  };
 
   const uploadFilesMutation = useMutation<MessageFile[], Error, File[]>({
     mutationFn: async (files: File[]) => {
       const result = await uploadFiles(files, activeWorkspace?.id ?? '');
-      console.log('✅ Upload result:', result);
       return result;
     },
   });
@@ -176,7 +264,6 @@ export function useWorkspaceMessages(
         onSuccess: () => {
           setIsBotResponding(false);
 
-          // Only invalidate threads if this was a new thread
           if (!activeThread && activeWorkspace?.id) {
             queryClient.invalidateQueries({
               queryKey: ['threads', activeWorkspace.id],
@@ -200,5 +287,7 @@ export function useWorkspaceMessages(
     isSendingMessage: postMessageMutation.isPending,
     isBotResponding,
     queryMessages: { data: messages, isLoading, error, refetch },
+    addInputToMessageMutation, // raw mutation
+    addValueToMessage, // wrapped helper
   };
 }

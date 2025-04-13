@@ -16,6 +16,60 @@ export async function fetchMessages(threadId: string): Promise<Message[]> {
 }
 
 /**
+ * Sends additional input to an existing message (like form data).
+ */
+export async function addInputToMessage({
+  messageId,
+  name,
+  value,
+  channels,
+}: {
+  messageId: string;
+  name: string;
+  value: any;
+  channels: Record<string, number> | null;
+}): Promise<Message> {
+  return new Promise((resolve, reject) => {
+    let lastMessage: Message | null = null;
+
+    webApi
+      .post(
+        `/messages/${messageId}/values`,
+        { name, value, channels },
+        {
+          headers: { Accept: 'text/event-stream' },
+          responseType: 'stream',
+          onDownloadProgress: (event) => {
+            const raw = event.event.currentTarget.response as string;
+            const chunks = raw.split('\n\ndata:');
+
+            try {
+              const lastChunk = chunks[chunks.length - 1];
+              if (lastChunk.trim()) {
+                const parsed = JSON.parse(lastChunk);
+                lastMessage = new Message(parsed);
+              }
+            } catch (error) {
+              console.warn('Stream parse error:', error);
+            }
+          },
+        }
+      )
+      .then(() => {
+        if (lastMessage) {
+          resolve(lastMessage);
+        } else {
+          reject(new Error('No valid message received from stream'));
+        }
+      })
+      .catch((error) => {
+        console.error('Streaming error:', error);
+        reject(error);
+      });
+  });
+}
+
+/**
  * Posts a user message to a thread (supporting contentList/files).
  */
 export async function postMessage({

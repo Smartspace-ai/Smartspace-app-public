@@ -321,6 +321,9 @@ export const ChatMessage: FC<ChatMessageProps> = ({
         downloadFile={downloadFile}
         saveFile={saveFile}
         useQueryFiles={useQueryFiles}
+        addValueToMessage={(name: string, val: any) => {
+          addValueToMessage(message.id ?? '', name, val, channels);
+        }}
       />
     );
     content = null;

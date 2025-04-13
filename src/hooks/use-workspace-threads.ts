@@ -102,7 +102,9 @@ export function useWorkspaceThreads() {
 
       // Set the active thread with the stable reference
       setActiveThread(stableThread);
-      navigate(`/${activeWorkspace?.id}/${stableThread.id}`, { replace: true });
+      navigate(`/workspace/${activeWorkspace?.id}/thread/${stableThread.id}`, {
+        replace: true,
+      });
     },
     [activeWorkspace?.id, navigate, setActiveThread]
   );

@@ -11,7 +11,7 @@ export default function ChatBotLayout() {
   useEffect(() => {
     if (!workspaceId && !isLoading && workspaces.length > 0) {
       // Redirect to the first workspace if none is in the URL.
-      navigate(`/${workspaces[0].id}`, { replace: true });
+      navigate(`/workspace/${workspaces[0].id}`, { replace: true });
     }
   }, [workspaceId, isLoading, workspaces, navigate]);
 

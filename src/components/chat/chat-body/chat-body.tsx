@@ -2,7 +2,7 @@ import type React from 'react';
 
 import { Message } from '@/models/message';
 import { MessagesSquare } from 'lucide-react';
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect } from 'react';
 import { downloadFile } from '../../../apis/message-threads';
 import { useQueryFiles } from '../../../hooks/use-files';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
@@ -25,26 +25,27 @@ interface ChatBodyProps {
   isSendingMessage: boolean;
   commentsDraw: Draw;
   waitingResponse: boolean;
+  addValueToMessage: (
+    messageId: string,
+    name: string,
+    value: any,
+    channels: Record<string, number>
+  ) => void;
 }
 
 export default function ChatBody({
   messages,
-  copiedMessageId,
   messagesEndRef,
-  copyMessageToClipboard,
   isLoading,
   isBotResponding,
-  isSendingMessage,
-  commentsDraw,
-  waitingResponse,
+  addValueToMessage,
 }: ChatBodyProps) {
   // Auto-scroll to bottom when bot starts responding
-  const prevBotRespondingRef = useRef(isBotResponding);
   const { graphData } = useContext(UserContext);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [isBotResponding, messagesEndRef]);
+  }, [isBotResponding, messagesEndRef, messages]);
 
   return (
     <div className="ss-chat__body flex-1 overflow-y-auto">
@@ -89,6 +90,7 @@ export default function ChatBody({
                   downloadFile={downloadFile}
                   saveFile={saveFile}
                   useQueryFiles={useQueryFiles}
+                  addValueToMessage={addValueToMessage}
                 />
               </div>
             ))}
