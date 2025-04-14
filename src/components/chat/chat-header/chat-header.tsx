@@ -1,7 +1,7 @@
-import { Bell, MessageSquare, PanelLeft } from 'lucide-react';
+import { MessageSquare, PanelLeft } from 'lucide-react';
 
 import { useSmartSpaceChat } from '../../../contexts/smartspace-context';
-import { Button } from '../../ui/button';
+import { NotificationPanel } from '../../notifications/notifications-panel/notifications-panel';
 import { Separator } from '../../ui/separator';
 import { SidebarTrigger } from '../../ui/sidebar';
 
@@ -37,15 +37,7 @@ export function ChatHeader() {
         </div>
       </div>
       <div className="flex items-center gap-2 px-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 relative text-muted-foreground hover:text-foreground"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-1 right-1 flex h-1.5 w-1.5 bg-primary rounded-full"></span>
-          <span className="sr-only">Notifications</span>
-        </Button>
+        <NotificationPanel />
         <Separator orientation="vertical" className="h-4" />
         <SidebarTrigger
           side="right"
