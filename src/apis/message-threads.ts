@@ -1,9 +1,7 @@
 import { MessageThread } from '../models/message-threads';
 import webApi from '../utils/axios-setup';
 
-/**
- * Fetches threads, optionally filtered by workspace ID
- */
+// Fetch all threads for a given workspace
 export async function fetchThreads(
   workspaceId?: string
 ): Promise<MessageThread[]> {
@@ -16,6 +14,7 @@ export async function fetchThreads(
       `workspaces/${workspaceId}/messagethreads`
     );
     const threads = (response.data.data as MessageThread[]) || [];
+
     return threads.map((thread: MessageThread) => new MessageThread(thread));
   } catch (error) {
     console.error('Error fetching threads:', error);
@@ -23,9 +22,7 @@ export async function fetchThreads(
   }
 }
 
-/**
- * Changes the favorite status of a thread
- */
+// Toggle favorite status of a message thread
 export async function toggleFavorite(
   thread: MessageThread,
   favourite: boolean
@@ -34,10 +31,9 @@ export async function toggleFavorite(
     const response = await webApi.put(
       `/messagethreads/${thread.id}/favorited`,
       favourite,
-      {
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { headers: { 'Content-Type': 'application/json' } }
     );
+
     return new MessageThread(response.data);
   } catch (error) {
     console.error('Error toggling favorite:', error);
@@ -45,9 +41,7 @@ export async function toggleFavorite(
   }
 }
 
-/**
- * Changes the name of a thread
- */
+// Rename a message thread
 export async function renameThread(
   thread: MessageThread,
   name: string
@@ -56,10 +50,9 @@ export async function renameThread(
     const response = await webApi.put(
       `/messagethreads/${thread.id}/name`,
       name,
-      {
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { headers: { 'Content-Type': 'application/json' } }
     );
+
     return new MessageThread(response.data);
   } catch (error) {
     console.error('Error renaming thread:', error);
@@ -67,9 +60,7 @@ export async function renameThread(
   }
 }
 
-/**
- * Deletes a thread
- */
+// Delete a message thread by ID
 export async function deleteThread(threadId: string): Promise<void> {
   try {
     await webApi.delete(`/messagethreads/${threadId}`);
@@ -78,9 +69,7 @@ export async function deleteThread(threadId: string): Promise<void> {
   }
 }
 
-/**
- * Uploads files
- */
+// Upload files to a workspace
 export async function uploadFiles(
   files: File[],
   workspaceId: string
@@ -96,8 +85,6 @@ export async function uploadFiles(
       },
     });
 
-    console.log('Response from uploadFiles:', response.data);
-
     const data = response.data;
 
     if (data && data.length > 0) {
@@ -111,9 +98,7 @@ export async function uploadFiles(
   }
 }
 
-/**
- * Downloads a file
- */
+// Download file blob by ID
 export async function downloadFile(id: string): Promise<Blob> {
   try {
     const response = await webApi.get(`/messageThreads/files/${id}/download`, {
@@ -130,9 +115,7 @@ export async function downloadFile(id: string): Promise<Blob> {
   }
 }
 
-/**
- * Creates a new thread
- */
+// Create a new message thread
 export async function createThread(
   name: string,
   workspaceId: string
@@ -140,9 +123,7 @@ export async function createThread(
   try {
     const response = await webApi.post(
       `workspaces/${workspaceId}/messageThreads`,
-      {
-        name,
-      }
+      { name }
     );
 
     return new MessageThread(response.data);
@@ -152,9 +133,7 @@ export async function createThread(
   }
 }
 
-/**
- * Updates a thread
- */
+// Update properties of a message thread
 export async function updateThread(
   threadId: string,
   updates: Partial<MessageThread>

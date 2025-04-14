@@ -1,22 +1,7 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { downloadFile } from '../apis/message-threads';
 
-import { toast } from 'sonner';
-import { downloadFile, uploadFiles } from '../apis/message-threads';
-import { MessageFile } from '../models/message';
-
-export const useMessageFiles = () => {
-  const uploadFilesMutation = useMutation({
-    mutationFn: async (files: File[]): Promise<MessageFile[]> => {
-      return await uploadFiles(files);
-    },
-    onError: (error) => {
-      toast.error('There was an error uploading your files.');
-    },
-  });
-
-  return { uploadFilesMutation };
-};
-
+// Hook to fetch and cache a single file blob by ID
 export const useMessageFile = (id: string) => {
   const useMessageFileRaw = useQuery<Blob, Error>({
     queryKey: ['messagefile', id, 'download'],
@@ -29,12 +14,16 @@ export const useMessageFile = (id: string) => {
   return { useMessageFileRaw };
 };
 
+// Utility to save a file locally from a Blob
 export const saveFile = async (blob: Blob, fileName: string) => {
   const a = document.createElement('a');
   a.download = fileName;
   a.href = URL.createObjectURL(blob);
-  a.addEventListener('click', (e) => {
+
+  // Clean up after a short delay to prevent memory leaks
+  a.addEventListener('click', () => {
     setTimeout(() => URL.revokeObjectURL(a.href), 30 * 1000);
   });
+
   a.click();
 };

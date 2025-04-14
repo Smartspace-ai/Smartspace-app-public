@@ -38,7 +38,7 @@ export const useUserInformation = ({ msalInstance }: IProps) => {
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [graphPhoto, setGraphPhoto] = useState<string>('');
 
-  // 🧠 Helper to acquire token redirect if needed
+  // Trigger redirect flow to request additional Graph scopes if needed
   const redirectForConsent = () => {
     const account = instance.getActiveAccount() as AccountInfo;
     if (account) {
@@ -49,14 +49,16 @@ export const useUserInformation = ({ msalInstance }: IProps) => {
     }
   };
 
-  // 📥 Load basic profile
+  // Fetch user profile data from Microsoft Graph
   useEffect(() => {
     if (graphData || inProgress !== InteractionStatus.None || !msalInstance)
       return;
 
     callMsGraph<GraphData>(graphConfig.graphMeEndpoint, msalInstance)
       .then((response) => {
-        if (response && !(response instanceof Blob)) setGraphData(response);
+        if (response && !(response instanceof Blob)) {
+          setGraphData(response);
+        }
       })
       .catch((e) => {
         if (e instanceof InteractionRequiredAuthError) {
@@ -69,6 +71,7 @@ export const useUserInformation = ({ msalInstance }: IProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inProgress, graphData, msalInstance]);
 
+  // Fetch user profile photo
   useEffect(() => {
     if (graphPhoto || inProgress !== InteractionStatus.None || !msalInstance)
       return;

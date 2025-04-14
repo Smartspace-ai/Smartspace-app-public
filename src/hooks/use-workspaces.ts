@@ -10,7 +10,7 @@ export function useWorkspaces() {
     useSmartSpaceChat();
   const navigate = useNavigate();
 
-  // Fetch all workspaces
+  // Fetch workspace list via React Query
   const {
     data: workspaces = [],
     isLoading,
@@ -21,7 +21,7 @@ export function useWorkspaces() {
     queryFn: fetchWorkspaces,
   });
 
-  // Set the first workspace as active if none is selected
+  // Set the first available workspace as active on initial load
   useEffect(() => {
     if (!activeWorkspace && workspaces.length > 0) {
       setActiveWorkspace(workspaces[0]);
@@ -29,10 +29,10 @@ export function useWorkspaces() {
     }
   }, [workspaces, activeWorkspace, setActiveWorkspace, navigate]);
 
-  // Handle workspace change
+  // Change active workspace and reset active thread
   const handleWorkspaceChange = (workspace: Workspace) => {
     setActiveWorkspace(workspace);
-    setActiveThread(null); // Clear active thread when changing workspace
+    setActiveThread(null);
     navigate(`/workspace/${workspace.id}`, { replace: true });
   };
 

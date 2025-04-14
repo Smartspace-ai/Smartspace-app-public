@@ -5,11 +5,9 @@ import {
   updateThread,
 } from '@/apis/message-threads';
 
+import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-// Import the context directly from the file
-import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MessageThread } from '../models/message-threads';
 
@@ -18,9 +16,11 @@ export function useWorkspaceThreads() {
   const { activeWorkspace, setActiveThread, activeThread } =
     useSmartSpaceChat();
   const navigate = useNavigate();
+
   const [isCreatingThread, setIsCreatingThread] = useState(false);
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
   const initialThreadSetRef = useRef<Record<string, boolean>>({});
   const { workspaceId, threadId } = useParams<{
     workspaceId: string;
@@ -39,7 +39,7 @@ export function useWorkspaceThreads() {
     enabled: !!activeWorkspace?.id,
   });
 
-  // Create a new thread
+  // Create a new thread and set it as active
   const createThreadMutation = useMutation({
     mutationFn: ({
       name,
@@ -58,7 +58,7 @@ export function useWorkspaceThreads() {
     },
   });
 
-  // Update a thread (e.g., toggle favorite)
+  // Update a thread (e.g. toggle favorite)
   const updateThreadMutation = useMutation({
     mutationFn: ({
       threadId,
@@ -78,29 +78,25 @@ export function useWorkspaceThreads() {
     },
   });
 
+  // Delete a thread and remove it from state
   const deleteThreadMutation = useMutation({
     mutationFn: (threadId: string) => deleteThread(threadId),
     onSuccess: (_, threadId) => {
-      // Remove the thread from the cache
       queryClient.setQueryData(
         ['threads', activeWorkspace?.id],
         (oldThreads: MessageThread[] = []) =>
           oldThreads.filter((thread) => thread.id !== threadId)
       );
-
-      // If the deleted thread was active, clear it
       if (activeThread?.id === threadId) {
         setActiveThread(null);
       }
     },
   });
 
+  // Set active thread and navigate to it
   const handleThreadChange = useCallback(
     (thread: MessageThread) => {
-      // Create a stable reference to the thread to prevent issues with object identity
       const stableThread = { ...thread };
-
-      // Set the active thread with the stable reference
       setActiveThread(stableThread);
       navigate(`/workspace/${activeWorkspace?.id}/thread/${stableThread.id}`, {
         replace: true,
@@ -109,12 +105,12 @@ export function useWorkspaceThreads() {
     [activeWorkspace?.id, navigate, setActiveThread]
   );
 
-  // Create a new thread
+  // Trigger UI for new thread creation
   const handleCreateThread = useCallback(() => {
     setIsCreatingThread(true);
   }, []);
 
-  // Submit a new thread
+  // Submit new thread to API
   const handleSubmitThread = useCallback(
     (name: string) => {
       if (!activeWorkspace?.id || !name.trim()) return;
@@ -123,7 +119,7 @@ export function useWorkspaceThreads() {
     [activeWorkspace?.id, createThreadMutation]
   );
 
-  // Cancel thread creation
+  // Cancel creation flow
   const handleCancelThread = useCallback(() => {
     setIsCreatingThread(false);
   }, []);
@@ -139,7 +135,7 @@ export function useWorkspaceThreads() {
     [updateThreadMutation]
   );
 
-  // Update thread metadata (e.g., after adding a message)
+  // Update thread data in cache (e.g. after posting a message)
   const updateThreadMetadata = useCallback(
     (threadId: string, updates: Partial<MessageThread>) => {
       if (!activeWorkspace?.id) return;
@@ -155,7 +151,7 @@ export function useWorkspaceThreads() {
     [activeWorkspace?.id, queryClient]
   );
 
-  // Set initial thread when threads are loaded
+  // Set the initial active thread once threads are available
   useEffect(() => {
     if (
       activeWorkspace?.id &&
@@ -171,8 +167,8 @@ export function useWorkspaceThreads() {
           threadToSelect = found;
         }
       }
+
       handleThreadChange(threadToSelect);
-      // Mark that this workspace has had its initial thread set
       initialThreadSetRef.current[activeWorkspace.id] = true;
     }
   }, [

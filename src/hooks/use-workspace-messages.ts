@@ -36,6 +36,7 @@ export function useWorkspaceMessages(
     profilePhoto: graphPhoto || '',
   };
 
+  // Fetch messages for the current thread
   const {
     data: messages = [],
     isLoading,
@@ -47,7 +48,7 @@ export function useWorkspaceMessages(
     queryFn: async () => {
       if (!threadId) return [];
       const result = await fetchMessages(threadId);
-      return result.reverse();
+      return result.reverse(); // Latest at the bottom
     },
     enabled: !!threadId,
     retry: false,
@@ -57,6 +58,7 @@ export function useWorkspaceMessages(
 
   const [isBotResponding, setIsBotResponding] = useState(false);
 
+  // Send a new message (text + optional files)
   const postMessageMutation = useMutation<
     Message,
     Error,
@@ -70,7 +72,6 @@ export function useWorkspaceMessages(
     mutationFn: async ({ message, contentList, files, threadId }) => {
       const finalThreadId = threadId ?? urlThreadId;
       const finalWorkspaceId = activeWorkspace?.id || '0';
-      const createdBy = activeUser.name;
 
       if (!finalThreadId)
         throw new Error('Thread ID is required to post message');
@@ -86,7 +87,7 @@ export function useWorkspaceMessages(
                   value: contentList,
                   channels: {},
                   createdAt: new Date(),
-                  createdBy,
+                  createdBy: activeUser.name,
                 },
               ]
             : []),
@@ -98,16 +99,17 @@ export function useWorkspaceMessages(
                   value: files,
                   channels: {},
                   createdAt: new Date(),
-                  createdBy,
+                  createdBy: activeUser.name,
                 },
               ]
             : []),
         ],
         createdAt: new Date(),
-        createdBy,
+        createdBy: activeUser.name,
         optimistic: true,
       });
 
+      // Add optimistic message to cache
       queryClient.setQueryData<Message[]>(
         ['messages', finalThreadId],
         (old = []) => [...old, optimisticMessage]
@@ -124,6 +126,7 @@ export function useWorkspaceMessages(
         files,
       });
 
+      // Replace optimistic with real message
       queryClient.setQueryData<Message[]>(
         ['messages', finalThreadId],
         (old = []) => {
@@ -135,7 +138,6 @@ export function useWorkspaceMessages(
 
       return response;
     },
-
     onError: async () => {
       toast.error('There was an error posting your message');
       await refetch();
@@ -143,6 +145,7 @@ export function useWorkspaceMessages(
     retry: false,
   });
 
+  // Add additional input (form data, files) to an existing message
   const addInputToMessageMutation = useMutation<
     Message,
     Error,
@@ -154,7 +157,7 @@ export function useWorkspaceMessages(
     }
   >({
     mutationFn: async ({ messageId, name, value, channels }) => {
-      // Optimistic update
+      // Optimistic input patch
       queryClient.setQueryData<Message[]>(['messages', threadId], (old = []) =>
         old.map((m) => {
           if (m.id === messageId) {
@@ -177,13 +180,10 @@ export function useWorkspaceMessages(
         })
       );
 
-      await queryClient.cancelQueries({
-        queryKey: ['messages', threadId],
-      });
+      await queryClient.cancelQueries({ queryKey: ['messages', threadId] });
 
       return await addInputToMessage({ messageId, name, value, channels });
     },
-
     onSuccess: (message) => {
       queryClient.setQueryData<Message[]>(
         ['messages', threadId],
@@ -197,7 +197,6 @@ export function useWorkspaceMessages(
         }
       );
     },
-
     onError: (error) => {
       console.error(error);
       toast.error('There was an error posting your form input');
@@ -208,6 +207,7 @@ export function useWorkspaceMessages(
     retry: false,
   });
 
+  // Wrapper for form-driven input submission
   const addValueToMessage = (
     messageId: string,
     name: string,
@@ -222,7 +222,6 @@ export function useWorkspaceMessages(
         onSettled: () => {
           setIsBotResponding(false);
 
-          // Scroll to bottom on form submit
           const anchor = document.getElementById('chat-bottom-anchor');
           if (anchor) {
             anchor.scrollIntoView({ behavior: 'smooth' });
@@ -232,6 +231,7 @@ export function useWorkspaceMessages(
     );
   };
 
+  // Upload files and return MessageFile[]
   const uploadFilesMutation = useMutation<MessageFile[], Error, File[]>({
     mutationFn: async (files: File[]) => {
       const result = await uploadFiles(files, activeWorkspace?.id ?? '');
@@ -239,14 +239,13 @@ export function useWorkspaceMessages(
     },
   });
 
+  // Public method to send a message
   const sendMessage = (
     message?: string,
     contentList?: MessageCreateContent[],
     files?: MessageFile[]
   ) => {
-    const currentThreadId = threadId;
-
-    if (!currentThreadId) {
+    if (!threadId) {
       toast.error('No thread ID found. Cannot send message.');
       return;
     }
@@ -254,16 +253,10 @@ export function useWorkspaceMessages(
     setIsBotResponding(true);
 
     postMessageMutation.mutate(
-      {
-        threadId: currentThreadId,
-        message,
-        contentList,
-        files,
-      },
+      { threadId, message, contentList, files },
       {
         onSuccess: () => {
           setIsBotResponding(false);
-
           if (!activeThread && activeWorkspace?.id) {
             queryClient.invalidateQueries({
               queryKey: ['threads', activeWorkspace.id],
@@ -287,7 +280,7 @@ export function useWorkspaceMessages(
     isSendingMessage: postMessageMutation.isPending,
     isBotResponding,
     queryMessages: { data: messages, isLoading, error, refetch },
-    addInputToMessageMutation, // raw mutation
-    addValueToMessage, // wrapped helper
+    addInputToMessageMutation, // exposed raw mutation
+    addValueToMessage, // wrapped helper with scroll
   };
 }

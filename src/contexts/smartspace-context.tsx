@@ -3,9 +3,8 @@ import { createContext, useContext, useState } from 'react';
 import { MessageThread } from '../models/message-threads';
 import type { Workspace } from '../models/workspace';
 
-// Update the context type to match the updated MessageThread class
 type SmartSpaceChatContextType = {
-  // UI state that isn't handled by React Query
+  // UI state
   isDarkMode: boolean;
   toggleDarkMode: () => void;
 
@@ -19,13 +18,13 @@ type SmartSpaceChatContextType = {
     preferences: Partial<SmartSpaceChatContextType['userPreferences']>
   ) => void;
 
-  // Any local-only functionality not tied to API
-  localDrafts: Record<string, string>; // threadId -> draft message
+  // Local message drafts (per thread)
+  localDrafts: Record<string, string>;
   saveDraft: (threadId: string, content: string) => void;
   getDraft: (threadId: string) => string;
   clearDraft: (threadId: string) => void;
 
-  // Workspace selection state (moved from WorkspaceSelectionProvider)
+  // Active selection state
   activeWorkspace: Workspace | null;
   activeThread: MessageThread | null;
   setActiveWorkspace: (workspace: Workspace) => void;
@@ -34,12 +33,11 @@ type SmartSpaceChatContextType = {
   setActiveThreadId: (threadId: string | null) => void;
 };
 
-// Create the context with a default value
+// Context initialization
 const SmartSpaceChatContext = createContext<
   SmartSpaceChatContextType | undefined
 >(undefined);
 
-// Sample initial values
 const initialUserPreferences = {
   notificationsEnabled: true,
   soundEnabled: true,
@@ -52,31 +50,26 @@ export const SmartSpaceChatProvider: React.FC<{
   // UI state
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // User preferences
+  // Preferences and local drafts
   const [userPreferences, setUserPreferences] = useState(
     initialUserPreferences
   );
-
-  // Local drafts
   const [localDrafts, setLocalDrafts] = useState<Record<string, string>>({});
 
+  // Workspace/thread state
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(
     null
   );
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-
-  // Workspace selection state (moved from WorkspaceSelectionProvider)
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
     null
   );
   const [activeThread, setActiveThread] = useState<MessageThread | null>(null);
 
-  // Toggle dark mode
   const toggleDarkMode = () => {
     setIsDarkMode((prev) => !prev);
   };
 
-  // Update user preferences
   const updateUserPreferences = (
     preferences: Partial<SmartSpaceChatContextType['userPreferences']>
   ) => {
@@ -86,7 +79,6 @@ export const SmartSpaceChatProvider: React.FC<{
     }));
   };
 
-  // Save draft message
   const saveDraft = (threadId: string, content: string) => {
     setLocalDrafts((prev) => ({
       ...prev,
@@ -94,22 +86,19 @@ export const SmartSpaceChatProvider: React.FC<{
     }));
   };
 
-  // Get draft message
   const getDraft = (threadId: string) => {
     return localDrafts[threadId] || '';
   };
 
-  // Clear draft message
   const clearDraft = (threadId: string) => {
     setLocalDrafts((prev) => {
-      const newDrafts = { ...prev };
-      delete newDrafts[threadId];
-      return newDrafts;
+      const updated = { ...prev };
+      delete updated[threadId];
+      return updated;
     });
   };
 
-  // Provide the context value
-  const contextValue = {
+  const contextValue: SmartSpaceChatContextType = {
     isDarkMode,
     toggleDarkMode,
     userPreferences,
@@ -122,13 +111,8 @@ export const SmartSpaceChatProvider: React.FC<{
     activeThread,
     setActiveWorkspace,
     setActiveThread: (thread: MessageThread | null) => {
-      // Only update if the thread is different or if we're explicitly setting to null
       if (thread?.id !== activeThread?.id) {
         setActiveThread(thread);
-      } else {
-        // console.log(
-        //   'SmartSpaceContext - Prevented redundant activeThread update'
-        // );
       }
     },
     setActiveWorkspaceId,
@@ -142,7 +126,7 @@ export const SmartSpaceChatProvider: React.FC<{
   );
 };
 
-// Custom hook to use the context
+// Hook to consume the context
 export const useSmartSpaceChat = () => {
   const context = useContext(SmartSpaceChatContext);
   if (context === undefined) {
@@ -153,5 +137,4 @@ export const useSmartSpaceChat = () => {
   return context;
 };
 
-// Export both as named export and default export
 export default useSmartSpaceChat;

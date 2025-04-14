@@ -18,7 +18,7 @@ const NotificationsContext = createContext<
   NotificationsContextType | undefined
 >(undefined);
 
-// Sample notifications data
+// Static demo data
 const initialNotifications: Notification[] = [
   {
     id: '1',
@@ -68,10 +68,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [notifications, setNotifications] =
     useState<Notification[]>(initialNotifications);
 
-  const unreadCount = notifications.filter(
-    (notification) => !notification.read
-  ).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
+  // Add a new notification
   const addNotification = (
     notification: Omit<Notification, 'id' | 'read' | 'time'>
   ) => {
@@ -85,31 +84,29 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     setNotifications((prev) => [newNotification, ...prev]);
   };
 
+  // Mark a single notification as read
   const markAsRead = (id: string) => {
     setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
   };
 
+  // Mark all notifications as read
   const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((notification) => ({ ...notification, read: true }))
-    );
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
+  // Remove a single notification
   const dismissNotification = (id: string) => {
-    setNotifications((prev) =>
-      prev.filter((notification) => notification.id !== id)
-    );
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
+  // Clear all notifications
   const clearAllNotifications = () => {
     setNotifications([]);
   };
 
-  // Simulate receiving new notifications periodically (for demo purposes)
+  // Simulate new notifications occasionally for demo purposes
   useEffect(() => {
     const types: Notification['type'][] = [
       'message',
@@ -134,13 +131,12 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     ];
 
     const interval = setInterval(() => {
-      // Only add a new notification occasionally (20% chance)
       if (Math.random() > 0.8) {
-        const randomIndex = Math.floor(Math.random() * 5);
+        const i = Math.floor(Math.random() * 5);
         addNotification({
-          title: titles[randomIndex],
-          description: descriptions[randomIndex],
-          type: types[randomIndex],
+          title: titles[i],
+          description: descriptions[i],
+          type: types[i],
         });
       }
     }, 30000); // Every 30 seconds
@@ -165,6 +161,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
+// Hook to consume the notifications context
 export const useNotifications = () => {
   const context = useContext(NotificationsContext);
   if (context === undefined) {

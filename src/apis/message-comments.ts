@@ -1,9 +1,7 @@
 import { MessageComment } from '@/models/message-comment';
 import webApi from '../utils/axios-setup';
 
-/**
- * Fetches comments for a thread
- */
+// Fetch all comments for a given thread
 export async function fetchComments(
   threadId: string
 ): Promise<MessageComment[]> {
@@ -14,13 +12,13 @@ export async function fetchComments(
       throw new Error(`Failed to fetch comments: ${response.statusText}`);
     }
 
-    // Sort comments by createdAt ascending (oldest first)
+    // Sort comments in ascending order (oldest first)
     const sortedComments = response.data.data.sort(
       (a: MessageComment, b: MessageComment) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
-    // Map the API response to MessageComment objects
+    // Map raw objects to MessageComment model
     return sortedComments.map(
       (comment: MessageComment) => new MessageComment(comment)
     );
@@ -30,15 +28,13 @@ export async function fetchComments(
   }
 }
 
-/**
- * Adds a comment to a thread
- */
+// Add a comment to a thread
 export async function addComment(
   threadId: string,
   content: string
 ): Promise<MessageComment> {
   try {
-    // Simulate network delay
+    // Simulate latency (can be removed in production)
     await new Promise((resolve) => setTimeout(resolve, 400));
 
     const response = await webApi.post(`/messageThreads/${threadId}/comments`, {

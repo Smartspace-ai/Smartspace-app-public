@@ -1,9 +1,7 @@
 import { Message, MessageCreateContent, MessageFile } from '@/models/message';
 import webApi from '@/utils/axios-setup';
 
-/**
- * Fetches messages for a specific thread.
- */
+// Fetch all messages in a given message thread
 export async function fetchMessages(threadId: string): Promise<Message[]> {
   try {
     const response = await webApi.get(`messagethreads/${threadId}/messages`);
@@ -15,9 +13,7 @@ export async function fetchMessages(threadId: string): Promise<Message[]> {
   }
 }
 
-/**
- * Sends additional input to an existing message (like form data).
- */
+// Send structured input (e.g. form values) to a specific message
 export async function addInputToMessage({
   messageId,
   name,
@@ -38,7 +34,7 @@ export async function addInputToMessage({
         { name, value, channels },
         {
           headers: { Accept: 'text/event-stream' },
-          responseType: 'stream',
+          responseType: 'stream', // Note: this isn't a native axios option, could be a custom adapter
           onDownloadProgress: (event) => {
             const raw = event.event.currentTarget.response as string;
             const chunks = raw.split('\n\ndata:');
@@ -69,9 +65,7 @@ export async function addInputToMessage({
   });
 }
 
-/**
- * Posts a user message to a thread (supporting contentList/files).
- */
+// Post a new user message to a thread (supports content + files)
 export async function postMessage({
   workSpaceId,
   threadId,
@@ -110,8 +104,8 @@ export async function postMessage({
       `/messages/${workSpaceId}/${threadId}`,
       payload
     );
-    const message = response.data;
-    return new Message(message);
+
+    return new Message(response.data);
   } catch (error) {
     console.error('Error posting message:', error);
     throw new Error('Failed to post message');
