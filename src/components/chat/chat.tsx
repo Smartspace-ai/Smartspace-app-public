@@ -5,6 +5,7 @@ import { Upload } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+
 import { MessageCreateContent } from '../../models/message';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
@@ -25,29 +26,31 @@ export function Chat() {
     addValueToMessage,
   } = useWorkspaceMessages(activeWorkspace, activeThread);
 
-  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [newMessage, setNewMessage] = useState(() =>
     activeThread ? getDraft(activeThread.id) : ''
   );
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [isDraggingOverChat, setIsDraggingOverChat] = useState(false);
 
+  // Scroll to bottom on message change
   useEffect(() => {
     if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
     }
   }, [messages.length]);
 
+  // Save draft on message change
   useEffect(() => {
     if (activeThread) {
       saveDraft(activeThread.id, newMessage);
     }
   }, [newMessage, activeThread, saveDraft]);
 
+  // Copy to clipboard handler
   const copyMessageToClipboard = (message: string, id: number) => {
     navigator.clipboard.writeText(message).then(
       () => {
@@ -61,6 +64,7 @@ export function Chat() {
     );
   };
 
+  // File upload handler
   const handleFilesSelected = useCallback(
     async (files: File[]) => {
       if (!activeThread) return;
@@ -85,6 +89,7 @@ export function Chat() {
     [uploadFiles, activeThread]
   );
 
+  // Send message handler
   const handleSendMessage = useCallback(() => {
     if ((!newMessage.trim() && uploadedFiles.length === 0) || !activeThread)
       return;
@@ -92,9 +97,7 @@ export function Chat() {
     const contentList: MessageCreateContent[] = [];
 
     if (newMessage.trim()) {
-      contentList.push({
-        text: newMessage.trim(),
-      });
+      contentList.push({ text: newMessage.trim() });
     }
 
     sendMessage(newMessage.trim(), contentList, uploadedFiles);
@@ -105,6 +108,7 @@ export function Chat() {
     clearDraft(activeThread.id);
   }, [newMessage, uploadedFiles, activeThread, sendMessage, clearDraft]);
 
+  // Submit on Enter (not Shift+Enter)
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -115,6 +119,7 @@ export function Chat() {
     [handleSendMessage]
   );
 
+  // Drag-and-drop handlers
   const handleDragEnterChat = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -138,7 +143,7 @@ export function Chat() {
     e.stopPropagation();
     setIsDraggingOverChat(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    if (e.dataTransfer.files?.length > 0) {
       const filesArray = Array.from(e.dataTransfer.files);
       setSelectedFiles((prev) => [...prev, ...filesArray]);
       handleFilesSelected(filesArray);

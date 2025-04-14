@@ -1,15 +1,16 @@
-import type React from 'react';
-
-import { Message } from '@/models/message';
 import { MessagesSquare } from 'lucide-react';
+import type React from 'react';
 import { useContext, useEffect } from 'react';
+
+import { Draw } from '@/models/draw';
+import { Message } from '@/models/message';
 import { downloadFile } from '../../../apis/message-threads';
 import { useQueryFiles } from '../../../hooks/use-files';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
 import { UserContext } from '../../../hooks/use-user-information';
-import { Draw } from '../../../models/draw';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
+
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { ScrollArea } from '../../ui/scroll-area';
 import { Skeleton } from '../../ui/skeleton';
@@ -40,9 +41,9 @@ export default function ChatBody({
   isBotResponding,
   addValueToMessage,
 }: ChatBodyProps) {
-  // Auto-scroll to bottom when bot starts responding
   const { graphData } = useContext(UserContext);
 
+  // Auto-scroll to bottom when bot starts responding
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [isBotResponding, messagesEndRef, messages]);
@@ -51,7 +52,7 @@ export default function ChatBody({
     <div className="ss-chat__body flex-1 overflow-y-auto">
       <ScrollArea className="h-full">
         {isLoading ? (
-          // Loading skeleton
+          // Skeleton UI during loading
           <div className="space-y-8 max-w-3xl mx-auto">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex gap-3">
@@ -64,7 +65,7 @@ export default function ChatBody({
             ))}
           </div>
         ) : messages.length === 0 ? (
-          // No messages state
+          // Empty state
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <div className="rounded-full bg-primary/10 p-4 mb-4">
               <MessagesSquare className="h-8 w-8 text-primary" />
@@ -75,12 +76,11 @@ export default function ChatBody({
             </p>
           </div>
         ) : (
-          // Messages
+          // Messages list
           <div className="space-y-2 max-w-3xl mx-auto p-2">
             {messages.map((message, index) => (
               <div className="ss-chat__message" key={message.id}>
                 <ChatMessage
-                  key={message.id}
                   userId={(graphData as any)?.id}
                   avatar={getInitials(message.createdBy ?? 'You')}
                   message={message}
@@ -96,6 +96,7 @@ export default function ChatBody({
             ))}
 
             {isBotResponding && (
+              // Bot typing indicator
               <div className="rounded-lg border bg-background shadow-md mb-4 group">
                 <div className="flex items-center justify-between p-3 border-b">
                   <div className="flex items-center gap-2">
@@ -115,23 +116,19 @@ export default function ChatBody({
 
                 <div className="p-3 min-h-3">
                   <div className="flex space-x-2 p-1">
-                    <div
-                      className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
-                      style={{ animationDelay: '0ms' }}
-                    ></div>
-                    <div
-                      className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
-                      style={{ animationDelay: '300ms' }}
-                    ></div>
-                    <div
-                      className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
-                      style={{ animationDelay: '600ms' }}
-                    ></div>
+                    {[0, 300, 600].map((delay) => (
+                      <div
+                        key={delay}
+                        className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
+                        style={{ animationDelay: `${delay}ms` }}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
             )}
 
+            {/* Auto-scroll anchor */}
             <div ref={messagesEndRef} className="h-4" />
           </div>
         )}
