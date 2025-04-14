@@ -23,8 +23,8 @@ import {
   Star,
   Trash2,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 import { renameThread } from '../../../apis/message-threads';
 import useSmartSpaceChat from '../../../contexts/smartspace-context';
@@ -64,12 +64,12 @@ export function Threads() {
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { workspaceId: urlWorkspaceId, threadId: urlThreadId } = useParams();
   // Sort the threads based on the current sort order
   const sortedThreads = sortThreads(threads, sortOrder);
 
-  // Improve the thread selection handling
+  // Select the first thread if no active thread is set
   const handleThreadClick = (thread: MessageThread) => {
-    // Add a visual indication that the thread is being selected
     const threadElement = document.getElementById(`thread-${thread.id}`);
     if (threadElement) {
       threadElement.classList.add('bg-slate-200');
@@ -82,7 +82,7 @@ export function Threads() {
     handleThreadChange(thread);
   };
 
-  // Function to add a new thread
+  // Handle new thread
   const handleNewThread = useCallback(() => {
     const newThreadId = crypto.randomUUID();
 
@@ -118,6 +118,21 @@ export function Threads() {
     setActiveThread,
     handleNewThread,
   ]);
+
+  // Use a ref to store the previous value of urlWorkspaceId
+  const previousWorkspaceIdRef = useRef<string | undefined>();
+
+  useEffect(() => {
+    if (
+      urlWorkspaceId &&
+      threads.length > 0 &&
+      previousWorkspaceIdRef.current !== urlWorkspaceId
+    ) {
+      // Update the thread only if urlWorkspaceId has changed
+      handleThreadChange(threads[0]);
+      previousWorkspaceIdRef.current = urlWorkspaceId; // Update the ref with the current value
+    }
+  }, [urlWorkspaceId, threads, handleThreadChange]);
 
   function sortThreads(
     threads: MessageThread[],

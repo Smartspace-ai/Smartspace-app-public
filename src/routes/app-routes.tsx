@@ -10,12 +10,13 @@ export default function AppRoutes() {
 
       {/* Chat routes with layout */}
       <Route element={<ChatBotLayout />}>
-        <Route path=":workspaceId" element={<ChatBot />} />
-        <Route path=":workspaceId/:threadId" element={<ChatBot />} />
+        {/* Specific route for thread */}
         <Route
-          path="workspace/:workspaceId/thread/:threadId"
+          path="/workspace/:workspaceId/thread/:threadId"
           element={<ChatBot />}
         />
+        {/* Route for workspace without thread */}
+        <Route path="/workspace/:workspaceId" element={<ChatBot />} />
       </Route>
     </Routes>
   );

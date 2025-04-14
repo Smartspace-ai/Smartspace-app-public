@@ -126,9 +126,9 @@ export const SmartSpaceChatProvider: React.FC<{
       if (thread?.id !== activeThread?.id) {
         setActiveThread(thread);
       } else {
-        console.log(
-          'SmartSpaceContext - Prevented redundant activeThread update'
-        );
+        // console.log(
+        //   'SmartSpaceContext - Prevented redundant activeThread update'
+        // );
       }
     },
     setActiveWorkspaceId,
