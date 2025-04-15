@@ -91,8 +91,7 @@ export function Chat() {
 
   // Send message handler
   const handleSendMessage = useCallback(() => {
-    if ((!newMessage.trim() && uploadedFiles.length === 0) || !activeThread)
-      return;
+    if (!newMessage.trim() && uploadedFiles.length === 0) return;
 
     const contentList: MessageCreateContent[] = [];
 
@@ -105,7 +104,9 @@ export function Chat() {
     setNewMessage('');
     setSelectedFiles([]);
     setUploadedFiles([]);
-    clearDraft(activeThread.id);
+    if (activeThread) {
+      clearDraft(activeThread.id);
+    }
   }, [newMessage, uploadedFiles, activeThread, sendMessage, clearDraft]);
 
   // Submit on Enter (not Shift+Enter)

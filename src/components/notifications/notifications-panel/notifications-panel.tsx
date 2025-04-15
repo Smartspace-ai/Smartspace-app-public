@@ -2,29 +2,32 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
+import { useNotificationsContext } from '@/contexts/notifications-context'; // adjust path
 import { cn } from '@/lib/utils';
-import { Bell } from 'lucide-react';
+import { Notification, NotificationType } from '@/models/notification';
+import { getInitials } from '@/utils/initials';
+import { parseDateTimeHuman } from '@/utils/parse-date-time';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Bell, MessageCircle, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNotifications } from '../../../contexts/notifications-context';
+import { useNavigate } from 'react-router-dom';
 
 export function NotificationPanel() {
-  const {
-    notifications,
-    unreadCount,
-    markAsRead,
-    markAllAsRead,
-    dismissNotification,
-  } = useNotifications();
-
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
-  // Close panel when clicking outside
+  const {
+    notifications,
+    totalUnread,
+    handleReadNotification,
+    handleMarkAllAsRead,
+  } = useNotificationsContext();
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const panel = document.getElementById('notification-panel');
       const button = document.getElementById('notification-trigger');
-
       if (
         panel &&
         !panel.contains(event.target as Node) &&
@@ -35,130 +38,176 @@ export function NotificationPanel() {
         setIsOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // Filter notifications based on the toggle state
   const filteredNotifications = showOnlyUnread
-    ? notifications.filter((notification: any) => !notification.read)
+    ? notifications.filter((n) => !n.dismissedAt)
     : notifications;
+
+  const handleClickNotification = (notification: Notification) => {
+    if (!notification.dismissedAt) {
+      handleReadNotification?.(notification.id);
+    }
+
+    if (notification.workSpaceId && notification.threadId) {
+      const url = `/workspace/${notification.workSpaceId}/thread/${notification.threadId}`;
+      navigate(url);
+      setTimeout(() => window.location.reload(), 200);
+    }
+
+    setIsOpen(false);
+  };
+
+  const getNotificationIcon = (type: NotificationType) => {
+    switch (type) {
+      case NotificationType.MessageThreadUpdated:
+        return <MessageSquare className="h-3.5 w-3.5 text-blue-500" />;
+      case NotificationType.CommentUpdated:
+        return <MessageCircle className="h-3.5 w-3.5 text-purple-500" />;
+      default:
+        return <Bell className="h-3.5 w-3.5 text-gray-500" />;
+    }
+  };
 
   return (
     <div className="relative">
-      {/* Notification Bell Button */}
       <Button
         id="notification-trigger"
         variant="ghost"
         size="icon"
-        className="relative h-9 w-9"
+        className="relative h-8 w-8 rounded-full hover:bg-gray-100 transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
+        <Bell className="h-4 w-4" />
+        <AnimatePresence>
+          {totalUnread > 0 && (
+            <motion.span
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              className="absolute top-0.5 right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-medium text-primary-foreground shadow-sm"
+            >
+              {totalUnread > 9 ? '9+' : totalUnread}
+            </motion.span>
+          )}
+        </AnimatePresence>
         <span className="sr-only">Notifications</span>
       </Button>
 
-      {/* Notification Panel */}
-      {isOpen && (
-        <div
-          id="notification-panel"
-          className="absolute right-0 top-full z-50 mt-1 w-80 rounded-md border bg-background shadow-lg"
-        >
-          {/* Panel Header */}
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <h2 className="text-sm font-medium">Notifications</h2>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                Show only unread
-              </span>
-              <Switch
-                checked={showOnlyUnread}
-                onCheckedChange={setShowOnlyUnread}
-              />
-            </div>
-          </div>
-
-          {/* Mark all as read button */}
-          {unreadCount > 0 && (
-            <div className="border-b px-4 py-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-center text-primary hover:text-primary hover:bg-primary/5"
-                onClick={markAllAsRead}
-              >
-                Mark all as read {unreadCount > 0 && `(${unreadCount})`}
-              </Button>
-            </div>
-          )}
-
-          {/* Notification List */}
-          <ScrollArea className="max-h-[400px]">
-            {filteredNotifications.length > 0 ? (
-              <div className="py-1">
-                {filteredNotifications.map((notification: any) => (
-                  <div
-                    key={notification.id}
-                    className={cn(
-                      'flex items-start gap-3 px-4 py-3 hover:bg-muted/40 transition-colors relative cursor-pointer',
-                      !notification.read && 'bg-primary/5'
-                    )}
-                    onClick={() =>
-                      !notification.read && markAsRead(notification.id)
-                    }
-                  >
-                    {/* User Avatar */}
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={notification.sender?.avatar || '/placeholder.svg'}
-                        alt={notification.sender?.name}
-                      />
-                      <AvatarFallback>
-                        {notification.sender?.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    {/* Notification Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-medium truncate">
-                          {notification.sender?.name}
-                        </p>
-                        <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
-                          {notification.createdAt}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                        {notification.content}
-                      </p>
-                    </div>
-
-                    {/* Unread Indicator */}
-                    {!notification.read && (
-                      <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-primary"></div>
-                    )}
-                  </div>
-                ))}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            id="notification-panel"
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute right-0 top-full z-50 mt-1 w-[320px] rounded-lg border bg-background shadow-lg overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b px-3 py-2.5">
+              <h2 className="text-sm font-medium flex items-center gap-1.5">
+                Notifications
+                {totalUnread > 0 && (
+                  <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
+                    {totalUnread}
+                  </span>
+                )}
+              </h2>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground">
+                  Unread only
+                </span>
+                <Switch
+                  checked={showOnlyUnread}
+                  onCheckedChange={setShowOnlyUnread}
+                  className="scale-75"
+                />
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  {showOnlyUnread
-                    ? 'No unread notifications'
-                    : 'No notifications'}
-                </p>
+            </div>
+
+            {/* Mark all as read */}
+            {totalUnread > 0 && (
+              <div className="border-b px-3 py-1.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-center text-xs text-primary hover:text-primary hover:bg-primary/5 h-7 rounded-md"
+                  onClick={handleMarkAllAsRead}
+                >
+                  Mark all as read
+                </Button>
               </div>
             )}
-          </ScrollArea>
-        </div>
-      )}
+
+            {/* List */}
+            <ScrollArea className="max-h-[320px]">
+              {filteredNotifications.length > 0 ? (
+                <div className="py-1">
+                  {filteredNotifications.map((notification) => (
+                    <motion.div
+                      key={notification.id}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={cn(
+                        'group flex items-start gap-2.5 px-3 py-2 hover:bg-muted/40 transition-all relative cursor-pointer',
+                        !notification.dismissedAt && 'bg-primary/5'
+                      )}
+                      onClick={() => handleClickNotification(notification)}
+                    >
+                      <Avatar className="h-8 w-8 rounded-full">
+                        <AvatarImage
+                          src={notification.avatar || '/placeholder.svg'}
+                          alt={notification.createdBy}
+                        />
+                        <AvatarFallback className="text-xs font-medium">
+                          {getInitials(notification.createdBy || '')}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-1">
+                            <p className="text-xs font-medium truncate">
+                              {notification.createdBy}
+                            </p>
+                            {getNotificationIcon(notification.notificationType)}
+                          </div>
+                          <span className="text-[9px] text-muted-foreground whitespace-nowrap shrink-0">
+                            {parseDateTimeHuman(notification.createdAt)}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+                          {notification.description}
+                        </p>
+                      </div>
+
+                      {!notification.dismissedAt && (
+                        <div className="absolute right-3 top-3 h-1.5 w-1.5 rounded-full bg-primary"></div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                  <div className="rounded-full bg-muted p-3 mb-3">
+                    <Bell className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium mb-1">No notifications</p>
+                  <p className="text-xs text-muted-foreground max-w-[200px]">
+                    {showOnlyUnread
+                      ? "You've read all your notifications"
+                      : "You don't have any notifications yet"}
+                  </p>
+                </div>
+              )}
+            </ScrollArea>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,5 +1,27 @@
+import {
+  ChevronDown,
+  Edit,
+  Filter,
+  MessageSquare,
+  MoreHorizontal,
+  Star,
+  Trash2,
+} from 'lucide-react';
 import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { toast } from 'sonner';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,37 +33,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { SidebarContent } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
+
 import { useWorkspaceThreads } from '@/hooks/use-workspace-threads';
-import {
-  ChevronDown,
-  Edit,
-  Filter,
-  MessageSquare,
-  MoreHorizontal,
-  Star,
-  Trash2,
-} from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import { toast } from 'sonner';
 import { renameThread } from '../../../apis/message-threads';
 import useSmartSpaceChat from '../../../contexts/smartspace-context';
 import { MessageThread } from '../../../models/message-threads';
 import { getAvatarColour } from '../../../utils/avatar-colour';
 import { getInitials } from '../../../utils/initials';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../../ui/alert-dialog';
-import { ScrollArea } from '../../ui/scroll-area';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
 enum SortOrder {
@@ -60,113 +61,92 @@ export function Threads() {
     updateThreadMetadata,
     handleDeleteThread,
   } = useWorkspaceThreads();
+
   const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.NEWEST);
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { workspaceId: urlWorkspaceId, threadId: urlThreadId } = useParams();
-  // Sort the threads based on the current sort order
+  const { workspaceId: urlWorkspaceId } = useParams();
   const sortedThreads = sortThreads(threads, sortOrder);
 
-  // Select the first thread if no active thread is set
   const handleThreadClick = (thread: MessageThread) => {
     const threadElement = document.getElementById(`thread-${thread.id}`);
     if (threadElement) {
       threadElement.classList.add('bg-slate-200');
-      setTimeout(() => {
-        threadElement.classList.remove('bg-slate-200');
-      }, 200);
+      setTimeout(() => threadElement.classList.remove('bg-slate-200'), 200);
     }
 
-    // Force a re-render of the header by updating the thread
-    handleThreadChange(thread);
+    handleThreadChange(thread); // Force re-render of header or context state
   };
 
-  // Handle new thread
+  // Generates a new threadId and navigates to it
   const handleNewThread = useCallback(() => {
-    const newThreadId = crypto.randomUUID();
-
     if (activeWorkspace) {
       setActiveThread(null);
+      const newThreadId = crypto.randomUUID();
       navigate(
         `/workspace/${activeWorkspace.id}/thread/${newThreadId}?isNew=true`,
-        {
-          replace: true,
-        }
+        { replace: true }
       );
     }
   }, [activeWorkspace, navigate, setActiveThread]);
 
+  // Refs to track workspace changes and prevent duplicate thread creation
+  const previousWorkspaceIdRef = useRef<string | undefined>();
+  const hasCreatedInitialThreadRef = useRef(false);
+
   useEffect(() => {
-    // Check if the active thread is still in the updated threads list
+    // Wait until threads are fully loaded before applying logic
+    if (isLoading || threads === null) return;
+
+    const workspaceChanged = previousWorkspaceIdRef.current !== urlWorkspaceId;
+    const noActiveThreadExists =
+      activeThread && !threads.some((t) => t.id === activeThread.id);
+
+    // Handle workspace switch
+    if (workspaceChanged) {
+      previousWorkspaceIdRef.current = urlWorkspaceId;
+      hasCreatedInitialThreadRef.current = false;
+
+      if (threads.length === 0 && !hasCreatedInitialThreadRef.current) {
+        handleNewThread();
+        hasCreatedInitialThreadRef.current = true;
+      } else if (threads.length > 0) {
+        handleThreadChange(threads[0]);
+      }
+    }
+
+    // Handle first load or refresh with no thread
     if (
-      activeThread &&
-      !threads.some((thread) => thread.id === activeThread.id)
+      !workspaceChanged &&
+      !activeThread &&
+      threads.length === 0 &&
+      !hasCreatedInitialThreadRef.current
     ) {
-      // If not, select the first thread in the list (if available)
+      handleNewThread();
+      hasCreatedInitialThreadRef.current = true;
+    }
+
+    // Handle deleted/invalid active thread
+    if (noActiveThreadExists) {
       if (threads.length > 0) {
         handleThreadChange(threads[0]);
-      } else if (threads.length === 0) {
-        console.log('No threads available');
+      } else if (!hasCreatedInitialThreadRef.current) {
         handleNewThread();
+        hasCreatedInitialThreadRef.current = true;
       }
     }
   }, [
     threads,
+    isLoading,
     activeThread,
+    urlWorkspaceId,
     handleThreadChange,
-    setActiveThread,
     handleNewThread,
   ]);
 
-  // Use a ref to store the previous value of urlWorkspaceId
-  const previousWorkspaceIdRef = useRef<string | undefined>();
-
-  useEffect(() => {
-    if (
-      urlWorkspaceId &&
-      threads.length > 0 &&
-      previousWorkspaceIdRef.current !== urlWorkspaceId
-    ) {
-      // Update the thread only if urlWorkspaceId has changed
-      handleThreadChange(threads[0]);
-      previousWorkspaceIdRef.current = urlWorkspaceId; // Update the ref with the current value
-    }
-  }, [urlWorkspaceId, threads, handleThreadChange]);
-
-  function sortThreads(
-    threads: MessageThread[],
-    sortOrder: SortOrder
-  ): MessageThread[] {
-    return [...threads].sort((a, b) => {
-      switch (sortOrder) {
-        case SortOrder.NEWEST:
-          // Sort by most recent (assuming lastUpdatedAt is a Date or timestamp)
-          return (
-            new Date(b.lastUpdatedAt || b.createdAt).getTime() -
-            new Date(a.lastUpdatedAt || a.createdAt).getTime()
-          );
-        case SortOrder.OLDEST:
-          // Sort by oldest
-          return (
-            new Date(a.lastUpdatedAt || a.createdAt).getTime() -
-            new Date(b.lastUpdatedAt || b.createdAt).getTime()
-          );
-        case SortOrder.MOST_REPLIES:
-          // Sort by number of replies/messages
-          return (
-            (b.totalMessages || b.totalMessages) -
-            (a.totalMessages || a.totalMessages)
-          );
-        default:
-          return 0;
-      }
-    });
-  }
-
   return (
     <>
-      {/* Fixed Threads Header with Filter */}
       <div className="sticky top-0 z-10 border-t border-b">
         <div className="flex items-center justify-between px-4 py-3">
           <h2 className="text-xs text-gray-500 font-medium uppercase tracking-wide">
@@ -179,14 +159,13 @@ export function Threads() {
         </div>
       </div>
 
-      {/* Scrollable Thread List */}
       <SidebarContent className="p-0">
         <ScrollArea className="h-full">
           <div className="space-y-1 px-3 pt-2">
             {isLoading ? (
               <ThreadsLoadingSkeleton />
             ) : threads.length > 0 ? (
-              (sortedThreads || []).map((thread) => (
+              sortedThreads.map((thread) => (
                 <ThreadItem
                   key={thread.id}
                   thread={thread}
@@ -208,6 +187,30 @@ export function Threads() {
       </SidebarContent>
     </>
   );
+}
+
+function sortThreads(
+  threads: MessageThread[],
+  sortOrder: SortOrder
+): MessageThread[] {
+  return [...threads].sort((a, b) => {
+    switch (sortOrder) {
+      case SortOrder.NEWEST:
+        return (
+          new Date(b.lastUpdatedAt || b.createdAt).getTime() -
+          new Date(a.lastUpdatedAt || a.createdAt).getTime()
+        );
+      case SortOrder.OLDEST:
+        return (
+          new Date(a.lastUpdatedAt || a.createdAt).getTime() -
+          new Date(b.lastUpdatedAt || b.createdAt).getTime()
+        );
+      case SortOrder.MOST_REPLIES:
+        return (b.totalMessages || 0) - (a.totalMessages || 0);
+      default:
+        return 0;
+    }
+  });
 }
 
 type ThreadsFilterProps = {
@@ -241,19 +244,19 @@ function ThreadsFilter({ sortOrder, onSortOrderChange }: ThreadsFilterProps) {
             value={SortOrder.NEWEST}
             className="text-xs cursor-pointer"
           >
-            <span>Newest first</span>
+            Newest first
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
             value={SortOrder.OLDEST}
             className="text-xs cursor-pointer"
           >
-            <span>Oldest first</span>
+            Oldest first
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
             value={SortOrder.MOST_REPLIES}
             className="text-xs cursor-pointer"
           >
-            <span>Most replies</span>
+            Most replies
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
@@ -328,7 +331,6 @@ function ThreadItem({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
-    // Prevent click if we're clicking on the menu
     if (
       e.target instanceof Element &&
       (e.target.closest('button') || e.target.closest('[role="menuitem"]'))
@@ -338,23 +340,11 @@ function ThreadItem({
     onThreadClick(thread);
   };
 
-  const handleOpenRenameModal = () => {
-    setNewThreadName(thread.name);
-    setIsRenameModalOpen(true);
-  };
-
   const handleRenameSubmit = async () => {
     if (newThreadName.trim()) {
       try {
-        // Call the API to rename the thread
         await renameThread(thread, newThreadName);
-
-        // Update the thread name in the UI
-        updateThreadMetadata(thread.id, {
-          name: newThreadName,
-        });
-
-        // Close the modal
+        updateThreadMetadata(thread.id, { name: newThreadName });
         setIsRenameModalOpen(false);
         toast.success('Thread renamed successfully');
       } catch (error) {
@@ -366,13 +356,8 @@ function ThreadItem({
 
   const handleDeleteThreadItem = async () => {
     try {
-      // Call the API to delete the thread
       handleDeleteThread(thread.id);
-
-      // Close the dialog
       setIsDeleteDialogOpen(false);
-
-      // Show success message
       toast.success('Thread deleted successfully');
     } catch (error) {
       console.error('Error deleting thread:', error);
@@ -384,7 +369,7 @@ function ThreadItem({
     <div
       id={`thread-${thread.id}`}
       className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-accent cursor-pointer transition-all rounded-lg ${
-        isActive ? 'bg-accent  shadow-sm' : ''
+        isActive ? 'bg-accent shadow-sm' : ''
       }`}
       onClick={handleClick}
       onMouseEnter={() => onHover(thread.id)}
@@ -394,7 +379,6 @@ function ThreadItem({
         }
       }}
     >
-      {/* Thread Avatar with Initials */}
       <Avatar
         className={`h-8 w-8 flex-shrink-0 shadow-sm ${getAvatarColour(
           thread.name
@@ -406,35 +390,24 @@ function ThreadItem({
       </Avatar>
 
       <div className="flex-1 min-w-0">
-        {/* Thread Title */}
-        <h3 className={`text-xs font-medium truncate `}>{thread.name}</h3>
-
-        {/* Thread Details */}
-        <p className={`text-[11px] mt-0.5`}>
+        <h3 className="text-xs font-medium truncate">{thread.name}</h3>
+        <p className="text-[11px] mt-0.5">
           {thread.totalMessages}{' '}
           {thread.totalMessages === 1 ? 'message' : 'messages'} ·{' '}
           {thread.lastUpdated}
         </p>
       </div>
 
-      {/* Thread Actions */}
       <ThreadItemMenu
         thread={thread}
         isActive={isActive}
         isHovered={hoveredThreadId === thread.id}
         isMenuOpen={openMenuId === thread.id}
-        onMenuOpenChange={(open) => {
-          if (open) {
-            onMenuOpenChange(thread.id);
-          } else {
-            onMenuOpenChange(null);
-          }
-        }}
-        onRename={handleOpenRenameModal}
+        onMenuOpenChange={(open) => onMenuOpenChange(open ? thread.id : null)}
+        onRename={() => setIsRenameModalOpen(true)}
         onDelete={() => setIsDeleteDialogOpen(true)}
       />
 
-      {/* Rename Modal - Scoped to this thread item */}
       <ThreadRenameModal
         isOpen={isRenameModalOpen}
         onClose={() => setIsRenameModalOpen(false)}
@@ -443,7 +416,6 @@ function ThreadItem({
         onSubmit={handleRenameSubmit}
       />
 
-      {/* Modal for deleting the thread */}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
