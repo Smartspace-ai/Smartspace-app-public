@@ -52,7 +52,6 @@ export function useWorkspaceMessages(
     },
     enabled: !!threadId,
     retry: false,
-    staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
 

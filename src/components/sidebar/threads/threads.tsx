@@ -40,19 +40,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { renameThread } from '../../../apis/message-threads';
 import useSmartSpaceChat from '../../../contexts/smartspace-context';
+import { SortOrder } from '../../../enums/threads-sort-order';
 import { MessageThread } from '../../../models/message-threads';
 import { getAvatarColour } from '../../../utils/avatar-colour';
 import { getInitials } from '../../../utils/initials';
+import { sortThreads } from '../../../utils/sort-threads';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
-enum SortOrder {
-  NEWEST = 'newest',
-  OLDEST = 'oldest',
-  MOST_REPLIES = 'mostReplies',
-}
-
 export function Threads() {
-  const { activeWorkspace, setActiveThread } = useSmartSpaceChat();
+  const { activeWorkspace, setActiveThread, sortOrder, setSortOrder } =
+    useSmartSpaceChat();
   const {
     threads,
     activeThread,
@@ -62,7 +59,6 @@ export function Threads() {
     handleDeleteThread,
   } = useWorkspaceThreads();
 
-  const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.NEWEST);
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -165,7 +161,7 @@ export function Threads() {
             {isLoading ? (
               <ThreadsLoadingSkeleton />
             ) : threads.length > 0 ? (
-              sortedThreads.map((thread) => (
+              sortedThreads.map((thread: MessageThread) => (
                 <ThreadItem
                   key={thread.id}
                   thread={thread}
@@ -189,32 +185,8 @@ export function Threads() {
   );
 }
 
-function sortThreads(
-  threads: MessageThread[],
-  sortOrder: SortOrder
-): MessageThread[] {
-  return [...threads].sort((a, b) => {
-    switch (sortOrder) {
-      case SortOrder.NEWEST:
-        return (
-          new Date(b.lastUpdatedAt || b.createdAt).getTime() -
-          new Date(a.lastUpdatedAt || a.createdAt).getTime()
-        );
-      case SortOrder.OLDEST:
-        return (
-          new Date(a.lastUpdatedAt || a.createdAt).getTime() -
-          new Date(b.lastUpdatedAt || b.createdAt).getTime()
-        );
-      case SortOrder.MOST_REPLIES:
-        return (b.totalMessages || 0) - (a.totalMessages || 0);
-      default:
-        return 0;
-    }
-  });
-}
-
 type ThreadsFilterProps = {
-  sortOrder: string;
+  sortOrder: SortOrder;
   onSortOrderChange: (value: SortOrder) => void;
 };
 

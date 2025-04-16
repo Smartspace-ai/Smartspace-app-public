@@ -2,14 +2,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { useNotificationsContext } from '@/contexts/notifications-context'; // adjust path
+import { useNotificationsContext } from '@/contexts/notifications-context';
 import { cn } from '@/lib/utils';
 import { Notification, NotificationType } from '@/models/notification';
 import { getInitials } from '@/utils/initials';
 import { parseDateTimeHuman } from '@/utils/parse-date-time';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, MessageCircle, MessageSquare } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export function NotificationPanel() {
@@ -24,22 +24,31 @@ export function NotificationPanel() {
     handleMarkAllAsRead,
   } = useNotificationsContext();
 
+  const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const panel = document.getElementById('notification-panel');
-      const button = document.getElementById('notification-trigger');
       if (
-        panel &&
-        !panel.contains(event.target as Node) &&
-        button &&
-        !button.contains(event.target as Node) &&
-        isOpen
+        panelRef.current &&
+        !panelRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    if (isOpen) {
+      // Delay the event binding slightly to let the toggle click resolve first
+      const timer = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 50);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
   }, [isOpen]);
 
   const filteredNotifications = showOnlyUnread
@@ -52,8 +61,9 @@ export function NotificationPanel() {
     }
 
     if (notification.workSpaceId && notification.threadId) {
-      const url = `/workspace/${notification.workSpaceId}/thread/${notification.threadId}`;
-      navigate(url);
+      navigate(
+        `/workspace/${notification.workSpaceId}/thread/${notification.threadId}`
+      );
       setTimeout(() => window.location.reload(), 200);
     }
 
@@ -78,7 +88,7 @@ export function NotificationPanel() {
         variant="ghost"
         size="icon"
         className="relative h-8 w-8 rounded-full hover:bg-gray-100 transition-colors"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen((prev) => !prev)}
       >
         <Bell className="h-4 w-4" />
         <AnimatePresence>
@@ -100,13 +110,8 @@ export function NotificationPanel() {
         {isOpen && (
           <motion.div
             id="notification-panel"
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
             className="absolute right-0 top-full z-50 mt-1 w-[320px] rounded-lg border bg-background shadow-lg overflow-hidden"
           >
-            {/* Header */}
             <div className="flex items-center justify-between border-b px-3 py-2.5">
               <h2 className="text-sm font-medium flex items-center gap-1.5">
                 Notifications
@@ -128,7 +133,6 @@ export function NotificationPanel() {
               </div>
             </div>
 
-            {/* Mark all as read */}
             {totalUnread > 0 && (
               <div className="border-b px-3 py-1.5">
                 <Button
@@ -142,16 +146,12 @@ export function NotificationPanel() {
               </div>
             )}
 
-            {/* List */}
             <ScrollArea className="max-h-[320px]">
               {filteredNotifications.length > 0 ? (
                 <div className="py-1">
                   {filteredNotifications.map((notification) => (
                     <motion.div
                       key={notification.id}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
                       className={cn(
                         'group flex items-start gap-2.5 px-3 py-2 hover:bg-muted/40 transition-all relative cursor-pointer',
                         !notification.dismissedAt && 'bg-primary/5'
@@ -186,7 +186,7 @@ export function NotificationPanel() {
                       </div>
 
                       {!notification.dismissedAt && (
-                        <div className="absolute right-3 top-3 h-1.5 w-1.5 rounded-full bg-primary"></div>
+                        <div className="absolute right-3 top-3 h-1.5 w-1.5 rounded-full bg-primary" />
                       )}
                     </motion.div>
                   ))}

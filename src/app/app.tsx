@@ -16,7 +16,6 @@ export function App() {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000, // Cache queries for 1 minute
             refetchOnWindowFocus: false, // Disable auto-refetch on window focus
           },
         },

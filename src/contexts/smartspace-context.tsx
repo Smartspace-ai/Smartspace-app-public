@@ -1,5 +1,6 @@
 import type React from 'react';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { SortOrder } from '../enums/threads-sort-order';
 import { MessageThread } from '../models/message-threads';
 import type { Workspace } from '../models/workspace';
 
@@ -31,6 +32,10 @@ type SmartSpaceChatContextType = {
   setActiveThread: (thread: MessageThread | null) => void;
   setActiveWorkspaceId: (workspaceId: string | null) => void;
   setActiveThreadId: (threadId: string | null) => void;
+
+  // Thread sorting
+  sortOrder: SortOrder;
+  setSortOrder: (order: SortOrder) => void;
 };
 
 // Context initialization
@@ -65,6 +70,20 @@ export const SmartSpaceChatProvider: React.FC<{
     null
   );
   const [activeThread, setActiveThread] = useState<MessageThread | null>(null);
+
+  // Thread sorting (with localStorage persistence)
+  const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.NEWEST);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sortOrder');
+    if (stored && Object.values(SortOrder).includes(stored as SortOrder)) {
+      setSortOrder(stored as SortOrder);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('sortOrder', sortOrder);
+  }, [sortOrder]);
 
   const toggleDarkMode = () => {
     setIsDarkMode((prev) => !prev);
@@ -117,6 +136,8 @@ export const SmartSpaceChatProvider: React.FC<{
     },
     setActiveWorkspaceId,
     setActiveThreadId,
+    sortOrder,
+    setSortOrder,
   };
 
   return (

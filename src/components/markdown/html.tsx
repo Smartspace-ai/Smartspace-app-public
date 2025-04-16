@@ -62,7 +62,7 @@ export const HTMLBlock = ({ content, raw }: HTMLBlockProps) => {
   }, [content, activeTab]); // Re-run when content or activeTab changes
 
   return (
-    <div id={content}>
+    <div className="my-2" id={content}>
       <Tabs
         defaultValue="preview"
         className="w-full"
