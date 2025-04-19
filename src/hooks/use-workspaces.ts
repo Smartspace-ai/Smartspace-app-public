@@ -3,7 +3,7 @@ import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import { sortThreads } from '@/utils/sort-threads';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Workspace } from '../models/workspace';
 import { useWorkspaceThreads } from './use-workspace-threads';
 
@@ -18,6 +18,9 @@ export function useWorkspaces() {
 
   const navigate = useNavigate();
   const { workspaceId, threadId } = useParams();
+  const [searchParams] = useSearchParams();
+  const hasSearchParams = searchParams.toString().length > 0;
+  const isNewThread = searchParams.get('isNew') === 'true';
 
   const {
     data: workspaces = [],
@@ -47,18 +50,42 @@ export function useWorkspaces() {
 
   // Set thread from URL if possible
   useEffect(() => {
-    if (!activeWorkspace || !threadId || threads.length === 0 || !!activeThread)
+    if (
+      !activeWorkspace ||
+      !threadId ||
+      threads.length === 0 ||
+      !!activeThread ||
+      !hasSearchParams
+    )
       return;
 
     const sorted = sortThreads(threads, sortOrder);
     const matchedThread = sorted.find((t) => t.id === threadId);
 
-    if (matchedThread) {
-      handleThreadChange(matchedThread);
-    } else {
-      handleThreadChange(sorted[0]);
+    if (!isNewThread) {
+      if (matchedThread) {
+        handleThreadChange(matchedThread);
+      } else {
+        handleThreadChange(sorted[0]);
+      }
     }
-  }, [threads, threadId, activeWorkspace, sortOrder, handleThreadChange]);
+  }, [
+    threads,
+    threadId,
+    activeWorkspace,
+    sortOrder,
+    handleThreadChange,
+    activeThread,
+    hasSearchParams,
+    isNewThread,
+  ]);
+
+  useEffect(() => {
+    if (isNewThread) {
+      // Clean up the URL
+      navigate(window.location.pathname, { replace: true });
+    }
+  }, [isNewThread, navigate]);
 
   const handleWorkspaceChange = (workspace: Workspace) => {
     setActiveWorkspace(workspace);

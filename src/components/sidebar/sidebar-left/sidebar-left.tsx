@@ -1,14 +1,11 @@
 import { useMsal } from '@azure/msal-react';
-import { LogOut, Plus } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { ComponentProps, useContext } from 'react';
-import { useNavigate } from 'react-router';
 import { Logo } from '../../../assets/logo';
-import useSmartSpaceChat from '../../../contexts/smartspace-context';
 import { UserContext } from '../../../hooks/use-user-information';
 import { getAvatarColour } from '../../../utils/avatar-colour';
 import { getInitials } from '../../../utils/initials';
 import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
-import { Button } from '../../ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,40 +14,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-} from '../../ui/sidebar';
+import { Sidebar, SidebarHeader } from '../../ui/sidebar';
 import Threads from '../threads/threads';
 import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
-  const { activeWorkspace, setActiveThread } = useSmartSpaceChat();
   const { graphData, graphPhoto } = useContext(UserContext);
   const { instance } = useMsal();
-  const navigate = useNavigate();
 
   const activeUser = {
     name: graphData?.displayName ?? 'User',
     email: graphData?.mail ?? '',
     profilePhoto: graphPhoto || '',
-  };
-
-  // Function to add a new thread
-  const handleNewThread = () => {
-    const newThreadId = crypto.randomUUID();
-
-    if (activeWorkspace) {
-      setActiveThread(null);
-      navigate(
-        `/workspace/${activeWorkspace.id}/thread/${newThreadId}?isNew=true`,
-        {
-          replace: true,
-        }
-      );
-    }
   };
 
   const handleLogout = () => {
@@ -124,19 +99,10 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-0 py-0 overflow-auto h-full">
-        {/* Workspace Selector */}
-        <WorkspaceSelector />
-        {/* Threads Section */}
-        <Threads />
-      </SidebarContent>
-
-      <SidebarFooter className="border-t p-4 mt-auto sticky bottom-0 ">
-        <Button onClick={handleNewThread} className="w-full gap-2 text-xs h-9">
-          <Plus className="h-3.5 w-3.5" />
-          New Thread
-        </Button>
-      </SidebarFooter>
+      {/* Workspace Selector */}
+      <WorkspaceSelector />
+      {/* Threads Section */}
+      <Threads />
     </Sidebar>
   );
 }

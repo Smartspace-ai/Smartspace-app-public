@@ -8,7 +8,7 @@ import {
 import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { MessageThread } from '../models/message-threads';
 
 export function useWorkspaceThreads() {
@@ -26,6 +26,9 @@ export function useWorkspaceThreads() {
     workspaceId: string;
     threadId?: string;
   }>();
+
+  const [searchParams] = useSearchParams();
+  const isNewThread = searchParams.get('isNew') === 'true';
 
   // Fetch threads for the active workspace
   const {
@@ -96,6 +99,7 @@ export function useWorkspaceThreads() {
   // Set active thread and navigate to it
   const handleThreadChange = useCallback(
     (thread: MessageThread) => {
+      console.trace('Thread changed:', thread);
       const stableThread = { ...thread };
       setActiveThread(stableThread);
       navigate(`/workspace/${activeWorkspace?.id}/thread/${stableThread.id}`, {
@@ -153,21 +157,21 @@ export function useWorkspaceThreads() {
 
   // Set the initial active thread once threads are available
   useEffect(() => {
+    const isValidThreadId = threadId && threads.some((t) => t.id === threadId);
+
     if (
       activeWorkspace?.id &&
       threads.length > 0 &&
       !activeThread &&
-      !initialThreadSetRef.current[activeWorkspace.id]
+      !initialThreadSetRef.current[activeWorkspace.id] &&
+      !isNewThread
     ) {
-      let threadToSelect = threads[0];
+      // Set matched thread or fallback to first
+      const threadToSelect = isValidThreadId
+        ? threads.find((t) => t.id === threadId) || threads[0]
+        : threads[0];
 
-      if (threadId) {
-        const found = threads.find((thread) => thread.id === threadId);
-        if (found) {
-          threadToSelect = found;
-        }
-      }
-
+      console.trace('Thread to select:', threadToSelect);
       handleThreadChange(threadToSelect);
       initialThreadSetRef.current[activeWorkspace.id] = true;
     }
@@ -177,6 +181,7 @@ export function useWorkspaceThreads() {
     activeThread,
     handleThreadChange,
     threadId,
+    isNewThread,
   ]);
 
   return {

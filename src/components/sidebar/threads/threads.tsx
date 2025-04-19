@@ -4,12 +4,13 @@ import {
   Filter,
   MessageSquare,
   MoreHorizontal,
+  Plus,
   Star,
   Trash2,
 } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
 import {
@@ -34,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { SidebarContent } from '@/components/ui/sidebar';
+import { SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { useWorkspaceThreads } from '@/hooks/use-workspace-threads';
@@ -64,6 +65,8 @@ export function Threads() {
   const navigate = useNavigate();
   const { workspaceId: urlWorkspaceId } = useParams();
   const sortedThreads = sortThreads(threads, sortOrder);
+  const [searchParams] = useSearchParams();
+  const isNewThread = searchParams.get('isNew') === 'true';
 
   const handleThreadClick = (thread: MessageThread) => {
     const threadElement = document.getElementById(`thread-${thread.id}`);
@@ -72,7 +75,10 @@ export function Threads() {
       setTimeout(() => threadElement.classList.remove('bg-slate-200'), 200);
     }
 
-    handleThreadChange(thread); // Force re-render of header or context state
+    if (!isNewThread) {
+      console.trace('updated here 3');
+      handleThreadChange(thread);
+    }
   };
 
   // Generates a new threadId and navigates to it
@@ -108,7 +114,10 @@ export function Threads() {
         handleNewThread();
         hasCreatedInitialThreadRef.current = true;
       } else if (threads.length > 0) {
-        handleThreadChange(threads[0]);
+        if (!isNewThread) {
+          console.trace('updated here 2');
+          handleThreadChange(threads[0]);
+        }
       }
     }
 
@@ -117,7 +126,8 @@ export function Threads() {
       !workspaceChanged &&
       !activeThread &&
       threads.length === 0 &&
-      !hasCreatedInitialThreadRef.current
+      !hasCreatedInitialThreadRef.current &&
+      !isNewThread
     ) {
       handleNewThread();
       hasCreatedInitialThreadRef.current = true;
@@ -126,7 +136,10 @@ export function Threads() {
     // Handle deleted/invalid active thread
     if (noActiveThreadExists) {
       if (threads.length > 0) {
-        handleThreadChange(threads[0]);
+        if (!isNewThread) {
+          console.trace('updated here 1');
+          handleThreadChange(threads[0]);
+        }
       } else if (!hasCreatedInitialThreadRef.current) {
         handleNewThread();
         hasCreatedInitialThreadRef.current = true;
@@ -139,48 +152,57 @@ export function Threads() {
     urlWorkspaceId,
     handleThreadChange,
     handleNewThread,
+    isNewThread,
   ]);
 
   return (
     <>
-      <div className="sticky top-0 z-10 border-t border-b">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h2 className="text-xs text-gray-500 font-medium uppercase tracking-wide">
-            Threads
-          </h2>
-          <ThreadsFilter
-            sortOrder={sortOrder}
-            onSortOrderChange={setSortOrder}
-          />
-        </div>
-      </div>
-
-      <SidebarContent className="p-0">
-        <ScrollArea className="h-full">
-          <div className="space-y-1 px-3 pt-2">
-            {isLoading ? (
-              <ThreadsLoadingSkeleton />
-            ) : threads.length > 0 ? (
-              sortedThreads.map((thread: MessageThread) => (
-                <ThreadItem
-                  key={thread.id}
-                  thread={thread}
-                  isActive={activeThread?.id === thread.id}
-                  hoveredThreadId={hoveredThreadId}
-                  openMenuId={openMenuId}
-                  onThreadClick={handleThreadClick}
-                  onHover={setHoveredThreadId}
-                  onMenuOpenChange={setOpenMenuId}
-                  updateThreadMetadata={updateThreadMetadata}
-                  handleDeleteThread={handleDeleteThread}
-                />
-              ))
-            ) : (
-              <EmptyThreadsState />
-            )}
+      <SidebarContent className="px-0 py-0 overflow-auto h-full">
+        <div className="sticky top-0 z-10 border-t border-b">
+          <div className="flex items-center justify-between px-4 py-3">
+            <h2 className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              Threads
+            </h2>
+            <ThreadsFilter
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+            />
           </div>
-        </ScrollArea>
+        </div>
+
+        <SidebarContent className="p-0">
+          <ScrollArea className="h-full">
+            <div className="space-y-1 px-3 pt-2">
+              {isLoading ? (
+                <ThreadsLoadingSkeleton />
+              ) : threads.length > 0 ? (
+                sortedThreads.map((thread: MessageThread) => (
+                  <ThreadItem
+                    key={thread.id}
+                    thread={thread}
+                    isActive={activeThread?.id === thread.id}
+                    hoveredThreadId={hoveredThreadId}
+                    openMenuId={openMenuId}
+                    onThreadClick={handleThreadClick}
+                    onHover={setHoveredThreadId}
+                    onMenuOpenChange={setOpenMenuId}
+                    updateThreadMetadata={updateThreadMetadata}
+                    handleDeleteThread={handleDeleteThread}
+                  />
+                ))
+              ) : (
+                <EmptyThreadsState />
+              )}
+            </div>
+          </ScrollArea>
+        </SidebarContent>
       </SidebarContent>
+      <SidebarFooter className="border-t p-4 mt-auto sticky bottom-0 ">
+        <Button onClick={handleNewThread} className="w-full gap-2 text-xs h-9">
+          <Plus className="h-3.5 w-3.5" />
+          New Thread
+        </Button>
+      </SidebarFooter>
     </>
   );
 }
