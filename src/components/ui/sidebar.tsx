@@ -142,6 +142,7 @@ const SidebarProvider = forwardRef<
 
     // Handle window resize to update sidebar states
     useEffect(() => {
+     setTimeout(() => {
       const handleResize = () => {
         const width = window.innerWidth;
         const isNowMobile = width < MOBILE_BREAKPOINT;
@@ -164,6 +165,7 @@ const SidebarProvider = forwardRef<
       handleResize(); // Call on load
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
+     }, 50);
     }, []);
 
     useEffect(() => {
@@ -677,5 +679,6 @@ export {
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
-  SidebarTrigger,
+  SidebarTrigger
 };
+

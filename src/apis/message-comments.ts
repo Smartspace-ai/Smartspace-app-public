@@ -1,5 +1,6 @@
 import { MessageComment } from '@/models/message-comment';
 import webApi from '../utils/axios-setup';
+import { MentionUser } from './../models/mention-user';
 
 // Fetch all comments for a given thread
 export async function fetchComments(
@@ -31,7 +32,8 @@ export async function fetchComments(
 // Add a comment to a thread
 export async function addComment(
   threadId: string,
-  content: string
+  content: string,
+  mentionedUsers: MentionUser[] = []
 ): Promise<MessageComment> {
   try {
     // Simulate latency (can be removed in production)
@@ -39,7 +41,7 @@ export async function addComment(
 
     const response = await webApi.post(`/messageThreads/${threadId}/comments`, {
       content,
-      mentionedUsers: [],
+      mentionedUsers: mentionedUsers.map((user) => user.id),
     });
 
     const responseData = response?.data;
@@ -59,5 +61,25 @@ export async function addComment(
   } catch (error) {
     console.error('Error adding comment:', error);
     throw new Error('Failed to add comment');
+  }
+}
+
+
+// Fetch users who have access to the workspace for @mention
+export async function fetchTaggableUsers(workspaceId: string): Promise<MentionUser[]> {
+  try {
+    const res = await webApi.get(`/workspaces/${workspaceId}/access`);
+    return res.data.data.map(
+      (u: any) =>
+        new MentionUser({
+          id: u.objectId,
+          objectId: u.objectId,
+          displayName: u.displayName,
+          name: u.displayName,
+        })
+    );
+  } catch (error) {
+    console.error('Error fetching taggable users:', error);
+    return [];
   }
 }

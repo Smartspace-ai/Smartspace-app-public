@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
-import { addComment, fetchComments } from '../apis/message-comments';
+import { MentionUser } from '@/models/mention-user';
+import { addComment, fetchComments, fetchTaggableUsers } from '../apis/message-comments';
 import { MessageComment } from '../models/message-comment';
 import { UserContext } from './use-user-information';
 
@@ -48,9 +49,11 @@ export function useWorkspaceThreadComments() {
     mutationFn: async ({
       threadId,
       content,
+      mentionedUsers = [],
     }: {
       threadId: string;
       content: string;
+      mentionedUsers?: MentionUser[];
     }) => {
       const optimisticComment = new MessageComment({
         id: `temp-${Date.now()}`,
@@ -58,33 +61,28 @@ export function useWorkspaceThreadComments() {
         createdAt: new Date(),
         createdBy: activeUser.name || 'You',
         createdByUserId: 'current-user-id',
-        mentionedUsers: [],
+        mentionedUsers,
       } as MessageComment);
-
-      // Mark comment as optimistic so we can filter it later
+  
       (optimisticComment as any).optimistic = true;
-
-      // Optimistically update the cache
+  
       queryClient.setQueryData(
         ['comments', threadId],
         (old: MessageComment[] = []) => [...old, optimisticComment]
       );
-
-      // Perform real mutation
-      const realComment = await addComment(threadId, content);
-
-      // Replace optimistic with actual comment
+  
+      const realComment = await addComment(threadId, content, mentionedUsers);
+  
       queryClient.setQueryData(
         ['comments', threadId],
         (old: MessageComment[] = []) => {
           return old.filter((c) => !(c as any).optimistic).concat(realComment);
         }
       );
-
+  
       return realComment;
     },
     onError: (_error, variables) => {
-      // Remove optimistic comment on error
       queryClient.setQueryData(
         ['comments', variables.threadId],
         (old: MessageComment[] = []) =>
@@ -99,13 +97,33 @@ export function useWorkspaceThreadComments() {
     isLoading,
     error,
     refetch,
-    addComment: async (content: string) => {
+    addComment: async (content: string, mentionedUsers: MentionUser[] = []) => {
       if (!activeThread || !content.trim()) return;
       return await addCommentMutation.mutateAsync({
         threadId: activeThread.id,
         content,
+        mentionedUsers
       });
     },
     isAddingComment: addCommentMutation.isPending,
   };
 }
+
+export const useTaggableWorkspaceUsers = () => {
+  const { activeWorkspace } = useSmartSpaceChat();
+
+  const {
+    data: users = [],
+    isLoading,
+    error,
+  } = useQuery<MentionUser[]>({
+    queryKey: ['workspace-users', activeWorkspace?.id],
+    queryFn: () =>
+      activeWorkspace
+        ? fetchTaggableUsers(activeWorkspace.id)
+        : Promise.resolve([]),
+    enabled: !!activeWorkspace?.id,
+  });
+
+  return { users, isLoading, error };
+};

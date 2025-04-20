@@ -14,9 +14,7 @@ export const useNotifications = () => {
   const [total, setTotal] = useState<number>(0);
   const [isUnreadOnly, setIsUnreadOnly] = useState<boolean>(false);
   const [isHasMore, setIsHasMore] = useState<boolean>(true);
-  const [newNotification, setNewNotification] = useState<Notification | null>(
-    null
-  );
+  const [newNotification, setNewNotification] = useState<Notification | null>(null);
   const [page, setPage] = useState<number>(1);
 
   const isMounted = useRef(true);
@@ -28,15 +26,18 @@ export const useNotifications = () => {
 
         if (!isMounted.current) return;
 
-        const combined = reset
-          ? result.items
-          : [...notifications, ...result.items];
+        setNotifications((prevNotifications) => {
+          const combined = reset
+            ? result.items
+            : [...prevNotifications, ...result.items];
 
-        const unique = Array.from(
-          new Map(combined.map((n) => [n.id, n])).values()
-        );
+          const unique = Array.from(
+            new Map(combined.map((n) => [n.id, n])).values()
+          );
 
-        setNotifications(unique);
+          return unique;
+        });
+
         setTotal(result.totalCount);
         setTotalUnread(result.unreadCount ?? 0);
         setIsHasMore(result.items.length === LIMIT);
@@ -45,7 +46,7 @@ export const useNotifications = () => {
         console.error('Failed to load notifications', err);
       }
     },
-    [notifications, isUnreadOnly]
+    [isUnreadOnly]
   );
 
   const handleReadNotification = useCallback(async (id: string) => {

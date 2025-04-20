@@ -12,6 +12,7 @@ import { UserContext } from '../../../hooks/use-user-information';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
 
+import useSmartSpaceChat from '@/contexts/smartspace-context';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
@@ -45,6 +46,7 @@ export default function ChatBody({
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
+  const { activeWorkspace } = useSmartSpaceChat();
 
   useLayoutEffect(() => {
     if (viewportRef.current) {
@@ -82,9 +84,9 @@ export default function ChatBody({
         <div className="rounded-full bg-primary/10 p-4 mb-4">
           <MessagesSquare className="h-8 w-8 text-primary" />
         </div>
-        <h3 className="text-lg font-medium mb-2">No messages yet</h3>
+        <h3 className="text-lg font-medium mb-2">{activeWorkspace?.name ?? 'No messages yet'}</h3>
         <p className="text-muted-foreground mb-6 max-w-xs">
-          Be the first to start the conversation!
+          { activeWorkspace?.firstPrompt ?? 'Be the first to start the conversation!'}
         </p>
       </div>
     );
