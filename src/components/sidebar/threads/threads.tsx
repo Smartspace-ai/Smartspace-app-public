@@ -76,7 +76,6 @@ export function Threads() {
     }
 
     if (!isNewThread) {
-      console.trace('updated here 3');
       handleThreadChange(thread);
     }
   };
@@ -115,7 +114,6 @@ export function Threads() {
         hasCreatedInitialThreadRef.current = true;
       } else if (threads.length > 0) {
         if (!isNewThread) {
-          console.trace('updated here 2');
           handleThreadChange(threads[0]);
         }
       }
@@ -137,7 +135,6 @@ export function Threads() {
     if (noActiveThreadExists) {
       if (threads.length > 0) {
         if (!isNewThread) {
-          console.trace('updated here 1');
           handleThreadChange(threads[0]);
         }
       } else if (!hasCreatedInitialThreadRef.current) {

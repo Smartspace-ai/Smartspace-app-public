@@ -22,7 +22,7 @@ export function useWorkspaceThreads() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const initialThreadSetRef = useRef<Record<string, boolean>>({});
-  const { workspaceId, threadId } = useParams<{
+  const { threadId } = useParams<{
     workspaceId: string;
     threadId?: string;
   }>();
@@ -99,7 +99,6 @@ export function useWorkspaceThreads() {
   // Set active thread and navigate to it
   const handleThreadChange = useCallback(
     (thread: MessageThread) => {
-      console.trace('Thread changed:', thread);
       const stableThread = { ...thread };
       setActiveThread(stableThread);
       navigate(`/workspace/${activeWorkspace?.id}/thread/${stableThread.id}`, {
@@ -171,7 +170,6 @@ export function useWorkspaceThreads() {
         ? threads.find((t) => t.id === threadId) || threads[0]
         : threads[0];
 
-      console.trace('Thread to select:', threadToSelect);
       handleThreadChange(threadToSelect);
       initialThreadSetRef.current[activeWorkspace.id] = true;
     }
