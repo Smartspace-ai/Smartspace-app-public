@@ -1,0 +1,17 @@
+.ss-messages__message-item--sources-source {
+  &:not(:last-child) {
+    padding-bottom: 5px;
+  }
+
+  .source-link {
+    cursor: pointer;
+
+    & + span {
+      margin-left: 10px;
+    }
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
