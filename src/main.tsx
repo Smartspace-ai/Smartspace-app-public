@@ -4,17 +4,12 @@ import {
   EventType,
   PublicClientApplication,
 } from '@azure/msal-browser';
-import {
-  AuthenticatedTemplate,
-  MsalProvider,
-  UnauthenticatedTemplate,
-} from '@azure/msal-react';
+import { MsalProvider } from '@azure/msal-react';
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 
 import App from './app/app';
 import msalConfig from './app/msalConfig';
-import Login from './pages/Login/Login';
 
 // 🔑 MSAL instance creation
 export const msalInstance = new PublicClientApplication(msalConfig);
@@ -35,7 +30,6 @@ msalInstance.initialize().then(() => {
     }
   });
 
-  // check if root element exists when unit testing
   const rootElement =
     (document.getElementById('root') as HTMLElement) ??
     document.body.appendChild(document.createElement('div'));
@@ -45,12 +39,7 @@ msalInstance.initialize().then(() => {
   root.render(
     <StrictMode>
       <MsalProvider instance={msalInstance}>
-        <AuthenticatedTemplate>
-          <App />
-        </AuthenticatedTemplate>
-        <UnauthenticatedTemplate>
-          <Login />
-        </UnauthenticatedTemplate>
+        <App />
       </MsalProvider>
     </StrictMode>
   );

@@ -142,30 +142,30 @@ const SidebarProvider = forwardRef<
 
     // Handle window resize to update sidebar states
     useEffect(() => {
-     setTimeout(() => {
-      const handleResize = () => {
-        const width = window.innerWidth;
-        const isNowMobile = width < MOBILE_BREAKPOINT;
+      setTimeout(() => {
+        const handleResize = () => {
+          const width = window.innerWidth;
+          const isNowMobile = width < MOBILE_BREAKPOINT;
 
-        if (isNowMobile) {
-          // Collapse on mobile
-          _setLeftOpen(false);
-          _setRightOpen(false);
-        } else {
-          // Expand on desktop
-          _setLeftOpen(true);
-          _setRightOpen(true);
-        }
+          if (isNowMobile) {
+            // Collapse on mobile
+            _setLeftOpen(false);
+            _setRightOpen(false);
+          } else {
+            // Expand on desktop
+            _setLeftOpen(true);
+            _setRightOpen(true);
+          }
 
-        // Close mobile sheets
-        setOpenMobileLeft(false);
-        setOpenMobileRight(false);
-      };
+          // Close mobile sheets
+          setOpenMobileLeft(false);
+          setOpenMobileRight(false);
+        };
 
-      handleResize(); // Call on load
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-     }, 50);
+        handleResize(); // Call on load
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+      }, 50);
     }, []);
 
     useEffect(() => {
@@ -679,6 +679,5 @@ export {
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
-  SidebarTrigger
+  SidebarTrigger,
 };
-
