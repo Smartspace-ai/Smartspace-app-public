@@ -11,13 +11,17 @@ const GRAPH_SCOPES = ['User.Read', 'User.ReadBasic.All'];
 const GRAPH_ME_ENDPOINT = 'https://graph.microsoft.com/v1.0/me';
 const GRAPH_PHOTO_ENDPOINT = 'https://graph.microsoft.com/v1.0/me/photo/$value';
 
+const handleTrailingSlash = (url: string): string => {
+  return url.endsWith('/') ? url : `${url}/`;
+};
+
 // MSAL configuration object
 const msalConfig: Configuration = {
   auth: {
     clientId: CLIENT_ID,
     authority: AUTHORITY,
-    redirectUri: window.location.origin,
-    postLogoutRedirectUri: window.location.origin,
+    redirectUri: handleTrailingSlash(window.location.origin),
+    postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
   },
   cache: {
     cacheLocation: 'localStorage', // Persists auth state across tabs/sessions
