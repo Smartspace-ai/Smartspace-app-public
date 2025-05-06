@@ -1,0 +1,32 @@
+name: Deploy static site to Azure Storage
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: smartspace
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build your site
+        run: |
+          npm install
+          npm run build
+
+      - name: Deploy to Azure Storage
+        uses: azure/CLI@v1
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az storage blob upload-batch \
+              --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+              --source ./dist/smartspace \
+              --destination '$web'
