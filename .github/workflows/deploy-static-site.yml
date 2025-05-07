@@ -29,4 +29,5 @@ jobs:
             az storage blob upload-batch \
               --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
               --source ./dist/smartspace \
-              --destination '$web'
+              --destination '$web' \
+              --overwrite true
