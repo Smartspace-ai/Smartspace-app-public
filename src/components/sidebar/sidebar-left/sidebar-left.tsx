@@ -90,7 +90,10 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-xs">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-xs cursor-pointer"
+              >
                 <LogOut className="mr-2 h-3.5 w-3.5" />
                 Log out
               </DropdownMenuItem>

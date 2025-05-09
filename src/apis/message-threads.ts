@@ -101,7 +101,7 @@ export async function uploadFiles(
 // Download file blob by ID
 export async function downloadFile(id: string): Promise<Blob> {
   try {
-    const response = await webApi.get(`/messageThreads/files/${id}/download`, {
+    const response = await webApi.get(`/files/${id}/download`, {
       responseType: 'blob',
       headers: {
         'Content-Type': 'multipart/form-data',

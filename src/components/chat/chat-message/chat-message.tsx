@@ -6,7 +6,7 @@ import {
 import { JsonForms } from '@jsonforms/react';
 import { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import _ from 'lodash';
-import { Copy, Download, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { cn } from '../../../lib/utils';
 import {
@@ -21,6 +21,8 @@ import { parseDateTime } from '../../../utils/parse-date-time';
 import { MyMarkdown } from '../../markdown/my-markdown';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Button } from '../../ui/button';
+import ChatMessageCopyButton from '../chat-message-copy-button/chat-message-copy-button';
+import ChatMessageFileDownload from '../chat-message-file-download/chat-message-file-download';
 import { ChatMessageImage } from '../chat-message-image/chat-message-image';
 import { ChatMessageSources } from '../chat-message-sources/chat-message-sources';
 import { TextInputControl, textInputTester } from './text-renderer';
@@ -122,18 +124,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              isBotResponse
-                ? ''
-                : 'hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity',
-              'h-7 w-7 text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
+          <ChatMessageCopyButton content={content} />
         </div>
       </div>
 
@@ -156,7 +147,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
           })}
 
           {files && files.length > 0 && (
-            <div className="mt-4 space-y-2">
+            <div className="ss-chat-message__attachments mt-4 space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground mb-1">
                 Attachments
               </h4>
@@ -175,17 +166,11 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
                       </span>
                     </div>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                    onClick={async () => {
-                      const blob = await props.downloadFile(file.id);
-                      props.saveFile(blob, file.name || 'download');
-                    }}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
+                  <ChatMessageFileDownload
+                    file={file}
+                    downloadFile={props.downloadFile}
+                    saveFile={props.saveFile}
+                  />
                 </div>
               ))}
             </div>
