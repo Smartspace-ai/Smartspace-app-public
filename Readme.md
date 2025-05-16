@@ -57,6 +57,17 @@ Ensure you have the following installed:
    yarn install
    ```
 
+### Configuration
+
+Create a file named `.env` in your project root with the following environment variables
+
+```env
+VITE_CLIENT_ID=
+VITE_CLIENT_AUTHORITY=
+VITE_CLIENT_SCOPES=
+VITE_CHAT_API_URI=
+```
+
 ---
 
 ## 📜 Available Scripts
