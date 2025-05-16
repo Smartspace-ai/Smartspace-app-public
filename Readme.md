@@ -57,6 +57,14 @@ Ensure you have the following installed:
    yarn install
    ```
 
+### Environment Variables
+```env
+VITE_CLIENT_ID=
+VITE_CLIENT_AUTHORITY=
+VITE_CLIENT_SCOPES=
+VITE_CHAT_API_URI=
+```
+
 ---
 
 ## 📜 Available Scripts
