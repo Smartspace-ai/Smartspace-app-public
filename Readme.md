@@ -57,7 +57,10 @@ Ensure you have the following installed:
    yarn install
    ```
 
-### Environment Variables
+### Configuration
+
+Create a file named `.env` in your project root and populate it with the values from your Smartspace Admin UI:
+
 ```env
 VITE_CLIENT_ID=
 VITE_CLIENT_AUTHORITY=
