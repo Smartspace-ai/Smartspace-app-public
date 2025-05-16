@@ -59,7 +59,7 @@ Ensure you have the following installed:
 
 ### Configuration
 
-Create a file named `.env` in your project root and populate it with the values from your Smartspace Admin UI:
+Create a file named `.env` in your project root with the following environment variables
 
 ```env
 VITE_CLIENT_ID=
