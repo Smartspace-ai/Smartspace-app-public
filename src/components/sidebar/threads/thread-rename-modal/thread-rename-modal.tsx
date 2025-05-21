@@ -63,7 +63,7 @@ export function ThreadRenameModal({
               className="text-xs"
               type="submit"
               variant="default"
-              disabled={!threadName.trim()}
+              disabled={!threadName ||!threadName.trim()}
             >
               Save Changes
             </Button>
