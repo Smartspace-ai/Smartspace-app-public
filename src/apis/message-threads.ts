@@ -1,25 +1,23 @@
 import { MessageThread } from '../models/message-threads';
 import webApi from '../utils/axios-setup';
 
-// Fetch all threads for a given workspace
+// Fetch threads for a given workspace
 export async function fetchThreads(
-  workspaceId?: string
-): Promise<MessageThread[]> {
-  try {
-    if (!workspaceId) {
-      throw new Error('Workspace ID is required');
-    }
+  workspaceId?: string,
+  { take, skip }: { take?: number; skip?: number } = {}
+): Promise<{ threads: MessageThread[]; total: number }> {
 
-    const response = await webApi.get(
-      `workspaces/${workspaceId}/messagethreads`
-    );
-    const threads = (response.data.data as MessageThread[]) || [];
+  const response = await webApi.get(
+    `workspaces/${workspaceId}/messagethreads`,
+    { params: { take, skip } }
+  );
 
-    return threads.map((thread: MessageThread) => new MessageThread(thread));
-  } catch (error) {
-    console.error('Error fetching threads:', error);
-    return [];
-  }
+  const threadsData = (response.data.data as MessageThread[]) || [];
+  const total = response.data.total ?? threadsData.length;
+
+  const threads = threadsData.map((thread) => new MessageThread(thread));
+
+  return { threads, total };
 }
 
 // Toggle favorite status of a message thread
