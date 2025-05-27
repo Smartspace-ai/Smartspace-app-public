@@ -34,11 +34,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { useWorkspaceThreads } from '@/hooks/use-workspace-threads';
+import { Virtuoso } from 'react-virtuoso';
 import { renameThread } from '../../../apis/message-threads';
 import useSmartSpaceChat from '../../../contexts/smartspace-context';
 import { SortOrder } from '../../../enums/threads-sort-order';
@@ -58,6 +58,9 @@ export function Threads() {
     handleThreadChange,
     updateThreadMetadata,
     handleDeleteThread,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useWorkspaceThreads();
 
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
@@ -168,12 +171,19 @@ export function Threads() {
         </div>
 
         <SidebarContent className="p-0">
-          <ScrollArea className="h-full">
-            <div className="space-y-1 px-3 pt-2">
-              {isLoading ? (
-                <ThreadsLoadingSkeleton />
-              ) : threads.length > 0 ? (
-                sortedThreads.map((thread: MessageThread) => (
+          {isLoading ? (
+            <ThreadsLoadingSkeleton />
+          ) : sortedThreads.length > 0 ? (
+            <Virtuoso
+              data={sortedThreads}
+              overscan={200}
+              endReached={() => {
+                if (hasNextPage && !isFetchingNextPage) {
+                  fetchNextPage();
+                }
+              }}
+              itemContent={(index, thread) => (
+                <div className="px-3 pb-1">
                   <ThreadItem
                     key={thread.id}
                     thread={thread}
@@ -186,12 +196,20 @@ export function Threads() {
                     updateThreadMetadata={updateThreadMetadata}
                     handleDeleteThread={handleDeleteThread}
                   />
-                ))
-              ) : (
-                <EmptyThreadsState />
+                </div>
               )}
-            </div>
-          </ScrollArea>
+              className="pt-2"
+              style={{ height: '100%', width: '100%' }}
+              components={{
+                Footer: () =>
+                  isFetchingNextPage ? (
+                    <div className="p-4 text-xs text-gray-500">Loading more...</div>
+                  ) : null,
+              }}
+            />
+          ) : (
+            <EmptyThreadsState />
+          )}
         </SidebarContent>
       </SidebarContent>
       <SidebarFooter className="border-t p-4 mt-auto sticky bottom-0 ">
