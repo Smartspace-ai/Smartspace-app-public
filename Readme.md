@@ -1,22 +1,18 @@
 # SmartSpace Chat UI
 
+> **Template Repository:**
+> 
+> This repository is intended as a starting point for clients who want to build their own customized chat UI for Smartspace. The recommended workflow is to **fork this repository**, then white label and customize it to fit your organization's branding and requirements. Once customized, you can deploy your version and connect it to your own Smartspace backend.
+
 A modern, customizable chat interface built with React 18.3, utilizing [shadcn UI](https://ui.shadcn.com/) components and [Tailwind CSS](https://tailwindcss.com/) for styling. This project is designed to integrate seamlessly with [smartspace.ai](https://smartspace.ai).
-
----
-
-## 📦 Project Information
-
-- **Package Name:** `@smartspace/source`
-- **Version:** `1.0.0`
-- **License:** [MIT](LICENSE)
 
 ---
 
 ## 🚀 Features
 
 - **React 18.3:** Leverages the latest features of React for building robust and efficient components.
-- **shadcn UI Components:** Utilizes a set of accessible and customizable UI components.
-- **Tailwind CSS:** Provides utility-first CSS for rapid UI development.
+- **shadcn UI Components:** Accessible and customizable UI components.
+- **Tailwind CSS:** Utility-first CSS for rapid UI development.
 - **Theming Support:** Easily customize the primary color and other theme aspects.
 - **Logo Customization:** Simple process to update the application logo.
 
@@ -28,45 +24,44 @@ A modern, customizable chat interface built with React 18.3, utilizing [shadcn U
 
 Ensure you have the following installed:
 
-- [Node.js](https://nodejs.org/en/download/) (version 14 or higher)
+- [Node.js](https://nodejs.org/en/download/) (version 20 or higher)
 - [npm](https://www.npmjs.com/get-npm) or [yarn](https://yarnpkg.com/getting-started/install)
 
 ### Installation
 
-1. **Clone the repository:**
+1. **Fork this repository to your own GitHub account.**
+2. **Clone your fork:**
 
    ```bash
-   git clone https://github.com/smartspace-ai/chat-ui.git
+   git clone https://github.com/<your-org-or-username>/Smartspace-app-public.git
    ```
 
-2. **Navigate to the project directory:**
+3. **Navigate to the project directory:**
 
    ```bash
-   cd chat-ui
+   cd Smartspace-app-public
    ```
 
-3. **Install the dependencies:**
+4. **Install the dependencies:**
 
    ```bash
    npm install
-   ```
-
-   or
-
-   ```bash
+   # or
    yarn install
    ```
 
 ### Configuration
 
-Create a file named `.env` in your project root with the following environment variables
+Create a file named `.env` in your project root directory with the following environment variables:
 
 ```env
-VITE_CLIENT_ID=
-VITE_CLIENT_AUTHORITY=
-VITE_CLIENT_SCOPES=
-VITE_CHAT_API_URI=
+VITE_CLIENT_ID=         # Your client ID
+VITE_CLIENT_AUTHORITY=  # Your authentication authority
+VITE_CLIENT_SCOPES=     # Required scopes (comma-separated)
+VITE_CHAT_API_URI=      # Chat API endpoint
 ```
+
+> **Note:** These variables are required for authentication and API access. Fill them in with values appropriate for your environment.
 
 ---
 
@@ -78,11 +73,7 @@ In the project directory, you can run the following scripts:
 
   ```bash
   npm run start
-  ```
-
-  or
-
-  ```bash
+  # or
   yarn start
   ```
 
@@ -90,11 +81,7 @@ In the project directory, you can run the following scripts:
 
   ```bash
   npm run build
-  ```
-
-  or
-
-  ```bash
+  # or
   yarn build
   ```
 
@@ -102,40 +89,46 @@ In the project directory, you can run the following scripts:
 
   ```bash
   npm run test
-  ```
-
-  or
-
-  ```bash
+  # or
   yarn test
   ```
 
-- **Environment-Specific Commands:**
+---
 
-  - **Development:**
+## 🚀 Automatic Deployment to Azure Static Web Apps
 
-    - Start: `npm run start:dev` or `yarn start:dev`
-    - Build: `npm run build:dev` or `yarn build:dev`
-    - Test: `npm run test:dev` or `yarn test:dev`
+You can set up automatic deployment of your customized project to an Azure Storage Account configured as a static website using GitHub Actions. This requires the following configuration:
 
-  - **Local:**
+### 1. Create a GitHub Environment
 
-    - Start: `npm run start:local` or `yarn start:local`
-    - Build: `npm run build:local` or `yarn build:local`
-    - Test: `npm run test:local` or `yarn test:local`
+- Go to your forked repository on GitHub.
+- Navigate to **Settings** > **Environments**.
+- Click **New environment** and name it `smartspace`.
+
+### 2. Add the Azure Storage Connection String Secret
+
+- In your new `smartspace` environment.
+- Click **Add environment secret**.
+- Name the secret `AZURE_STORAGE_CONNECTION_STRING`.
+- Paste your Azure Storage Account connection string as the value.
+
+### 3. How It Works
+
+When you push to the `main` branch, GitHub Actions will use the `AZURE_STORAGE_CONNECTION_STRING` secret to deploy the built application to your Azure Storage Account configured for static website hosting.
+
+> **Note:** Ensure your Azure Storage Account is set up for static website hosting. For more information, see the [Azure documentation](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-static-website).
 
 ---
 
 ## 🎨 Theming
 
-The application uses CSS variables for theming, allowing easy customization of colors and styles. The primary color is defined in the `theme.scss` file.
+The application uses CSS variables for theming, allowing easy customization of colors and styles. The primary color is defined in the `theme.scss` file, located in the `styles` directory.
 
 ### Changing the Primary Color
 
 To update the primary color of the application:
 
-1. **Open the `theme.scss` file located in the styles directory.**
-
+1. **Open the `theme.scss` file in the `styles` directory.**
 2. **Locate the `$primary-hex` variable:**
 
    ```scss
@@ -144,7 +137,6 @@ To update the primary color of the application:
    ```
 
 3. **Replace the `#6443f4` value with your desired hex color code.**
-
 4. **Save the file.** The application's primary color will now reflect the new value.
 
 > **Note:** The `theme.scss` file uses HSL (Hue, Saturation, Lightness) values derived from the `$primary-hex` to define various color variables. Ensure that the new primary color provides sufficient contrast and accessibility.
@@ -157,8 +149,7 @@ For more detailed information on theming with shadcn UI and Tailwind CSS, refer 
 
 The logo component is located at `components/Logo.tsx`. To update the logo:
 
-1. **Open the `Logo.tsx` file.**
-
+1. **Open the `Logo.tsx` file in the `components` directory.**
 2. **Modify the `Logo` component to return your desired logo.** For example, to use an image file:
 
    ```tsx
@@ -174,19 +165,17 @@ The logo component is located at `components/Logo.tsx`. To update the logo:
    };
    ```
 
-3. **Replace `'../assets/logo.png'` with the path to your logo file.**
-
+3. **Replace `'../assets/logo.png'` with the path to your logo file as needed.**
 4. **Save the file.** The application will now display the updated logo.
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions to the SmartSpace Chat UI project! To contribute:
+We welcome contributions to the SmartSpace Chat UI template! To contribute improvements to the template itself:
 
 1. **Fork the repository.**
-
-2. **Create a new branch:**
+2. **Create a new branch for your feature or fix:**
 
    ```bash
    git checkout -b feature/your-feature-name
@@ -206,6 +195,8 @@ We welcome contributions to the SmartSpace Chat UI project! To contribute:
 
 5. **Open a pull request with a detailed description of your changes.**
 
+> **Tip:** Please follow any existing code style and contribution guidelines. If you have questions, open an issue or ask in your pull request.
+
 ---
 
 ## 📄 License
@@ -213,5 +204,3 @@ We welcome contributions to the SmartSpace Chat UI project! To contribute:
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
 
 ---
-
-*For any issues or questions, please open an issue on the [GitHub repository](https://github.com/smartspace-ai/chat-ui/issues).*
