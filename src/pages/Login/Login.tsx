@@ -9,7 +9,15 @@ export function Login() {
 
   // Initiates redirect login flow using MSAL configuration
   const handleLogin = () => {
-    instance.loginRedirect(loginRequest);
+    console.log('=== LOGIN DEBUG ===');
+    console.log('Login button clicked');
+    console.log('Login request:', loginRequest);
+    console.log('MSAL instance:', instance);
+    console.log('Attempting login redirect...');
+    
+    instance.loginRedirect(loginRequest).catch(error => {
+      console.error('❌ Login failed:', error);
+    });
   };
 
   return (

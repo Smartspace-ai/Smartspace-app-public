@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { SidebarProvider } from '../components/ui/sidebar';
 import { NotificationsProvider } from '../contexts/notifications-context';
 import { SmartSpaceChatProvider } from '../contexts/smartspace-context';
+import { TeamsProvider } from '../contexts/teams-context';
 import { UserContext, useUserInformation } from '../hooks/use-user-information';
 import { msalInstance } from '../main';
 
@@ -51,29 +52,39 @@ export function App() {
 
   const isAuthenticated = accounts.length > 0;
 
+  // Debug: Log authentication state
+  console.log('=== APP AUTH DEBUG ===');
+  console.log('MSAL initialized:', isMSALInitialized);
+  console.log('Accounts:', accounts);
+  console.log('Active account:', instance.getActiveAccount());
+  console.log('Is authenticated:', isAuthenticated);
+  console.log('Graph data:', graphData);
+
   return (
-    <div style={{ height: '100%', width: '100%' }}>
-      {isAuthenticated ? (
-        <QueryClientProvider client={queryClient}>
-          {/* Provide user data via context for downstream consumers */}
-          <UserContext.Provider value={{ graphData, graphPhoto }}>
-            {/* App-wide providers for chat, notifications, and sidebar */}
-            <SmartSpaceChatProvider>
-              <NotificationsProvider>
-                <SidebarProvider>
-                  {/* Route-based app navigation */}
-                  <BrowserRouter>
-                    <AppRoutes />
-                  </BrowserRouter>
-                </SidebarProvider>
-              </NotificationsProvider>
-            </SmartSpaceChatProvider>
-          </UserContext.Provider>
-        </QueryClientProvider>
-      ) : (
-        <Login />
-      )}
-    </div>
+    <TeamsProvider>
+      <div style={{ height: '100%', width: '100%' }}>
+        {isAuthenticated ? (
+          <QueryClientProvider client={queryClient}>
+            {/* Provide user data via context for downstream consumers */}
+            <UserContext.Provider value={{ graphData, graphPhoto }}>
+              {/* App-wide providers for chat, notifications, and sidebar */}
+              <SmartSpaceChatProvider>
+                <NotificationsProvider>
+                  <SidebarProvider>
+                    {/* Route-based app navigation */}
+                    <BrowserRouter>
+                      <AppRoutes />
+                    </BrowserRouter>
+                  </SidebarProvider>
+                </NotificationsProvider>
+              </SmartSpaceChatProvider>
+            </UserContext.Provider>
+          </QueryClientProvider>
+        ) : (
+          <Login />
+        )}
+      </div>
+    </TeamsProvider>
   );
 }
 

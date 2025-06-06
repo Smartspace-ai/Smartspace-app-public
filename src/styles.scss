@@ -4,6 +4,9 @@
 @tailwind utilities;
 @include meta.load-css('theme');
 
+/* Import Teams-specific styles */
+@import './styles/teams.scss';
+
 @layer base {
   * {
     @apply border-border;

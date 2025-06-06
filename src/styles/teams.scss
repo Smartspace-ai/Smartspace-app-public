@@ -1,0 +1,80 @@
+/* Teams Theme Styles */
+
+/* Default Teams theme */
+.teams-default {
+  --teams-bg-primary: #ffffff;
+  --teams-bg-secondary: #f3f2f1;
+  --teams-text-primary: #323130;
+  --teams-text-secondary: #605e5c;
+  --teams-border: #e1dfdd;
+  --teams-accent: #6264a7;
+}
+
+/* Dark Teams theme */
+.teams-dark {
+  --teams-bg-primary: #201f1f;
+  --teams-bg-secondary: #292827;
+  --teams-text-primary: #ffffff;
+  --teams-text-secondary: #d2d0ce;
+  --teams-border: #3b3a39;
+  --teams-accent: #6264a7;
+}
+
+/* High contrast Teams theme */
+.teams-contrast {
+  --teams-bg-primary: #000000;
+  --teams-bg-secondary: #1b1a19;
+  --teams-text-primary: #ffffff;
+  --teams-text-secondary: #ffffff;
+  --teams-border: #ffffff;
+  --teams-accent: #ffff00;
+}
+
+/* Apply Teams theme variables to the app when in Teams */
+body.teams-default,
+body.teams-dark,
+body.teams-contrast {
+  background-color: var(--teams-bg-primary);
+  color: var(--teams-text-primary);
+}
+
+/* Teams-specific component styles */
+.teams-info {
+  background-color: var(--teams-bg-secondary);
+  border: 1px solid var(--teams-border);
+  color: var(--teams-text-primary);
+}
+
+/* Override some default styles when in Teams */
+body.teams-default .bg-white,
+body.teams-dark .bg-white,
+body.teams-contrast .bg-white {
+  background-color: var(--teams-bg-primary) !important;
+}
+
+body.teams-default .text-gray-900,
+body.teams-dark .text-gray-900,
+body.teams-contrast .text-gray-900 {
+  color: var(--teams-text-primary) !important;
+}
+
+body.teams-default .border-gray-200,
+body.teams-dark .border-gray-200,
+body.teams-contrast .border-gray-200 {
+  border-color: var(--teams-border) !important;
+}
+
+/* Teams tab container - remove extra margins/padding */
+.teams-tab-container {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Responsive adjustments for Teams */
+@media (max-width: 768px) {
+  .teams-tab-container {
+    padding: 8px;
+  }
+} 

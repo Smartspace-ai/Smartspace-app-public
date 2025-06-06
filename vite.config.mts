@@ -1,8 +1,8 @@
 /// <reference types='vitest' />
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
+import react from '@vitejs/plugin-react';
 import path from 'path';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   root: __dirname,
@@ -11,6 +11,7 @@ export default defineConfig({
   server: {
     port: 4300,
     host: 'localhost',
+    allowedHosts: ['c9c6-2404-4408-c62a-e400-c125-6950-a93e-cd1d.ngrok-free.app']
   },
 
   preview: {

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "4b2c79e0-89b2-4d5f-a0b1-c12345678901",
+  "packageName": "com.smartspace.app",
+  "developer": {
+    "name": "SmartSpace",
+    "websiteUrl": "https://c9c6-2404-4408-c62a-e400-c125-6950-a93e-cd1d.ngrok-free.app",
+    "privacyUrl": "https://c9c6-2404-4408-c62a-e400-c125-6950-a93e-cd1d.ngrok-free.app/privacy",
+    "termsOfUseUrl": "https://c9c6-2404-4408-c62a-e400-c125-6950-a93e-cd1d.ngrok-free.app/terms"
+  },
+  "icons": {
+    "color": "icon-color.png",
+    "outline": "icon-outline.png"
+  },
+  "name": {
+    "short": "SmartSpace",
+    "full": "SmartSpace Application"
+  },
+  "description": {
+    "short": "SmartSpace application for Teams",
+    "full": "A comprehensive SmartSpace application that can be embedded in Microsoft Teams"
+  },
+  "accentColor": "#FFFFFF",
+  "staticTabs": [
+    {
+      "entityId": "smartspace-tab",
+      "name": "SmartSpace",
+      "contentUrl": "https://c9c6-2404-4408-c62a-e400-c125-6950-a93e-cd1d.ngrok-free.app?inTeams=true",
+      "websiteUrl": "https://c9c6-2404-4408-c62a-e400-c125-6950-a93e-cd1d.ngrok-free.app",
+      "scopes": ["personal", "team"]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "c9c6-2404-4408-c62a-e400-c125-6950-a93e-cd1d.ngrok-free.app",
+    "login.microsoftonline.com"
+  ],
+  "webApplicationInfo": {
+    "id": "e3f39d90-9235-435e-ba49-681727352613",
+    "resource": "api://c9c6-2404-4408-c62a-e400-c125-6950-a93e-cd1d.ngrok-free.app/e3f39d90-9235-435e-ba49-681727352613"
+  }
+} 

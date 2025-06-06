@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "start": "nx serve --open",
+    "start": "nx serve --open --verbose",
     "build": "nx build",
     "test": "nx test",
     "start:dev": "env-cmd -f .env.dev npm run start",
@@ -23,6 +23,7 @@
     "@jsonforms/material-renderers": "^3.5.1",
     "@jsonforms/react": "^3.5.1",
     "@microsoft/signalr": "^8.0.7",
+    "@microsoft/teams-js": "^2.38.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-avatar": "^1.1.0",
