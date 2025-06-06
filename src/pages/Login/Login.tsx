@@ -7,17 +7,13 @@ import styles from './Login.module.scss';
 export function Login() {
   const { instance } = useMsal();
 
-  // Initiates redirect login flow using MSAL configuration
+  // Initiates popup login flow using MSAL configuration
+  /**
+   * For some reason, the login flow is not working with the redirect method in production build.
+   * Let's use this for now
+   */
   const handleLogin = () => {
-    console.log('=== LOGIN DEBUG ===');
-    console.log('Login button clicked');
-    console.log('Login request:', loginRequest);
-    console.log('MSAL instance:', instance);
-    console.log('Attempting login redirect...');
-    
-    instance.loginRedirect(loginRequest).catch(error => {
-      console.error('❌ Login failed:', error);
-    });
+    instance.loginPopup(loginRequest);
   };
 
   return (

@@ -6,12 +6,12 @@ import {
 } from '@/apis/message-threads';
 
 import { useSmartSpaceChat } from '@/contexts/smartspace-context';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { MessageThread } from '../models/message-threads';
 
-export function useWorkspaceThreads() {
+export function useWorkspaceThreads(take = 20) {
   const queryClient = useQueryClient();
   const { activeWorkspace, setActiveThread, activeThread } =
     useSmartSpaceChat();
@@ -32,15 +32,43 @@ export function useWorkspaceThreads() {
 
   // Fetch threads for the active workspace
   const {
-    data: threads = [],
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     isLoading,
     error,
     refetch,
-  } = useQuery<MessageThread[]>({
+  } = useInfiniteQuery({
     queryKey: ['threads', activeWorkspace?.id],
-    queryFn: () => fetchThreads(activeWorkspace?.id),
     enabled: !!activeWorkspace?.id,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!activeWorkspace?.id) throw new Error('No workspace ID');
+
+      const res = await fetchThreads(activeWorkspace.id, {
+        take,
+        skip: pageParam,
+      });
+
+      const threads = res.threads;
+      const total = res.total;
+
+      return {
+        threads: threads.map((t) => new MessageThread(t)),
+        nextSkip: pageParam + take,
+        hasMore: pageParam + take < total,
+        total,
+      };
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.nextSkip : undefined,
   });
+
+  const flattenedThreads = useMemo(() => 
+    data?.pages.flatMap((page) => page.threads) ?? [],
+    [data]
+  );
 
   // Create a new thread and set it as active
   const createThreadMutation = useMutation({
@@ -156,26 +184,26 @@ export function useWorkspaceThreads() {
 
   // Set the initial active thread once threads are available
   useEffect(() => {
-    const isValidThreadId = threadId && threads.some((t) => t.id === threadId);
+    const isValidThreadId = threadId && flattenedThreads.some((t) => t.id === threadId);
 
     if (
       activeWorkspace?.id &&
-      threads.length > 0 &&
+      flattenedThreads.length > 0 &&
       !activeThread &&
       !initialThreadSetRef.current[activeWorkspace.id] &&
       !isNewThread
     ) {
       // Set matched thread or fallback to first
       const threadToSelect = isValidThreadId
-        ? threads.find((t) => t.id === threadId) || threads[0]
-        : threads[0];
+        ? flattenedThreads.find((t) => t.id === threadId) || flattenedThreads[0]
+        : flattenedThreads[0];
 
       handleThreadChange(threadToSelect);
       initialThreadSetRef.current[activeWorkspace.id] = true;
     }
   }, [
     activeWorkspace?.id,
-    threads,
+    flattenedThreads,
     activeThread,
     handleThreadChange,
     threadId,
@@ -183,7 +211,11 @@ export function useWorkspaceThreads() {
   ]);
 
   return {
-    threads,
+    threads: flattenedThreads,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    totalCount: data?.pages?.[0]?.total ?? flattenedThreads.length,
     isLoading,
     error,
     refetch,

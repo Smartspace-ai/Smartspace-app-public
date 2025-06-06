@@ -101,7 +101,7 @@ export async function postMessage({
     };
 
     const response = await webApi.post(
-      `/messages/${workSpaceId}/${threadId}`,
+      `/messages`,
       payload
     );
 
