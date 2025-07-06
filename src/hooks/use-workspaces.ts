@@ -1,6 +1,5 @@
 import { fetchWorkspaces } from '@/apis/workspaces';
-import { useSmartSpaceChat } from '@/contexts/smartspace-context';
-import { sortThreads } from '@/utils/sort-threads';
+import { useSmartSpace } from '@/contexts/smartspace-context';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -10,17 +9,13 @@ import { useWorkspaceThreads } from './use-workspace-threads';
 export function useWorkspaces() {
   const {
     activeWorkspace,
-    activeThread,
     setActiveWorkspace,
-    setActiveThread,
     sortOrder,
-  } = useSmartSpaceChat();
-
+  } = useSmartSpace();
   const navigate = useNavigate();
   const { workspaceId, threadId } = useParams();
   const [searchParams] = useSearchParams();
   const hasSearchParams = searchParams.toString().length > 0;
-  const isNewThread = searchParams.get('isNew') === 'true';
 
   const {
     data: workspaces = [],
@@ -32,7 +27,7 @@ export function useWorkspaces() {
     queryFn: fetchWorkspaces,
   });
 
-  const { threads, handleThreadChange } = useWorkspaceThreads();
+  const { threads } = useWorkspaceThreads();
 
   useEffect(() => {
     if (workspaces.length === 0 || activeWorkspace) return;
@@ -44,7 +39,7 @@ export function useWorkspaces() {
     setActiveWorkspace(selectedWorkspace);
 
     if (!matchedWorkspace) {
-      navigate(`/workspace/${selectedWorkspace.id}`, { replace: true });
+      navigate(`/workspace/${selectedWorkspace.id}`);
     }
   }, [workspaces, workspaceId, activeWorkspace, setActiveWorkspace, navigate]);
 
@@ -53,44 +48,30 @@ export function useWorkspaces() {
     if (
       !activeWorkspace ||
       !threadId ||
+      !threads ||
       threads.length === 0 ||
-      !!activeThread ||
       !hasSearchParams
     )
       return;
 
-    const sorted = sortThreads(threads, sortOrder);
-    const matchedThread = sorted.find((t) => t.id === threadId);
+    const matchedThread = threads.find((t) => t.id === threadId);
 
-    if (!isNewThread) {
-      if (matchedThread) {
-        handleThreadChange(matchedThread);
-      } else {
-        handleThreadChange(sorted[0]);
-      }
+    if (matchedThread) {
+      navigate(`/workspace/${workspaceId}/thread/${matchedThread.id}`);
+    } else {
+      navigate(`/workspace/${workspaceId}/thread/${threads[0].id}`);
     }
   }, [
     threads,
     threadId,
     activeWorkspace,
     sortOrder,
-    handleThreadChange,
-    activeThread,
     hasSearchParams,
-    isNewThread,
   ]);
-
-  useEffect(() => {
-    if (isNewThread) {
-      // Clean up the URL
-      navigate(window.location.pathname, { replace: true });
-    }
-  }, [isNewThread, navigate]);
 
   const handleWorkspaceChange = (workspace: Workspace) => {
     setActiveWorkspace(workspace);
-    setActiveThread(null);
-    navigate(`/workspace/${workspace.id}`, { replace: true });
+    navigate(`/workspace/${workspace.id}`);
   };
 
   return {

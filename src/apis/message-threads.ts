@@ -20,6 +20,16 @@ export async function fetchThreads(
   return { threads, total };
 }
 
+export async function fetchThread(
+  workspaceId: string, id: string,
+): Promise<MessageThread> {
+  const response = await webApi.get(
+    `workspaces/${workspaceId}/messagethreads/${id}`
+  );
+
+  return response.data as MessageThread;
+}
+
 // Toggle favorite status of a message thread
 export async function toggleFavorite(
   thread: MessageThread,

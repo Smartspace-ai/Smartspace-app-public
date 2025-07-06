@@ -5,7 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import { SidebarProvider } from '../components/ui/sidebar';
 import { NotificationsProvider } from '../contexts/notifications-context';
-import { SmartSpaceChatProvider } from '../contexts/smartspace-context';
+import { SmartSpaceProvider } from '../contexts/smartspace-context';
 import { TeamsProvider } from '../contexts/teams-context';
 import { UserContext, useUserInformation } from '../hooks/use-user-information';
 import { msalInstance } from '../main';
@@ -68,7 +68,7 @@ export function App() {
             {/* Provide user data via context for downstream consumers */}
             <UserContext.Provider value={{ graphData, graphPhoto }}>
               {/* App-wide providers for chat, notifications, and sidebar */}
-              <SmartSpaceChatProvider>
+              <SmartSpaceProvider>
                 <NotificationsProvider>
                   <SidebarProvider>
                     {/* Route-based app navigation */}
@@ -77,7 +77,7 @@ export function App() {
                     </BrowserRouter>
                   </SidebarProvider>
                 </NotificationsProvider>
-              </SmartSpaceChatProvider>
+              </SmartSpaceProvider>
             </UserContext.Provider>
           </QueryClientProvider>
         ) : (

@@ -252,7 +252,10 @@ export default function ChatComposer({
             </div>
 
             <Button
-              onClick={handleSendMessage}
+              onClick={() => {
+                handleSendMessage();
+                handleRemoveAllFiles();
+              }}
               variant="default"
               size="sm"
               className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${

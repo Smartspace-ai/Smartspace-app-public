@@ -53,13 +53,15 @@ export const TeamsProvider: React.FC<TeamsProviderProps> = ({ children }) => {
           
           // Initialize Teams SDK
           await app.initialize();
-          
+
+          // Check if we're in desktop Teams vs web Teams
+          const teamsContext = await app.getContext();
+      
           // Get Teams context
-          const context = await app.getContext();
-          setTeamsContext(context as any);
+          setTeamsContext(teamsContext as any);
           
           // Set theme based on Teams theme
-          setTeamsTheme(context.app.theme || 'default');
+          setTeamsTheme(teamsContext.app.theme || 'default');
           
           // Listen for theme changes
           app.registerOnThemeChangeHandler((theme: string) => {
@@ -68,7 +70,7 @@ export const TeamsProvider: React.FC<TeamsProviderProps> = ({ children }) => {
           
           // Get user information if available
           try {
-            const userProfile = context.user;
+            const userProfile = teamsContext.user;
             setTeamsUser(userProfile as any);
           } catch (error) {
             console.log('Could not get Teams user profile:', error);

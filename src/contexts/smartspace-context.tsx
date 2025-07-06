@@ -1,47 +1,35 @@
-import type React from 'react';
-import { createContext, useContext, useEffect, useState } from 'react';
+// SmartSpaceContext.tsx
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { SortOrder } from '../enums/threads-sort-order';
-import { MessageThread } from '../models/message-threads';
 import type { Workspace } from '../models/workspace';
 
-type SmartSpaceChatContextType = {
-  // UI state
+type SmartSpaceContextType = {
+  // UI
   isDarkMode: boolean;
   toggleDarkMode: () => void;
 
-  // User preferences
+  // Preferences
   userPreferences: {
     notificationsEnabled: boolean;
     soundEnabled: boolean;
     autoSaveEnabled: boolean;
   };
   updateUserPreferences: (
-    preferences: Partial<SmartSpaceChatContextType['userPreferences']>
+    prefs: Partial<SmartSpaceContextType['userPreferences']>
   ) => void;
 
-  // Local message drafts (per thread)
-  localDrafts: Record<string, string>;
-  saveDraft: (threadId: string, content: string) => void;
-  getDraft: (threadId: string) => string;
-  clearDraft: (threadId: string) => void;
-
-  // Active selection state
+  // Workspace selection
   activeWorkspace: Workspace | null;
-  activeThread: MessageThread | null;
-  setActiveWorkspace: (workspace: Workspace) => void;
-  setActiveThread: (thread: MessageThread | null) => void;
-  setActiveWorkspaceId: (workspaceId: string | null) => void;
-  setActiveThreadId: (threadId: string | null) => void;
+  setActiveWorkspace: (ws: Workspace | null) => void;
 
-  // Thread sorting
+  // Thread-list sorting
   sortOrder: SortOrder;
-  setSortOrder: (order: SortOrder) => void;
+  setSortOrder: (o: SortOrder) => void;
 };
 
-// Context initialization
-const SmartSpaceChatContext = createContext<
-  SmartSpaceChatContextType | undefined
->(undefined);
+const SmartSpaceContext = createContext<SmartSpaceContextType | undefined>(
+  undefined
+);
 
 const initialUserPreferences = {
   notificationsEnabled: true,
@@ -49,113 +37,58 @@ const initialUserPreferences = {
   autoSaveEnabled: true,
 };
 
-export const SmartSpaceChatProvider: React.FC<{
-  children: React.ReactNode;
-}> = ({ children }) => {
-  // UI state
+export const SmartSpaceProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  // dark mode
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const toggleDarkMode = () => setIsDarkMode((d) => !d);
 
-  // Preferences and local drafts
+  // prefs
   const [userPreferences, setUserPreferences] = useState(
     initialUserPreferences
   );
-  const [localDrafts, setLocalDrafts] = useState<Record<string, string>>({});
+  const updateUserPreferences = (prefs: Partial<typeof initialUserPreferences>) =>
+    setUserPreferences((u) => ({ ...u, ...prefs }));
 
-  // Workspace/thread state
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(
-    null
-  );
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
-    null
-  );
-  const [activeThread, setActiveThread] = useState<MessageThread | null>(null);
+  // workspace
+  const [activeWorkspace, setActiveWorkspace] =
+    useState<Workspace | null>(null);
 
-  // Thread sorting (with localStorage persistence)
+  // sort order, persisted
   const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.NEWEST);
-
   useEffect(() => {
     const stored = localStorage.getItem('sortOrder');
     if (stored && Object.values(SortOrder).includes(stored as SortOrder)) {
       setSortOrder(stored as SortOrder);
     }
   }, []);
-
+  
   useEffect(() => {
     localStorage.setItem('sortOrder', sortOrder);
   }, [sortOrder]);
 
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => !prev);
-  };
-
-  const updateUserPreferences = (
-    preferences: Partial<SmartSpaceChatContextType['userPreferences']>
-  ) => {
-    setUserPreferences((prev) => ({
-      ...prev,
-      ...preferences,
-    }));
-  };
-
-  const saveDraft = (threadId: string, content: string) => {
-    setLocalDrafts((prev) => ({
-      ...prev,
-      [threadId]: content,
-    }));
-  };
-
-  const getDraft = (threadId: string) => {
-    return localDrafts[threadId] || '';
-  };
-
-  const clearDraft = (threadId: string) => {
-    setLocalDrafts((prev) => {
-      const updated = { ...prev };
-      delete updated[threadId];
-      return updated;
-    });
-  };
-
-  const contextValue: SmartSpaceChatContextType = {
-    isDarkMode,
-    toggleDarkMode,
-    userPreferences,
-    updateUserPreferences,
-    localDrafts,
-    saveDraft,
-    getDraft,
-    clearDraft,
-    activeWorkspace,
-    activeThread,
-    setActiveWorkspace,
-    setActiveThread: (thread: MessageThread | null) => {
-      if (thread?.id !== activeThread?.id) {
-        setActiveThread(thread);
-      }
-    },
-    setActiveWorkspaceId,
-    setActiveThreadId,
-    sortOrder,
-    setSortOrder,
-  };
-
   return (
-    <SmartSpaceChatContext.Provider value={contextValue}>
+    <SmartSpaceContext.Provider
+      value={{
+        isDarkMode,
+        toggleDarkMode,
+        userPreferences,
+        updateUserPreferences,
+        activeWorkspace,
+        setActiveWorkspace,
+        sortOrder,
+        setSortOrder,
+      }}
+    >
       {children}
-    </SmartSpaceChatContext.Provider>
+    </SmartSpaceContext.Provider>
   );
 };
 
-// Hook to consume the context
-export const useSmartSpaceChat = () => {
-  const context = useContext(SmartSpaceChatContext);
-  if (context === undefined) {
-    throw new Error(
-      'useSmartSpaceChat must be used within a SmartSpaceChatProvider'
-    );
-  }
-  return context;
+export const useSmartSpace = (): SmartSpaceContextType => {
+  const ctx = useContext(SmartSpaceContext);
+  if (!ctx)
+    throw new Error('useSmartSpace must be inside a SmartSpaceProvider');
+  return ctx;
 };
-
-export default useSmartSpaceChat;

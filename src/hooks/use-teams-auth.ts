@@ -10,10 +10,19 @@ export const useTeamsAuth = () => {
   const { isInTeams: inTeams, isTeamsInitialized } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 2;
 
   const login = useCallback(async () => {
+    if (retryCount >= MAX_RETRIES) {
+      console.log('❌ Max retries reached, stopping attempts');
+      setError('Maximum authentication attempts reached. Please refresh the page or contact support.');
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
+    setRetryCount(prev => prev + 1);
 
     try {
       if (inTeams && isTeamsInitialized) {
@@ -21,15 +30,8 @@ export const useTeamsAuth = () => {
         try {
           const authToken = await authentication.getAuthToken();
           
-          // If we get a token from Teams SSO, we can use it with MSAL
-          // This is a simplified approach - in production, you might want to validate the token
-          console.log('Teams SSO token received');
-          
-          // Alternatively, try silent authentication with MSAL
           await instance.ssoSilent(teamsLoginRequest);
         } catch (ssoError) {
-          console.log('Teams SSO failed, falling back to popup auth:', ssoError);
-          // If SSO fails, fall back to popup authentication
           await instance.loginPopup(teamsLoginRequest);
         }
       } else {
@@ -38,11 +40,18 @@ export const useTeamsAuth = () => {
       }
     } catch (authError) {
       console.error('Authentication failed:', authError);
-      setError(authError instanceof Error ? authError.message : 'Authentication failed');
+      const errorMessage = authError instanceof Error ? authError.message : 'Authentication failed';
+      setError(`${errorMessage}${retryCount < MAX_RETRIES ? ' (Will retry)' : ' (Max retries reached)'}`);
     } finally {
       setIsLoading(false);
     }
-  }, [instance, inTeams, isTeamsInitialized]);
+  }, [instance, inTeams, isTeamsInitialized, retryCount, MAX_RETRIES]);
+
+  const resetRetryCount = useCallback(() => {
+    console.log('🔄 Resetting retry count');
+    setRetryCount(0);
+    setError(null);
+  }, []);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
@@ -110,5 +119,7 @@ export const useTeamsAuth = () => {
     isLoading,
     error,
     isInTeams: inTeams,
+    resetRetryCount,
+    retryCount,
   };
 }; 

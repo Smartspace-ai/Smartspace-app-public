@@ -1,6 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import ChatBotLayout from '../pages/chat-bot-layout/chat-bot-layout';
-import ChatBot from '../pages/chat-bot/chat-bot';
+import { ChatBot } from '../pages/chat-bot/chat-bot';
 
 export default function AppRoutes() {
   return (
