@@ -2,11 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
-import { useSmartSpace } from '@/contexts/smartspace-context';
 import { MentionUser } from '@/models/mention-user';
 import { addComment, fetchComments, fetchTaggableUsers } from '../apis/message-comments';
 import { MessageComment } from '../models/message-comment';
 import { UserContext } from './use-user-information';
+import { useWorkspaces } from './use-workspaces';
 
 export function useWorkspaceThreadComments(threadId?: string) {
   const queryClient = useQueryClient();
@@ -111,7 +111,7 @@ export function useWorkspaceThreadComments(threadId?: string) {
 export const useTaggableWorkspaceUsers = () => {
   const {
     activeWorkspace,
-  } = useSmartSpace();
+  } = useWorkspaces();
 
   const {
     data: users = [],

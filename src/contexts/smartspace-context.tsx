@@ -1,7 +1,6 @@
 // SmartSpaceContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { SortOrder } from '../enums/threads-sort-order';
-import type { Workspace } from '../models/workspace';
 
 type SmartSpaceContextType = {
   // UI
@@ -17,10 +16,6 @@ type SmartSpaceContextType = {
   updateUserPreferences: (
     prefs: Partial<SmartSpaceContextType['userPreferences']>
   ) => void;
-
-  // Workspace selection
-  activeWorkspace: Workspace | null;
-  setActiveWorkspace: (ws: Workspace | null) => void;
 
   // Thread-list sorting
   sortOrder: SortOrder;
@@ -51,10 +46,6 @@ export const SmartSpaceProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateUserPreferences = (prefs: Partial<typeof initialUserPreferences>) =>
     setUserPreferences((u) => ({ ...u, ...prefs }));
 
-  // workspace
-  const [activeWorkspace, setActiveWorkspace] =
-    useState<Workspace | null>(null);
-
   // sort order, persisted
   const [sortOrder, setSortOrder] = useState<SortOrder>(SortOrder.NEWEST);
   useEffect(() => {
@@ -75,8 +66,6 @@ export const SmartSpaceProvider: React.FC<{ children: React.ReactNode }> = ({
         toggleDarkMode,
         userPreferences,
         updateUserPreferences,
-        activeWorkspace,
-        setActiveWorkspace,
         sortOrder,
         setSortOrder,
       }}

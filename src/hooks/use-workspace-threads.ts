@@ -5,15 +5,15 @@ import {
   updateThread,
 } from '@/apis/message-threads';
 
-import { useSmartSpace } from '@/contexts/smartspace-context';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MessageThread } from '../models/message-threads';
+import { useWorkspaces } from './use-workspaces';
 
 export function useWorkspaceThreads(take = 20) {
   const queryClient = useQueryClient();
-  const { activeWorkspace } = useSmartSpace();
+  const { activeWorkspace } = useWorkspaces();
   const navigate = useNavigate();
 
   const [isCreatingThread, setIsCreatingThread] = useState(false);

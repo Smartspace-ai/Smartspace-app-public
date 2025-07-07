@@ -1,5 +1,5 @@
-import { parseDateTime } from '../utils/parse-date-time';
 import { ModelRole } from '../enums/model-role';
+import { parseDateTime } from '../utils/parse-date-time';
 import { ModelConfiguration } from './model-configuration';
 
 export class Workspace {
@@ -53,12 +53,5 @@ export class Workspace {
         new ModelConfiguration({ role: ModelRole.Document })
       );
     }
-
-    // this.supportsFiles = !!this.flowDefinition?.inputs
-    //   ?.find(i => i.name === 'files');
-
-    // const messageInput: any = this.flowDefinition?.inputs?.find(i => i.name === 'prompt')?.jsonSchema ?? {};
-    // const itemSchema = (messageInput["anyOf"]?.find((t: any) => t["type"] === "array", ) || {})["items"] || messageInput["items"] || {};
-    // this.supportsImages = itemSchema["$ref"]?.includes("ContentItem") || itemSchema["title"] === "ContentItem";
   }
 }

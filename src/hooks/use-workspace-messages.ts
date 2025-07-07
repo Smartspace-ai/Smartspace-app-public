@@ -1,5 +1,4 @@
 import { addInputToMessage, fetchMessages, postMessage } from '@/apis/messages';
-import { useSmartSpace } from '@/contexts/smartspace-context';
 import {
   Message,
   MessageCreateContent,
@@ -14,12 +13,13 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { uploadFiles } from '../apis/message-threads';
 import { UserContext } from './use-user-information';
+import { useWorkspaces } from './use-workspaces';
 
 export function useWorkspaceMessages(
   passedWorkspace?: Workspace | null,
   threadId?: string | null,
 ) {
-  const context = useSmartSpace();
+  const context = useWorkspaces();
   
   const activeWorkspace = passedWorkspace ?? context?.activeWorkspace;
 
@@ -59,12 +59,11 @@ export function useWorkspaceMessages(
     Message,
     Error,
     {
-      message?: string;
       contentList?: MessageCreateContent[];
       files?: MessageFile[];
     }
   >({
-    mutationFn: async ({ message, contentList, files }) => {
+    mutationFn: async ({ contentList, files }) => {
       if (!threadId)
         throw new Error('Thread ID is required to post message');
 
@@ -73,19 +72,15 @@ export function useWorkspaceMessages(
       const optimisticMessage = new Message({
         id: `temp-${Date.now()}`,
         values: [
-          ...(contentList?.length
-            ? [
-                {
-                  type: MessageValueType.INPUT,
-                  name: 'prompt',
-                  value: contentList,
-                  channels: {},
-                  createdAt: new Date(),
-                  createdBy: activeUser.name,
-                },
-              ]
-            : []),
-          ...(files?.length
+          {
+            type: MessageValueType.INPUT,
+            name: 'prompt',
+            value: contentList,
+            channels: {},
+            createdAt: new Date(),
+            createdBy: activeUser.name,
+          },
+          ...(files != null
             ? [
                 {
                   type: MessageValueType.INPUT,
@@ -239,14 +234,21 @@ export function useWorkspaceMessages(
   // Upload files and return MessageFile[]
   const uploadFilesMutation = useMutation<MessageFile[], Error, File[]>({
     mutationFn: async (files: File[]) => {
-      const result = await uploadFiles(files, activeWorkspace?.id ?? '');
+      if (!threadId) {
+        throw new Error('Thread ID is required to upload files');
+      }
+
+      if (!activeWorkspace) {
+        throw new Error('No active workspace to upload files to');
+      }
+
+      const result = await uploadFiles(files, activeWorkspace.id, threadId);
       return result;
     },
   });
 
   // Public method to send a message
   const sendMessage = (
-    message?: string,
     contentList?: MessageCreateContent[],
     files?: MessageFile[]
   ) => {
@@ -265,7 +267,7 @@ export function useWorkspaceMessages(
     setIsBotResponding(true);
 
     postMessageMutation.mutate(
-      { message, contentList, files },
+      { contentList, files },
       {
         onSuccess: () => {
           setIsBotResponding(false);

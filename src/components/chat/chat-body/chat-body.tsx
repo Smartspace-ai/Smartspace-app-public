@@ -12,7 +12,7 @@ import { UserContext } from '../../../hooks/use-user-information';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
 
-import { useSmartSpace } from '@/contexts/smartspace-context';
+import { useWorkspaces } from '@/hooks/use-workspaces';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
@@ -45,7 +45,7 @@ export default function ChatBody({
   const { graphData } = useContext(UserContext);
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const { activeWorkspace } = useSmartSpace();
+  const { activeWorkspace } = useWorkspaces();
 
   useEffect(() => {
     if (isBotResponding && messages.length > 0) {

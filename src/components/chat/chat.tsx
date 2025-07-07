@@ -1,4 +1,3 @@
-import { useSmartSpace } from '@/contexts/smartspace-context';
 import { useWorkspaceMessages } from '@/hooks/use-workspace-messages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
@@ -7,13 +6,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
+import { useWorkspaces } from '@/hooks/use-workspaces';
 import { MessageCreateContent } from '../../models/message';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
 
 export function Chat({threadId}: { threadId?: string }) {
-  const { activeWorkspace } = useSmartSpace();
+  const { activeWorkspace } = useWorkspaces();
   const {data: activeThread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
   const {
@@ -59,8 +59,6 @@ export function Chat({threadId}: { threadId?: string }) {
   // File upload handler
   const handleFilesSelected = useCallback(
     async (files: File[]) => {
-      if (!activeThread) return;
-
       try {
         const result = await uploadFiles(files);
         if (Array.isArray(result)) {
@@ -78,7 +76,7 @@ export function Chat({threadId}: { threadId?: string }) {
         toast.error('Failed to upload files');
       }
     },
-    [uploadFiles, activeThread]
+    [uploadFiles]
   );
 
   // Send message handler
@@ -86,12 +84,9 @@ export function Chat({threadId}: { threadId?: string }) {
     if (!newMessage.trim() && uploadedFiles.length === 0) return;
 
     const contentList: MessageCreateContent[] = [];
+    contentList.push({ text: newMessage.trim() });
 
-    if (newMessage.trim()) {
-      contentList.push({ text: newMessage.trim() });
-    }
-
-    sendMessage(newMessage.trim(), contentList, uploadedFiles);
+    sendMessage(contentList, uploadedFiles);
 
     setNewMessage('');
     setSelectedFiles([]);
@@ -206,6 +201,7 @@ export function Chat({threadId}: { threadId?: string }) {
         setUploadedFiles={setUploadedFiles}
         isUploadingFiles={isUploadingFiles}
         onFilesSelected={handleFilesSelected}
+        supportsFiles={activeWorkspace?.supportsFiles ?? false}
       />
     </div>
   );

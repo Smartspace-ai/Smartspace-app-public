@@ -48,7 +48,7 @@ import { getInitials } from '../../../utils/initials';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
 export function Threads() {
-  const { activeWorkspace, sortOrder, setSortOrder } = useSmartSpace();
+  const { sortOrder, setSortOrder } = useSmartSpace();
   
   const {
     threads,

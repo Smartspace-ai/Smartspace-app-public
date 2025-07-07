@@ -80,12 +80,14 @@ export async function deleteThread(threadId: string): Promise<void> {
 // Upload files to a workspace
 export async function uploadFiles(
   files: File[],
-  workspaceId: string
+  workspaceId: string,
+  threadId: string
 ): Promise<any[]> {
   try {
     const formData = new FormData();
     files.forEach((file) => formData.append('files', file));
     formData.append('workspaceId', workspaceId);
+    formData.append('threadId', threadId);
 
     const response = await webApi.post(`/files`, formData, {
       headers: {
