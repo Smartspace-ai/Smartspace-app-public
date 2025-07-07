@@ -1,5 +1,5 @@
+import { downloadFile } from '@/apis/files';
 import { useQuery } from '@tanstack/react-query';
-import { downloadFile } from '../apis/message-threads';
 
 // Hook to fetch and cache a single file blob by ID
 export const useMessageFile = (id: string) => {

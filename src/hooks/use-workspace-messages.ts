@@ -7,11 +7,11 @@ import {
 } from '@/models/message';
 import { Workspace } from '@/models/workspace';
 
+import { uploadFiles } from '@/apis/files';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { uploadFiles } from '../apis/message-threads';
 import { UserContext } from './use-user-information';
 import { useWorkspaces } from './use-workspaces';
 
@@ -242,7 +242,7 @@ export function useWorkspaceMessages(
         throw new Error('No active workspace to upload files to');
       }
 
-      const result = await uploadFiles(files, activeWorkspace.id, threadId);
+      const result = await uploadFiles(files, {workspaceId: activeWorkspace.id, threadId});
       return result;
     },
   });

@@ -77,54 +77,6 @@ export async function deleteThread(threadId: string): Promise<void> {
   }
 }
 
-// Upload files to a workspace
-export async function uploadFiles(
-  files: File[],
-  workspaceId: string,
-  threadId: string
-): Promise<any[]> {
-  try {
-    const formData = new FormData();
-    files.forEach((file) => formData.append('files', file));
-    formData.append('workspaceId', workspaceId);
-    formData.append('threadId', threadId);
-
-    const response = await webApi.post(`/files`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    const data = response.data;
-
-    if (data && data.length > 0) {
-      return data;
-    }
-
-    throw new Error('uploadFiles did not return a valid file object or array');
-  } catch (error) {
-    console.error('Error uploading files:', error);
-    throw new Error('Failed to upload files');
-  }
-}
-
-// Download file blob by ID
-export async function downloadFile(id: string): Promise<Blob> {
-  try {
-    const response = await webApi.get(`/files/${id}/download`, {
-      responseType: 'blob',
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    return response.data as Blob;
-  } catch (error) {
-    console.error('Error downloading file:', error);
-    throw new Error('Failed to download file');
-  }
-}
-
 // Create a new message thread
 export async function createThread(
   name: string,

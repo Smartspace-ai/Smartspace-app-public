@@ -1,6 +1,6 @@
+import { getFileDownloadUrl } from '@/apis/files';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { getFileDownloadUrl } from '../apis/workspace-files';
 
 // Hook for downloading a file from a secured source URI
 export const useQueryFiles = () => {

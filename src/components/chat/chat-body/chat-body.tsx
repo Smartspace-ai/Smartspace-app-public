@@ -5,13 +5,13 @@ import { VirtuosoHandle } from 'react-virtuoso';
 
 import { Draw } from '@/models/draw';
 import { Message } from '@/models/message';
-import { downloadFile } from '../../../apis/message-threads';
 import { useQueryFiles } from '../../../hooks/use-files';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
 import { UserContext } from '../../../hooks/use-user-information';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
 
+import { downloadFile } from '@/apis/files';
 import { useWorkspaces } from '@/hooks/use-workspaces';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Skeleton } from '../../ui/skeleton';
