@@ -2,22 +2,12 @@ import { Configuration, PopupRequest } from '@azure/msal-browser';
 
 // Environment variables (provided via Vite)
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
-const AUTHORITY = import.meta.env.VITE_CLIENT_AUTHORITY; // e.g. https://login.microsoftonline.com/your-tenant-id
+const AUTHORITY = import.meta.env.VITE_CLIENT_AUTHORITY;
 const CHAT_API_URI = import.meta.env.VITE_CHAT_API_URI;
-const CUSTOM_SCOPES = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || []; // e.g. "api://your-client-id/.default"
-
-// Debug: Log environment configuration
-console.log('=== AUTH DEBUG INFO ===');
-console.log('Environment check:', {
-  CLIENT_ID: CLIENT_ID || '❌ MISSING',
-  AUTHORITY: AUTHORITY || '❌ MISSING',
-  SCOPES: import.meta.env.VITE_CLIENT_SCOPES || '❌ MISSING',
-  API_URI: CHAT_API_URI || '❌ MISSING'
-});
-console.log('Parsed CUSTOM_SCOPES:', CUSTOM_SCOPES);
+const CUSTOM_SCOPES = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
 
 // Microsoft Graph scopes and endpoints
-const GRAPH_SCOPES = ['User.Read', 'User.ReadBasic.All'];
+const GRAPH_SCOPES = ['profile'];
 const GRAPH_ME_ENDPOINT = 'https://graph.microsoft.com/v1.0/me';
 const GRAPH_PHOTO_ENDPOINT = 'https://graph.microsoft.com/v1.0/me/photo/$value';
 
@@ -30,11 +20,6 @@ const isInTeams = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const inTeamsParam = urlParams.get('inTeams') === 'true';
   const parentCheck = window.parent !== window;
-  
-  console.log('=== isInTeams() DEBUG ===');
-  console.log('URL params check:', inTeamsParam);
-  console.log('Parent window check:', parentCheck);
-  console.log('Final result:', inTeamsParam || parentCheck);
   
   return inTeamsParam || parentCheck;
 };

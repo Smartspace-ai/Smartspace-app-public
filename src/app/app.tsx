@@ -52,14 +52,6 @@ export function App() {
 
   const isAuthenticated = accounts.length > 0;
 
-  // Debug: Log authentication state
-  console.log('=== APP AUTH DEBUG ===');
-  console.log('MSAL initialized:', isMSALInitialized);
-  console.log('Accounts:', accounts);
-  console.log('Active account:', instance.getActiveAccount());
-  console.log('Is authenticated:', isAuthenticated);
-  console.log('Graph data:', graphData);
-
   return (
     <TeamsProvider>
       <div style={{ height: '100%', width: '100%' }}>

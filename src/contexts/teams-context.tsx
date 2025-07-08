@@ -1,12 +1,12 @@
-import { app, Context } from '@microsoft/teams-js';
+import { app } from '@microsoft/teams-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface TeamsContextType {
   isInTeams: boolean;
-  teamsContext: Context | null;
+  teamsContext: app.Context | null;
   isTeamsInitialized: boolean;
   teamsTheme: string;
-  teamsUser: any;
+  teamsUser: app.Context['user'] | null;
 }
 
 const TeamsContext = createContext<TeamsContextType>({
@@ -25,64 +25,36 @@ interface TeamsProviderProps {
 
 export const TeamsProvider: React.FC<TeamsProviderProps> = ({ children }) => {
   const [isInTeams, setIsInTeams] = useState(false);
-  const [teamsContext, setTeamsContext] = useState<Context | null>(null);
+  const [teamsContext, setTeamsContext] = useState<app.Context | null>(null);
   const [isTeamsInitialized, setIsTeamsInitialized] = useState(false);
   const [teamsTheme, setTeamsTheme] = useState('default');
-  const [teamsUser, setTeamsUser] = useState(null);
+  const [teamsUser, setTeamsUser] = useState<app.Context['user'] | null>(null);
 
   useEffect(() => {
     const initializeTeams = async () => {
       try {
-        // Debug: Log initial state
-        console.log('=== TEAMS DEBUG INFO ===');
-        console.log('Current URL:', window.location.href);
-        console.log('URL params:', window.location.search);
-        
-        // Check if we're in Teams by looking for the inTeams parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        const inTeamsParam = urlParams.get('inTeams');
-        
-        console.log('inTeams param:', inTeamsParam);
-        console.log('Parent window check:', window.parent !== window);
-        console.log('Teams SDK available:', typeof (window as any).microsoftTeams !== 'undefined');
-        console.log('Teams app available:', typeof (window as any)?.microsoftTeams?.app !== 'undefined');
-        
-        if (inTeamsParam === 'true' || window.parent !== window) {
-          console.log('✅ Teams environment detected');
-          setIsInTeams(true);
-          
-          // Initialize Teams SDK
-          await app.initialize();
+        // First try initializing the SDK
+        await app.initialize();
 
-          // Check if we're in desktop Teams vs web Teams
-          const teamsContext = await app.getContext();
-      
-          // Get Teams context
-          setTeamsContext(teamsContext as any);
-          
-          // Set theme based on Teams theme
-          setTeamsTheme(teamsContext.app.theme || 'default');
-          
-          // Listen for theme changes
-          app.registerOnThemeChangeHandler((theme: string) => {
-            setTeamsTheme(theme);
-          });
-          
-          // Get user information if available
-          try {
-            const userProfile = teamsContext.user;
-            setTeamsUser(userProfile as any);
-          } catch (error) {
-            console.log('Could not get Teams user profile:', error);
-          }
-          
-          setIsTeamsInitialized(true);
-        } else {
-          // Not in Teams, just set initialized to true
-          setIsTeamsInitialized(true);
-        }
-      } catch (error) {
-        console.error('Error initializing Teams:', error);
+        // If that worked, we're in Teams
+        setIsInTeams(true);
+
+        // Get context (includes user, theme, locale, etc.)
+        const context = await app.getContext();
+        setTeamsContext(context);
+        setTeamsUser(context.user ?? null);
+        setTeamsTheme(context.app?.theme || 'default');
+
+        // Watch for theme changes
+        app.registerOnThemeChangeHandler((theme) => {
+          setTeamsTheme(theme);
+        });
+      } catch (err) {
+        // We're not in Teams, or SDK failed
+        setIsInTeams(false);
+        setTeamsContext(null);
+        setTeamsUser(null);
+      } finally {
         setIsTeamsInitialized(true);
       }
     };
@@ -90,17 +62,17 @@ export const TeamsProvider: React.FC<TeamsProviderProps> = ({ children }) => {
     initializeTeams();
   }, []);
 
-  const value = {
-    isInTeams,
-    teamsContext,
-    isTeamsInitialized,
-    teamsTheme,
-    teamsUser,
-  };
-
   return (
-    <TeamsContext.Provider value={value}>
+    <TeamsContext.Provider
+      value={{
+        isInTeams,
+        teamsContext,
+        isTeamsInitialized,
+        teamsTheme,
+        teamsUser,
+      }}
+    >
       {children}
     </TeamsContext.Provider>
   );
-}; 
+};

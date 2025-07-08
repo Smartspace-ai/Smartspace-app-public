@@ -10,48 +10,39 @@ export const useTeamsAuth = () => {
   const { isInTeams: inTeams, isTeamsInitialized } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 2;
 
-  const login = useCallback(async () => {
-    if (retryCount >= MAX_RETRIES) {
-      console.log('❌ Max retries reached, stopping attempts');
-      setError('Maximum authentication attempts reached. Please refresh the page or contact support.');
-      return;
-    }
-    
+  const login = useCallback(async () => {    
     setIsLoading(true);
     setError(null);
-    setRetryCount(prev => prev + 1);
 
     try {
       if (inTeams && isTeamsInitialized) {
         // Try Teams SSO first
         try {
           const authToken = await authentication.getAuthToken();
-          
-          await instance.ssoSilent(teamsLoginRequest);
+          const decoded = safeDecodeJwt(authToken);
+          const loginHint = decoded.preferred_username;
+
+          await instance.ssoSilent({
+            ...teamsLoginRequest,
+            loginHint,
+          });
         } catch (ssoError) {
+          setError(ssoError.toString())
           await instance.loginPopup(teamsLoginRequest);
         }
       } else {
+        // TODO add some logs into state here
         // Regular browser authentication
         await instance.loginPopup(loginRequest);
       }
     } catch (authError) {
       console.error('Authentication failed:', authError);
       const errorMessage = authError instanceof Error ? authError.message : 'Authentication failed';
-      setError(`${errorMessage}${retryCount < MAX_RETRIES ? ' (Will retry)' : ' (Max retries reached)'}`);
     } finally {
       setIsLoading(false);
     }
-  }, [instance, inTeams, isTeamsInitialized, retryCount, MAX_RETRIES]);
-
-  const resetRetryCount = useCallback(() => {
-    console.log('🔄 Resetting retry count');
-    setRetryCount(0);
-    setError(null);
-  }, []);
+  }, [instance, inTeams, isTeamsInitialized]);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
@@ -73,7 +64,7 @@ export const useTeamsAuth = () => {
       }
     } catch (logoutError) {
       console.error('Logout failed:', logoutError);
-      setError(logoutError instanceof Error ? logoutError.message : 'Logout failed');
+      // setError(logoutError instanceof Error ? logoutError.message : 'Logout failed');
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +110,26 @@ export const useTeamsAuth = () => {
     isLoading,
     error,
     isInTeams: inTeams,
-    resetRetryCount,
-    retryCount,
   };
 }; 
+
+
+function safeDecodeJwt(token?: string) {
+  try {
+    if (!token || token.split('.').length !== 3) {
+      throw new Error('Token is not a valid JWT');
+    }
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (err) {
+    console.error('Failed to decode JWT:', err);
+    return null;
+  }
+}

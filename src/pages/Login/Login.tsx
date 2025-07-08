@@ -9,7 +9,7 @@ import styles from './Login.module.scss';
 
 export function Login() {
   const { instance } = useMsal();
-  const { login, isLoading, error, isInTeams, resetRetryCount, retryCount } = useTeamsAuth();
+  const { login, isLoading, error, isInTeams } = useTeamsAuth();
   const { isTeamsInitialized } = useTeams();
   const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
 
@@ -23,7 +23,6 @@ export function Login() {
 
   // Fallback manual login for browser or if Teams SSO fails
   const handleManualLogin = () => {
-    resetRetryCount(); // Reset retry count for manual attempts
     if (isInTeams) {
       login(); // Use Teams-aware login
     } else {
@@ -51,11 +50,9 @@ export function Login() {
             ) : error ? (
               <div className="text-red-600 text-sm mt-2 text-center max-w-sm">
                 <div className="mb-2">{error}</div>
-                {retryCount >= 2 && (
-                  <div className="text-xs text-gray-600">
-                    Try refreshing the page or contact your IT administrator if this persists.
-                  </div>
-                )}
+                <div className="text-xs text-gray-600">
+                  Try refreshing the page or contact your IT administrator if this persists.
+                </div>
               </div>
             ) : (
               // If not loading and no error, show nothing (Teams SSO should be seamless)
