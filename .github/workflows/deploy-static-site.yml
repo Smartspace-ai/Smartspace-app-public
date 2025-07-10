@@ -16,6 +16,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Check that AZURE_STORAGE_CONNECTION_STRING secret exists
+        run: |
+          if [ -z "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" ]; then
+            echo "::error::AZURE_STORAGE_CONNECTION_STRING secret is not set!"
+            exit 1
+          fi
+
+      - name: Check .env for required variables
+        run: |
+          required_vars=(
+            VITE_CLIENT_ID
+            VITE_CLIENT_AUTHORITY
+            VITE_CLIENT_SCOPES
+            VITE_CHAT_API_URI
+          )
+          for var in "${required_vars[@]}"; do
+            if ! grep -q "^$var=" .env; then
+              echo "::error::.env does not contain $var!"
+              exit 1
+            fi
+            value=$(grep "^$var=" .env | cut -d'=' -f2-)
+            if [ -z "$value" ]; then
+              echo "::error::$var in .env is empty!"
+              exit 1
+            fi
+          done
+
       - name: Build your site
         run: |
           npm install
