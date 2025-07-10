@@ -60,11 +60,10 @@ export function NotificationPanel() {
       handleReadNotification?.(notification.id);
     }
 
-    if (notification.workSpaceId && notification.threadId) {
+    if (notification.threadId) {
       navigate(
         `/workspace/${notification.workSpaceId}/thread/${notification.threadId}`
       );
-      setTimeout(() => window.location.reload(), 200);
     }
 
     setIsOpen(false);

@@ -1,40 +1,31 @@
 import { addInputToMessage, fetchMessages, postMessage } from '@/apis/messages';
-import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import {
   Message,
   MessageCreateContent,
   MessageFile,
   MessageValueType,
 } from '@/models/message';
-import { MessageThread } from '@/models/message-threads';
 import { Workspace } from '@/models/workspace';
 
+import { uploadFiles } from '@/apis/files';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useContext, useState } from 'react';
-import { useParams } from 'react-router';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { uploadFiles } from '../apis/message-threads';
-import { UserContext } from './use-user-information';
+import { useActiveUser } from './use-active-user';
+import { useWorkspaces } from './use-workspaces';
 
 export function useWorkspaceMessages(
   passedWorkspace?: Workspace | null,
-  passedThread?: MessageThread | null
+  threadId?: string | null,
 ) {
-  const context = useSmartSpaceChat();
-  const activeThread = passedThread ?? context?.activeThread;
+  const context = useWorkspaces();
+  
   const activeWorkspace = passedWorkspace ?? context?.activeWorkspace;
 
   const queryClient = useQueryClient();
-  const { graphData, graphPhoto } = useContext(UserContext);
-  const { threadId: urlThreadId } = useParams<{ threadId: string }>();
-
-  const threadId = activeThread?.id || urlThreadId;
-
-  const activeUser = {
-    name: graphData?.displayName ?? 'User',
-    email: graphData?.mail ?? '',
-    profilePhoto: graphPhoto || '',
-  };
+  const navigate = useNavigate();
+  const activeUser = useActiveUser();
 
   // Fetch messages for the current thread
   const {
@@ -62,35 +53,28 @@ export function useWorkspaceMessages(
     Message,
     Error,
     {
-      message?: string;
       contentList?: MessageCreateContent[];
       files?: MessageFile[];
-      threadId?: string;
     }
   >({
-    mutationFn: async ({ message, contentList, files, threadId }) => {
-      const finalThreadId = threadId ?? urlThreadId;
-      const finalWorkspaceId = activeWorkspace?.id || '0';
-
-      if (!finalThreadId)
+    mutationFn: async ({ contentList, files }) => {
+      if (!threadId)
         throw new Error('Thread ID is required to post message');
+
+      const finalWorkspaceId = activeWorkspace?.id || '0';
 
       const optimisticMessage = new Message({
         id: `temp-${Date.now()}`,
         values: [
-          ...(contentList?.length
-            ? [
-                {
-                  type: MessageValueType.INPUT,
-                  name: 'prompt',
-                  value: contentList,
-                  channels: {},
-                  createdAt: new Date(),
-                  createdBy: activeUser.name,
-                },
-              ]
-            : []),
-          ...(files?.length
+          {
+            type: MessageValueType.INPUT,
+            name: 'prompt',
+            value: contentList,
+            channels: {},
+            createdAt: new Date(),
+            createdBy: activeUser.name,
+          },
+          ...(files != null
             ? [
                 {
                   type: MessageValueType.INPUT,
@@ -110,24 +94,28 @@ export function useWorkspaceMessages(
 
       // Add optimistic message to cache
       queryClient.setQueryData<Message[]>(
-        ['messages', finalThreadId],
+        ['messages', threadId],
         (old = []) => [...old, optimisticMessage]
       );
 
       await queryClient.cancelQueries({
-        queryKey: ['messages', finalThreadId],
+        queryKey: ['messages', threadId],
       });
 
       const response = await postMessage({
         workSpaceId: finalWorkspaceId,
-        threadId: finalThreadId,
+        threadId,
         contentList,
         files,
       });
 
+      await queryClient.refetchQueries({
+        queryKey: ['threads', finalWorkspaceId],
+      });
+
       // Replace optimistic with real message
       queryClient.setQueryData<Message[]>(
-        ['messages', finalThreadId],
+        ['messages', threadId],
         (old = []) => {
           const withoutOptimistic = old.filter((m) => !m.optimistic);
           const exists = withoutOptimistic.some((m) => m.id === response.id);
@@ -137,7 +125,8 @@ export function useWorkspaceMessages(
 
       return response;
     },
-    onError: async () => {
+    onError: async (e) => {
+      console.error('Error posting message:', e);
       toast.error('There was an error posting your message');
       await refetch();
     },
@@ -181,7 +170,13 @@ export function useWorkspaceMessages(
 
       await queryClient.cancelQueries({ queryKey: ['messages', threadId] });
 
-      return await addInputToMessage({ messageId, name, value, channels });
+      const result = await addInputToMessage({ messageId, name, value, channels });
+      
+      await queryClient.refetchQueries({
+        queryKey: ['threads', passedWorkspace?.id],
+      });
+
+      return result;
     },
     onSuccess: (message) => {
       queryClient.setQueryData<Message[]>(
@@ -233,30 +228,44 @@ export function useWorkspaceMessages(
   // Upload files and return MessageFile[]
   const uploadFilesMutation = useMutation<MessageFile[], Error, File[]>({
     mutationFn: async (files: File[]) => {
-      const result = await uploadFiles(files, activeWorkspace?.id ?? '');
+      if (!threadId) {
+        throw new Error('Thread ID is required to upload files');
+      }
+
+      if (!activeWorkspace) {
+        throw new Error('No active workspace to upload files to');
+      }
+
+      const result = await uploadFiles(files, {workspaceId: activeWorkspace.id, threadId});
       return result;
     },
   });
 
   // Public method to send a message
   const sendMessage = (
-    message?: string,
     contentList?: MessageCreateContent[],
     files?: MessageFile[]
   ) => {
     if (!threadId) {
-      toast.error('No thread ID found. Cannot send message.');
-      return;
+      threadId = crypto.randomUUID();
+      if (!context.activeWorkspace) {
+        console.error('No active workspace to create thread in');
+        return;
+      }
+
+      navigate(
+        `/workspace/${context.activeWorkspace?.id}/thread/${threadId}`,
+      );
     }
 
     setIsBotResponding(true);
 
     postMessageMutation.mutate(
-      { threadId, message, contentList, files },
+      { contentList, files },
       {
         onSuccess: () => {
           setIsBotResponding(false);
-          if (!activeThread && activeWorkspace?.id) {
+          if (!threadId && activeWorkspace?.id) {
             queryClient.invalidateQueries({
               queryKey: ['threads', activeWorkspace.id],
             });

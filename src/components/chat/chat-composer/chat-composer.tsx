@@ -12,6 +12,7 @@ type ChatComposerProps = {
   handleSendMessage: () => void;
   handleKeyDown: (e: React.KeyboardEvent) => void;
   isSending: boolean;
+  supportsFiles: boolean;
   disabled: boolean;
   selectedFiles: File[];
   setSelectedFiles: (files: File[]) => void;
@@ -34,6 +35,7 @@ export default function ChatComposer({
   setUploadedFiles,
   isUploadingFiles,
   onFilesSelected,
+  supportsFiles
 }: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -124,6 +126,8 @@ export default function ChatComposer({
       fileInputRef.current.value = '';
     }
   };
+
+  const sendDisabled = (!newMessage.trim() && !uploadedFiles?.length) || isUploadingFiles || disabled;
 
   return (
     <div className="ss-chat__composer w-full mt-auto bg-sidebar border-t px-4 py-4">
@@ -233,34 +237,39 @@ export default function ChatComposer({
 
           <div className="flex items-center justify-between px-4 py-2 bg-background">
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                disabled={disabled || isUploadingFiles}
-                onClick={handlePaperclipClick}
-              >
-                <Paperclip className="h-4 w-4" />
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  multiple
-                  className="hidden"
-                />
-              </Button>
+              {supportsFiles && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  disabled={disabled || isUploadingFiles}
+                  onClick={handlePaperclipClick}
+                >
+                  <Paperclip className="h-4 w-4" />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    multiple
+                    className="hidden"
+                  />
+                </Button>
+              )}
             </div>
 
             <Button
-              onClick={handleSendMessage}
+              onClick={() => {
+                handleSendMessage();
+                handleRemoveAllFiles();
+              }}
               variant="default"
               size="sm"
               className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
-                !newMessage.trim() || disabled
+                sendDisabled
                   ? 'opacity-50 cursor-not-allowed'
                   : ''
               }`}
-              disabled={!newMessage.trim() || disabled}
+              disabled={sendDisabled}
             >
               {isSending ? (
                 <span className="flex items-center gap-1">

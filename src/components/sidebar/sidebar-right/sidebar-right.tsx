@@ -25,8 +25,8 @@ import { MessageComment } from '../../../models/message-comment';
 import { getInitials } from '../../../utils/initials';
 import { Skeleton } from '../../ui/skeleton';
 
-export function SidebarRight() {
-  const { comments, isLoading, addComment, isAddingComment } = useWorkspaceThreadComments();
+export function SidebarRight({ threadId }: { threadId: string | undefined }) {
+  const { comments, isLoading, addComment } = useWorkspaceThreadComments(threadId);
   const { users: taggableUsers } = useTaggableWorkspaceUsers();
 
   const [newComment, setNewComment] = useState('');

@@ -1,24 +1,17 @@
-import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useContext, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 import { MentionUser } from '@/models/mention-user';
 import { addComment, fetchComments, fetchTaggableUsers } from '../apis/message-comments';
 import { MessageComment } from '../models/message-comment';
-import { UserContext } from './use-user-information';
+import { useActiveUser } from './use-active-user';
+import { useWorkspaces } from './use-workspaces';
 
-export function useWorkspaceThreadComments() {
-  const { activeThread } = useSmartSpaceChat();
+export function useWorkspaceThreadComments(threadId?: string) {
   const queryClient = useQueryClient();
   const previousThreadIdRef = useRef<string | null>(null);
-  const { graphData, graphPhoto } = useContext(UserContext);
-
-  const activeUser = {
-    name: graphData?.displayName ?? 'User',
-    email: graphData?.mail ?? '',
-    profilePhoto: graphPhoto || '',
-  };
+    const activeUser = useActiveUser();
 
   // Fetch comments for the current thread
   const {
@@ -27,22 +20,22 @@ export function useWorkspaceThreadComments() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['comments', activeThread?.id],
+    queryKey: ['comments', threadId],
     queryFn: () =>
-      activeThread ? fetchComments(activeThread.id) : Promise.resolve([]),
-    enabled: !!activeThread,
+      threadId ? fetchComments(threadId) : Promise.resolve([]),
+    enabled: !!threadId,
   });
 
   // Refetch comments when the thread changes
   useEffect(() => {
-    if (activeThread?.id && activeThread.id !== previousThreadIdRef.current) {
-      previousThreadIdRef.current = activeThread.id;
+    if (threadId !== previousThreadIdRef.current) {
+      previousThreadIdRef.current = threadId;
 
       refetch().catch((error) => {
         console.error('Error refetching comments:', error);
       });
     }
-  }, [activeThread?.id, refetch]);
+  }, [threadId, refetch]);
 
   // Add a comment with optimistic update
   const addCommentMutation = useMutation({
@@ -98,9 +91,9 @@ export function useWorkspaceThreadComments() {
     error,
     refetch,
     addComment: async (content: string, mentionedUsers: MentionUser[] = []) => {
-      if (!activeThread || !content.trim()) return;
+      if (!threadId || !content.trim()) return;
       return await addCommentMutation.mutateAsync({
-        threadId: activeThread.id,
+        threadId,
         content,
         mentionedUsers
       });
@@ -110,7 +103,9 @@ export function useWorkspaceThreadComments() {
 }
 
 export const useTaggableWorkspaceUsers = () => {
-  const { activeWorkspace } = useSmartSpaceChat();
+  const {
+    activeWorkspace,
+  } = useWorkspaces();
 
   const {
     data: users = [],

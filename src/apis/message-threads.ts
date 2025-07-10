@@ -20,6 +20,16 @@ export async function fetchThreads(
   return { threads, total };
 }
 
+export async function fetchThread(
+  workspaceId: string, id: string,
+): Promise<MessageThread> {
+  const response = await webApi.get(
+    `workspaces/${workspaceId}/messagethreads/${id}`
+  );
+
+  return response.data as MessageThread;
+}
+
 // Toggle favorite status of a message thread
 export async function toggleFavorite(
   thread: MessageThread,
@@ -64,52 +74,6 @@ export async function deleteThread(threadId: string): Promise<void> {
     await webApi.delete(`/messagethreads/${threadId}`);
   } catch (error) {
     console.error('Error deleting thread:', error);
-  }
-}
-
-// Upload files to a workspace
-export async function uploadFiles(
-  files: File[],
-  workspaceId: string
-): Promise<any[]> {
-  try {
-    const formData = new FormData();
-    files.forEach((file) => formData.append('files', file));
-    formData.append('workspaceId', workspaceId);
-
-    const response = await webApi.post(`/files`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    const data = response.data;
-
-    if (data && data.length > 0) {
-      return data;
-    }
-
-    throw new Error('uploadFiles did not return a valid file object or array');
-  } catch (error) {
-    console.error('Error uploading files:', error);
-    throw new Error('Failed to upload files');
-  }
-}
-
-// Download file blob by ID
-export async function downloadFile(id: string): Promise<Blob> {
-  try {
-    const response = await webApi.get(`/files/${id}/download`, {
-      responseType: 'blob',
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    return response.data as Blob;
-  } catch (error) {
-    console.error('Error downloading file:', error);
-    throw new Error('Failed to download file');
   }
 }
 

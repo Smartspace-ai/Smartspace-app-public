@@ -1,13 +1,13 @@
+import { loginRequest } from '@/app/msalConfig';
 import {
   InteractionRequiredAuthError,
-  PublicClientApplication,
+  IPublicClientApplication,
 } from '@azure/msal-browser';
-import { graphLoginRequest } from '../app/msalConfig';
 import GraphAPI from './api-graph';
 
 export async function callMsGraph<T = any>(
   graphEndpoint: string,
-  msalInstance?: PublicClientApplication,
+  msalInstance?: IPublicClientApplication,
   returnAsJson = true,
   contentType = 'application/json'
 ): Promise<T | Blob | null> {
@@ -18,7 +18,7 @@ export async function callMsGraph<T = any>(
     }
 
     const response = await msalInstance?.acquireTokenSilent({
-      ...graphLoginRequest,
+      ...loginRequest,
       account,
     });
 
@@ -41,7 +41,7 @@ export async function callMsGraph<T = any>(
     return returnAsJson ? (apiResponse.data as T) : apiResponse.data;
   } catch (error: any) {
     if (error instanceof InteractionRequiredAuthError) {
-      msalInstance?.loginRedirect(graphLoginRequest);
+      msalInstance?.loginRedirect(loginRequest);
       return null;
     }
 

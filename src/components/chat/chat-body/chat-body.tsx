@@ -1,18 +1,18 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { MessagesSquare } from 'lucide-react';
-import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
+import React, { useEffect, useRef } from 'react';
+import { VirtuosoHandle } from 'react-virtuoso';
 
 import { Draw } from '@/models/draw';
 import { Message } from '@/models/message';
-import { downloadFile } from '../../../apis/message-threads';
 import { useQueryFiles } from '../../../hooks/use-files';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
-import { UserContext } from '../../../hooks/use-user-information';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
 
-import useSmartSpaceChat from '@/contexts/smartspace-context';
+import { downloadFile } from '@/apis/files';
+import { useActiveUser } from '@/hooks/use-active-user';
+import { useWorkspaces } from '@/hooks/use-workspaces';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
@@ -42,17 +42,10 @@ export default function ChatBody({
   isBotResponding,
   addValueToMessage,
 }: ChatBodyProps) {
-  const { graphData } = useContext(UserContext);
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
-  const { activeWorkspace } = useSmartSpaceChat();
-
-  useLayoutEffect(() => {
-    if (viewportRef.current) {
-      setScrollParent(viewportRef.current);
-    }
-  }, [viewportRef.current]);
+  const { activeWorkspace } = useWorkspaces();
+  const activeUser = useActiveUser();
 
   useEffect(() => {
     if (isBotResponding && messages.length > 0) {
@@ -97,71 +90,71 @@ export default function ChatBody({
       <ScrollAreaPrimitive.Root className="relative overflow-hidden h-full w-full">
         <ScrollAreaPrimitive.Viewport
           ref={viewportRef}
-          className="h-full w-full rounded-[inherit]"
+          className="h-full w-full rounded-[inherit] overflow-y-auto"
         >
-          {scrollParent && (
-            <Virtuoso
-              ref={virtuosoRef}
-              style={{ height: '100%', width: '100%' }}
-              customScrollParent={scrollParent}
-              data={messages}
-              itemContent={(index, message) => (
-                <div className="ss-chat__message px-2 max-w-3xl mx-auto" key={message.id}>
-                  <ChatMessage
-                    userId={(graphData as any)?.id}
-                    avatar={getInitials(message.createdBy ?? 'You')}
-                    message={message}
-                    messageId={message.id}
-                    isLast={index === messages.length - 1}
-                    useMessageFile={useMessageFile}
-                    downloadFile={downloadFile}
-                    saveFile={saveFile}
-                    useQueryFiles={useQueryFiles}
-                    addValueToMessage={addValueToMessage}
-                  />
-                  {index === messages.length - 1 && isBotResponding && (
-                    <div className="rounded-lg border bg-background shadow-md mb-4 group mt-4">
-                      <div className="flex items-center justify-between p-3 border-b">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-7 w-7 mt-0.5">
-                            <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                              {getInitials('Chatbot')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                            <span className="text-xs font-medium">Chatbot</span>
-                            <span className="text-xs text-muted-foreground">
-                              {parseDateTime(new Date(), 'Do MMMM YYYY, h:mm a')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-3 min-h-3">
-                        <div className="flex space-x-2 p-1">
-                          {[0, 300, 600].map((delay) => (
-                            <div
-                              key={delay}
-                              className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
-                              style={{ animationDelay: `${delay}ms` }}
-                            />
-                          ))}
+          <div className="flex flex-col w-full">
+            {messages.map((message, index) => (
+              <div
+                className="ss-chat__message w-full px-2 max-w-3xl mx-auto"
+                key={message.id || index}
+              >
+                <ChatMessage
+                  userId={activeUser.id}
+                  avatar={getInitials(message.createdBy ?? 'You')}
+                  message={message}
+                  messageId={message.id}
+                  isLast={index === messages.length - 1}
+                  useMessageFile={useMessageFile}
+                  downloadFile={downloadFile}
+                  saveFile={saveFile}
+                  useQueryFiles={useQueryFiles}
+                  addValueToMessage={addValueToMessage}
+                />
+
+                {index === messages.length - 1 && isBotResponding && (
+                  <div className="rounded-lg border bg-background shadow-md mb-4 group mt-4">
+                    <div className="flex items-center justify-between p-3 border-b">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-7 w-7 mt-0.5">
+                          <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                            {getInitials('Chatbot')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium">Chatbot</span>
+                          <span className="text-xs text-muted-foreground">
+                            {parseDateTime(new Date(), 'Do MMMM YYYY, h:mm a')}
+                          </span>
                         </div>
                       </div>
                     </div>
-                  )}
-                  <div ref={messagesEndRef} className="h-4" />
-                </div>
-              )}
-              followOutput
-            />
-          )}
+                    <div className="p-3 min-h-3">
+                      <div className="flex space-x-2 p-1">
+                        {[0, 300, 600].map((delay) => (
+                          <div
+                            key={delay}
+                            className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
+                            style={{ animationDelay: `${delay}ms` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} className="h-4" />
+              </div>
+            ))}
+          </div>
         </ScrollAreaPrimitive.Viewport>
+
         <ScrollAreaPrimitive.Scrollbar
           orientation="vertical"
           className="flex touch-none select-none transition-colors h-full w-2.5 border-l border-l-transparent p-[1px]"
         >
           <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-border" />
         </ScrollAreaPrimitive.Scrollbar>
+
         <ScrollAreaPrimitive.Corner />
       </ScrollAreaPrimitive.Root>
     </div>

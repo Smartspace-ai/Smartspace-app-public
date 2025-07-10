@@ -90,7 +90,11 @@ export async function postMessage({
     if (files?.length) {
       inputs.push({
         name: 'files',
-        value: files,
+        value: files.map((file) => ({
+          id: file.id,
+          name: file.name,
+          _type: 'File',
+        })),
       });
     }
 

@@ -5,30 +5,24 @@ import {
   updateThread,
 } from '@/apis/message-threads';
 
-import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useCallback, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { MessageThread } from '../models/message-threads';
+import { useWorkspaces } from './use-workspaces';
 
 export function useWorkspaceThreads(take = 20) {
   const queryClient = useQueryClient();
-  const { activeWorkspace, setActiveThread, activeThread } =
-    useSmartSpaceChat();
+  const { activeWorkspace } = useWorkspaces();
   const navigate = useNavigate();
 
   const [isCreatingThread, setIsCreatingThread] = useState(false);
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  const initialThreadSetRef = useRef<Record<string, boolean>>({});
   const { threadId } = useParams<{
-    workspaceId: string;
     threadId?: string;
   }>();
-
-  const [searchParams] = useSearchParams();
-  const isNewThread = searchParams.get('isNew') === 'true';
 
   // Fetch threads for the active workspace
   const {
@@ -65,10 +59,7 @@ export function useWorkspaceThreads(take = 20) {
       lastPage.hasMore ? lastPage.nextSkip : undefined,
   });
 
-  const flattenedThreads = useMemo(() => 
-    data?.pages.flatMap((page) => page.threads) ?? [],
-    [data]
-  );
+  const flattenedThreads = data?.pages.flatMap((page) => page.threads);
 
   // Create a new thread and set it as active
   const createThreadMutation = useMutation({
@@ -80,11 +71,8 @@ export function useWorkspaceThreads(take = 20) {
       workspaceId: string;
     }) => createThread(name, workspaceId),
     onSuccess: (newThread) => {
-      queryClient.setQueryData(
-        ['threads', activeWorkspace?.id],
-        (oldThreads: MessageThread[] = []) => [newThread, ...oldThreads]
-      );
-      setActiveThread(newThread);
+      refetch();
+      navigate(`/workspace/${activeWorkspace?.id}/thread/${newThread.id}`);
       setIsCreatingThread(false);
     },
   });
@@ -98,43 +86,21 @@ export function useWorkspaceThreads(take = 20) {
       threadId: string;
       updates: Partial<MessageThread>;
     }) => updateThread(threadId, updates),
-    onSuccess: (updatedThread) => {
-      queryClient.setQueryData(
-        ['threads', activeWorkspace?.id],
-        (oldThreads: MessageThread[] = []) =>
-          oldThreads.map((thread) =>
-            thread.id === updatedThread.id ? updatedThread : thread
-          )
-      );
+    onSuccess: () => {
+      refetch();
     },
   });
 
   // Delete a thread and remove it from state
   const deleteThreadMutation = useMutation({
-    mutationFn: (threadId: string) => deleteThread(threadId),
-    onSuccess: (_, threadId) => {
-      queryClient.setQueryData(
-        ['threads', activeWorkspace?.id],
-        (oldThreads: MessageThread[] = []) =>
-          oldThreads.filter((thread) => thread.id !== threadId)
-      );
-      if (activeThread?.id === threadId) {
-        setActiveThread(null);
+    mutationFn: (deletedThreadId: string) => deleteThread(deletedThreadId),
+    onSuccess: (_, deletedThreadId) => {
+      refetch();
+      if (threadId === deletedThreadId) {
+        navigate(`/workspace/${activeWorkspace?.id}`);
       }
     },
   });
-
-  // Set active thread and navigate to it
-  const handleThreadChange = useCallback(
-    (thread: MessageThread) => {
-      const stableThread = { ...thread };
-      setActiveThread(stableThread);
-      navigate(`/workspace/${activeWorkspace?.id}/thread/${stableThread.id}`, {
-        replace: true,
-      });
-    },
-    [activeWorkspace?.id, navigate, setActiveThread]
-  );
 
   // Trigger UI for new thread creation
   const handleCreateThread = useCallback(() => {
@@ -173,59 +139,36 @@ export function useWorkspaceThreads(take = 20) {
 
       queryClient.setQueryData(
         ['threads', activeWorkspace.id],
-        (oldThreads: MessageThread[] = []) =>
-          oldThreads.map((thread) =>
-            thread.id === threadId ? { ...thread, ...updates } : thread
-          )
+        (oldThreads: {pages: {threads: MessageThread[]}[]}) => {
+          return {
+            ...oldThreads,
+            pages: oldThreads.pages.map((page) => ({
+              ...page,
+              threads: page.threads.map((thread) =>
+                thread.id === threadId ? { ...thread, ...updates } : thread
+              ),
+            })),
+          };
+        }
       );
     },
     [activeWorkspace?.id, queryClient]
   );
-
-  // Set the initial active thread once threads are available
-  useEffect(() => {
-    const isValidThreadId = threadId && flattenedThreads.some((t) => t.id === threadId);
-
-    if (
-      activeWorkspace?.id &&
-      flattenedThreads.length > 0 &&
-      !activeThread &&
-      !initialThreadSetRef.current[activeWorkspace.id] &&
-      !isNewThread
-    ) {
-      // Set matched thread or fallback to first
-      const threadToSelect = isValidThreadId
-        ? flattenedThreads.find((t) => t.id === threadId) || flattenedThreads[0]
-        : flattenedThreads[0];
-
-      handleThreadChange(threadToSelect);
-      initialThreadSetRef.current[activeWorkspace.id] = true;
-    }
-  }, [
-    activeWorkspace?.id,
-    flattenedThreads,
-    activeThread,
-    handleThreadChange,
-    threadId,
-    isNewThread,
-  ]);
 
   return {
     threads: flattenedThreads,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    totalCount: data?.pages?.[0]?.total ?? flattenedThreads.length,
+    totalCount: data?.pages?.[0]?.total ?? flattenedThreads?.length,
     isLoading,
     error,
     refetch,
-    activeThread,
     isCreatingThread,
     hoveredThreadId,
     setHoveredThreadId,
     openMenuId,
     setOpenMenuId,
-    handleThreadChange,
     handleCreateThread,
     handleSubmitThread,
     handleCancelThread,

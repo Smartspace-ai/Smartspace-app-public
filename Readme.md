@@ -29,7 +29,7 @@ Ensure you have the following installed:
 
 ### Installation
 
-1. **Fork this repository to your own GitHub account.**
+1. **Fork [this repository](https://github.com/Smartspace-ai/Smartspace-app-public) to your own GitHub account.**
 2. **Clone your fork:**
 
    ```bash

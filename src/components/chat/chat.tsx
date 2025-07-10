@@ -1,4 +1,3 @@
-import { useSmartSpaceChat } from '@/contexts/smartspace-context';
 import { useWorkspaceMessages } from '@/hooks/use-workspace-messages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
@@ -6,14 +5,16 @@ import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
+import { useWorkspaces } from '@/hooks/use-workspaces';
 import { MessageCreateContent } from '../../models/message';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
 
-export function Chat() {
-  const { activeWorkspace, activeThread, getDraft, saveDraft, clearDraft } =
-    useSmartSpaceChat();
+export function Chat({threadId}: { threadId?: string }) {
+  const { activeWorkspace } = useWorkspaces();
+  const {data: activeThread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
   const {
     messages,
@@ -24,12 +25,10 @@ export function Chat() {
     isBotResponding,
     isUploadingFiles,
     addValueToMessage,
-  } = useWorkspaceMessages(activeWorkspace, activeThread);
+  } = useWorkspaceMessages(activeWorkspace, threadId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [newMessage, setNewMessage] = useState(() =>
-    activeThread ? getDraft(activeThread.id) : ''
-  );
+  const [newMessage, setNewMessage] = useState('');
 
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -42,13 +41,6 @@ export function Chat() {
       messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
     }
   }, [messages.length]);
-
-  // Save draft on message change
-  useEffect(() => {
-    if (activeThread) {
-      saveDraft(activeThread.id, newMessage);
-    }
-  }, [newMessage, activeThread, saveDraft]);
 
   // Copy to clipboard handler
   const copyMessageToClipboard = (message: string, id: number) => {
@@ -67,8 +59,6 @@ export function Chat() {
   // File upload handler
   const handleFilesSelected = useCallback(
     async (files: File[]) => {
-      if (!activeThread) return;
-
       try {
         const result = await uploadFiles(files);
         if (Array.isArray(result)) {
@@ -86,7 +76,7 @@ export function Chat() {
         toast.error('Failed to upload files');
       }
     },
-    [uploadFiles, activeThread]
+    [uploadFiles]
   );
 
   // Send message handler
@@ -94,20 +84,14 @@ export function Chat() {
     if (!newMessage.trim() && uploadedFiles.length === 0) return;
 
     const contentList: MessageCreateContent[] = [];
+    contentList.push({ text: newMessage.trim() });
 
-    if (newMessage.trim()) {
-      contentList.push({ text: newMessage.trim() });
-    }
-
-    sendMessage(newMessage.trim(), contentList, uploadedFiles);
+    sendMessage(contentList, uploadedFiles);
 
     setNewMessage('');
     setSelectedFiles([]);
     setUploadedFiles([]);
-    if (activeThread) {
-      clearDraft(activeThread.id);
-    }
-  }, [newMessage, uploadedFiles, activeThread, sendMessage, clearDraft]);
+  }, [newMessage, uploadedFiles, activeThread, sendMessage]);
 
   // Submit on Enter (not Shift+Enter)
   const handleKeyDown = useCallback(
@@ -159,7 +143,7 @@ export function Chat() {
       onDragOver={handleDragOverChat}
       onDrop={handleDropChat}
     >
-      <ChatHeader />
+      <ChatHeader activeThread={activeThread} />
 
       <AnimatePresence>
         {isDraggingOverChat && (
@@ -217,6 +201,7 @@ export function Chat() {
         setUploadedFiles={setUploadedFiles}
         isUploadingFiles={isUploadingFiles}
         onFilesSelected={handleFilesSelected}
+        supportsFiles={activeWorkspace?.supportsFiles ?? false}
       />
     </div>
   );

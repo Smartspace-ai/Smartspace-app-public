@@ -10,3 +10,14 @@ export async function fetchWorkspaces(): Promise<Workspace[]> {
 
   return data;
 }
+
+
+// Fetches the list of workspaces from the backend API
+export async function fetchWorkspace(id: string): Promise<Workspace> {
+  const response = await webApi.get(`/workspaces/${id}`);
+
+  // Map raw API response to Workspace model instances
+  const data = new Workspace(response.data);
+
+  return data;
+}

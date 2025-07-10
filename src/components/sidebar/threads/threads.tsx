@@ -9,8 +9,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 
 import {
@@ -40,22 +40,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
 import { renameThread } from '../../../apis/message-threads';
-import useSmartSpaceChat from '../../../contexts/smartspace-context';
+import { useSmartSpace } from '../../../contexts/smartspace-context';
 import { SortOrder } from '../../../enums/threads-sort-order';
 import { MessageThread } from '../../../models/message-threads';
 import { getAvatarColour } from '../../../utils/avatar-colour';
 import { getInitials } from '../../../utils/initials';
-import { sortThreads } from '../../../utils/sort-threads';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
 export function Threads() {
-  const { activeWorkspace, setActiveThread, sortOrder, setSortOrder } =
-    useSmartSpaceChat();
+  const { sortOrder, setSortOrder } = useSmartSpace();
+  
   const {
     threads,
-    activeThread,
     isLoading,
-    handleThreadChange,
     updateThreadMetadata,
     handleDeleteThread,
     fetchNextPage,
@@ -66,93 +63,47 @@ export function Threads() {
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { workspaceId: urlWorkspaceId } = useParams();
-  const sortedThreads = sortThreads(threads, sortOrder);
-  const [searchParams] = useSearchParams();
-  const isNewThread = searchParams.get('isNew') === 'true';
+  const { workspaceId: urlWorkspaceId, threadId } = useParams();
 
   const handleThreadClick = (thread: MessageThread) => {
-    const threadElement = document.getElementById(`thread-${thread.id}`);
-    if (threadElement) {
-      threadElement.classList.add('bg-slate-200');
-      setTimeout(() => threadElement.classList.remove('bg-slate-200'), 200);
-    }
-
-    if (!isNewThread) {
-      handleThreadChange(thread);
-    }
+    navigate(
+      `/workspace/${urlWorkspaceId}/thread/${thread.id}`,
+    );
   };
 
-  // Generates a new threadId and navigates to it
-  const handleNewThread = useCallback(() => {
-    if (activeWorkspace) {
-      setActiveThread(null);
-      const newThreadId = crypto.randomUUID();
-      navigate(
-        `/workspace/${activeWorkspace.id}/thread/${newThreadId}?isNew=true`,
-        { replace: true }
-      );
-    }
-  }, [activeWorkspace, navigate, setActiveThread]);
+  const [autoCreatedThreadId, setAutoCreatedThreadId] = useState<string | null>(null);
 
-  // Refs to track workspace changes and prevent duplicate thread creation
-  const previousWorkspaceIdRef = useRef<string | undefined>();
-  const hasCreatedInitialThreadRef = useRef(false);
+  const handleNewThread = () => {
+    const newThreadId = crypto.randomUUID();
+
+    // might need to set isNew search param
+    navigate(
+      `/workspace/${urlWorkspaceId}/thread/${newThreadId}`,
+    );
+  }
 
   useEffect(() => {
-    // Wait until threads are fully loaded before applying logic
-    if (isLoading || threads === null) return;
-
-    const workspaceChanged = previousWorkspaceIdRef.current !== urlWorkspaceId;
-    const noActiveThreadExists =
-      activeThread && !threads.some((t) => t.id === activeThread.id);
-
-    // Handle workspace switch
-    if (workspaceChanged) {
-      previousWorkspaceIdRef.current = urlWorkspaceId;
-      hasCreatedInitialThreadRef.current = false;
-
-      if (threads.length === 0 && !hasCreatedInitialThreadRef.current) {
-        handleNewThread();
-        hasCreatedInitialThreadRef.current = true;
-      } else if (threads.length > 0) {
-        if (!isNewThread) {
-          handleThreadChange(threads[0]);
-        }
-      }
+    if (!threadId && threads === undefined) {
+      const newThreadId = crypto.randomUUID();
+      setAutoCreatedThreadId(newThreadId);
+      
+      // might need to set isNew search param
+      navigate(
+        `/workspace/${urlWorkspaceId}/thread/${newThreadId}`,
+      );
+      return;
     }
 
-    // Handle first load or refresh with no thread
-    if (
-      !workspaceChanged &&
-      !activeThread &&
-      threads.length === 0 &&
-      !hasCreatedInitialThreadRef.current &&
-      !isNewThread
-    ) {
-      handleNewThread();
-      hasCreatedInitialThreadRef.current = true;
-    }
-
-    // Handle deleted/invalid active thread
-    if (noActiveThreadExists) {
-      if (threads.length > 0) {
-        if (!isNewThread) {
-          handleThreadChange(threads[0]);
-        }
-      } else if (!hasCreatedInitialThreadRef.current) {
-        handleNewThread();
-        hasCreatedInitialThreadRef.current = true;
-      }
+    if (threads && threads.length > 0 && (!threadId || threadId === autoCreatedThreadId)) {
+      const firstThread = threads[0];
+      navigate(`/workspace/${urlWorkspaceId}/thread/${firstThread.id}`);
+      return;
     }
   }, [
     threads,
     isLoading,
-    activeThread,
+    threadId,
     urlWorkspaceId,
-    handleThreadChange,
-    handleNewThread,
-    isNewThread,
   ]);
 
   return (
@@ -173,9 +124,9 @@ export function Threads() {
         <SidebarContent className="p-0">
           {isLoading ? (
             <ThreadsLoadingSkeleton />
-          ) : sortedThreads.length > 0 ? (
+          ) : threads?.length ?? 0 > 0 ? (
             <Virtuoso
-              data={sortedThreads}
+              data={threads}
               overscan={200}
               endReached={() => {
                 if (hasNextPage && !isFetchingNextPage) {
@@ -187,7 +138,7 @@ export function Threads() {
                   <ThreadItem
                     key={thread.id}
                     thread={thread}
-                    isActive={activeThread?.id === thread.id}
+                    isActive={threadId === thread.id}
                     hoveredThreadId={hoveredThreadId}
                     openMenuId={openMenuId}
                     onThreadClick={handleThreadClick}
@@ -352,6 +303,7 @@ function ThreadItem({
   const handleRenameSubmit = async () => {
     if (newThreadName.trim()) {
       try {
+        onMenuOpenChange(null);
         await renameThread(thread, newThreadName);
         updateThreadMetadata(thread.id, { name: newThreadName });
         setIsRenameModalOpen(false);
@@ -365,6 +317,7 @@ function ThreadItem({
 
   const handleDeleteThreadItem = async () => {
     try {
+      onMenuOpenChange(null);
       handleDeleteThread(thread.id);
       setIsDeleteDialogOpen(false);
       toast.success('Thread deleted successfully');

@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 
-import ChatBot from './chat-bot';
+import { ChatBot } from './chat-bot';
 
 describe('ChatBot', () => {
   it('should render successfully', () => {

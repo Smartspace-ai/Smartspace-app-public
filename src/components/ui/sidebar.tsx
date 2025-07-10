@@ -67,7 +67,7 @@ const SidebarProvider = forwardRef<
   (
     {
       defaultLeftOpen = true,
-      defaultRightOpen = true,
+      defaultRightOpen = false,
       leftOpen: leftOpenProp,
       rightOpen: rightOpenProp,
       onLeftOpenChange: setLeftOpenProp,
@@ -153,8 +153,8 @@ const SidebarProvider = forwardRef<
             _setRightOpen(false);
           } else {
             // Expand on desktop
-            _setLeftOpen(true);
-            _setRightOpen(true);
+            _setLeftOpen(defaultLeftOpen);
+            _setRightOpen(defaultRightOpen);
           }
 
           // Close mobile sheets
@@ -679,5 +679,6 @@ export {
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
-  SidebarTrigger,
+  SidebarTrigger
 };
+

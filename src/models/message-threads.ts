@@ -13,7 +13,7 @@ export class MessageThread {
   totalMessages!: number;
   favorited?: boolean;
   avatarName?: string;
-  newThread = false;
+  workSpaceId?: string;
 
   constructor(params?: Partial<MessageThread>) {
     Object.assign(this, params || {});
@@ -26,36 +26,5 @@ export class MessageThread {
     } else {
       this.avatarName = 'NA';
     }
-  }
-
-  static getDefaultEmpty(): MessageThread {
-    return new MessageThread({
-      id: 'new',
-      createdAt: '',
-      createdBy: '',
-      createdByUserId: '',
-      lastUpdated: '',
-      lastUpdatedAt: '',
-      lastUpdatedByUserId: '',
-      name: 'new',
-      totalMessages: 0,
-      favorited: false,
-    });
-  }
-
-  static getDefaultNewThread(): MessageThread {
-    return new MessageThread({
-      id: crypto.randomUUID(),
-      createdAt: '',
-      createdBy: '',
-      createdByUserId: '',
-      lastUpdated: '',
-      lastUpdatedAt: '',
-      lastUpdatedByUserId: '',
-      name: 'new',
-      totalMessages: 0,
-      favorited: false,
-      newThread: true,
-    });
   }
 }

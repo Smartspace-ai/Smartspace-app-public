@@ -1,12 +1,13 @@
 import { MessageSquare, PanelLeft } from 'lucide-react';
 
-import { useSmartSpaceChat } from '../../../contexts/smartspace-context';
+import { useWorkspaces } from '@/hooks/use-workspaces';
+import { MessageThread } from '@/models/message-threads';
 import { NotificationPanel } from '../../notifications/notifications-panel/notifications-panel';
 import { Separator } from '../../ui/separator';
 import { SidebarTrigger } from '../../ui/sidebar';
 
-export function ChatHeader() {
-  const { activeWorkspace, activeThread } = useSmartSpaceChat();
+export function ChatHeader({activeThread}: {activeThread?: MessageThread}) {
+  const { activeWorkspace } = useWorkspaces();
 
   return (
     <header className="ss-chat__header flex h-[54px] shrink-0 items-center gap-2 bg-background border-b ">
