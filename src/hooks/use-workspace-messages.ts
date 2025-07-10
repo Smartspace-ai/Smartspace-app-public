@@ -9,10 +9,10 @@ import { Workspace } from '@/models/workspace';
 
 import { uploadFiles } from '@/apis/files';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { UserContext } from './use-user-information';
+import { useActiveUser } from './use-active-user';
 import { useWorkspaces } from './use-workspaces';
 
 export function useWorkspaceMessages(
@@ -25,13 +25,7 @@ export function useWorkspaceMessages(
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { graphData, graphPhoto } = useContext(UserContext);
-
-  const activeUser = {
-    name: graphData?.displayName ?? 'User',
-    email: graphData?.mail ?? '',
-    profilePhoto: graphPhoto || '',
-  };
+  const activeUser = useActiveUser();
 
   // Fetch messages for the current thread
   const {

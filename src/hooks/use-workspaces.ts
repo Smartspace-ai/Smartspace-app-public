@@ -1,4 +1,5 @@
 import { fetchWorkspace, fetchWorkspaces } from '@/apis/workspaces';
+import { useIsAuthenticated } from '@azure/msal-react';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -7,6 +8,7 @@ import { Workspace } from '../models/workspace';
 export function useWorkspaces() {
   const navigate = useNavigate();
   const { workspaceId, threadId } = useParams();
+  const isAuthenticated = useIsAuthenticated();
 
   const {
     data: workspaces = [],
@@ -16,6 +18,7 @@ export function useWorkspaces() {
   } = useQuery({
     queryKey: ['workspaces'],
     queryFn: fetchWorkspaces,
+    enabled: isAuthenticated
   });
   
   const {
@@ -23,7 +26,7 @@ export function useWorkspaces() {
   } = useQuery({
     queryKey: ['workspaces', workspaceId],
     queryFn: () => fetchWorkspace(workspaceId || ''),
-    enabled: !!workspaceId,
+    enabled: isAuthenticated && !!workspaceId,
   });
 
   useEffect(() => {

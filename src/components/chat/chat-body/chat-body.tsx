@@ -1,17 +1,17 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { MessagesSquare } from 'lucide-react';
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { VirtuosoHandle } from 'react-virtuoso';
 
 import { Draw } from '@/models/draw';
 import { Message } from '@/models/message';
 import { useQueryFiles } from '../../../hooks/use-files';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
-import { UserContext } from '../../../hooks/use-user-information';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
 
 import { downloadFile } from '@/apis/files';
+import { useActiveUser } from '@/hooks/use-active-user';
 import { useWorkspaces } from '@/hooks/use-workspaces';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Skeleton } from '../../ui/skeleton';
@@ -42,10 +42,10 @@ export default function ChatBody({
   isBotResponding,
   addValueToMessage,
 }: ChatBodyProps) {
-  const { graphData } = useContext(UserContext);
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const { activeWorkspace } = useWorkspaces();
+  const activeUser = useActiveUser();
 
   useEffect(() => {
     if (isBotResponding && messages.length > 0) {
@@ -99,7 +99,7 @@ export default function ChatBody({
                 key={message.id || index}
               >
                 <ChatMessage
-                  userId={(graphData as any)?.id}
+                  userId={activeUser.id}
                   avatar={getInitials(message.createdBy ?? 'You')}
                   message={message}
                   messageId={message.id}

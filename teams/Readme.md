@@ -105,6 +105,42 @@ After installation, verify the integration:
 
 ### Common Issues
 
+**🔴 Consent Required Error (AADSTS65001)**
+
+If you see this error in Teams:
+```
+Error getting msal token:InteractionRequiredAuthError: consent_required: AADSTS65001: The user or administrator has not consented to use the application
+```
+
+**Solution Options:**
+
+1. **Teams Authentication Popup (Automatic):**
+   - The app is configured to automatically show a Teams-native authentication popup
+   - This should appear when you first try to use the app in Teams
+   - The popup will ask for the necessary permissions
+   - If the popup doesn't appear, try refreshing the Teams app
+
+2. **Admin Consent (Recommended):**
+   - Go to your Azure AD app registration
+   - Navigate to `API permissions`
+   - Click `Grant admin consent for [Your Organization]`
+   - This provides consent for all users in your organization
+
+3. **Individual User Consent:**
+   - Have users access your SmartSpace app in a regular browser first (outside Teams)
+   - Complete the login flow there to grant initial consent
+   - Then they can use the app in Teams
+
+4. **Pre-authorize the Application:**
+   - In your SmartSpace backend's Azure AD app registration
+   - Go to `Expose an API` → `Authorized client applications`
+   - Add your Teams app's Client ID as an authorized application
+   - Select the required scopes
+
+5. **Teams App Permissions:**
+   - Ensure your Teams app manifest includes proper permissions
+   - The `webApplicationInfo` section should match your Azure AD app configuration
+
 **Authentication Errors:**
 - Verify the Application ID URI format in step 3
 - Ensure the redirect URI matches your deployed URL exactly
@@ -128,6 +164,13 @@ If you encounter issues:
 2. **Verify your environment variables** are correctly set
 3. **Test the app in a regular browser** first to isolate Teams-specific issues
 4. **Contact your SmartSpace administrator** for backend configuration issues
+
+## 📝 Additional Notes
+
+- **Single Sign-On (SSO):** This setup enables seamless authentication within Teams
+- **Theme Integration:** The app automatically adapts to Teams' light/dark themes
+- **Mobile Support:** The app works on Teams mobile clients
+- **Updates:** When you update your app, increment the version in `teams/config.json` and rebuild
 
 ## 🔗 Useful Links
 

@@ -1,23 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useContext, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 import { MentionUser } from '@/models/mention-user';
 import { addComment, fetchComments, fetchTaggableUsers } from '../apis/message-comments';
 import { MessageComment } from '../models/message-comment';
-import { UserContext } from './use-user-information';
+import { useActiveUser } from './use-active-user';
 import { useWorkspaces } from './use-workspaces';
 
 export function useWorkspaceThreadComments(threadId?: string) {
   const queryClient = useQueryClient();
   const previousThreadIdRef = useRef<string | null>(null);
-  const { graphData, graphPhoto } = useContext(UserContext);
-
-  const activeUser = {
-    name: graphData?.displayName ?? 'User',
-    email: graphData?.mail ?? '',
-    profilePhoto: graphPhoto || '',
-  };
+    const activeUser = useActiveUser();
 
   // Fetch comments for the current thread
   const {

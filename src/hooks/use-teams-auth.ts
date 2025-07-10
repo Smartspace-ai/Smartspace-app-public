@@ -2,12 +2,12 @@ import { useMsal } from '@azure/msal-react';
 import { authentication } from '@microsoft/teams-js';
 import { useCallback, useState } from 'react';
 
-import { loginRequest, teamsLoginRequest } from '../app/msalConfig';
+import { teamsLoginRequest } from '../app/msalConfig';
 import { useTeams } from '../contexts/teams-context';
 
 export const useTeamsAuth = () => {
   const { instance, accounts } = useMsal();
-  const { isInTeams: inTeams, isTeamsInitialized } = useTeams();
+  const { isInTeams: inTeams, isTeamsInitialized, teamsUser } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,121 +15,105 @@ export const useTeamsAuth = () => {
     setIsLoading(true);
     setError(null);
 
-    try {
-      if (inTeams && isTeamsInitialized) {
-        // Try Teams SSO first
+    if (inTeams && isTeamsInitialized) {   
+      try {   
+        const loginHint = teamsUser?.loginHint;
+
+        // Try Teams SSO first with consent prompt if needed
         try {
-          const authToken = await authentication.getAuthToken();
-          const decoded = safeDecodeJwt(authToken);
-          const loginHint = decoded.preferred_username;
+          await instance.ssoSilent({
+            ...teamsLoginRequest,
+            prompt: 'none',
+            loginHint,
+          });
+
+          return; // Success - exit early
+        } catch (ssoError) {
+          console.log('SSO failed, trying Teams authentication popup with consent:', ssoError);
+
+          await authentication.authenticate({
+            url: await buildAuthUrl(loginHint),
+            width: 480,
+            height: 650
+          });
 
           await instance.ssoSilent({
             ...teamsLoginRequest,
+            prompt: 'none',
             loginHint,
           });
-        } catch (ssoError) {
-          setError(ssoError.toString())
-          await instance.loginPopup(teamsLoginRequest);
+
+          return; // Success - exit early
         }
-      } else {
-        // TODO add some logs into state here
-        // Regular browser authentication
-        await instance.loginPopup(loginRequest);
+      } catch (authError) {
+        console.error('Authentication failed:', authError);
+        const errorMessage = authError instanceof Error ? authError.message : 'Authentication failed';
+        setError(errorMessage);
+        throw authError; // Re-throw so calling component can handle it
+      } finally {
+        setIsLoading(false);
       }
-    } catch (authError) {
-      console.error('Authentication failed:', authError);
-      const errorMessage = authError instanceof Error ? authError.message : 'Authentication failed';
-    } finally {
-      setIsLoading(false);
     }
-  }, [instance, inTeams, isTeamsInitialized]);
+  }, [instance, inTeams, isTeamsInitialized, teamsUser]);
+  
+  // Helper function to build the authentication URL for Teams
+  const buildAuthUrl = async (loginHint: string | undefined) => {
+    const clientId = import.meta.env.VITE_CLIENT_ID;
+    const tenantId = import.meta.env.VITE_CLIENT_AUTHORITY?.split('/').pop() || 'common';
+    // Use a dedicated callback route for Teams auth
+    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/teams/callback`);
+    const scopes = encodeURIComponent(teamsLoginRequest.scopes?.join(' ') || '');
 
-  const logout = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    // PKCE: generate code_verifier and code_challenge
+    const codeVerifier = generateRandomString();
+    const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);
+    localStorage.setItem('pkce_code_verifier', codeVerifier);
 
-    try {
-      if (inTeams) {
-        // In Teams, we might want to handle logout differently
-        // For now, we'll just clear the MSAL cache
-        const activeAccount = instance.getActiveAccount();
-        if (activeAccount) {
-          await instance.logout({
-            account: activeAccount,
-          });
-        }
-      } else {
-        // Regular browser logout
-        await instance.logoutPopup();
-      }
-    } catch (logoutError) {
-      console.error('Logout failed:', logoutError);
-      // setError(logoutError instanceof Error ? logoutError.message : 'Logout failed');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [instance, inTeams]);
+    let url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
+      `client_id=${clientId}&` +
+      `response_type=code&` +
+      `redirect_uri=${redirectUri}&` +
+      `scope=${scopes}&` +
+      `response_mode=fragment&` +
+      `code_challenge=${codeChallenge}&` +
+      `code_challenge_method=S256`;
 
-  const acquireTokenSilently = useCallback(async (scopes: string[]) => {
-    const activeAccount = instance.getActiveAccount();
-    if (!activeAccount) {
-      throw new Error('No active account found');
+    // Add login hint if available
+    if (loginHint) {
+      url += `&login_hint=${encodeURIComponent(loginHint)}`;
     }
 
-    try {
-      const request = {
-        scopes,
-        account: activeAccount,
-      };
+    return url;
+  };
 
-      const response = await instance.acquireTokenSilent(request);
-      return response.accessToken;
-    } catch (error) {
-      console.error('Silent token acquisition failed:', error);
-      
-      // If silent fails and we're in Teams, try popup
-      if (inTeams) {
-        const response = await instance.acquireTokenPopup({
-          scopes,
-          account: activeAccount,
-        });
-        return response.accessToken;
-      }
-      
-      throw error;
+  // Helper to generate a random string for PKCE
+  function generateRandomString(length = 43) {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    let result = '';
+    const values = new Uint8Array(length);
+    window.crypto.getRandomValues(values);
+    for (let i = 0; i < values.length; i++) {
+      result += charset[values[i] % charset.length];
     }
-  }, [instance, inTeams]);
+    return result;
+  }
+
+  // Helper to generate PKCE code_challenge from code_verifier
+  async function pkceChallengeFromVerifier(verifier: string) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const digest = await window.crypto.subtle.digest('SHA-256', data);
+    return btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  }
+
 
   return {
-    isAuthenticated: accounts.length > 0,
-    accounts,
-    activeAccount: instance.getActiveAccount(),
     login,
-    logout,
-    acquireTokenSilently,
     isLoading,
     error,
     isInTeams: inTeams,
   };
 }; 
-
-
-function safeDecodeJwt(token?: string) {
-  try {
-    if (!token || token.split('.').length !== 3) {
-      throw new Error('Token is not a valid JWT');
-    }
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (err) {
-    console.error('Failed to decode JWT:', err);
-    return null;
-  }
-}

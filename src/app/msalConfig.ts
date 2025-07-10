@@ -7,7 +7,7 @@ const CHAT_API_URI = import.meta.env.VITE_CHAT_API_URI;
 const CUSTOM_SCOPES = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
 
 // Microsoft Graph scopes and endpoints
-const GRAPH_SCOPES = ['profile'];
+const GRAPH_SCOPES = ['profile', 'openid'];
 const GRAPH_ME_ENDPOINT = 'https://graph.microsoft.com/v1.0/me';
 const GRAPH_PHOTO_ENDPOINT = 'https://graph.microsoft.com/v1.0/me/photo/$value';
 
@@ -50,26 +50,24 @@ const msalConfig: Configuration = {
 // Token request configurations
 export const loginRequest: PopupRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
-  prompt: isInTeams() ? 'none' : 'select_account', // Silent auth in Teams when possible
+  prompt: 'none',
+  extraQueryParameters: {
+    domain_hint: 'organizations', // Prioritize work/school accounts
+  },
 };
 
-export const graphLoginRequest: PopupRequest = {
-  scopes: GRAPH_SCOPES,
-  prompt: isInTeams() ? 'none' : 'select_account',
-};
-
-export const apiLoginRequest: PopupRequest = {
-  scopes: CUSTOM_SCOPES,
-  prompt: isInTeams() ? 'none' : 'select_account',
+// Fallback login request when silent auth fails
+export const interactiveLoginRequest: PopupRequest = {
+  scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
+  prompt: 'select_account',
+  extraQueryParameters: {
+    domain_hint: 'organizations',
+  },
 };
 
 // Teams-specific login request for SSO scenarios
 export const teamsLoginRequest: PopupRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
-  prompt: 'none',
-  extraQueryParameters: {
-    domain_hint: 'organizations', // Hint for organizational accounts
-  },
 };
 
 // API endpoints used across the app
@@ -82,5 +80,5 @@ export const graphConfig = {
   graphPhotoEndpoint: GRAPH_PHOTO_ENDPOINT,
 };
 
-export { isInTeams };
+export { isInTeams, msalConfig };
 export default msalConfig;
