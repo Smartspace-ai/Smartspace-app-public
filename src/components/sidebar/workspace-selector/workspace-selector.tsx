@@ -38,56 +38,59 @@ export function WorkspaceSelector() {
   const activeWorkspace = useActiveWorkspace();
 
   return (
-    <div className="px-4 pt-3 pb-2 ">
-      <div className="text-xs font-medium text-gray-500 mb-1.5">Workspace</div>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="w-full justify-between text-xs h-9 border rounded-lg px-3 shadow-sm hover:shadow-md transition-shadow"
-            onClick={() => setOpen((prev) => !prev)}
-          >
-            <div className="flex items-center gap-2 overflow-hidden w-full">
-              {open ? (
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  placeholder="Search workspaces..."
-                  className="truncate font-medium bg-transparent outline-none border-none p-0 m-0 text-xs w-full"
-                  onClick={e => e.stopPropagation()}
-                  onKeyDown={e => e.stopPropagation()}
-                />
-              ) : (
-                <span className="truncate font-medium">
-                  {activeWorkspace?.name}
-                </span>
-              )}
-            </div>
-            <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
-          </Button>
-        </PopoverTrigger>
-        
-        <PopoverContent className="rounded-lg p-0 border w-full min-w-[260px] max-h-120 overflow-auto">
-          { isLoading? <Skeleton className="h-40 w-full rounded-lg" />
-          : <div className='p-1 shadow-lg'>
-              {workspaces.map((workspace) => (
-                <WorkspaceItem
-                  key={workspace.id}
-                  isActive={activeWorkspace?.id === workspace.id}
-                  workspace={workspace}
-                  onSelect={ws => {
-                    handleWorkspaceChange(ws);
-                    setOpen(false);
-                    setSearchTerm('');
-                  }}
-                />
-              ))}
-            </div>
-          }
-        </PopoverContent>
-      </Popover>
+    <div style={{ width: '100%' }} className="flex items-center justify-center">
+      {!activeWorkspace? <Skeleton className="h-9 min-w-[300px] rounded" /> :
+        <div className="min-w-[250px] pt-2 pb-2">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between text-xs h-10 border-0 rounded-lg px-5 { }"
+                onClick={() => setOpen((prev) => !prev)}
+              >
+                <div className="flex items-center justify-center overflow-hidden w-full">
+                  {open ? (
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      placeholder="Search workspaces..."
+                      className="truncate font-medium bg-transparent outline-none border-none p-0 m-0 text-xs w-full"
+                      onClick={e => e.stopPropagation()}
+                      onKeyDown={e => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span className="truncate font-semibold text-primary text-base text-center w-full">
+                      {activeWorkspace?.name}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+              </Button>
+            </PopoverTrigger>
+            
+            <PopoverContent className="rounded-lg p-0 border w-full min-w-[250px] max-h-120 overflow-auto">
+              { isLoading? <Skeleton className="h-40 w-full rounded-lg" />
+              : <div className='p-1 shadow-lg'>
+                  {workspaces.map((workspace) => (
+                    <WorkspaceItem
+                      key={workspace.id}
+                      isActive={activeWorkspace?.id === workspace.id}
+                      workspace={workspace}
+                      onSelect={ws => {
+                        handleWorkspaceChange(ws);
+                        setOpen(false);
+                        setSearchTerm('');
+                      }}
+                    />
+                  ))}
+                </div>
+              }
+            </PopoverContent>
+          </Popover>
+        </div>
+      }
     </div>
   );
 }
@@ -111,7 +114,7 @@ function WorkspaceItem({ workspace, isActive, onSelect }: WorkspaceItemProps) {
           className={isActive ? 'bg-primary/80 text-[hsl(var(--primary-foreground))]' : 'bg-gray-200'}
           text={workspace.name || ''}
         />
-        <span className="font-medium">{workspace.name}</span>
+        <span className="font-semibold">{workspace.name}</span>
       </div>
     </div>
   );

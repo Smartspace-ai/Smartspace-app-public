@@ -1,3 +1,4 @@
+import ChatHeader from '@/components/chat/chat-header/chat-header';
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { useEffect, useState } from 'react';
@@ -42,17 +43,27 @@ export function ChatBot() {
   return (
     <>
       <SidebarLeft />
+      <div className="h-screen w-full flex flex-col">
+        <ChatHeader />
+        {recentThreads.map((threadId) => (
+          <div
+            key={`thread-${threadId}`}
+            className="flex flex-grow w-full overflow-hidden" 
+            style={{
+              display: threadId === visibleThread ? undefined : 'none',
+            }}
+          >
+            { threadId === visibleThread && <EnsureCorrectWorkspace threadId={threadId} /> }
+            <SidebarInset className="relative flex-1 flex flex-col min-h-0">
+              <div className="absolute inset-0">
+                <Chat threadId={threadId} />
+              </div>
+            </SidebarInset>
+          </div>
+        ))}
+      </div>
       {recentThreads.map((threadId) => (
-        <div key={`thread-${threadId}`} className="ss-chat__wrapper flex h-screen w-full overflow-hidden" 
-          style={{
-            display: threadId === visibleThread ? undefined : 'none',
-          }}>
-          { threadId === visibleThread && <EnsureCorrectWorkspace threadId={threadId} /> }
-          <SidebarInset className="relative flex-1 flex flex-col min-h-0">
-            <div className="absolute inset-0">
-              <Chat threadId={threadId} />
-            </div>
-          </SidebarInset>
+        <div key={`sidebar-${threadId}`} className="contents">
           <SidebarRight threadId={threadId} />
         </div>
       ))}

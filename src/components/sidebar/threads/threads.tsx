@@ -2,6 +2,24 @@ import {
   Edit,
   Loader2 // Add Loader2 for spinner
   ,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -35,6 +53,7 @@ import { SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { CircleInitials } from '@/components/circle-initials';
+import { useTeams } from '@/contexts/teams-context';
 import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
 import { renameThread } from '../../../apis/message-threads';
@@ -56,6 +75,8 @@ export function Threads() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { workspaceId: urlWorkspaceId, threadId } = useParams();
+
+  const {isInTeams} = useTeams()
 
   const handleThreadClick = (thread: MessageThread) => {
     navigate(
@@ -98,12 +119,14 @@ export function Threads() {
     urlWorkspaceId,
   ]);
 
+  const threadHeight = isInTeams? 'h-[53px]' : 'h-[42px]';
+
   return (
     <>
       <SidebarContent className="px-0 py-0 overflow-auto h-full">
-        <div className="sticky top-0 z-10 border-t border-b">
-          <div className="flex items-center justify-between px-4 py-3">
-            <h2 className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+        <div className={`sticky top-0 z-10 ${threadHeight} border-t border-b`}>
+          <div className="flex items-center justify-between px-4 h-full">
+            <h2 className="text-xs text-gray-500 font-medium uppercase tracking-wide m-0 leading-none">
               Threads
             </h2>
           </div>

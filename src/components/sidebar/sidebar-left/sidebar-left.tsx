@@ -17,7 +17,6 @@ import {
 } from '../../ui/dropdown-menu';
 import { Sidebar, SidebarHeader } from '../../ui/sidebar';
 import Threads from '../threads/threads';
-import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
   const { instance } = useMsal();
@@ -43,7 +42,7 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
     <Sidebar side="left" className="ss-sidebar__left border-r" {...props}>
       
       {!isInTeams && 
-        <SidebarHeader className="h-[55px] flex items-center px-4 border-b bg-background">
+        <SidebarHeader className="h-[53px] flex items-center px-4 bg-background">
           {/* Logo Section */}
           <div className="flex items-center justify-between w-full gap-8">
             {/* Logo */}
@@ -102,8 +101,6 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
         </SidebarHeader>
       }
 
-      {/* Workspace Selector */}
-      <WorkspaceSelector />
       {/* Threads Section */}
       <Threads />
     </Sidebar>
