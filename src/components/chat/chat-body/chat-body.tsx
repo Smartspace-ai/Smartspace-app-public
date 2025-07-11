@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { VirtuosoHandle } from 'react-virtuoso';
 
 import { Draw } from '@/models/draw';
-import { Message } from '@/models/message';
+import { Message, MessageValueType } from '@/models/message';
 import { useQueryFiles } from '../../../hooks/use-files';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
 import { getInitials } from '../../../utils/initials';
@@ -85,6 +85,8 @@ export default function ChatBody({
     );
   }
 
+  const messageHasSomeResponse = messages.length && messages[messages.length - 1].values?.some(v => v.type === MessageValueType.OUTPUT)
+
   return (
     <div className="ss-chat__body flex-1 h-full w-full overflow-hidden">
       <ScrollAreaPrimitive.Root className="relative overflow-hidden h-full w-full">
@@ -112,22 +114,7 @@ export default function ChatBody({
                 />
 
                 {index === messages.length - 1 && isBotResponding && (
-                  <div className="rounded-lg border bg-background shadow-md mb-4 group mt-4">
-                    <div className="flex items-center justify-between p-3 border-b">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7 mt-0.5">
-                          <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                            {getInitials('Chatbot')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-medium">Chatbot</span>
-                          <span className="text-xs text-muted-foreground">
-                            {parseDateTime(new Date(), 'Do MMMM YYYY, h:mm a')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                  messageHasSomeResponse? 
                     <div className="p-3 min-h-3">
                       <div className="flex space-x-2 p-1">
                         {[0, 300, 600].map((delay) => (
@@ -139,8 +126,36 @@ export default function ChatBody({
                         ))}
                       </div>
                     </div>
-                  </div>
-                )}
+                  :
+                    <div className="rounded-lg border bg-background shadow-md mb-4 group mt-4">
+                      <div className="flex items-center justify-between p-3 border-b">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-7 w-7 mt-0.5">
+                            <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                              {getInitials('Chatbot')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-medium">Chatbot</span>
+                            <span className="text-xs text-muted-foreground">
+                              {parseDateTime(new Date(), 'Do MMMM YYYY, h:mm a')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3 min-h-3">
+                        <div className="flex space-x-2 p-1">
+                          {[0, 300, 600].map((delay) => (
+                            <div
+                              key={delay}
+                              className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
+                              style={{ animationDelay: `${delay}ms` }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 <div ref={messagesEndRef} className="h-4" />
               </div>

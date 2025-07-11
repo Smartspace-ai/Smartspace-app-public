@@ -1,5 +1,6 @@
 import { Message, MessageCreateContent, MessageFile } from '@/models/message';
 import webApi from '@/utils/axios-setup';
+import { Subject } from 'rxjs';
 
 // Fetch all messages in a given message thread
 export async function fetchMessages(threadId: string): Promise<Message[]> {
@@ -76,7 +77,7 @@ export async function postMessage({
   threadId: string;
   contentList?: MessageCreateContent[];
   files?: MessageFile[];
-}): Promise<Message> {
+}): Promise<Subject<Message>> {
   try {
     const inputs: any[] = [];
 
@@ -104,12 +105,34 @@ export async function postMessage({
       workspaceId: workSpaceId,
     };
 
-    const response = await webApi.post(
-      `/messages`,
-      payload
-    );
+  const observable = new Subject<Message>();
 
-    return new Message(response.data);
+  webApi
+    .post(
+      `/messages`,
+      payload,
+      {
+        headers: { Accept: 'text/event-stream' },
+        responseType: 'stream',
+        onDownloadProgress: (e) => {
+          const data = e.event.currentTarget.response as string;
+          const messages = data.split('\n\ndata:');
+          if (messages.length) {
+            const message = JSON.parse(messages[messages.length - 1]);
+            
+            observable.next(message);
+          }
+        },
+      },
+    )
+    .then(() => {
+      observable.complete();
+    })
+    .catch((e) => {
+      observable.error(e);
+    });
+
+  return observable;
   } catch (error) {
     console.error('Error posting message:', error);
     throw new Error('Failed to post message');

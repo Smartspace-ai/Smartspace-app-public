@@ -10,6 +10,7 @@ import { uploadFiles } from '@/apis/files';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { Subject } from 'rxjs';
 import { toast } from 'sonner';
 import { useActiveUser } from './use-active-user';
 
@@ -44,7 +45,7 @@ export function useWorkspaceMessages(
 
   // Send a new message (text + optional files)
   const postMessageMutation = useMutation<
-    Message,
+    Subject<Message>,
     Error,
     {
       contentList?: MessageCreateContent[];
@@ -96,29 +97,72 @@ export function useWorkspaceMessages(
       await queryClient.cancelQueries({
         queryKey: ['messages', threadId],
       });
+      
+      return new Promise(async (resolve, reject) => {
+        try {
+          if (!threadId)
+            throw new Error('Thread ID is required to post message');
 
-      const response = await postMessage({
-        workSpaceId: workspaceId,
-        threadId,
-        contentList,
-        files,
-      });
+          postMessage({
+            workSpaceId: workspaceId,
+            threadId,
+            contentList,
+            files,
+          })
+            .then((response) => {
+              // Subscribe to the response and update the query data
+              const subscription = response.subscribe({
+                next: (m: Message) => {
+                  queryClient.setQueryData(
+                    ['messages', threadId],
+                    (oldMessages: Message[] | undefined) => {
+                      if (!oldMessages) return [m];
 
-      await queryClient.refetchQueries({
-        queryKey: ['threads', workspaceId],
-      });
+                      const messages = oldMessages.filter(
+                        (oldMessage) => !oldMessage.optimistic,
+                      );
 
-      // Replace optimistic with real message
-      queryClient.setQueryData<Message[]>(
-        ['messages', threadId],
-        (old = []) => {
-          const withoutOptimistic = old.filter((m) => !m.optimistic);
-          const exists = withoutOptimistic.some((m) => m.id === response.id);
-          return exists ? withoutOptimistic : [...withoutOptimistic, response];
+                      if (
+                        messages.find((old_message) => old_message.id === m.id)
+                      ) {
+                        // Update the existing message
+                        return messages.map((msg) =>
+                          msg.id === m.id ? m : msg,
+                        );
+                      } else {
+                        return messages.concat([m]);
+                      }
+                    },
+                  );
+                },
+                error: (error: any) => {
+                  // Reject the Promise to trigger onError
+                  reject(error);
+                  subscription.unsubscribe();
+                },
+                complete: () => {
+                  resolve(response);
+                  
+                  queryClient.refetchQueries({
+                    queryKey: ['threads', workspaceId],
+                  });
+                },
+              });
+            })
+            .catch((error) => {
+              // Reject the Promise to trigger onError
+              reject(error);
+            });
         }
-      );
-
-      return response;
+        catch (error) {
+          // If there's an error, remove the optimistic message
+          queryClient.setQueryData<Message[]>(
+            ['messages', threadId],
+            (old = []) => old.filter((m) => !m.optimistic),
+          );
+          reject(error);
+        }
+      });
     },
     onError: async (e) => {
       console.error('Error posting message:', e);
