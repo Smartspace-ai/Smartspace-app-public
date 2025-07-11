@@ -50,7 +50,7 @@ export function ChatBot() {
           { threadId === visibleThread && <EnsureCorrectWorkspace threadId={threadId} /> }
           <SidebarInset className="relative flex-1 flex flex-col min-h-0">
             <div className="absolute inset-0">
-              <Chat threadId={threadId} />
+              <Chat threadId={threadId} isVisible={threadId === visibleThread} />
             </div>
           </SidebarInset>
           <SidebarRight threadId={threadId} />

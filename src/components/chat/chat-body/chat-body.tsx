@@ -21,6 +21,7 @@ interface ChatBodyProps {
   copiedMessageId: number | null;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   copyMessageToClipboard: (message: string, id: number) => void;
+  isVisible: boolean;
   isLoading: boolean;
   isBotResponding: boolean;
   isSendingMessage: boolean;
@@ -37,15 +38,23 @@ interface ChatBodyProps {
 export default function ChatBody({
   messages,
   messagesEndRef,
+  isVisible,
   isLoading,
   isBotResponding,
   addValueToMessage,
 }: ChatBodyProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const scrollTopRef = useRef<number>(0);
   const activeWorkspace = useActiveWorkspace();
   const activeUser = useActiveUser();
   const [isAtBottom, setIsAtBottom] = useState(true);
+
+  useEffect(() => {
+    if (isVisible && viewportRef.current) {
+      viewportRef.current.scrollTo({top: scrollTopRef.current, behavior: 'instant'});
+    }
+  }, [isVisible, viewportRef.current]);
 
   useEffect(() => {
     const content = contentRef.current;
@@ -105,6 +114,9 @@ export default function ChatBody({
           onScroll={() => {
             if (!viewportRef.current) return;
             const viewport = viewportRef.current;
+            
+            scrollTopRef.current = viewport.scrollTop;
+
             const threshold = 60; // px from bottom to still count as 'at bottom'
             setIsAtBottom(viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold);
           }}

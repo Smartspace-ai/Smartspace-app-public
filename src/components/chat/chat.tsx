@@ -12,7 +12,7 @@ import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
 
-export function Chat({threadId}: { threadId?: string }) {
+export function Chat({threadId, isVisible}: { threadId?: string, isVisible: boolean }) {
   const activeWorkspace = useActiveWorkspace();
   const {data: activeThread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
@@ -173,6 +173,7 @@ export function Chat({threadId}: { threadId?: string }) {
         copiedMessageId={copiedMessageId}
         messagesEndRef={messagesEndRef}
         copyMessageToClipboard={copyMessageToClipboard}
+        isVisible={isVisible}
         isLoading={isLoading}
         isSendingMessage={isSendingMessage}
         isBotResponding={isBotResponding}
