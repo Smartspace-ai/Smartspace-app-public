@@ -30,14 +30,14 @@ export async function fetchThread(
   return response.data as MessageThread;
 }
 
-// Toggle favorite status of a message thread
-export async function toggleFavorite(
-  thread: MessageThread,
+// Set favorite status of a message thread
+export async function setFavorite(
+  threadId: string,
   favourite: boolean
 ): Promise<MessageThread> {
   try {
     const response = await webApi.put(
-      `/messagethreads/${thread.id}/favorited`,
+      `/messagethreads/${threadId}/favorited`,
       favourite,
       { headers: { 'Content-Type': 'application/json' } }
     );

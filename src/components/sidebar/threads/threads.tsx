@@ -1,12 +1,12 @@
 import {
-  ChevronDown,
   Edit,
-  Filter,
+  Loader2 // Add Loader2 for spinner
+  ,
   MessageSquare,
   MoreHorizontal,
   Plus,
   Star,
-  Trash2,
+  Trash2
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
@@ -23,33 +23,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { useWorkspaceThreads } from '@/hooks/use-workspace-threads';
+import { CircleInitials } from '@/components/circle-initials';
+import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
 import { renameThread } from '../../../apis/message-threads';
-import { useSmartSpace } from '../../../contexts/smartspace-context';
-import { SortOrder } from '../../../enums/threads-sort-order';
 import { MessageThread } from '../../../models/message-threads';
-import { getAvatarColour } from '../../../utils/avatar-colour';
-import { getInitials } from '../../../utils/initials';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
-export function Threads() {
-  const { sortOrder, setSortOrder } = useSmartSpace();
-  
+export function Threads() {  
   const {
     threads,
     isLoading,
@@ -114,10 +106,6 @@ export function Threads() {
             <h2 className="text-xs text-gray-500 font-medium uppercase tracking-wide">
               Threads
             </h2>
-            <ThreadsFilter
-              sortOrder={sortOrder}
-              onSortOrderChange={setSortOrder}
-            />
           </div>
         </div>
 
@@ -173,56 +161,6 @@ export function Threads() {
   );
 }
 
-type ThreadsFilterProps = {
-  sortOrder: SortOrder;
-  onSortOrderChange: (value: SortOrder) => void;
-};
-
-function ThreadsFilter({ sortOrder, onSortOrderChange }: ThreadsFilterProps) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-gray-500 hover:text-gray-800 hover:bg-gray-50 rounded-md text-xs"
-        >
-          <Filter className="h-3.5 w-3.5 mr-1" />
-          Filter
-          <ChevronDown className="h-3 w-3 ml-1" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="w-48 rounded-lg p-1 shadow-lg border-gray-100"
-      >
-        <DropdownMenuRadioGroup
-          value={sortOrder}
-          onValueChange={(value) => onSortOrderChange(value as SortOrder)}
-        >
-          <DropdownMenuRadioItem
-            value={SortOrder.NEWEST}
-            className="text-xs cursor-pointer"
-          >
-            Newest first
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem
-            value={SortOrder.OLDEST}
-            className="text-xs cursor-pointer"
-          >
-            Oldest first
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem
-            value={SortOrder.MOST_REPLIES}
-            className="text-xs cursor-pointer"
-          >
-            Most replies
-          </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
 
 function ThreadsLoadingSkeleton() {
   return (
@@ -290,6 +228,8 @@ function ThreadItem({
   const [newThreadName, setNewThreadName] = useState(thread.name);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  const { setFavoriteMutation } = useThreadSetFavorite(thread.workSpaceId, thread.id)
+
   const handleClick = (e: React.MouseEvent) => {
     if (
       e.target instanceof Element &&
@@ -341,23 +281,32 @@ function ThreadItem({
         }
       }}
     >
-      <Avatar
-        className={`h-8 w-8 flex-shrink-0 shadow-sm ${getAvatarColour(
-          thread.name
-        )}`}
-      >
-        <AvatarFallback className="text-xs font-medium">
-          {getInitials(thread.name)}
-        </AvatarFallback>
-      </Avatar>
+      <CircleInitials
+        className={isActive ? 'bg-primary/80 text-[hsl(var(--primary-foreground))]' : 'bg-gray-200'}
+        text={thread.name}
+      />
 
       <div className="flex-1 min-w-0">
         <h3 className="text-xs font-medium truncate">{thread.name}</h3>
-        <p className="text-[11px] mt-0.5">
-          {thread.totalMessages}{' '}
-          {thread.totalMessages === 1 ? 'message' : 'messages'} ·{' '}
-          {thread.lastUpdated}
-        </p>
+        <div className="text-[11px] gap-x-2 mt-0.5 flex flex-row">
+          <div>
+            {thread.totalMessages}{' '}
+            {thread.totalMessages === 1 ? 'message' : 'messages'}  {' '}
+          </div>
+          <div>
+            {thread.lastUpdated}
+          </div>
+          <div className='flex-grow'></div>
+          {setFavoriteMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+          ) :
+            thread.favorited && (
+              <div className="text-amber-500 font-medium">
+                <Star className="h-4 w-4" /> 
+              </div>
+            )
+          }
+        </div>
       </div>
 
       <ThreadItemMenu
@@ -366,6 +315,7 @@ function ThreadItem({
         isHovered={hoveredThreadId === thread.id}
         isMenuOpen={openMenuId === thread.id}
         onMenuOpenChange={(open) => onMenuOpenChange(open ? thread.id : null)}
+        onFavorite={() => setFavoriteMutation.mutate({ favorite: !thread.favorited })}
         onRename={() => setIsRenameModalOpen(true)}
         onDelete={() => setIsDeleteDialogOpen(true)}
       />
@@ -411,6 +361,7 @@ type ThreadItemMenuProps = {
   isHovered: boolean;
   isMenuOpen: boolean;
   onMenuOpenChange: (open: boolean) => void;
+  onFavorite: () => void;
   onRename: () => void;
   onDelete: () => void;
 };
@@ -421,6 +372,7 @@ function ThreadItemMenu({
   isHovered,
   isMenuOpen,
   onMenuOpenChange,
+  onFavorite,
   onRename,
   onDelete,
 }: ThreadItemMenuProps) {
@@ -447,7 +399,14 @@ function ThreadItemMenu({
         align="end"
         className="w-48 rounded-lg p-1 shadow-lg border-gray-100"
       >
-        <DropdownMenuItem className="text-xs py-1.5 px-2 rounded-md">
+        <DropdownMenuItem
+        className="text-xs py-1.5 px-2 rounded-md"
+          onClick={(e) => {
+            e.preventDefault();
+            onFavorite();
+            onMenuOpenChange(false);
+          }}
+        >
           <Star className="mr-2 h-3.5 w-3.5 text-amber-400" />
           <span>
             {thread.favorited ? 'Remove from favorites' : 'Add to favorites'}

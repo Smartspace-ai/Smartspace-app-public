@@ -5,7 +5,6 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { SidebarProvider } from '../components/ui/sidebar';
 import { NotificationsProvider } from '../contexts/notifications-context';
-import { SmartSpaceProvider } from '../contexts/smartspace-context';
 import { TeamsProvider, useTeams } from '../contexts/teams-context';
 
 import TeamsAuthCallback from '@/pages/auth/teams/callback';
@@ -68,18 +67,15 @@ export function App() {
       <TeamsProvider>
         {isAuthenticated ? (
           <QueryClientProvider client={queryClient}>
-            {/* App-wide providers for chat, notifications, and sidebar */}
-            <SmartSpaceProvider>
-              <NotificationsProvider>
-                <SidebarProvider>
-                  {/* Route-based app navigation */}
-                  <BrowserRouter>
-                    <AppRoutes />
-                  </BrowserRouter>
-                </SidebarProvider>
-              </NotificationsProvider>
-            </SmartSpaceProvider>
-          </QueryClientProvider>
+            <NotificationsProvider>
+              <SidebarProvider>
+                {/* Route-based app navigation */}
+                <BrowserRouter>
+                  <AppRoutes />
+                </BrowserRouter>
+              </SidebarProvider>
+            </NotificationsProvider>
+        </QueryClientProvider>
         ) : (
           <BrowserRouter>
             <Routes>

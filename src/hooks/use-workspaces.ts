@@ -5,9 +5,10 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Workspace } from '../models/workspace';
 
-export function useWorkspaces() {
+export function useWorkspaces(searchTerm?: string) {
   const navigate = useNavigate();
   const { workspaceId, threadId } = useParams();
+  const activeWorkspace = useActiveWorkspace();
   const isAuthenticated = useIsAuthenticated();
 
   const {
@@ -16,17 +17,9 @@ export function useWorkspaces() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['workspaces'],
-    queryFn: fetchWorkspaces,
+    queryKey: ['workspaces', searchTerm],
+    queryFn: () => fetchWorkspaces(searchTerm),
     enabled: isAuthenticated
-  });
-  
-  const {
-    data: activeWorkspace
-  } = useQuery({
-    queryKey: ['workspaces', workspaceId],
-    queryFn: () => fetchWorkspace(workspaceId || ''),
-    enabled: isAuthenticated && !!workspaceId,
   });
 
   useEffect(() => {
@@ -47,10 +40,24 @@ export function useWorkspaces() {
 
   return {
     workspaces,
-    activeWorkspace,
     isLoading,
     error,
     refetch,
     handleWorkspaceChange,
   };
+}
+
+export function useActiveWorkspace() {
+  const { workspaceId } = useParams();
+  const isAuthenticated = useIsAuthenticated();
+  
+  const {
+    data: activeWorkspace
+  } = useQuery({
+    queryKey: ['workspaces', workspaceId],
+    queryFn: () => fetchWorkspace(workspaceId || ''),
+    enabled: isAuthenticated && !!workspaceId,
+  });
+
+  return activeWorkspace;
 }
