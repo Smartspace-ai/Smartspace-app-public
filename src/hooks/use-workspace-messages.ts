@@ -5,7 +5,6 @@ import {
   MessageFile,
   MessageValueType,
 } from '@/models/message';
-import { Workspace } from '@/models/workspace';
 
 import { uploadFiles } from '@/apis/files';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,16 +12,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useActiveUser } from './use-active-user';
-import { useWorkspaces } from './use-workspaces';
 
 export function useWorkspaceMessages(
-  passedWorkspace?: Workspace | null,
+  workspaceId?: string,
   threadId?: string | null,
 ) {
-  const context = useWorkspaces();
-  
-  const activeWorkspace = passedWorkspace ?? context?.activeWorkspace;
-
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const activeUser = useActiveUser();
@@ -61,7 +55,8 @@ export function useWorkspaceMessages(
       if (!threadId)
         throw new Error('Thread ID is required to post message');
 
-      const finalWorkspaceId = activeWorkspace?.id || '0';
+      if (!workspaceId)
+        throw new Error('Workspace ID is required to post message');
 
       const optimisticMessage = new Message({
         id: `temp-${Date.now()}`,
@@ -103,14 +98,14 @@ export function useWorkspaceMessages(
       });
 
       const response = await postMessage({
-        workSpaceId: finalWorkspaceId,
+        workSpaceId: workspaceId,
         threadId,
         contentList,
         files,
       });
 
       await queryClient.refetchQueries({
-        queryKey: ['threads', finalWorkspaceId],
+        queryKey: ['threads', workspaceId],
       });
 
       // Replace optimistic with real message
@@ -173,7 +168,7 @@ export function useWorkspaceMessages(
       const result = await addInputToMessage({ messageId, name, value, channels });
       
       await queryClient.refetchQueries({
-        queryKey: ['threads', passedWorkspace?.id],
+        queryKey: ['threads', workspaceId],
       });
 
       return result;
@@ -232,11 +227,11 @@ export function useWorkspaceMessages(
         throw new Error('Thread ID is required to upload files');
       }
 
-      if (!activeWorkspace) {
+      if (!workspaceId) {
         throw new Error('No active workspace to upload files to');
       }
 
-      const result = await uploadFiles(files, {workspaceId: activeWorkspace.id, threadId});
+      const result = await uploadFiles(files, {workspaceId, threadId});
       return result;
     },
   });
@@ -248,13 +243,13 @@ export function useWorkspaceMessages(
   ) => {
     if (!threadId) {
       threadId = crypto.randomUUID();
-      if (!context.activeWorkspace) {
+      if (!workspaceId) {
         console.error('No active workspace to create thread in');
         return;
       }
 
       navigate(
-        `/workspace/${context.activeWorkspace?.id}/thread/${threadId}`,
+        `/workspace/${workspaceId}/thread/${threadId}`,
       );
     }
 
@@ -265,9 +260,9 @@ export function useWorkspaceMessages(
       {
         onSuccess: () => {
           setIsBotResponding(false);
-          if (!threadId && activeWorkspace?.id) {
+          if (!threadId && workspaceId) {
             queryClient.invalidateQueries({
-              queryKey: ['threads', activeWorkspace.id],
+              queryKey: ['threads', workspaceId],
             });
           }
         },

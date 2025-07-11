@@ -2,18 +2,18 @@ import {
   createThread,
   deleteThread,
   fetchThreads,
-  updateThread,
+  setFavorite
 } from '@/apis/message-threads';
 
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MessageThread } from '../models/message-threads';
-import { useWorkspaces } from './use-workspaces';
+import { useActiveWorkspace } from './use-workspaces';
 
 export function useWorkspaceThreads(take = 20) {
   const queryClient = useQueryClient();
-  const { activeWorkspace } = useWorkspaces();
+  const activeWorkspace = useActiveWorkspace();
   const navigate = useNavigate();
 
   const [isCreatingThread, setIsCreatingThread] = useState(false);
@@ -77,20 +77,6 @@ export function useWorkspaceThreads(take = 20) {
     },
   });
 
-  // Update a thread (e.g. toggle favorite)
-  const updateThreadMutation = useMutation({
-    mutationFn: ({
-      threadId,
-      updates,
-    }: {
-      threadId: string;
-      updates: Partial<MessageThread>;
-    }) => updateThread(threadId, updates),
-    onSuccess: () => {
-      refetch();
-    },
-  });
-
   // Delete a thread and remove it from state
   const deleteThreadMutation = useMutation({
     mutationFn: (deletedThreadId: string) => deleteThread(deletedThreadId),
@@ -120,17 +106,6 @@ export function useWorkspaceThreads(take = 20) {
   const handleCancelThread = useCallback(() => {
     setIsCreatingThread(false);
   }, []);
-
-  // Toggle thread favorite status
-  const handleToggleFavorite = useCallback(
-    (thread: MessageThread) => {
-      updateThreadMutation.mutate({
-        threadId: thread.id,
-        updates: { favorited: !thread.favorited },
-      });
-    },
-    [updateThreadMutation]
-  );
 
   // Update thread data in cache (e.g. after posting a message)
   const updateThreadMetadata = useCallback(
@@ -172,9 +147,36 @@ export function useWorkspaceThreads(take = 20) {
     handleCreateThread,
     handleSubmitThread,
     handleCancelThread,
-    handleToggleFavorite,
     updateThreadMetadata,
     handleDeleteThread: (threadId: string) =>
       deleteThreadMutation.mutate(threadId),
+  };
+}
+
+export function useThreadSetFavorite(workSpaceId?: string, threadId?: string) {
+  const queryClient = useQueryClient();
+  
+  // Update a thread (e.g. toggle favorite)
+  const setFavoriteMutation = useMutation({
+    mutationFn: ({
+      favorite
+    }: {
+      favorite: boolean;
+    }) => {
+      if (!workSpaceId || !threadId) {
+        throw new Error('Workspace ID and Thread ID are required');
+      }
+
+      return setFavorite(threadId, favorite);
+    },
+    onSuccess: () => {
+      return queryClient.refetchQueries({
+        queryKey: ['threads', workSpaceId],
+      });
+    },
+  });
+
+  return {
+    setFavoriteMutation
   };
 }

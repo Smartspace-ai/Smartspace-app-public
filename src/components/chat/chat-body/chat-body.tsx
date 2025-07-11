@@ -12,7 +12,7 @@ import { parseDateTime } from '../../../utils/parse-date-time';
 
 import { downloadFile } from '@/apis/files';
 import { useActiveUser } from '@/hooks/use-active-user';
-import { useWorkspaces } from '@/hooks/use-workspaces';
+import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
@@ -44,7 +44,7 @@ export default function ChatBody({
 }: ChatBodyProps) {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const { activeWorkspace } = useWorkspaces();
+  const activeWorkspace = useActiveWorkspace();
   const activeUser = useActiveUser();
 
   useEffect(() => {
