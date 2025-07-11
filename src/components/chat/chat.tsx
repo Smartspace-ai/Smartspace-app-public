@@ -2,7 +2,7 @@ import { useWorkspaceMessages } from '@/hooks/use-workspace-messages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
@@ -12,7 +12,7 @@ import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
 
-export function Chat({threadId}: { threadId?: string }) {
+export function Chat({threadId, isVisible}: { threadId?: string, isVisible: boolean }) {
   const activeWorkspace = useActiveWorkspace();
   const {data: activeThread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
@@ -34,13 +34,6 @@ export function Chat({threadId}: { threadId?: string }) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [isDraggingOverChat, setIsDraggingOverChat] = useState(false);
-
-  // Scroll to bottom on message change
-  useEffect(() => {
-    if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-    }
-  }, [messages.length]);
 
   // Copy to clipboard handler
   const copyMessageToClipboard = (message: string, id: number) => {
@@ -180,6 +173,7 @@ export function Chat({threadId}: { threadId?: string }) {
         copiedMessageId={copiedMessageId}
         messagesEndRef={messagesEndRef}
         copyMessageToClipboard={copyMessageToClipboard}
+        isVisible={isVisible}
         isLoading={isLoading}
         isSendingMessage={isSendingMessage}
         isBotResponding={isBotResponding}
