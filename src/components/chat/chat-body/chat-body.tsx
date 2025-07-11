@@ -1,7 +1,6 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { MessagesSquare } from 'lucide-react';
-import React, { useEffect, useRef } from 'react';
-import { VirtuosoHandle } from 'react-virtuoso';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { Draw } from '@/models/draw';
 import { Message, MessageValueType } from '@/models/message';
@@ -42,16 +41,26 @@ export default function ChatBody({
   isBotResponding,
   addValueToMessage,
 }: ChatBodyProps) {
-  const virtuosoRef = useRef<VirtuosoHandle>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const activeWorkspace = useActiveWorkspace();
   const activeUser = useActiveUser();
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
   useEffect(() => {
-    if (isBotResponding && messages.length > 0) {
-      virtuosoRef.current?.scrollToIndex({ index: messages.length, behavior: 'smooth' });
-    }
-  }, [isBotResponding, messages.length]);
+    const content = contentRef.current;
+    if (!content) return;
+
+    const observer = new window.ResizeObserver(() => {
+      if (isAtBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+
+    observer.observe(content);
+
+    return () => observer.disconnect();
+  }, [contentRef.current, messagesEndRef.current, isAtBottom]);
 
   if (isLoading) {
     return (
@@ -93,8 +102,14 @@ export default function ChatBody({
         <ScrollAreaPrimitive.Viewport
           ref={viewportRef}
           className="h-full w-full rounded-[inherit] overflow-y-auto"
+          onScroll={() => {
+            if (!viewportRef.current) return;
+            const viewport = viewportRef.current;
+            const threshold = 60; // px from bottom to still count as 'at bottom'
+            setIsAtBottom(viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold);
+          }}
         >
-          <div className="flex flex-col w-full">
+          <div ref={contentRef} className="flex flex-col w-full">
             {messages.map((message, index) => (
               <div
                 className="ss-chat__message w-full px-2 max-w-3xl mx-auto"

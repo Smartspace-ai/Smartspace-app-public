@@ -1,5 +1,6 @@
 import { MessageSquare, PanelLeft } from 'lucide-react';
 
+import { Skeleton } from '@/components/ui/skeleton';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { MessageThread } from '@/models/message-threads';
 import { NotificationPanel } from '../../notifications/notifications-panel/notifications-panel';
@@ -20,10 +21,14 @@ export function ChatHeader({activeThread}: {activeThread?: MessageThread}) {
         <Separator orientation="vertical" className="mr-2 h-4" />
         {/* Workspace and thread display */}
         <div className="flex items-center">
-          <span className="font-medium text-sm">
-            {activeWorkspace?.name || 'Workspace'}
-          </span>
-          {activeThread && (
+          {activeWorkspace?
+            <span className="font-medium text-sm">
+              {activeWorkspace?.name}
+            </span>
+            :
+            <Skeleton className="h-5 w-32" />
+          }
+          {activeThread?.name && (
             <>
               <span className="mx-2 text-gray-400">/</span>
               <span
