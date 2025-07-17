@@ -1,5 +1,5 @@
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
-import { useWorkspaces } from '@/hooks/use-workspaces';
+import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Toaster } from 'sonner';
@@ -11,14 +11,14 @@ import { useWorkspaceMessages } from '../../hooks/use-workspace-messages';
   
 export function ChatBot() {
   const { threadId } = useParams<{ threadId?: string }>();
-  const { activeWorkspace } = useWorkspaces();
+  const activeWorkspace = useActiveWorkspace();
 
   // keep a list of the last 20 thread-IDs we've visited
   const [recentThreads, setRecentThreads] = useState<string[]>([]);
   const [visibleThread, setVisibleThread] = useState<string | null>(null);
 
   // Track loading state for current thread
-  const { isLoading } = useWorkspaceMessages(activeWorkspace, threadId);
+  const { isLoading } = useWorkspaceMessages(activeWorkspace?.id, threadId);
 
   useEffect(() => {
     if (!threadId) return;
@@ -50,7 +50,7 @@ export function ChatBot() {
           { threadId === visibleThread && <EnsureCorrectWorkspace threadId={threadId} /> }
           <SidebarInset className="relative flex-1 flex flex-col min-h-0">
             <div className="absolute inset-0">
-              <Chat threadId={threadId} />
+              <Chat threadId={threadId} isVisible={threadId === visibleThread} />
             </div>
           </SidebarInset>
           <SidebarRight threadId={threadId} />

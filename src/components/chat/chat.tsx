@@ -2,18 +2,18 @@ import { useWorkspaceMessages } from '@/hooks/use-workspace-messages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
-import { useWorkspaces } from '@/hooks/use-workspaces';
+import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { MessageCreateContent } from '../../models/message';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
 
-export function Chat({threadId}: { threadId?: string }) {
-  const { activeWorkspace } = useWorkspaces();
+export function Chat({threadId, isVisible}: { threadId?: string, isVisible: boolean }) {
+  const activeWorkspace = useActiveWorkspace();
   const {data: activeThread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
   const {
@@ -25,7 +25,7 @@ export function Chat({threadId}: { threadId?: string }) {
     isBotResponding,
     isUploadingFiles,
     addValueToMessage,
-  } = useWorkspaceMessages(activeWorkspace, threadId);
+  } = useWorkspaceMessages(activeWorkspace?.id, threadId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [newMessage, setNewMessage] = useState('');
@@ -34,13 +34,6 @@ export function Chat({threadId}: { threadId?: string }) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [isDraggingOverChat, setIsDraggingOverChat] = useState(false);
-
-  // Scroll to bottom on message change
-  useEffect(() => {
-    if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-    }
-  }, [messages.length]);
 
   // Copy to clipboard handler
   const copyMessageToClipboard = (message: string, id: number) => {
@@ -137,7 +130,7 @@ export function Chat({threadId}: { threadId?: string }) {
 
   return (
     <div
-      className="ss-chat flex flex-col h-full border bg-card text-card-foreground shadow-sm bg-gradient-to-b from-background from-10% via-background via-50% to-primary/20 to-100%"
+      className="ss-chat flex flex-col h-full border bg-card text-card-foreground shadow-sm bg-gradient-to-b from-background from-30% via-primary/0 via-70% to-primary/20 to-100%"
       onDragEnter={handleDragEnterChat}
       onDragLeave={handleDragLeaveChat}
       onDragOver={handleDragOverChat}
@@ -180,6 +173,7 @@ export function Chat({threadId}: { threadId?: string }) {
         copiedMessageId={copiedMessageId}
         messagesEndRef={messagesEndRef}
         copyMessageToClipboard={copyMessageToClipboard}
+        isVisible={isVisible}
         isLoading={isLoading}
         isSendingMessage={isSendingMessage}
         isBotResponding={isBotResponding}

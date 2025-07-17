@@ -8,6 +8,7 @@ import { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import _ from 'lodash';
 import { FileText } from 'lucide-react';
 import { FC, ReactNode, useEffect, useState } from 'react';
+import SyntaxHighlighter from 'react-syntax-highlighter';
 import { cn } from '../../../lib/utils';
 import {
   Message,
@@ -86,6 +87,8 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
     setResponseFormData(defaultValues);
   }, [userOutput, userInput]);
 
+  const contentIsContentList = Array.isArray(content) && content.every((item) => item.text || item.image);
+
   return (
     <div
       className={cn(
@@ -130,21 +133,31 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
 
       <div className={cn(isBotResponse ? 'p-3' : 'px-3 py-1')}>
         <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
-          {content?.map((item, i) => {
-            if (item.text)
-              return <MyMarkdown key={`content-${i}`} text={item.text} />;
-            if (item.image) {
-              return (
-                <ChatMessageImage
-                  key={`image-${i}`}
-                  image={item.image}
-                  name={item.image.name}
-                  useMessageFile={useMessageFile}
-                />
-              );
-            }
-            return null;
-          })}
+          {contentIsContentList?
+            content?.map((item, i) => {
+              if (item.text)
+                return <MyMarkdown key={`content-${i}`} text={item.text} />;
+              if (item.image) {
+                return (
+                  <ChatMessageImage
+                    key={`image-${i}`}
+                    image={item.image}
+                    name={item.image.name}
+                    useMessageFile={useMessageFile}
+                  />
+                );
+              }
+
+              return JSON.stringify(item, null, 2);
+            })
+            :
+            <SyntaxHighlighter
+              language="json"
+              customStyle={{ background: 'transparent' }}
+            >
+              {JSON.stringify(content, null, 2)}
+            </SyntaxHighlighter>
+          }
 
           {files && files.length > 0 && (
             <div className="ss-chat-message__attachments mt-4 space-y-2">

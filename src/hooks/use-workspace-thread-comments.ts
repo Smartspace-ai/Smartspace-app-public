@@ -6,7 +6,7 @@ import { MentionUser } from '@/models/mention-user';
 import { addComment, fetchComments, fetchTaggableUsers } from '../apis/message-comments';
 import { MessageComment } from '../models/message-comment';
 import { useActiveUser } from './use-active-user';
-import { useWorkspaces } from './use-workspaces';
+import { useActiveWorkspace } from './use-workspaces';
 
 export function useWorkspaceThreadComments(threadId?: string) {
   const queryClient = useQueryClient();
@@ -103,9 +103,7 @@ export function useWorkspaceThreadComments(threadId?: string) {
 }
 
 export const useTaggableWorkspaceUsers = () => {
-  const {
-    activeWorkspace,
-  } = useWorkspaces();
+  const activeWorkspace = useActiveWorkspace();
 
   const {
     data: users = [],
