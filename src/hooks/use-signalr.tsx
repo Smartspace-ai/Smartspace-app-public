@@ -12,58 +12,62 @@ const signalRUri: string =
 const SignalRContext = createContext<{ connection?: HubConnection }>({});
 
 type SignalRProviderProps = {
+  threadId: string;
   children?: React.ReactNode;
 };
 
-export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
+export const SignalRProvider: FC<SignalRProviderProps> = ({  children }) => {
   const { accounts } = useMsal();
   const queryClient = useQueryClient();
 
   const [connection, setConnection] = useState<HubConnection>();
 
-  // SignalR for real-time notifications
   useEffect(() => {
     if (!accounts.length || !signalRUri || !queryClient) return;
 
-    return;
-
-    const connection = new HubConnectionBuilder()
+    const conn = new HubConnectionBuilder()
       .withUrl(
-        signalRUri +
-          (signalRUri.endsWith('/') ? 'notifications' : '/notifications'),
+        `${signalRUri}${signalRUri.endsWith('/') ? 'messageHub' : '/messageHub'}`,
         {
           accessTokenFactory: () => accounts[0]?.idToken?.toString() || '',
-        },
+        }
       )
       .withAutomaticReconnect()
       .build();
 
-    connection
+    conn
       .start()
-      .then(() => {
-        // console.log('Connection established.');
-        // Join the group
-        connection
-          // get active account to join the group
-          .invoke('joinGroup', accounts[0].localAccountId)
-          .then(() => {
-            // console.log('Joined group successfully');
+      .then(async () => {
+        console.log('SignalR connection established.');
+        // Subscribe to the thread group
 
-            connection?.on(
-              'BlocksUpdate',
-              debounce(() => {
-                queryClient.invalidateQueries({ queryKey: ['blocks'] });
-              }, 100),
-            );
-          })
-          .catch((error) => console.error('Error joining group:', error));
+        // Trigger a full messages re-fetch when a message update arrives
+        conn.on('ReceiveMessage', () => {
+          console.log('Message update received, invalidating messages query');
+          queryClient.invalidateQueries({ queryKey: ['messages'] });
+        });
+
+        // Log thread running state changes
+        conn.on('ReceiveFlowStatus', (_tid, isRunning) => {
+          if (_tid) {
+            console.log('Thread running state:', isRunning);
+          }
+        });
+
+        // Existing blocks update example (if still needed)
+        conn.on(
+          'BlocksUpdate',
+          debounce(() => {
+            queryClient.invalidateQueries({ queryKey: ['blocks'] });
+          }, 100)
+        );
       })
-      .catch((error) => console.error('Error establishing connection:', error));
+      .catch((error) => console.error('Error establishing SignalR:', error));
 
-    setConnection(connection);
+    setConnection(conn);
 
     return () => {
-      connection?.stop();
+      conn.stop();
     };
   }, [accounts, queryClient]);
 

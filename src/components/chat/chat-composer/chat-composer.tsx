@@ -1,6 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { useFileMutations } from '@/hooks/use-files';
+import { FileInfo } from '../../../models/file';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Paperclip, X } from 'lucide-react';
 import type React from 'react';
@@ -20,6 +22,8 @@ type ChatComposerProps = {
   setUploadedFiles?: (files: any[]) => void;
   isUploadingFiles?: boolean;
   onFilesSelected?: (files: File[]) => void;
+  setImagesForMessage: (files: FileInfo[]) => void;
+  imagesForMessage: FileInfo[];
 };
 
 export default function ChatComposer({
@@ -35,7 +39,9 @@ export default function ChatComposer({
   setUploadedFiles,
   isUploadingFiles,
   onFilesSelected,
-  supportsFiles
+  supportsFiles,
+  setImagesForMessage,
+  imagesForMessage,
 }: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +50,13 @@ export default function ChatComposer({
   const [filePreviewUrls, setFilePreviewUrls] = useState<
     { url: string; isImage: boolean; name: string }[]
   >([]);
+  const { uploadFilesMutation } = useFileMutations();
+
+
+
+  // useEffect(() => {
+  //   console.log('imagesForMessage', imagesForMessage);  
+  // }, [imagesForMessage]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -61,7 +74,7 @@ export default function ChatComposer({
     // Cleanup previous object URLs
     prevUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
 
-    const newPreviewUrls = selectedFiles.map((file) => {
+    const newPreviewUrls = [...selectedFiles].map((file) => {
       const isImage = file.type.startsWith('image/');
       const url = isImage ? URL.createObjectURL(file) : '';
       return { url, isImage, name: file.name };
@@ -71,7 +84,7 @@ export default function ChatComposer({
     prevUrlsRef.current = newPreviewUrls.map((f) => f.url);
 
     setFilePreviewUrls(newPreviewUrls);
-  }, [selectedFiles]);
+  }, [selectedFiles, imagesForMessage]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -114,6 +127,31 @@ export default function ChatComposer({
     }
   };
 
+  // Updated handlePaste function to handle pasted images only
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const items = e.clipboardData.items;
+    const imageFiles: File[] = [];
+    for (const item of Array.from(items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file && file.type.startsWith('image/')) {
+          imageFiles.push(file);
+        }
+      }
+    }
+    if (imageFiles.length > 0) {
+      uploadFilesMutation.mutate(imageFiles, {
+        onSuccess: (data) => {
+          setImagesForMessage([...imagesForMessage, ...data]);
+          setSelectedFiles([...selectedFiles, ...imageFiles]);
+        },
+      });
+
+    }
+  };
+
   const handleRemoveFile = (index: number) => {
     setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
     setUploadedFiles?.((uploadedFiles ?? []).filter((_, i) => i !== index));
@@ -127,7 +165,7 @@ export default function ChatComposer({
     }
   };
 
-  const sendDisabled = (!newMessage.trim() && !uploadedFiles?.length) || isUploadingFiles || disabled;
+  const sendDisabled = (!newMessage.trim() && !uploadedFiles?.length && !imagesForMessage.length) || isUploadingFiles || disabled;
 
   return (
     <div className="ss-chat__composer w-full mt-auto bg-sidebar border-t px-4 py-4">
@@ -143,6 +181,7 @@ export default function ChatComposer({
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          onPaste={handlePaste}
         >
           <AnimatePresence>
             {selectedFiles.length > 0 && (

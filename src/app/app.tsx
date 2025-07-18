@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { SidebarProvider } from '../components/ui/sidebar';
 import { NotificationsProvider } from '../contexts/notifications-context';
 import { TeamsProvider, useTeams } from '../contexts/teams-context';
+import { SignalRProvider } from '../hooks/use-signalr';
 
 import TeamsAuthCallback from '@/pages/auth/teams/callback';
 import { Loader2 } from 'lucide-react';
@@ -74,7 +75,7 @@ export function App() {
                   <AppRoutes />
                 </BrowserRouter>
               </SidebarProvider>
-            </NotificationsProvider>
+              </NotificationsProvider>
         </QueryClientProvider>
         ) : (
           <BrowserRouter>

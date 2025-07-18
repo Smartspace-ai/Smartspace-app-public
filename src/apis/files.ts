@@ -84,9 +84,12 @@ export const uploadFiles = async (
 
 export const downloadFile = async (
   id: string,
+  scope?: FileScope,
 ): Promise<Blob> => {
+  // For GET requests, we need to use params for scope
   const response = await webApi.get(`/files/${id}/download`, {
     responseType: 'blob',
+    params: scope,
     headers: {
       'Content-Type': 'multipart/form-data',
     },

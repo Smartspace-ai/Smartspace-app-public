@@ -88,7 +88,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
   }, [userOutput, userInput]);
 
   const contentIsContentList = Array.isArray(content) && content.every((item) => item.text || item.image);
-
+  console.log('contentIsContentList', contentIsContentList);
   return (
     <div
       className={cn(
@@ -133,10 +133,11 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
 
       <div className={cn(isBotResponse ? 'p-3' : 'px-3 py-1')}>
         <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
-          {contentIsContentList?
+          {contentIsContentList &&
             content?.map((item, i) => {
-              if (item.text)
+              if (item.text && item.text.length > 0) {
                 return <MyMarkdown key={`content-${i}`} text={item.text} />;
+              }
               if (item.image) {
                 return (
                   <ChatMessageImage
@@ -148,15 +149,8 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
                 );
               }
 
-              return JSON.stringify(item, null, 2);
+              return ""
             })
-            :
-            <SyntaxHighlighter
-              language="json"
-              customStyle={{ background: 'transparent' }}
-            >
-              {JSON.stringify(content, null, 2)}
-            </SyntaxHighlighter>
           }
 
           {files && files.length > 0 && (

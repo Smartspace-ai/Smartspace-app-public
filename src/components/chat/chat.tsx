@@ -4,6 +4,7 @@ import { Upload } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { FileInfo } from '../../models/file';
 
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
@@ -34,6 +35,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [isDraggingOverChat, setIsDraggingOverChat] = useState(false);
+  const [imagesForMessage, setImagesForMessage] = useState<FileInfo[]>([]);
 
   // Copy to clipboard handler
   const copyMessageToClipboard = (message: string, id: number) => {
@@ -74,17 +76,23 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
 
   // Send message handler
   const handleSendMessage = useCallback(() => {
-    if (!newMessage.trim() && uploadedFiles.length === 0) return;
+    if (!newMessage.trim() && uploadedFiles.length === 0 && imagesForMessage.length === 0) return;
 
-    const contentList: MessageCreateContent[] = [];
-    contentList.push({ text: newMessage.trim() });
+    let contentList: MessageCreateContent[] = [];
+    const message = newMessage.trim();
+    if (message.length > 0) {
+      contentList.push({ text: message });
+    }
+
+    contentList = contentList.concat(imagesForMessage.map((image) => ({ image: { id: image.id, name: image.name } })));
 
     sendMessage(contentList, uploadedFiles);
 
     setNewMessage('');
     setSelectedFiles([]);
     setUploadedFiles([]);
-  }, [newMessage, uploadedFiles, activeThread, sendMessage]);
+    setImagesForMessage([]);
+  }, [newMessage, uploadedFiles, sendMessage, imagesForMessage]);
 
   // Submit on Enter (not Shift+Enter)
   const handleKeyDown = useCallback(
@@ -196,6 +204,8 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
         isUploadingFiles={isUploadingFiles}
         onFilesSelected={handleFilesSelected}
         supportsFiles={activeWorkspace?.supportsFiles ?? false}
+        setImagesForMessage={setImagesForMessage}
+        imagesForMessage={imagesForMessage}
       />
     </div>
   );
