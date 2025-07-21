@@ -1,5 +1,6 @@
 // ChatBotLayout.tsx
 import { useWorkspaces } from '@/hooks/use-workspaces';
+import { WorkspaceSignalRProvider } from '../../signalr_hubs/workspace_signalr_provider';
 import { useEffect } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 
@@ -17,7 +18,11 @@ export default function ChatBotLayout() {
 
 
   if (workspaceId) {
-    return <Outlet />
+    return (
+      <WorkspaceSignalRProvider workspaceId={workspaceId}>
+        <Outlet />
+      </WorkspaceSignalRProvider>
+    )
   }
   // Nice loading page
   return (
