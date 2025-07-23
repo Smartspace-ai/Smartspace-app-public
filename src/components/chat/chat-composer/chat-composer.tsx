@@ -54,9 +54,6 @@ export default function ChatComposer({
 
 
 
-  // useEffect(() => {
-  //   console.log('imagesForMessage', imagesForMessage);  
-  // }, [imagesForMessage]);
 
   useEffect(() => {
     if (textareaRef.current) {
