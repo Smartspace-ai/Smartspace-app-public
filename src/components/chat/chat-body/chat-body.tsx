@@ -90,7 +90,6 @@ export default function ChatBody({
       </div>
     );
   }
-  console.log(activeWorkspace?.firstPrompt);
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
