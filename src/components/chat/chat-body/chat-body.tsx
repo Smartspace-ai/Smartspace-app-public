@@ -15,6 +15,8 @@ import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatBodyProps {
   messages: Message[];
@@ -88,7 +90,6 @@ export default function ChatBody({
       </div>
     );
   }
-
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
@@ -96,9 +97,15 @@ export default function ChatBody({
           <MessagesSquare className="h-8 w-8 text-primary" />
         </div>
         <h3 className="text-lg font-medium mb-2">{activeWorkspace?.name ?? 'No messages yet'}</h3>
-        <p className="text-muted-foreground mb-6 max-w-xs">
-          { activeWorkspace?.firstPrompt ?? 'Be the first to start the conversation!'}
-        </p>
+
+
+        {activeWorkspace?.firstPrompt && (
+  <div className="max-w-3xl mx-auto p-4 whitespace-pre-wrap">
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+      {activeWorkspace.firstPrompt}
+    </ReactMarkdown>
+  </div>
+)}
       </div>
     );
   }
