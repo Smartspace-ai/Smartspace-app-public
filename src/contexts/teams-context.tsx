@@ -30,6 +30,16 @@ export const TeamsProvider: React.FC<TeamsProviderProps> = ({ children }) => {
   const [teamsTheme, setTeamsTheme] = useState('default');
   const [teamsUser, setTeamsUser] = useState<app.Context['user'] | null>(null);
 
+  // Expose Teams state globally for axios interceptors
+  useEffect(() => {
+    (window as any).__teamsState = {
+      isInTeams,
+      isInitialized: isTeamsInitialized,
+      teamsContext,
+      teamsUser,
+    };
+  }, [isInTeams, isTeamsInitialized, teamsContext, teamsUser]);
+
   useEffect(() => {
     const initializeTeams = async () => {
       try {

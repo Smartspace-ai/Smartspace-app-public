@@ -12,11 +12,11 @@ import { parseDateTime } from '../../../utils/parse-date-time';
 import { downloadFile } from '@/apis/files';
 import { useActiveUser } from '@/hooks/use-active-user';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 interface ChatBodyProps {
   messages: Message[];
@@ -48,7 +48,7 @@ export default function ChatBody({
   const contentRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const scrollTopRef = useRef<number>(0);
-  const activeWorkspace = useActiveWorkspace();
+  const { data: activeWorkspace } = useActiveWorkspace();
   const activeUser = useActiveUser();
   const [isAtBottom, setIsAtBottom] = useState(true);
 

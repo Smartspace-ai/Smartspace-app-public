@@ -35,7 +35,7 @@ export function WorkspaceSelector() {
   }, [open]);
 
   const { workspaces, isLoading, handleWorkspaceChange } = useWorkspaces(debouncedSearchTerm);
-  const activeWorkspace = useActiveWorkspace();
+  const { data: activeWorkspace } = useActiveWorkspace();
 
   return (
     <div className="px-4 pt-3 pb-2 ">
@@ -72,18 +72,34 @@ export function WorkspaceSelector() {
         <PopoverContent className="rounded-lg p-0 border w-full min-w-[260px] max-h-120 overflow-auto">
           { isLoading? <Skeleton className="h-40 w-full rounded-lg" />
           : <div className='p-1 shadow-lg'>
-              {workspaces.map((workspace) => (
-                <WorkspaceItem
-                  key={workspace.id}
-                  isActive={activeWorkspace?.id === workspace.id}
-                  workspace={workspace}
-                  onSelect={ws => {
-                    handleWorkspaceChange(ws);
-                    setOpen(false);
-                    setSearchTerm('');
-                  }}
-                />
-              ))}
+              {workspaces.length === 0 ? (
+                <div className="px-3 py-6 text-center text-gray-500">
+                  {debouncedSearchTerm ? (
+                    <div className="text-xs">
+                      <div className="mb-1">No workspaces found</div>
+                      <div className="text-gray-400">Try a different search term</div>
+                    </div>
+                  ) : (
+                    <div className="text-xs">
+                      <div className="mb-1">No workspaces available</div>
+                      <div className="text-gray-400">Contact your administrator</div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                workspaces.map((workspace) => (
+                  <WorkspaceItem
+                    key={workspace.id}
+                    isActive={activeWorkspace?.id === workspace.id}
+                    workspace={workspace}
+                    onSelect={ws => {
+                      handleWorkspaceChange(ws);
+                      setOpen(false);
+                      setSearchTerm('');
+                    }}
+                  />
+                ))
+              )}
             </div>
           }
         </PopoverContent>
