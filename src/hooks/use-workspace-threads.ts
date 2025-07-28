@@ -13,7 +13,7 @@ import { useActiveWorkspace } from './use-workspaces';
 
 export function useWorkspaceThreads(take = 20) {
   const queryClient = useQueryClient();
-  const activeWorkspace = useActiveWorkspace();
+  const { data: activeWorkspace } = useActiveWorkspace();
   const navigate = useNavigate();
 
   const [isCreatingThread, setIsCreatingThread] = useState(false);

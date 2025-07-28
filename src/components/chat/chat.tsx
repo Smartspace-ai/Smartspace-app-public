@@ -14,7 +14,7 @@ import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
 
 export function Chat({threadId, isVisible}: { threadId?: string, isVisible: boolean }) {
-  const activeWorkspace = useActiveWorkspace();
+  const { data: activeWorkspace } = useActiveWorkspace();
   const {data: activeThread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
   const {
