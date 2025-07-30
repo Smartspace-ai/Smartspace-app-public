@@ -1,9 +1,9 @@
 import { addInputToMessage, fetchMessages, postMessage } from '@/apis/messages';
 import {
-  Message,
-  MessageCreateContent,
-  MessageFile,
-  MessageValueType,
+    Message,
+    MessageCreateContent,
+    MessageFile,
+    MessageValueType,
 } from '@/models/message';
 
 import { uploadFiles } from '@/apis/files';
@@ -43,16 +43,17 @@ export function useWorkspaceMessages(
 
   const [isBotResponding, setIsBotResponding] = useState(false);
 
-  // Send a new message (text + optional files)
+  // Send a new message (text + optional files + optional variables)
   const postMessageMutation = useMutation<
     Subject<Message>,
     Error,
     {
       contentList?: MessageCreateContent[];
       files?: MessageFile[];
+      variables?: Record<string, any>;
     }
   >({
-    mutationFn: async ({ contentList, files }) => {
+    mutationFn: async ({ contentList, files, variables }) => {
       if (!threadId)
         throw new Error('Thread ID is required to post message');
 
@@ -76,6 +77,18 @@ export function useWorkspaceMessages(
                   type: MessageValueType.INPUT,
                   name: 'files',
                   value: files,
+                  channels: {},
+                  createdAt: new Date(),
+                  createdBy: activeUser.name,
+                },
+              ]
+            : []),
+          ...(variables && Object.keys(variables).length > 0
+            ? [
+                {
+                  type: MessageValueType.INPUT,
+                  name: 'variables',
+                  value: variables,
                   channels: {},
                   createdAt: new Date(),
                   createdBy: activeUser.name,
@@ -108,6 +121,7 @@ export function useWorkspaceMessages(
             threadId,
             contentList,
             files,
+            variables,
           })
             .then((response) => {
               // Subscribe to the response and update the query data
@@ -283,7 +297,8 @@ export function useWorkspaceMessages(
   // Public method to send a message
   const sendMessage = (
     contentList?: MessageCreateContent[],
-    files?: MessageFile[]
+    files?: MessageFile[],
+    variables?: Record<string, any>
   ) => {
     if (!threadId) {
       threadId = crypto.randomUUID();
@@ -300,7 +315,7 @@ export function useWorkspaceMessages(
     setIsBotResponding(true);
 
     postMessageMutation.mutate(
-      { contentList, files },
+      { contentList, files, variables },
       {
         onSuccess: () => {
           setIsBotResponding(false);

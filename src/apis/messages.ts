@@ -66,17 +66,19 @@ export async function addInputToMessage({
   });
 }
 
-// Post a new user message to a thread (supports content + files)
+// Post a new user message to a thread (supports content + files + variables)
 export async function postMessage({
   workSpaceId,
   threadId,
   contentList,
   files,
+  variables,
 }: {
   workSpaceId: string;
   threadId: string;
   contentList?: MessageCreateContent[];
   files?: MessageFile[];
+  variables?: Record<string, any>;
 }): Promise<Subject<Message>> {
   try {
     const inputs: any[] = [];
@@ -103,6 +105,7 @@ export async function postMessage({
       inputs,
       messageThreadId: threadId,
       workspaceId: workSpaceId,
+      variables,
     };
 
   const observable = new Subject<Message>();

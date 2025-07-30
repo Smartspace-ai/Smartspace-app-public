@@ -40,7 +40,7 @@ export function Login() {
       if (isInTeams) {
         await login(); // Use Teams-aware login with login hints
       } else {
-        await instance.loginPopup(interactiveLoginRequest);
+        await instance.loginRedirect(interactiveLoginRequest);
       }
     } catch (authError) {
       // Show generic error on failure

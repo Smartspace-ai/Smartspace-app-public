@@ -16,6 +16,12 @@ export class Workspace {
   firstPrompt?: string;
   avatarName?: string;
   supportsFiles?: boolean;
+  variables: {
+    [key: string]: {
+      schema: Record<string, any>;
+      access: 'Read' | 'Write';
+    };
+  } = {};
 
   constructor(params?: Workspace) {
     Object.assign(this, params || {});

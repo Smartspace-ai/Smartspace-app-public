@@ -109,3 +109,21 @@ export async function updateThread(
     throw new Error('Failed to update thread');
   }
 }
+
+export async function fetchThreadVariables(threadId: string): Promise<Record<string, any>> {
+  const response = await webApi.get(`/flowruns/${threadId}/variables`);
+  return response.data as Record<string, any>;
+}
+
+
+// Updates a variable
+export async function updateVariable(
+  flowRunId: string,
+  variableName: string,
+  value: any
+): Promise<void> {
+  await webApi.put(`/flowruns/${flowRunId}/variables/${variableName}`, 
+    value,
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+}
