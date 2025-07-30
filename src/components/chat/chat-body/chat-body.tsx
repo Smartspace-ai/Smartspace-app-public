@@ -92,7 +92,7 @@ export default function ChatBody({
   }
   if (messages.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+      <div className="flex overflow-auto flex-col items-center justify-center h-full p-8 text-center">
         <div className="rounded-full bg-primary/10 p-4 mb-4">
           <MessagesSquare className="h-8 w-8 text-primary" />
         </div>
@@ -100,12 +100,12 @@ export default function ChatBody({
 
 
         {activeWorkspace?.firstPrompt && (
-  <div className="max-w-3xl mx-auto p-4 whitespace-pre-wrap">
-    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-      {activeWorkspace.firstPrompt}
-    </ReactMarkdown>
-  </div>
-)}
+          <div className="max-w-3xl mx-auto p-4 whitespace-pre-wrap">
+            <ReactMarkdown  remarkPlugins={[remarkGfm]}>
+              {activeWorkspace.firstPrompt}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     );
   }

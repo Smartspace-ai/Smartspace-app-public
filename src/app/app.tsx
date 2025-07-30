@@ -22,6 +22,7 @@ export function App() {
         defaultOptions: {
           queries: {
             refetchOnWindowFocus: false, // Disable auto-refetch on window focus
+            retry: false,
           },
         },
       })
