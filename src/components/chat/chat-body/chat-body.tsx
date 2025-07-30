@@ -1,5 +1,4 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
-import { MessagesSquare } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { Draw } from '@/models/draw';
@@ -93,9 +92,6 @@ export default function ChatBody({
   if (messages.length === 0) {
     return (
       <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
-        <div className="rounded-full bg-primary/10 p-4 mb-4">
-          <MessagesSquare className="h-8 w-8 text-primary" />
-        </div>
         <h3 className="text-lg font-medium mb-2">{activeWorkspace?.name ?? 'No messages yet'}</h3>
 
 
