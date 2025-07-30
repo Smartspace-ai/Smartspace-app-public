@@ -75,7 +75,7 @@ export default function ChatBody({
 
   if (isLoading) {
     return (
-      <div className="ss-chat__body flex-1 overflow-y-auto">
+      <div className="ss-chat__body flex-shrink-10 flex-1 overflow-y-auto">
         <div className="space-y-8 max-w-3xl mx-auto p-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex gap-3">
@@ -92,7 +92,7 @@ export default function ChatBody({
   }
   if (messages.length === 0) {
     return (
-      <div className="flex overflow-auto flex-col items-center justify-center h-full p-8 text-center">
+      <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
         <div className="rounded-full bg-primary/10 p-4 mb-4">
           <MessagesSquare className="h-8 w-8 text-primary" />
         </div>
@@ -101,7 +101,7 @@ export default function ChatBody({
 
         {activeWorkspace?.firstPrompt && (
           <div className="max-w-3xl mx-auto p-4 whitespace-pre-wrap">
-            <ReactMarkdown  remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {activeWorkspace.firstPrompt}
             </ReactMarkdown>
           </div>
@@ -113,7 +113,7 @@ export default function ChatBody({
   const messageHasSomeResponse = messages.length && messages[messages.length - 1].values?.some(v => v.type === MessageValueType.OUTPUT)
 
   return (
-    <div className="ss-chat__body flex-1 h-full w-full overflow-hidden">
+    <div className="ss-chat__body flex-shrink-10 flex-1 h-full w-full overflow-hidden">
       <ScrollAreaPrimitive.Root className="relative overflow-hidden h-full w-full">
         <ScrollAreaPrimitive.Viewport
           ref={viewportRef}

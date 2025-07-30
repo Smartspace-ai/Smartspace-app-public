@@ -62,6 +62,14 @@ export default function ChatComposer({
 
   const prevUrlsRef = useRef<string[]>([]);
 
+  // Auto-adjust textarea height when message changes (including when cleared)
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [newMessage]);
+
   useEffect(() => {
     // Cleanup previous object URLs
     prevUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -160,7 +168,7 @@ export default function ChatComposer({
   const sendDisabled = (!newMessage.trim() && !uploadedFiles?.length && !imagesForMessage.length) || isUploadingFiles || disabled;
 
   return (
-    <div className="ss-chat__composerh max-h-[60%]  overflow-y-auto w-full mt-auto bg-sidebar border-t px-4 py-4">
+    <div className="ss-chat__composerh max-h-[60%] flex-shrink-0 overflow-y-auto w-full mt-auto bg-sidebar border-t px-4 py-4">
 
       {workspace && threadId && (
         <ChatVariablesForm workspace={workspace} threadId={threadId} ref={variablesFormRef} />
@@ -310,10 +318,7 @@ export default function ChatComposer({
             onClick={() => {
               handleSendMessage();
               handleRemoveAllFiles();
-              // Reset textarea height to minimum
-              if (textareaRef.current) {
-                textareaRef.current.style.height = "100px";
-              }
+              // Reset textarea height is now handled by useEffect when newMessage changes
             }}
             variant="default"
             size="sm"
