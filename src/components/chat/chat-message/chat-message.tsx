@@ -8,7 +8,6 @@ import { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import _ from 'lodash';
 import { FileText } from 'lucide-react';
 import { FC, ReactNode, useEffect, useState } from 'react';
-import SyntaxHighlighter from 'react-syntax-highlighter';
 import { cn } from '../../../lib/utils';
 import {
   Message,
@@ -88,7 +87,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
   }, [userOutput, userInput]);
 
   const contentIsContentList = Array.isArray(content) && content.every((item) => item.text || item.image);
-  console.log('contentIsContentList', contentIsContentList);
+
   return (
     <div
       className={cn(

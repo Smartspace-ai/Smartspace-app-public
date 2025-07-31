@@ -1,5 +1,4 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
-import { MessagesSquare } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { Draw } from '@/models/draw';
@@ -12,6 +11,8 @@ import { parseDateTime } from '../../../utils/parse-date-time';
 import { downloadFile } from '@/apis/files';
 import { useActiveUser } from '@/hooks/use-active-user';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
@@ -46,7 +47,7 @@ export default function ChatBody({
   const contentRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const scrollTopRef = useRef<number>(0);
-  const activeWorkspace = useActiveWorkspace();
+  const { data: activeWorkspace } = useActiveWorkspace();
   const activeUser = useActiveUser();
   const [isAtBottom, setIsAtBottom] = useState(true);
 
@@ -73,7 +74,7 @@ export default function ChatBody({
 
   if (isLoading) {
     return (
-      <div className="ss-chat__body flex-1 overflow-y-auto">
+      <div className="ss-chat__body flex-shrink-10 flex-1 overflow-y-auto">
         <div className="space-y-8 max-w-3xl mx-auto p-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex gap-3">
@@ -88,17 +89,19 @@ export default function ChatBody({
       </div>
     );
   }
-
   if (messages.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        <div className="rounded-full bg-primary/10 p-4 mb-4">
-          <MessagesSquare className="h-8 w-8 text-primary" />
-        </div>
+      <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
         <h3 className="text-lg font-medium mb-2">{activeWorkspace?.name ?? 'No messages yet'}</h3>
-        <p className="text-muted-foreground mb-6 max-w-xs">
-          { activeWorkspace?.firstPrompt ?? 'Be the first to start the conversation!'}
-        </p>
+
+
+        {activeWorkspace?.firstPrompt && (
+          <div className="max-w-3xl mx-auto p-4 whitespace-pre-wrap">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {activeWorkspace.firstPrompt}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     );
   }
@@ -106,7 +109,7 @@ export default function ChatBody({
   const messageHasSomeResponse = messages.length && messages[messages.length - 1].values?.some(v => v.type === MessageValueType.OUTPUT)
 
   return (
-    <div className="ss-chat__body flex-1 h-full w-full overflow-hidden">
+    <div className="ss-chat__body flex-shrink-10 flex-1 h-full w-full overflow-hidden">
       <ScrollAreaPrimitive.Root className="relative overflow-hidden h-full w-full">
         <ScrollAreaPrimitive.Viewport
           ref={viewportRef}

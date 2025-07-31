@@ -103,7 +103,7 @@ export function useWorkspaceThreadComments(threadId?: string) {
 }
 
 export const useTaggableWorkspaceUsers = () => {
-  const activeWorkspace = useActiveWorkspace();
+  const { data: activeWorkspace } = useActiveWorkspace();
 
   const {
     data: users = [],

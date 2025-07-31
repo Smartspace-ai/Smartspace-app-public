@@ -15,10 +15,9 @@ export default function AppRoutes() {
         />
         {/* Route for workspace without thread */}
         <Route path="/workspace/:workspaceId" element={<ChatBot />} />
+        {/* Route for root and any unmatched paths - shows ChatBot which handles no workspaces case */}
+        <Route path="*" element={<ChatBot />} />
       </Route>
-      
-      {/* Redirect from "/" to "/workspaces" */}
-      <Route path="*" element={<ChatBotLayout />} />
     </Routes>
   );
 }

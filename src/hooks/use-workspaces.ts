@@ -8,7 +8,7 @@ import { Workspace } from '../models/workspace';
 export function useWorkspaces(searchTerm?: string) {
   const navigate = useNavigate();
   const { workspaceId, threadId } = useParams();
-  const activeWorkspace = useActiveWorkspace();
+  const { data: activeWorkspace } = useActiveWorkspace();
   const isAuthenticated = useIsAuthenticated();
 
   const {
@@ -50,14 +50,10 @@ export function useWorkspaces(searchTerm?: string) {
 export function useActiveWorkspace() {
   const { workspaceId } = useParams();
   const isAuthenticated = useIsAuthenticated();
-  
-  const {
-    data: activeWorkspace
-  } = useQuery({
+
+  return useQuery({
     queryKey: ['workspaces', workspaceId],
     queryFn: () => fetchWorkspace(workspaceId || ''),
     enabled: isAuthenticated && !!workspaceId,
   });
-
-  return activeWorkspace;
 }

@@ -8,7 +8,7 @@ import { Separator } from '../../ui/separator';
 import { SidebarTrigger } from '../../ui/sidebar';
 
 export function ChatHeader({activeThread}: {activeThread?: MessageThread}) {
-  const activeWorkspace = useActiveWorkspace();
+  const { data: activeWorkspace } = useActiveWorkspace();
 
   return (
     <header className="ss-chat__header flex h-[54px] shrink-0 items-center gap-2 bg-background border-b ">

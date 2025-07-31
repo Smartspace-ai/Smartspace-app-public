@@ -12,9 +12,10 @@ import { MessageCreateContent } from '../../models/message';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
+import { ChatVariablesFormRef } from './chat-variables-form/chat-variables-form';
 
 export function Chat({threadId, isVisible}: { threadId?: string, isVisible: boolean }) {
-  const activeWorkspace = useActiveWorkspace();
+  const { data: activeWorkspace } = useActiveWorkspace();
   const {data: activeThread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
   const {
@@ -29,6 +30,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
   } = useWorkspaceMessages(activeWorkspace?.id, threadId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const variablesFormRef = useRef<ChatVariablesFormRef>(null);
   const [newMessage, setNewMessage] = useState('');
 
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
@@ -75,23 +77,40 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
   );
 
   // Send message handler
-  const handleSendMessage = useCallback(() => {
+  const handleSendMessage = useCallback(async () => {
     if (!newMessage.trim() && uploadedFiles.length === 0 && imagesForMessage.length === 0) return;
 
-    let contentList: MessageCreateContent[] = [];
-    const message = newMessage.trim();
-    if (message.length > 0) {
-      contentList.push({ text: message });
+    try {
+      // Get current variables from the form (if they exist)
+      let variables: Record<string, any> | undefined;
+      if (variablesFormRef.current) {
+        const currentVariables = variablesFormRef.current.getCurrentVariables();
+        // Only include variables if there are actual values
+        if (Object.keys(currentVariables).length > 0) {
+          variables = currentVariables;
+        }
+      }
+
+      // Build message content
+      let contentList: MessageCreateContent[] = [];
+      const message = newMessage.trim();
+      if (message.length > 0) {
+        contentList.push({ text: message });
+      }
+
+      contentList = contentList.concat(imagesForMessage.map((image) => ({ image: { id: image.id, name: image.name } })));
+
+      // Send message with variables included
+      sendMessage(contentList, uploadedFiles, variables);
+
+      setNewMessage('');
+      setSelectedFiles([]);
+      setUploadedFiles([]);
+      setImagesForMessage([]);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      toast.error('Failed to send message. Please try again.');
     }
-
-    contentList = contentList.concat(imagesForMessage.map((image) => ({ image: { id: image.id, name: image.name } })));
-
-    sendMessage(contentList, uploadedFiles);
-
-    setNewMessage('');
-    setSelectedFiles([]);
-    setUploadedFiles([]);
-    setImagesForMessage([]);
   }, [newMessage, uploadedFiles, sendMessage, imagesForMessage]);
 
   // Submit on Enter (not Shift+Enter)
@@ -191,6 +210,8 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
       />
 
       <ChatComposer
+        workspace={activeWorkspace}
+        threadId={threadId}
         newMessage={newMessage}
         setNewMessage={setNewMessage}
         handleSendMessage={handleSendMessage}
@@ -206,6 +227,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
         supportsFiles={activeWorkspace?.supportsFiles ?? false}
         setImagesForMessage={setImagesForMessage}
         imagesForMessage={imagesForMessage}
+        variablesFormRef={variablesFormRef}
       />
     </div>
   );

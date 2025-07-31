@@ -86,7 +86,7 @@ export function NotificationPanel() {
         id="notification-trigger"
         variant="ghost"
         size="icon"
-        className="relative h-8 w-8 rounded-full hover:bg-gray-100 transition-colors"
+        className="relative h-8 w-8 rounded-lg :shadow-md transition-colors"
         onClick={() => setIsOpen((prev) => !prev)}
       >
         <Bell className="h-4 w-4" />

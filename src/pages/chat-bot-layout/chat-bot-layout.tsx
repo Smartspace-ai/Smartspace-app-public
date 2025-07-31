@@ -16,14 +16,15 @@ export default function ChatBotLayout() {
     }
   }, [workspaceId, isLoading, workspaces, navigate]);
 
-
-  if (workspaceId) {
+  // Show the outlet if we have a workspaceId or if there are no workspaces (let ChatBot handle the empty state)
+  if (workspaceId || (!isLoading && workspaces.length === 0)) {
     return (
       <WorkspaceSignalRProvider workspaceId={workspaceId}>
         <Outlet />
       </WorkspaceSignalRProvider>
     )
   }
+  
   // Nice loading page
   return (
     <div style={{paddingTop: '100px', height: '100%', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
