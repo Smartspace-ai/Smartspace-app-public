@@ -7,7 +7,7 @@ import debounce from 'lodash/debounce';
 const signalRUri: string =
   (window as any)?.ssconfig?.Admin_Api_Uri ||
   import.meta.env.VITE_Admin_Api_Uri ||
-  '';
+  'https://localhost:7242/';
 
 const SignalRContext = createContext<{ connection?: HubConnection }>({});
 
@@ -25,10 +25,8 @@ export const WorkspaceSignalRProvider: FC<WorkspaceSignalRProviderProps> = ({ wo
   const [connection, setConnection] = useState<HubConnection>();
 
   useEffect(() => {
-    console.log('signalRUri', signalRUri);
     if (!accounts.length || !signalRUri || !queryClient || !workspaceId) return;
 
-    console.log('workspaceId', workspaceId);
 
     const connection = new HubConnectionBuilder()
       .withUrl(
@@ -39,6 +37,8 @@ export const WorkspaceSignalRProvider: FC<WorkspaceSignalRProviderProps> = ({ wo
       )
       .withAutomaticReconnect()
       .build();
+
+    console.log('connection', connection);
 
     connection
       .start()
