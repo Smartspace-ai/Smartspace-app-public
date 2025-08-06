@@ -86,10 +86,10 @@ export function NotificationPanel() {
         id="notification-trigger"
         variant="ghost"
         size="icon"
-        className="relative h-8 w-8 rounded-lg :shadow-md transition-colors"
+        className="relative h-8 w-8 rounded-lg :shadow-md transition-colors group"
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        <Bell className="h-4 w-4" />
+        <Bell className={cn("h-4 w-4", totalUnread === 0 ? "text-muted-foreground group-hover:text-foreground" : "")} />
         <AnimatePresence>
           {totalUnread > 0 && (
             <motion.span
