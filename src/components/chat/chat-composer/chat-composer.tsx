@@ -172,10 +172,10 @@ export default function ChatComposer({
 
   // Updated handlePaste function to handle pasted images only
   const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
     const items = e.clipboardData.items;
     const imageFiles: File[] = [];
+    
+    // Check if there are any image files in the clipboard
     for (const item of Array.from(items)) {
       if (item.kind === 'file') {
         const file = item.getAsFile();
@@ -184,14 +184,18 @@ export default function ChatComposer({
         }
       }
     }
+    
+    // Only prevent default behavior if we have image files to handle
     if (imageFiles.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      
       uploadFilesMutation.mutate(imageFiles, {
         onSuccess: (data) => {
           setImagesForMessage([...imagesForMessage, ...data]);
           setSelectedFiles([...selectedFiles, ...imageFiles]);
         },
       });
-
     }
   };
 

@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { HTMLBlock } from './html';
 
 import { useTeams } from '@/contexts/teams-context';
-import './my-markdown.scss';
 
 interface Props {
   text: string;
@@ -17,23 +17,25 @@ export const MyMarkdown = ({ text }: Props) => {
     return (
       <Markdown
         remarkPlugins={[remarkGfm]}
-        className={'markdown'}
+        rehypePlugins={[rehypeRaw]}
         components={{
-          a(props) {
-            const { children, href, ...rest } = props;
-            return (
-              <a
-                {...rest}
-                href={href}
-                target={isInTeams ? "_blank" : undefined}
-                rel={isInTeams ? "noreferrer noopener" : undefined}
-              >
-                {children}
-              </a>
-            );
-          },
-          code(props) {
-            const { children, className, node, ...rest } = props;
+          h1: ({children}) => <h1 style={{fontSize: '1.5em', fontWeight: 'bold', margin: '0.5em 0'}}>{children}</h1>,
+          h2: ({children}) => <h2 style={{fontSize: '1.3em', fontWeight: 'bold', margin: '0.5em 0'}}>{children}</h2>,
+          h3: ({children}) => <h3 style={{fontSize: '1.1em', fontWeight: 'bold', margin: '0.5em 0'}}>{children}</h3>,
+          h4: ({children}) => <h4 style={{fontSize: '1em', fontWeight: 'bold', margin: '0.5em 0'}}>{children}</h4>,
+          h5: ({children}) => <h5 style={{fontSize: '0.9em', fontWeight: 'bold', margin: '0.5em 0'}}>{children}</h5>,
+          h6: ({children}) => <h6 style={{fontSize: '0.8em', fontWeight: 'bold', margin: '0.5em 0'}}>{children}</h6>,
+          a: ({children, href, ...rest}) => (
+            <a
+              {...rest}
+              href={href}
+              target={isInTeams ? "_blank" : undefined}
+              rel={isInTeams ? "noreferrer noopener" : undefined}
+            >
+              {children}
+            </a>
+          ),
+          code: ({children, className, ...rest}) => {
             const defaultView = (
               <code {...rest} className={className}>
                 {children}

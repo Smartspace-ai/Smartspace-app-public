@@ -173,27 +173,31 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
         </div>
       </div>
 
-      <div className={cn(isBotResponse ? 'p-3' : 'px-3 py-1')}>
-        <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
-          {contentIsContentList &&
-            content?.map((item, i) => {
-              if (item.text && item.text.length > 0) {
-                return <MyMarkdown key={`content-${i}`} text={item.text} />;
-              }
-              if (item.image) {
-                return (
+      <div className={cn(isBotResponse ? 'p-4' : 'px-4 py-2')}>
+        {contentIsContentList &&
+          content?.map((item, i) => {
+            if (item.text && item.text.length > 0) {
+              return (
+                <div key={`content-${i}`} className="prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed mb-3 last:mb-0">
+                  <MyMarkdown text={item.text} />
+                </div>
+              );
+            }
+            if (item.image) {
+              return (
+                <div key={`image-${i}`} className="mb-3 last:mb-0">
                   <ChatMessageImage
-                    key={`image-${i}`}
                     image={item.image}
                     name={item.image.name}
                     useMessageFile={useMessageFile}
                   />
-                );
-              }
+                </div>
+              );
+            }
 
-              return ""
-            })
-          }
+            return ""
+          })
+        }
 
           {files && files.length > 0 && (
             <div className="ss-chat-message__attachments mt-4 space-y-2">
@@ -228,46 +232,45 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
             </div>
           )}
 
-          {showForm && (
-            <div className="mt-4 pt-4 border-t border-border">
-              <JsonForms
-                schema={userOutput.schema as JsonSchema}
-                data={responseFormData}
-                renderers={[
-                  { tester: textInputTester, renderer: TextInputControl },
-                  ...materialRenderers,
-                ]}
-                cells={materialCells}
-                readonly={userInput !== undefined}
-                onChange={({ data, errors }) => {
-                  setResponseFormData(data);
-                  setResponseFormValid(!errors?.length);
-                }}
-              />
-              <div className="flex justify-end mt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={userInput !== undefined || !responseFormValid}
-                  className={cn(
-                    userInput !== undefined && 'opacity-60 cursor-not-allowed'
-                  )}
-                  onClick={() => addValueToMessage?.('_user', responseFormData)}
-                >
-                  Send
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {(sources || []).map((source, idx) => (
-            <ChatMessageSources
-              key={idx}
-              source={source}
-              useQueryFiles={useQueryFiles}
+        {showForm && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <JsonForms
+              schema={userOutput.schema as JsonSchema}
+              data={responseFormData}
+              renderers={[
+                { tester: textInputTester, renderer: TextInputControl },
+                ...materialRenderers,
+              ]}
+              cells={materialCells}
+              readonly={userInput !== undefined}
+              onChange={({ data, errors }) => {
+                setResponseFormData(data);
+                setResponseFormValid(!errors?.length);
+              }}
             />
-          ))}
-        </div>
+            <div className="flex justify-end mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={userInput !== undefined || !responseFormValid}
+                className={cn(
+                  userInput !== undefined && 'opacity-60 cursor-not-allowed'
+                )}
+                onClick={() => addValueToMessage?.('_user', responseFormData)}
+              >
+                Send
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {(sources || []).map((source, idx) => (
+          <ChatMessageSources
+            key={idx}
+            source={source}
+            useQueryFiles={useQueryFiles}
+          />
+        ))}
       </div>
     </div>
   );
