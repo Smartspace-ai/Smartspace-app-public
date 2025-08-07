@@ -1,6 +1,6 @@
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import axios from 'axios';
-import { interactiveLoginRequest, loginRequest } from '../app/msalConfig';
+import { interactiveLoginRequest, loginRequest, isInTeams } from '../app/msalConfig';
 import { msalInstance } from '../main';
 
 function getBaseUrl(): string {

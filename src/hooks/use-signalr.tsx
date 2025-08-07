@@ -32,7 +32,7 @@ export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
         signalRUri +
           (signalRUri.endsWith('/') ? 'notifications' : '/notifications'),
         {
-          accessTokenFactory: () => accounts[0]?.idToken?.toString() || '',
+          accessTokenFactory: () => accounts[0]?.idToken || '',
         },
       )
       .withAutomaticReconnect()
