@@ -4,11 +4,54 @@ import { Button } from '@/components/ui/button';
 import { useFileMutations } from '@/hooks/use-files';
 import { Workspace } from '@/models/workspace';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Paperclip, X } from 'lucide-react';
+import { Check, Paperclip, X, FileText, FileImage, FileVideo, FileAudio, FileArchive, FileCode, FileSpreadsheet, Presentation } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { FileInfo } from '../../../models/file';
 import { ChatVariablesForm, ChatVariablesFormRef } from '../chat-variables-form/chat-variables-form';
+
+// Utility function to get file type icon
+const getFileIcon = (fileName: string, fileType: string) => {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  
+  // Image files
+  if (fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension || '')) {
+    return FileImage;
+  }
+  
+  // Video files
+  if (fileType.startsWith('video/') || ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(extension || '')) {
+    return FileVideo;
+  }
+  
+  // Audio files
+  if (fileType.startsWith('audio/') || ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma'].includes(extension || '')) {
+    return FileAudio;
+  }
+  
+  // Archive files
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(extension || '')) {
+    return FileArchive;
+  }
+  
+  // Code files
+  if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'cs', 'php', 'html', 'css', 'json', 'xml', 'md'].includes(extension || '')) {
+    return FileCode;
+  }
+  
+  // Spreadsheet files
+  if (['xlsx', 'xls', 'csv'].includes(extension || '')) {
+    return FileSpreadsheet;
+  }
+  
+  // Presentation files
+  if (['pptx', 'ppt'].includes(extension || '')) {
+    return Presentation;
+  }
+  
+  // Default document icon
+  return FileText;
+};
 
 type ChatComposerProps = {
   workspace?: Workspace;
@@ -129,10 +172,10 @@ export default function ChatComposer({
 
   // Updated handlePaste function to handle pasted images only
   const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
     const items = e.clipboardData.items;
     const imageFiles: File[] = [];
+    
+    // Check if there are any image files in the clipboard
     for (const item of Array.from(items)) {
       if (item.kind === 'file') {
         const file = item.getAsFile();
@@ -141,14 +184,18 @@ export default function ChatComposer({
         }
       }
     }
+    
+    // Only prevent default behavior if we have image files to handle
     if (imageFiles.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      
       uploadFilesMutation.mutate(imageFiles, {
         onSuccess: (data) => {
           setImagesForMessage([...imagesForMessage, ...data]);
           setSelectedFiles([...selectedFiles, ...imageFiles]);
         },
       });
-
     }
   };
 
@@ -217,47 +264,63 @@ export default function ChatComposer({
                       </Button>
                     </div>
 
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                      {filePreviewUrls.map((file, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ duration: 0.2, delay: index * 0.05 }}
-                          className="relative aspect-square group"
-                        >
-                          <div className="w-full h-full rounded-md overflow-hidden border flex items-center justify-center bg-muted/20">
-                            {file.isImage ? (
-                              <img
-                                src={file.url || '/placeholder.svg'}
-                                alt={`Preview ${index + 1}`}
-                                className="w-full h-full object-cover rounded-md"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <div className="text-xs text-center p-2 truncate max-w-full">
-                                {file.name}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 auto-rows-min">
+                      {filePreviewUrls.map((file, index) => {
+                        const FileIcon = getFileIcon(file.name, selectedFiles[index]?.type || '');
+                        const isImage = file.isImage;
+                        return (
+                          <motion.div
+                            key={index}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.2, delay: index * 0.05 }}
+                            className={`relative group ${isImage ? 'row-span-2' : ''}`}
+                          >
+                            <div className={`flex items-center gap-2 p-2 rounded-md border bg-muted/20 hover:bg-muted/30 transition-colors ${isImage ? 'flex-col h-full' : ''}`}>
+                              <div className="flex-shrink-0">
+                                {isImage ? (
+                                  <img
+                                    src={file.url || '/placeholder.svg'}
+                                    alt={`Preview ${index + 1}`}
+                                    className="w-full h-20 object-cover rounded"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded bg-muted/40 flex items-center justify-center">
+                                    <FileIcon className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                            {(uploadedFiles ?? [])[index] && (
-                              <div className="absolute top-1 right-1 bg-green-500 rounded-full p-0.5">
-                                <Check className="h-2 w-2 text-white" />
+                              <div className={`flex-1 min-w-0 ${isImage ? 'w-full text-center' : ''}`}>
+                                <div className="text-xs font-medium text-foreground truncate">
+                                  {file.name}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {file.name.split('.').pop()?.toUpperCase() || 'FILE'}
+                                </div>
                               </div>
-                            )}
-                          </div>
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-md flex items-center justify-center">
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleRemoveFile(index)}
-                              disabled={isUploadingFiles}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </motion.div>
-                      ))}
+                              {(uploadedFiles ?? [])[index] && (
+                                <div className="flex-shrink-0">
+                                  <div className="bg-green-500 rounded-full p-0.5">
+                                    <Check className="h-2 w-2 text-white" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-5 w-5 rounded-full"
+                                onClick={() => handleRemoveFile(index)}
+                                disabled={isUploadingFiles}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </div>
                 </motion.div>
