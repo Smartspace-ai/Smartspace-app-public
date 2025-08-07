@@ -6,7 +6,7 @@ import {
 import { JsonForms } from '@jsonforms/react';
 import { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import _ from 'lodash';
-import { FileText } from 'lucide-react';
+import { FileText, FileImage, FileVideo, FileAudio, FileArchive, FileCode, FileSpreadsheet, Presentation } from 'lucide-react';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { cn } from '../../../lib/utils';
 import {
@@ -26,6 +26,49 @@ import ChatMessageFileDownload from '../chat-message-file-download/chat-message-
 import { ChatMessageImage } from '../chat-message-image/chat-message-image';
 import { ChatMessageSources } from '../chat-message-sources/chat-message-sources';
 import { TextInputControl, textInputTester } from './text-renderer';
+
+// Utility function to get file type icon
+const getFileIcon = (fileName: string) => {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  
+  // Image files
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension || '')) {
+    return FileImage;
+  }
+  
+  // Video files
+  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(extension || '')) {
+    return FileVideo;
+  }
+  
+  // Audio files
+  if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma'].includes(extension || '')) {
+    return FileAudio;
+  }
+  
+  // Archive files
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(extension || '')) {
+    return FileArchive;
+  }
+  
+  // Code files
+  if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'cs', 'php', 'html', 'css', 'json', 'xml', 'md'].includes(extension || '')) {
+    return FileCode;
+  }
+  
+  // Spreadsheet files
+  if (['xlsx', 'xls', 'csv'].includes(extension || '')) {
+    return FileSpreadsheet;
+  }
+  
+  // Presentation files
+  if (['pptx', 'ppt'].includes(extension || '')) {
+    return Presentation;
+  }
+  
+  // Default document icon
+  return FileText;
+};
 
 export interface ContentItem {
   text?: string;
@@ -156,35 +199,38 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
           })
         }
 
-        {files && files.length > 0 && (
-          <div className="ss-chat-message__attachments mt-4 space-y-2">
-            <h4 className="text-xs font-semibold text-muted-foreground mb-1">
-              Attachments
-            </h4>
-            {files.map((file, idx) => (
-              <div
-                key={file.id || idx}
-                className="flex items-center justify-between gap-3 p-1 bg-muted/60 border border-muted rounded-lg shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="bg-muted rounded-md p-1.5">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
+          {files && files.length > 0 && (
+            <div className="ss-chat-message__attachments mt-4 space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground mb-1">
+                Attachments
+              </h4>
+              {files.map((file, idx) => {
+                const FileIcon = getFileIcon(file.name || '');
+                return (
+                  <div
+                    key={file.id || idx}
+                    className="flex items-center justify-between gap-3 p-1 bg-muted/60 border border-muted rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="bg-muted rounded-md p-1.5">
+                        <FileIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-foreground truncate max-w-[220px] sm:max-w-xs">
+                          {file.name || 'Untitled'}
+                        </span>
+                      </div>
+                    </div>
+                    <ChatMessageFileDownload
+                      file={file}
+                      downloadFile={props.downloadFile}
+                      saveFile={props.saveFile}
+                    />
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-foreground truncate max-w-[220px] sm:max-w-xs">
-                      {file.name || 'Untitled'}
-                    </span>
-                  </div>
-                </div>
-                <ChatMessageFileDownload
-                  file={file}
-                  downloadFile={props.downloadFile}
-                  saveFile={props.saveFile}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
 
         {showForm && (
           <div className="mt-4 pt-4 border-t border-border">
