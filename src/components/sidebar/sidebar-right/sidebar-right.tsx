@@ -1,5 +1,3 @@
-import type React from 'react';
-
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Breadcrumb,
@@ -7,7 +5,6 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sidebar,
@@ -16,122 +13,42 @@ import {
   SidebarHeader,
 } from '@/components/ui/sidebar';
 
+import { MentionInput } from '@/components/mention-input/mention-input';
 import { MentionUser } from '@/models/mention-user';
+import { Send } from '@mui/icons-material';
+import { Button, SvgIcon, Typography } from '@mui/material';
 import { MessageSquare } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTaggableWorkspaceUsers, useWorkspaceThreadComments } from '../../../hooks/use-workspace-thread-comments';
 import { MessageComment } from '../../../models/message-comment';
 import { getInitials } from '../../../utils/initials';
 import { Skeleton } from '../../ui/skeleton';
 
+const MAX_COMMENT_LENGTH = 350;
+
 export function SidebarRight({ threadId }: { threadId: string | undefined }) {
-  const { comments, isLoading, addComment } = useWorkspaceThreadComments(threadId);
+  const { comments, isLoading, addComment, isAddingComment } = useWorkspaceThreadComments(threadId);
   const { users: taggableUsers } = useTaggableWorkspaceUsers();
-
-  const [newComment, setNewComment] = useState('');
-  const [charCount, setCharCount] = useState(0);
   const MAX_CHAR_LIMIT = 350;
-
   const commentsEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const [mentionQuery, setMentionQuery] = useState('');
-  const [showMentions, setShowMentions] = useState(false);
-  const [filteredUsers, setFilteredUsers] = useState<MentionUser[]>([]);
-  const [mentionIndex, setMentionIndex] = useState(0);
-
-  useEffect(() => {
-    setCharCount(newComment.length);
-  }, [newComment]);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [newComment]);
-
-  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setNewComment(value);
-
-    const match = value.match(/@([\w\s]*)$/);
-    if (match) {
-      const query = match[1].toLowerCase();
-      const filtered = taggableUsers.filter((user: MentionUser) =>
-        user.display && user.display.toLowerCase().includes(query)
-      );
-      setMentionQuery(query);
-      setFilteredUsers(filtered);
-      setShowMentions(true);
-    } else {
-      setShowMentions(false);
-      setMentionQuery('');
-    }
-  };
-
-  const insertMention = (user: MentionUser) => {
-    const before = newComment.slice(0, newComment.lastIndexOf('@'));
-    const after = newComment.slice(newComment.length);
-    const updated = `${before}@${user.display} ${after}`;
-    setNewComment(updated);
-    setShowMentions(false);
-    setMentionQuery('');
-    textareaRef.current?.focus();
-  };
-
-  const getMentionedUsers = (content: string): MentionUser[] => {
-    const seen = new Set<string>();
-    return taggableUsers.filter((user) => {
-      const mention = `@${user.display}`;
-      const found = content.includes(mention);
-      if (found && !seen.has(user.id)) {
-        seen.add(user.id);
-        return true;
-      }
-      return false;
-    });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (showMentions) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setMentionIndex((prev) => (prev + 1) % filteredUsers.length);
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setMentionIndex((prev) => (prev - 1 + filteredUsers.length) % filteredUsers.length);
-        return;
-      }
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const selectedUser = filteredUsers[mentionIndex];
-        insertMention(selectedUser);
-        return;
-      }
-    }
-
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleAddComment();
-    }
-  };
+  const [threadComment, setThreadComment] = useState({plain: '', withMentions: ''});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [mentionList, setMentionList] = useState<MentionUser[]>([]);
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+    if (!threadComment.plain.trim()) return;
 
-    if (newComment.length > MAX_CHAR_LIMIT) {
+    if (threadComment.plain.length > MAX_CHAR_LIMIT) {
       toast.error(`Comments are limited to ${MAX_CHAR_LIMIT} characters`);
       return;
     }
 
     try {
-      const mentioned = getMentionedUsers(newComment);
-      await addComment(newComment, mentioned);
-      setNewComment('');
+      await addComment(threadComment.plain, mentionList);
+      setThreadComment({plain: '', withMentions: ''});
+      setSearchTerm('');
+      setMentionList([]);
       toast.success('Comment added');
     } catch {
       // Error handled in hook
@@ -156,6 +73,11 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
     }
   }, [comments]);
 
+  const filteredUsers = useMemo(() => {
+    return taggableUsers.filter((user) =>
+      user.displayName.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [taggableUsers, searchTerm]);
   
   return (
     <Sidebar side="right" className="ss-sidebar__right border-l bg-background shadow-md">
@@ -232,61 +154,43 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
         </SidebarContent>
 
         <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)] h-55">
-          <div className="flex flex-col rounded-lg border bg-background relative">
-            <textarea
-              ref={textareaRef}
-              value={newComment}
-              onChange={handleCommentChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Add a comment..."
-              className="min-h-[60px] max-h-[200px] w-full resize-none rounded-t-lg border-0 bg-transparent px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-0"
-              rows={1}
-            />
-            {showMentions && filteredUsers.length > 0 && (
-              <div className="absolute z-50 mt-1 left-4 bottom-16 w-[250px] max-h-60 overflow-auto rounded-md border bg-popover p-1 shadow-md">
-                {filteredUsers.map((user, index) => (
-                  <div
-                    key={user.id}
-                    className={`px-3 py-2 text-sm cursor-pointer rounded-md ${
-                      index === mentionIndex
-                        ? 'bg-muted text-foreground'
-                        : 'text-muted-foreground hover:bg-accent'
-                    }`}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      insertMention(user);
-                    }}
-                  >
-                    {user.display}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center justify-between px-4 py-2 bg-background">
-              <span
-                className={`text-xs ${
-                  charCount > MAX_CHAR_LIMIT * 0.8
-                    ? charCount > MAX_CHAR_LIMIT
-                      ? 'text-red-500'
-                      : 'text-amber-500'
-                    : 'text-muted-foreground'
-                }`}
+          <form onSubmit={handleAddComment}>
+            <div>
+              <MentionInput
+                value={threadComment}
+                onChange={setThreadComment}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                users={filteredUsers || []}
+                mentionList={mentionList}
+                setMentionList={setMentionList}
+              />
+              <Typography
+                color="textSecondary"
+                textAlign="right"
+                fontSize={12}
+                marginTop={1}
               >
-                {charCount}/{MAX_CHAR_LIMIT}
-              </span>
-              <Button
-                onClick={handleAddComment}
-                variant="default"
-                size="sm"
-                className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
-                  !newComment.trim() ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-                disabled={!newComment.trim() || newComment.length > MAX_CHAR_LIMIT}
-              >
-                Send
-              </Button>
+                {threadComment.plain.length}/{MAX_COMMENT_LENGTH}
+              </Typography>
             </div>
-          </div>
+            <Button
+              loading={isAddingComment}
+              loadingIndicator="Loading…"
+              color="primary"
+              sx={{ alignSelf: 'end' }}
+              disabled={threadComment.plain.trim().length === 0}
+              variant="contained"
+              type="submit"
+              startIcon={
+                <SvgIcon fontSize="small">
+                  <Send />
+                </SvgIcon>
+              }
+            >
+              Post
+            </Button>
+          </form>
         </SidebarFooter>
       </div>
     </Sidebar>
