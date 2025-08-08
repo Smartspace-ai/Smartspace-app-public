@@ -36,7 +36,8 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [mentionList, setMentionList] = useState<MentionUser[]>([]);
 
-  const handleAddComment = async () => {
+  const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!threadComment.plain.trim()) return;
 
     if (threadComment.plain.length > MAX_CHAR_LIMIT) {

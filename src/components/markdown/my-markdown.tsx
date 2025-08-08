@@ -25,12 +25,13 @@ export const MyMarkdown = ({ text }: Props) => {
           h4: ({children}) => <h4 style={{fontSize: '1em', fontWeight: 'bold', margin: '0.5em 0'}}>{children}</h4>,
           h5: ({children}) => <h5 style={{fontSize: '0.9em', fontWeight: 'bold', margin: '0.5em 0'}}>{children}</h5>,
           h6: ({children}) => <h6 style={{fontSize: '0.8em', fontWeight: 'bold', margin: '0.5em 0'}}>{children}</h6>,
-          a: ({children, href, ...rest}) => (
+          a: ({children, href, className, ...rest}) => (
             <a
               {...rest}
               href={href}
               target={isInTeams ? "_blank" : undefined}
               rel={isInTeams ? "noreferrer noopener" : undefined}
+              className={[className, 'text-blue-600 dark:text-blue-400 hover:underline'].filter(Boolean).join(' ')}
             >
               {children}
             </a>
