@@ -50,6 +50,18 @@ export const MentionInput = (props: MentionInputProps) => {
     setPopoverPosition({ top: 0, left: 0, direction: 'above' });
   };
 
+  const getActiveMention = () => {
+    const el = inputRef.current;
+    if (!el) return null;
+    const caret = el.selectionEnd ?? 0;
+    const text = el.value ?? '';
+    const atIndex = text.lastIndexOf('@', Math.max(0, caret - 1));
+    if (atIndex === -1) return null;
+    const candidate = text.slice(atIndex + 1, caret);
+    if (/\s/.test(candidate)) return null;
+    return { atIndex, candidate, caret };
+  };
+
   const updateAtAnchorPosition = () => {
     const el = inputRef.current;
     if (!el) return;
@@ -78,14 +90,23 @@ export const MentionInput = (props: MentionInputProps) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    const lastAt = newValue.lastIndexOf('@');
-    if (lastAt === -1) {
-      setOpenPopover(false);
-    } else {
-      const afterAt = newValue.slice(lastAt + 1);
-      setSearchTerm(afterAt);
+
+    // Determine if the caret is currently within an active mention context
+    const el = inputRef.current;
+    let active = null as null | { atIndex: number; candidate: string; caret: number };
+    if (el) {
+      // Temporarily set element value so selection math is accurate during change
+      // (React controlled input already has this value queued.)
+      el.value = newValue;
+      active = getActiveMention();
+    }
+
+    if (active) {
+      setSearchTerm(active.candidate);
       setOpenPopover(true);
       updateAtAnchorPosition();
+    } else {
+      setOpenPopover(false);
     }
 
     const { withMentions, mentionList: newMentionList } =
@@ -98,9 +119,10 @@ export const MentionInput = (props: MentionInputProps) => {
     if (inputRef.current) {
       const caretPosition = inputRef.current.selectionStart ?? 0;
       const recentAt = value.plain.lastIndexOf('@', caretPosition - 1);
+      const inserted = user.displayName + ' ';
       const newPlainValue =
         value.plain.slice(0, recentAt + 1) +
-        user.displayName +
+        inserted +
         value.plain.slice(caretPosition);
 
       const updatedMentionList = mentionList.some((m) => m.id === user.id)
@@ -113,11 +135,19 @@ export const MentionInput = (props: MentionInputProps) => {
       onChange({ plain: newPlainValue, withMentions });
       setMentionList(newMentionList);
       closePopover();
+
+      // Place caret just after the inserted mention and trailing space
+      requestAnimationFrame(() => {
+        const pos = recentAt + 1 + inserted.length;
+        inputRef.current?.setSelectionRange(pos, pos);
+      });
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (openPopover) {
+    const active = getActiveMention();
+    const shouldHandleMentionKeys = openPopover && !!active;
+    if (shouldHandleMentionKeys) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         if (selectIndex < users.length - 1) {
@@ -133,8 +163,11 @@ export const MentionInput = (props: MentionInputProps) => {
           setSelectIndex(users.length - 1);
         }
       } else if (e.key === 'Enter') {
-        e.preventDefault();
-        handleUserSelect(users[selectIndex]);
+        if (users.length > 0) {
+          e.preventDefault();
+          handleUserSelect(users[selectIndex]);
+          return;
+        }
       }
     }
     if (e.key === 'Backspace') {
@@ -205,6 +238,9 @@ export const MentionInput = (props: MentionInputProps) => {
           '& .MuiInputBase-root': {
             px: 1,
             py: 0.5,
+          },
+          '& .MuiInputBase-inputMultiline': {
+            overflowY: 'auto',
           },
         }}
       />
