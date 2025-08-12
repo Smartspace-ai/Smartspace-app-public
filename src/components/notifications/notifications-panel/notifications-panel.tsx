@@ -145,7 +145,7 @@ export function NotificationPanel() {
               </div>
             )}
 
-            <ScrollArea className="max-h-[320px]">
+            <ScrollArea className="h-[320px]" type="always">
               {filteredNotifications.length > 0 ? (
                 <div className="py-1">
                   {filteredNotifications.map((notification) => (
