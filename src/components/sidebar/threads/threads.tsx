@@ -37,7 +37,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CircleInitials } from '@/components/circle-initials';
 import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
-import { renameThread } from '../../../apis/message-threads';
+import { renameThread } from '../../../apis/threads';
 import { MessageThread } from '../../../models/message-thread';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';

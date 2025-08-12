@@ -1,5 +1,5 @@
 
-import { fetchThread, fetchThreadVariables, updateVariable } from '@/apis/message-threads';
+import { fetchThread, fetchThreadVariables, updateVariable } from '@/apis/threads';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 

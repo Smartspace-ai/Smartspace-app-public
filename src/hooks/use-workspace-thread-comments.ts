@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 import { MentionUser } from '@/models/mention-user';
-import { addComment, fetchComments, fetchTaggableUsers } from '../apis/message-comments';
+import { addComment, fetchComments, fetchTaggableUsers } from '../apis/comments';
 import { MessageComment } from '../models/message-comment';
 import { useActiveUser } from './use-active-user';
 import { useActiveWorkspace } from './use-workspaces';
