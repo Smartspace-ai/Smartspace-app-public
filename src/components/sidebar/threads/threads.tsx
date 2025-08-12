@@ -38,7 +38,7 @@ import { CircleInitials } from '@/components/circle-initials';
 import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
 import { renameThread } from '../../../apis/message-threads';
-import { MessageThread } from '../../../models/message-threads';
+import { MessageThread } from '../../../models/message-thread';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
 export function Threads() {  
