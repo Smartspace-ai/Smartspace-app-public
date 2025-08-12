@@ -9,6 +9,7 @@ import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { FileInfo } from '../../../models/file';
 import { ChatVariablesForm, ChatVariablesFormRef } from '../chat-variables-form/chat-variables-form';
+import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 
 // Utility function to get file type icon
 const getFileIcon = (fileName: string, fileType: string) => {
@@ -104,6 +105,7 @@ export default function ChatComposer({
   const { uploadFilesMutation } = useFileMutations();
 
   const prevUrlsRef = useRef<string[]>([]);
+  const {data: thread} = useWorkspaceThread({workspaceId: workspace?.id, threadId: threadId})
 
   // Auto-adjust textarea height when message changes (including when cleared)
   useEffect(() => {
@@ -212,7 +214,7 @@ export default function ChatComposer({
     }
   };
 
-  const sendDisabled = (!newMessage.trim() && !uploadedFiles?.length && !imagesForMessage.length) || isUploadingFiles || disabled;
+  const sendDisabled = (!newMessage.trim() && !uploadedFiles?.length && !imagesForMessage.length) || isUploadingFiles || disabled || thread?.isFlowRunning;
 
   return (
     <div className="ss-chat__composerh max-h-[60%] flex-shrink-0 overflow-y-auto w-full mt-auto bg-sidebar border-t px-4 py-4">

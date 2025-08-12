@@ -7,6 +7,7 @@ export class MessageComment {
   createdBy!: string;
   content!: string;
   mentionedUsers: MentionUser[] = [];
+  messageThreadId!: string;
 
   constructor(params?: MessageComment) {
     Object.assign(this, params || {});
