@@ -8,7 +8,7 @@ import {
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MessageThread } from '../models/message-threads';
+import { MessageThread } from '../models/message-thread';
 import { useActiveWorkspace } from './use-workspaces';
 
 export function useWorkspaceThreads(take = 20) {

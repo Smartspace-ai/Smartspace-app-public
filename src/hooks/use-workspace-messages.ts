@@ -46,7 +46,7 @@ export function useWorkspaceMessages(
   // Send a new message (text + optional files + optional variables)
   const postMessageMutation = useMutation<
     Subject<Message>,
-    Error,
+    any,
     {
       contentList?: MessageCreateContent[];
       files?: MessageFile[];
@@ -111,7 +111,7 @@ export function useWorkspaceMessages(
         queryKey: ['messages', threadId],
       });
       
-      return new Promise(async (resolve, reject) => {
+      return new Promise((resolve, reject) => {
         try {
           if (!threadId)
             throw new Error('Thread ID is required to post message');
@@ -325,7 +325,17 @@ export function useWorkspaceMessages(
             });
           }
         },
-        onError: () => {
+        onError: (error) => {
+          const data = (error as any)?.response?.data;
+          const exception = typeof data === 'string' ? (() => { try { return JSON.parse(data); } catch { return null; } })() : data;
+          if (exception?.code === '409') {
+            toast.error(exception.detail);
+            queryClient.setQueryData<Message[]>(['messages', threadId], (old = []) =>
+              old.filter((m) => !m.optimistic)
+            );
+          } else {
+            toast.error('There was an error posting your message');
+          }
           setIsBotResponding(false);
         },
       }
@@ -334,7 +344,7 @@ export function useWorkspaceMessages(
 
   return {
     messages,
-    isLoading: isLoading || isFetching,
+    isLoading: isLoading,
     sendMessage,
     postMessageMutation,
     uploadFiles: uploadFilesMutation.mutateAsync,

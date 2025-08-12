@@ -1,4 +1,4 @@
-import { MessageThread } from '../models/message-threads';
+import { MessageThread } from '../models/message-thread';
 import webApi from '../utils/axios-setup';
 
 // Fetch threads for a given workspace
