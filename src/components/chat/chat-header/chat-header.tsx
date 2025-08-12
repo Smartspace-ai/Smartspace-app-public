@@ -2,13 +2,15 @@ import { MessageSquare, PanelLeft } from 'lucide-react';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
-import { MessageThread } from '@/models/message-threads';
+import { MessageThread } from '@/models/message-thread';
 import { NotificationPanel } from '../../notifications/notifications-panel/notifications-panel';
 import { Separator } from '../../ui/separator';
 import { SidebarTrigger } from '../../ui/sidebar';
+import { useWorkspaceUpdates } from '@/hooks/use-workspace-updates';
 
 export function ChatHeader({activeThread}: {activeThread?: MessageThread}) {
   const { data: activeWorkspace } = useActiveWorkspace();
+  useWorkspaceUpdates()
 
   return (
     <header className="ss-chat__header flex h-[54px] shrink-0 items-center gap-2 bg-background border-b ">

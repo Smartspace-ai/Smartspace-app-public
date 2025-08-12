@@ -38,8 +38,9 @@ import { CircleInitials } from '@/components/circle-initials';
 import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
 import { renameThread } from '../../../apis/message-threads';
-import { MessageThread } from '../../../models/message-threads';
+import { MessageThread } from '../../../models/message-thread';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
+import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 
 export function Threads() {  
   const {
@@ -56,6 +57,8 @@ export function Threads() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { workspaceId: urlWorkspaceId, threadId } = useParams();
+
+  const {data: thread} = useWorkspaceThread({workspaceId: urlWorkspaceId, threadId: threadId})
 
   const handleThreadClick = (thread: MessageThread) => {
     navigate(
@@ -293,11 +296,20 @@ function ThreadItem({
             {thread.totalMessages}{' '}
             {thread.totalMessages === 1 ? 'message' : 'messages'}  {' '}
           </div>
-          <div>
-            {thread.lastUpdated}
-          </div>
+
+          {(thread.isFlowRunning && thread) ? (
+            <div className="text-amber-500 font-medium flex items-center gap-1">
+              <Loader2 className="h-4 w-4 animate-spin" /> 
+              <p className='text-xs'>Running…</p>
+            </div>
+          ) : (
+            <div>
+              {thread.lastUpdated}
+            </div>
+          )}
+
           <div className='flex-grow'></div>
-          {setFavoriteMutation.isPending ? (
+          {setFavoriteMutation.isPending  && !thread.isFlowRunning  ? (
             <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
           ) :
             thread.favorited && (
@@ -306,6 +318,7 @@ function ThreadItem({
               </div>
             )
           }
+       
         </div>
       </div>
 

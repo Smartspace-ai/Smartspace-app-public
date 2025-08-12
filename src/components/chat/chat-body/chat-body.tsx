@@ -7,6 +7,7 @@ import { useQueryFiles } from '../../../hooks/use-files';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
+import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 
 import { downloadFile } from '@/apis/files';
 import { useActiveUser } from '@/hooks/use-active-user';
@@ -16,6 +17,7 @@ import remarkGfm from 'remark-gfm';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
+import { useParams } from 'react-router-dom';
 
 interface ChatBodyProps {
   messages: Message[];
@@ -50,6 +52,8 @@ export default function ChatBody({
   const { data: activeWorkspace } = useActiveWorkspace();
   const activeUser = useActiveUser();
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const { threadId } = useParams();
+  const {data: thread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId: threadId})
 
   useEffect(() => {
     if (isVisible && viewportRef.current) {
@@ -143,7 +147,7 @@ export default function ChatBody({
                   addValueToMessage={addValueToMessage}
                 />
 
-                {index === messages.length - 1 && isBotResponding && (
+                {index === messages.length - 1 && (isBotResponding || thread?.isFlowRunning) && (
                   messageHasSomeResponse? 
                     <div className="p-3 min-h-3">
                       <div className="flex space-x-2 p-1">
