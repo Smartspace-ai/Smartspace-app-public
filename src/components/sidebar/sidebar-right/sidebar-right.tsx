@@ -60,7 +60,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
     if (match) {
       const query = match[1].toLowerCase();
       const filtered = taggableUsers.filter((user: MentionUser) =>
-        user.display && user.display.toLowerCase().includes(query)
+        user.displayName && user.displayName.toLowerCase().includes(query)
       );
       setMentionQuery(query);
       setFilteredUsers(filtered);
@@ -74,7 +74,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
   const insertMention = (user: MentionUser) => {
     const before = newComment.slice(0, newComment.lastIndexOf('@'));
     const after = newComment.slice(newComment.length);
-    const updated = `${before}@${user.display} ${after}`;
+    const updated = `${before}@${user.displayName} ${after}`;
     setNewComment(updated);
     setShowMentions(false);
     setMentionQuery('');
@@ -84,7 +84,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
   const getMentionedUsers = (content: string): MentionUser[] => {
     const seen = new Set<string>();
     return taggableUsers.filter((user) => {
-      const mention = `@${user.display}`;
+      const mention = `@${user.displayName}`;
       const found = content.includes(mention);
       if (found && !seen.has(user.id)) {
         seen.add(user.id);
@@ -257,7 +257,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                       insertMention(user);
                     }}
                   >
-                    {user.display}
+                    {user.displayName}
                   </div>
                 ))}
               </div>
