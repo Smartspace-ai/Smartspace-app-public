@@ -46,7 +46,7 @@ export function useWorkspaceMessages(
   // Send a new message (text + optional files + optional variables)
   const postMessageMutation = useMutation<
     Subject<Message>,
-    Error,
+    any,
     {
       contentList?: MessageCreateContent[];
       files?: MessageFile[];
@@ -325,7 +325,17 @@ export function useWorkspaceMessages(
             });
           }
         },
-        onError: () => {
+        onError: (error) => {
+          const data = (error as any)?.response?.data;
+          const exception = typeof data === 'string' ? (() => { try { return JSON.parse(data); } catch { return null; } })() : data;
+          if (exception?.code === '409') {
+            toast.error(exception.detail);
+            queryClient.setQueryData<Message[]>(['messages', threadId], (old = []) =>
+              old.filter((m) => !m.optimistic)
+            );
+          } else {
+            toast.error('There was an error posting your message');
+          }
           setIsBotResponding(false);
         },
       }
