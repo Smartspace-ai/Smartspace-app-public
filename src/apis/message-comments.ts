@@ -68,14 +68,12 @@ export async function addComment(
 // Fetch users who have access to the workspace for @mention
 export async function fetchTaggableUsers(workspaceId: string): Promise<MentionUser[]> {
   try {
-    const res = await webApi.get(`/workspaces/${workspaceId}/access`);
-    return res.data.data.map(
+    const res = await webApi.get(`/workspaces/${workspaceId}/users`);
+    return res.data.map(
       (u: any) =>
         new MentionUser({
-          id: u.objectId,
-          objectId: u.objectId,
+          id: u.id,
           displayName: u.displayName,
-          name: u.displayName,
         })
     );
   } catch (error) {

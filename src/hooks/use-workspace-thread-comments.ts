@@ -29,7 +29,7 @@ export function useWorkspaceThreadComments(threadId?: string) {
   // Refetch comments when the thread changes
   useEffect(() => {
     if (threadId !== previousThreadIdRef.current) {
-      previousThreadIdRef.current = threadId;
+      previousThreadIdRef.current = threadId ?? null;
 
       refetch().catch((error) => {
         console.error('Error refetching comments:', error);
