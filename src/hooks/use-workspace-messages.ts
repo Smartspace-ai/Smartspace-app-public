@@ -111,7 +111,7 @@ export function useWorkspaceMessages(
         queryKey: ['messages', threadId],
       });
       
-      return new Promise(async (resolve, reject) => {
+      return new Promise((resolve, reject) => {
         try {
           if (!threadId)
             throw new Error('Thread ID is required to post message');
@@ -334,7 +334,7 @@ export function useWorkspaceMessages(
 
   return {
     messages,
-    isLoading: isLoading || isFetching,
+    isLoading: isLoading,
     sendMessage,
     postMessageMutation,
     uploadFiles: uploadFilesMutation.mutateAsync,
