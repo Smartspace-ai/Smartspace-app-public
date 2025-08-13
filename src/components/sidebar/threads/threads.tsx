@@ -2,6 +2,7 @@ import {
   Edit,
   Loader2 // Add Loader2 for spinner
   ,
+
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -35,12 +36,12 @@ import { SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { CircleInitials } from '@/components/circle-initials';
+import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
 import { renameThread } from '../../../apis/message-threads';
 import { MessageThread } from '../../../models/message-thread';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 
 export function Threads() {  
   const {
@@ -106,7 +107,7 @@ export function Threads() {
       <SidebarContent className="px-0 py-0 overflow-auto h-full">
         <div className="sticky top-0 z-10 border-t border-b">
           <div className="flex items-center justify-between px-4 py-3">
-            <h2 className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+            <h2 className="text-xs text-gray-500 font-medium tracking-wide">
               Threads
             </h2>
           </div>
