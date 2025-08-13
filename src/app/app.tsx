@@ -3,13 +3,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
-import { SidebarProvider } from '../components/ui/sidebar';
 import { NotificationsProvider } from '../contexts/notifications-context';
 import { TeamsProvider, useTeams } from '../contexts/teams-context';
 
 import TeamsAuthCallback from '@/pages/auth/teams/callback';
 import { Loader2 } from 'lucide-react';
-import Login from '../pages/Login/Login';
+import { Login } from '../pages/auth/login/login';
 import AppRoutes from '../routes/app-routes';
 import { SignalRProvider } from '../hooks/signalr/use-signalr';
 
@@ -69,7 +68,6 @@ export function App() {
       <TeamsProvider>
         {isAuthenticated ? (
           <QueryClientProvider client={queryClient}>
-            <SidebarProvider>
             <NotificationsProvider>
                 {/* Route-based app navigation */}
                 <BrowserRouter>
@@ -78,7 +76,6 @@ export function App() {
                 </SignalRProvider>
                 </BrowserRouter>
             </NotificationsProvider>
-            </SidebarProvider>
         </QueryClientProvider>
         ) : (
           <BrowserRouter>

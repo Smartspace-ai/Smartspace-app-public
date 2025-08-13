@@ -3,7 +3,7 @@ import { useIsAuthenticated } from '@azure/msal-react';
 import { useQuery } from '@tanstack/react-query';
 
 
-export const  useQueryWorkspace = (workspaceId: string | null)=> {
+export const  useQueryWorkspace = (workspaceId: string | undefined)=> {
   const isAuthenticated = useIsAuthenticated();
 
   const queryWorkspace = useQuery({

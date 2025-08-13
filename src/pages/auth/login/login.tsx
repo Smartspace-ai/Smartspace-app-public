@@ -1,11 +1,11 @@
 import { useMsal } from '@azure/msal-react';
 import { useEffect, useState } from 'react';
-import { interactiveLoginRequest } from '../../app/msalConfig';
-import { Logo } from '../../assets/logo';
-import { Button } from '../../components/ui/button';
-import { useTeams } from '../../contexts/teams-context';
-import { useTeamsAuth } from '../../hooks/auth/use-teams-auth';
-import styles from './Login.module.scss';
+
+import { useTeams } from '@/contexts/teams-context';
+import { useTeamsAuth } from '@/hooks/auth/use-teams-auth';
+import { interactiveLoginRequest } from '@/app/msalConfig';
+import { Logo } from '@/assets/logo';
+import { Button } from '@/components/ui/button';
 
 export function Login() {
   const { instance, accounts } = useMsal();
@@ -94,7 +94,7 @@ export function Login() {
   };
 
   return (
-    <div className={`ss-login ${styles['container']}`}>
+    <div >
       {/* Full-screen centered container with light gray background */}
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         {/* Card container for the login form */}

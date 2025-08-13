@@ -1,0 +1,367 @@
+
+  import { useState } from 'react';
+  import {  useParams } from 'react-router';
+  import { NewThread } from '../new-thread/new-thread';
+  import { SidebarHeader } from '../sidebar-header/sidebar-header';
+  import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
+
+  import { Button } from '@/components/ui/button';
+  import { Skeleton } from '@/components/ui/skeleton';
+  
+  import { useQueryThreads } from '@/hooks/data/use-threads';
+  import { Virtuoso } from 'react-virtuoso';
+  
+  export function SideBarLayout() {  
+    const params = useParams();
+    const {queryThreads } = useQueryThreads({take: 10, skip: 0});
+    const { data, isPending: isPendingThreads } = queryThreads;
+ 
+    return (
+      <>
+        <SidebarHeader />
+        <WorkspaceSelector />
+          <div className="sticky top-0 z-10 border-t border-b">
+            <div className="flex items-center justify-between px-4 py-3">
+              <h2 className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                ChatThreads
+              </h2>
+            </div>
+          </div>
+  
+            {isPendingThreads ? (
+              <ThreadsLoadingSkeleton />
+            ) : data ?? 0 > 0 ? (
+              <p>hello</p>
+
+              // <Virtuoso
+              //   data={threads}
+              //   overscan={200}
+              //   endReached={() => {
+              //     if (hasNextPage && !isFetchingNextPage) {
+              //       fetchNextPage();
+              //     }
+              //   }}
+              //   itemContent={(index, thread) => (
+              //     <div className="px-3 pb-1">
+              //       <ThreadItem
+              //         key={thread.id}
+              //         thread={thread}
+              //         isActive={threadId === thread.id}
+              //         hoveredThreadId={hoveredThreadId}
+              //         openMenuId={openMenuId}
+              //         onThreadClick={handleThreadClick}
+              //         onHover={setHoveredThreadId}
+              //         onMenuOpenChange={setOpenMenuId}
+              //         updateThreadMetadata={updateThreadMetadata}
+              //         handleDeleteThread={handleDeleteThread}
+              //       />
+              //     </div>
+              //   )}
+              //   className="pt-2"
+              //   style={{ height: '100%', width: '100%' }}
+              //   components={{
+              //     Footer: () =>
+              //       isFetchingNextPage ? (
+              //         <div className="p-4 text-xs text-gray-500">Loading more...</div>
+              //       ) : null,
+              //   }}
+              // />
+            ) : (
+              <div className="p-2.5">
+                <p> no threads found</p>
+              </div>
+            )}
+            <NewThread />
+      </>
+    );
+  }
+  
+  
+  function ThreadsLoadingSkeleton() {
+    return (
+      <>
+        {Array(5)
+          .fill(0)
+          .map((_, index) => (
+            <div key={index} className="p-2.5">
+              <div className="flex items-start gap-2.5">
+                <Skeleton className="h-8 w-8 rounded-md flex-shrink-0" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-3/4 mb-2" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            </div>
+          ))}
+      </>
+    );
+  }
+{/*   
+  function EmptyThreadsState() {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center h-full">
+        <div className="rounded-full bg-gray-100 p-3 mb-3">
+          <MessageSquare className="h-6 w-6 text-gray-400" />
+        </div>
+        <h3 className="text-sm font-medium text-gray-900 mb-1">
+          No threads found
+        </h3>
+        <p className="text-xs text-gray-500 mb-4">
+          Create a new thread to get started
+        </p>
+      </div>
+    );
+  } */}
+{/*   
+  type ThreadItemProps = {
+    thread: MessageThread;
+    isActive: boolean;
+    hoveredThreadId: string | null;
+    openMenuId: string | null;
+    onThreadClick: (thread: MessageThread) => void;
+    onHover: (id: string | null) => void;
+    onMenuOpenChange: (id: string | null) => void;
+    updateThreadMetadata: (
+      threadId: string,
+      updates: Partial<MessageThread>
+    ) => void;
+    handleDeleteThread: (threadId: string) => void;
+  }; */}
+{/*   
+  function ThreadItem({
+    thread,
+    isActive,
+    hoveredThreadId,
+    openMenuId,
+    onThreadClick,
+    onHover,
+    onMenuOpenChange,
+    updateThreadMetadata,
+    handleDeleteThread,
+  }: ThreadItemProps) {
+    const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+    const [newThreadName, setNewThreadName] = useState(thread.name);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+    const { setFavoriteMutation } = useThreadSetFavorite(thread.workSpaceId, thread.id)
+  
+    const handleClick = (e: React.MouseEvent) => {
+      if (
+        e.target instanceof Element &&
+        (e.target.closest('button') || e.target.closest('[role="menuitem"]'))
+      ) {
+        return;
+      }
+      onThreadClick(thread);
+    };
+  
+    const handleRenameSubmit = async () => {
+      if (newThreadName.trim()) {
+        try {
+          onMenuOpenChange(null);
+          await renameThread(thread, newThreadName);
+          updateThreadMetadata(thread.id, { name: newThreadName });
+          setIsRenameModalOpen(false);
+          toast.success('Thread renamed successfully');
+        } catch (error) {
+          console.error('Error renaming thread:', error);
+          toast.error('Failed to rename thread. Please try again.');
+        }
+      }
+    };
+  
+    const handleDeleteThreadItem = async () => {
+      try {
+        onMenuOpenChange(null);
+        handleDeleteThread(thread.id);
+        setIsDeleteDialogOpen(false);
+        toast.success('Thread deleted successfully');
+      } catch (error) {
+        console.error('Error deleting thread:', error);
+        toast.error('Failed to delete thread. Please try again.');
+      }
+    };
+  
+    return (
+      <div
+        id={`thread-${thread.id}`}
+        className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-accent cursor-pointer transition-all rounded-lg ${
+          isActive ? 'bg-accent shadow-sm' : ''
+        }`}
+        onClick={handleClick}
+        onMouseEnter={() => onHover(thread.id)}
+        onMouseLeave={() => {
+          if (hoveredThreadId === thread.id && openMenuId !== thread.id) {
+            onHover(null);
+          }
+        }}
+      >
+        <CircleInitials
+          className={isActive ? 'bg-primary/80 text-[hsl(var(--primary-foreground))]' : 'bg-gray-200'}
+          text={thread.name}
+        />
+  
+        <div className="flex-1 min-w-0">
+          <h3 className="text-xs font-medium truncate">{thread.name}</h3>
+          <div className="text-[11px] gap-x-2 mt-0.5 flex flex-row">
+            <div>
+              {thread.totalMessages}{' '}
+              {thread.totalMessages === 1 ? 'message' : 'messages'}  {' '}
+            </div>
+  
+            {(thread.isFlowRunning && thread) ? (
+              <div className="text-amber-500 font-medium flex items-center gap-1">
+                <Loader2 className="h-4 w-4 animate-spin" /> 
+                <p className='text-xs'>Running…</p>
+              </div>
+            ) : (
+              <div>
+                {thread.lastUpdated}
+              </div>
+            )}
+  
+            <div className='flex-grow'></div>
+            {setFavoriteMutation.isPending  && !thread.isFlowRunning  ? (
+              <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+            ) :
+              thread.favorited && (
+                <div className="text-amber-500 font-medium">
+                  <Star className="h-4 w-4" /> 
+                </div>
+              )
+            }
+         
+          </div>
+        </div>
+  
+        <ThreadItemMenu
+          thread={thread}
+          isActive={isActive}
+          isHovered={hoveredThreadId === thread.id}
+          isMenuOpen={openMenuId === thread.id}
+          onMenuOpenChange={(open) => onMenuOpenChange(open ? thread.id : null)}
+          onFavorite={() => setFavoriteMutation.mutate({ favorite: !thread.favorited })}
+          onRename={() => setIsRenameModalOpen(true)}
+          onDelete={() => setIsDeleteDialogOpen(true)}
+        />
+  
+        <ThreadRenameModal
+          isOpen={isRenameModalOpen}
+          onClose={() => setIsRenameModalOpen(false)}
+          threadName={newThreadName}
+          setThreadName={setNewThreadName}
+          onSubmit={handleRenameSubmit}
+        />
+  
+        <AlertDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+        >
+          <AlertDialogContent className="sm:max-w-[425px]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Thread</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{thread.name}"? This action
+                cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="pt-5">
+              <AlertDialogCancel className="text-sm">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteThreadItem}
+                className="bg-red-500 hover:bg-red-600 text-white text-sm"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    );
+  } */}
+{/*   
+  type ThreadItemMenuProps = {
+    thread: MessageThread;
+    isActive: boolean;
+    isHovered: boolean;
+    isMenuOpen: boolean;
+    onMenuOpenChange: (open: boolean) => void;
+    onFavorite: () => void;
+    onRename: () => void;
+    onDelete: () => void;
+  };
+  
+  function ThreadItemMenu({
+    thread,
+    isActive,
+    isHovered,
+    isMenuOpen,
+    onMenuOpenChange,
+    onFavorite,
+    onRename,
+    onDelete,
+  }: ThreadItemMenuProps) {
+    return (
+      <DropdownMenu open={isMenuOpen} onOpenChange={onMenuOpenChange}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-5 w-5 absolute right-1.5 top-1.5 p-0 transition-opacity rounded-full ${
+              isHovered || isMenuOpen ? 'opacity-100' : 'opacity-0'
+            } ${
+              isActive
+                ? 'text-slate-700 hover:bg-slate-300'
+                : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="h-3 w-3" />
+            <span className="sr-only">More options</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="w-48 rounded-lg p-1 shadow-lg border-gray-100"
+        >
+          <DropdownMenuItem
+          className="text-xs py-1.5 px-2 rounded-md"
+            onClick={(e) => {
+              e.preventDefault();
+              onFavorite();
+              onMenuOpenChange(false);
+            }}
+          >
+            <Star className="mr-2 h-3.5 w-3.5 text-amber-400" />
+            <span>
+              {thread.favorited ? 'Remove from favorites' : 'Add to favorites'}
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-xs py-1.5 px-2 rounded-md"
+            onClick={(e) => {
+              e.preventDefault();
+              onRename();
+            }}
+          >
+            <Edit className="mr-2 h-3.5 w-3.5 text-gray-500" />
+            <span>Rename</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="my-1 bg-gray-100" />
+          <DropdownMenuItem
+            className="text-xs py-1.5 px-2 rounded-md text-red-500"
+            onClick={(e) => {
+              e.preventDefault();
+              onDelete();
+            }}
+          >
+            <Trash2 className="mr-2 h-3.5 w-3.5" />
+            <span>Delete</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+  
+  export default Threads;
+   */}

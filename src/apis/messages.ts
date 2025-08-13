@@ -2,8 +2,6 @@ import webApi from '../utils/axios-setup';
 import { Message } from '../models/message';
 import { MessageCreateContent } from '../models/message-create-content';
 import { FileInfo } from '../models/file';
-import { MessageThread } from '../models/message-thread';
-import { Workspace } from '../models/workspace';
 import { Subject } from 'rxjs';
 
 export const getMessages = async (messageThreadId: string) => {
@@ -57,15 +55,13 @@ export const addInputToMessage = async ({
 export const postMessage = async ({
   contentList,
   files,
-  workspace,
-  thread,
+  workspaceId,
   threadId,
 }: {
   message?: string;
   contentList?: MessageCreateContent[];
   files?: FileInfo[];
-  workspace: Workspace | null;
-  thread: MessageThread | null;
+  workspaceId: string;
   threadId?: string;
 }) => {
   const inputs: any[] = [
@@ -86,11 +82,11 @@ export const postMessage = async ({
 
   webApi
     .post(
-      `/messages/${workspace?.id}/${threadId ?? thread?.id}`,
+      `/messages/${workspaceId}/${threadId}`,
       {
         inputs,
-        workSpaceId: workspace?.id,
-        messageThreadId: threadId ?? thread?.id,
+        workSpaceId: workspaceId,
+        messageThreadId: threadId,
       },
       {
         headers: { Accept: 'text/event-stream' },

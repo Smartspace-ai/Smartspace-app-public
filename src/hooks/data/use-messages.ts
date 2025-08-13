@@ -11,23 +11,23 @@ import { toast } from 'sonner';
 import { Subject } from 'rxjs';
 
 export const useQueryMessages = (
-  workspace: Workspace | null,
-  messageThread: MessageThread | null,
+  workspaceId: string | undefined,
+  messageThreadId: string | undefined,
 ) => {
   const queryClient = useQueryClient();
 
   const queryMessages = useQuery<Message[], Error>({
-    queryKey: ['messages', messageThread?.id],
+    queryKey: ['messages', messageThreadId],
     queryFn: async () => {
-      if (messageThread && messageThread.id !== 'new') {
-        const response = await getMessages(messageThread.id);
+      if (messageThreadId && messageThreadId !== 'new') {
+        const response = await getMessages(messageThreadId);
         const messages = response.data.data as Message[];
         return messages.map((message) => new Message(message)).reverse();
       }
       return [];
     },
     retry: false,
-    enabled: !!messageThread,
+    enabled: !!messageThreadId,
   });
 
   const postMessageMutation = useMutation<Subject<Message>, any, any>({
@@ -46,7 +46,7 @@ export const useQueryMessages = (
       return new Promise(async (resolve, reject) => {
         try {
           await queryClient.cancelQueries({
-            queryKey: ['messages', threadId ?? messageThread?.id],
+            queryKey: ['messages', threadId ?? messageThreadId],
           });
 
           const optimisticMessage = new Message({
@@ -76,7 +76,7 @@ export const useQueryMessages = (
           });
 
           queryClient.setQueryData(
-            ['messages', threadId ?? messageThread?.id],
+            ['messages', threadId ?? messageThreadId],
             (oldMessages: Message[] | undefined) => {
               if (!oldMessages) return [optimisticMessage];
 
@@ -88,9 +88,8 @@ export const useQueryMessages = (
             message,
             contentList,
             files,
-            workspace,
-            thread: messageThread,
-            threadId: threadId ?? messageThread?.id,
+            workspaceId: workspaceId ?? '',
+            threadId: threadId ?? messageThreadId,
           });
 
           // Subscribe to the response and update the query data
@@ -98,21 +97,21 @@ export const useQueryMessages = (
             next: (m: Message) => {
               const threads = queryClient.getQueryData<MessageThread[]>([
                 'threads',
-                workspace,
+                workspaceId,
               ]);
               if (threads) {
-                const id = threadId ?? messageThread?.id;
+                const id = threadId ?? messageThreadId;
                 const thread = threads.find((thread) => thread.id === id);
                 if (!thread) {
                   console.log('thread not found');
                   queryClient.invalidateQueries({
-                    queryKey: ['threads', workspace],
+                    queryKey: ['threads', workspaceId],
                   });
                 }
               }
 
               queryClient.setQueryData(
-                ['messages', threadId ?? messageThread?.id],
+                ['messages', threadId ?? messageThreadId],
                 (oldMessages: Message[] | undefined) => {
                   if (!oldMessages) return [m];
 
@@ -169,11 +168,11 @@ export const useQueryMessages = (
       return new Promise(async (resolve, reject) => {
         try {
           queryClient.cancelQueries({
-            queryKey: ['messages', messageThread?.id],
+            queryKey: ['messages', messageThreadId],
           });
 
           queryClient.setQueryData(
-            ['messages', messageThread?.id],
+            ['messages', messageThreadId],
             (oldMessages: Message[] | undefined) => {
               if (!oldMessages) return [];
 
@@ -208,7 +207,7 @@ export const useQueryMessages = (
           const subscription = response.subscribe({
             next: (m: Message) => {
               queryClient.setQueryData(
-                ['messages', messageThread?.id],
+                ['messages', messageThreadId],
                 (oldMessages: Message[] | undefined) => {
                   if (!oldMessages) return [m];
 
@@ -244,7 +243,7 @@ export const useQueryMessages = (
       console.error(error);
       toast.error('There was an error posting your message');
       queryClient.setQueryData(
-        ['messages', messageThread?.id],
+        ['messages', messageThreadId],
         (oldMessages: Message[] | undefined) =>
           (oldMessages || []).filter((msg) => !msg.optimistic),
       );
