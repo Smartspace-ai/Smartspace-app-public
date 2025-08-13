@@ -14,9 +14,30 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
+
       "@/components/*": ["./src/components/*"],
       "@/contexts/*": ["./src/contexts/*"],
-      "@/hooks/*": ["./src/hooks/*"]
+
+      "@/hooks": ["./src/hooks/index.ts"],
+      "@/hooks/*": ["./src/hooks/*"],
+
+      "@/hooks/data": ["./src/hooks/data/index.ts"],
+      "@/hooks/data/*": ["./src/hooks/data/*"],
+
+      "@/hooks/auth": ["./src/hooks/auth/index.ts"],
+      "@/hooks/auth/*": ["./src/hooks/auth/*"],
+
+      "@/hooks/signalr": ["./src/hooks/signalr/index.ts"],
+      "@/hooks/signalr/*": ["./src/hooks/signalr/*"],
+
+      "@/apis": ["./src/apis/index.ts"],
+      "@/apis/*": ["./src/apis/*"],
+
+      "@/utils": ["./src/utils/index.ts"],
+      "@/utils/*": ["./src/utils/*"],
+
+      "@/models": ["./src/models/index.ts"],
+      "@/models/*": ["./src/models/*"]
     },
     "composite": true,
     "jsx": "react-jsx",

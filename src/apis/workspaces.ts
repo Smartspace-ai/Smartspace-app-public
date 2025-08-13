@@ -8,10 +8,6 @@ export const getWorkspaces = async (searchTerm?: string) => {
   return data;
 };
 
-export const getWorkspaceAccess = async (workspaceId: string) => {
-  return await webApi.get(`workspaces/${workspaceId}/access`);
-};
-
 
 // Fetches the list of workspaces from the backend API
 export  const getWorkspace = async (id: string): Promise<Workspace> => {

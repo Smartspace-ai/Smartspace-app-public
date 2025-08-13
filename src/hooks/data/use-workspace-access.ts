@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { MentionUser } from '../../models/mention-user';
-import { getWorkspaceAccess } from '../../apis/workspaces';
-import { Workspace } from '../../models/workspace';
+import { MentionUser } from '@/models/mention-user';
+import { getWorkspaceAccess } from '@/apis';
+import { Workspace } from '@/models/workspace';
 
 export const useQueryWorkspaceAccess = (workspace: Workspace | null) => {
   const queryWorkspaceAccess = useQuery<MentionUser[], Error>({
