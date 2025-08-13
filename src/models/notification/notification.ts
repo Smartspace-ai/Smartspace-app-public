@@ -17,7 +17,7 @@ export interface INotification {
   threadId?: string;
   createdBy: string;
   createdAt: string;
-  dismissedAt: string;
+  dismissedAt?: string;
   avatar?: string;
 }
 
@@ -25,4 +25,20 @@ export interface INotificationList {
   data: INotification[];
   totalUnread: number;
   total: number;
+}
+
+export class Notification {
+  id!: string;
+  notificationType!: NotificationType;
+  description!: string;
+  workSpaceId?: string;
+  threadId?: string;
+  createdBy!: string;
+  createdAt!: string;
+  dismissedAt?: string;
+  avatar?: string;
+
+  constructor(params?: Partial<Notification>) {
+    Object.assign(this, params || {});
+  }
 }

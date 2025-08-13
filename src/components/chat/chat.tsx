@@ -8,7 +8,7 @@ import { FileInfo } from '../../models/file';
 
 import { useWorkspaceThread } from '@/hooks/data/use-thread';
 import { useActiveWorkspace } from '@/hooks/data/use-workspaces';
-import { MessageCreateContent } from '../../models/message';
+import { MessageCreateContent } from '../../models/message-create-content';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';

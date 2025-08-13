@@ -11,10 +11,7 @@ export interface MessageContent {
   image?: MessageFile;
 }
 
-export interface MessageCreateContent {
-  text?: string;
-  image?: MessageFile;
-}
+
 
 export enum MessageValueType {
   OUTPUT = 'Output',
