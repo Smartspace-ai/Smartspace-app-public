@@ -2,7 +2,7 @@ name: Deploy static site to Azure Storage
 on:
   push:
     branches:
-      - deployments/develop
+      - main
 
 permissions:
   contents: read
@@ -10,7 +10,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: develop
+    environment: smartspace
 
     steps:
       - name: Checkout code
