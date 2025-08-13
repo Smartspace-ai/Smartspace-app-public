@@ -1,5 +1,5 @@
 // ChatBotLayout.tsx
-import { useWorkspaces } from '@/hooks/use-workspaces';
+import { useWorkspaces } from '@/hooks/data/use-workspaces';
 import { useEffect } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 

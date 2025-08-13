@@ -3,15 +3,15 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import { Draw } from '@/models/draw';
 import { Message, MessageValueType } from '@/models/message';
-import { useQueryFiles } from '../../../hooks/use-files';
+import { useQueryFiles } from '../../../hooks/data/use-file';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
+import { useWorkspaceThread } from '@/hooks/data/use-thread';
 
 import { downloadFile } from '@/apis/files';
-import { useActiveUser } from '@/hooks/use-active-user';
-import { useActiveWorkspace } from '@/hooks/use-workspaces';
+import { useActiveUser } from '@/hooks/auth/use-active-user';
+import { useActiveWorkspace } from '@/hooks/data/use-workspaces';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Avatar, AvatarFallback } from '../../ui/avatar';

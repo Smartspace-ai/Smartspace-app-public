@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useFileMutations } from '@/hooks/use-files';
+import { useFileMutations } from '@/hooks/data/use-file';
 import { Workspace } from '@/models/workspace';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Paperclip, X, FileText, FileImage, FileVideo, FileAudio, FileArchive, FileCode, FileSpreadsheet, Presentation } from 'lucide-react';
@@ -9,7 +9,7 @@ import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { FileInfo } from '../../../models/file';
 import { ChatVariablesForm, ChatVariablesFormRef } from '../chat-variables-form/chat-variables-form';
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
+import { useWorkspaceThread } from '@/hooks/data/use-thread';
 
 // Utility function to get file type icon
 const getFileIcon = (fileName: string, fileType: string) => {

@@ -1,5 +1,5 @@
 import { useTeams } from '@/contexts/teams-context';
-import { useActiveUser } from '@/hooks/use-active-user';
+import { useActiveUser } from '@/hooks/auth/use-active-user';
 import { useMsal } from '@azure/msal-react';
 import { LogOut } from 'lucide-react';
 import { ComponentProps } from 'react';

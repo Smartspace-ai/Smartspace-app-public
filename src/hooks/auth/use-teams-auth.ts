@@ -2,8 +2,8 @@ import { useMsal } from '@azure/msal-react';
 import { authentication } from '@microsoft/teams-js';
 import { useCallback, useState } from 'react';
 
-import { teamsLoginRequest } from '../app/msalConfig';
-import { useTeams } from '../contexts/teams-context';
+import { teamsLoginRequest } from '../../app/msalConfig';
+import { useTeams } from '../../contexts/teams-context';
 
 export const useTeamsAuth = () => {
   const { instance, accounts } = useMsal();

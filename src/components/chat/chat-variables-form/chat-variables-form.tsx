@@ -1,4 +1,4 @@
-import { useThreadVariables, useUpdateVariable } from '@/hooks/use-workspace-thread';
+import { useThreadVariables, useUpdateVariable } from '@/hooks/data/use-thread';
 import { materialCells, materialRenderers } from '@jsonforms/material-renderers';
 import { JsonForms } from '@jsonforms/react';
 import { Loader2 } from 'lucide-react';

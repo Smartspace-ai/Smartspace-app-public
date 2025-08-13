@@ -1,12 +1,12 @@
 import { MessageSquare, PanelLeft } from 'lucide-react';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { useActiveWorkspace } from '@/hooks/use-workspaces';
+import { useActiveWorkspace } from '@/hooks/data/use-workspaces';
 import { MessageThread } from '@/models/message-thread';
 import { NotificationPanel } from '../../notifications/notifications-panel/notifications-panel';
 import { Separator } from '../../ui/separator';
 import { SidebarTrigger } from '../../ui/sidebar';
-import { useWorkspaceUpdates } from '@/hooks/use-workspace-updates';
+import { useWorkspaceUpdates } from '@/hooks/signalr/use-workspace-updates';
 
 export function ChatHeader({activeThread}: {activeThread?: MessageThread}) {
   const { data: activeWorkspace } = useActiveWorkspace();

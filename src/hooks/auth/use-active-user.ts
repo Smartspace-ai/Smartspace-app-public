@@ -1,6 +1,6 @@
 
 
-import { msalInstance } from '../main';
+import { msalInstance } from '../../main';
 
 export const useActiveUser = () => {
   const account = msalInstance.getActiveAccount();

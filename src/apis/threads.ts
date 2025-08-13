@@ -1,9 +1,14 @@
 import webApi from '../utils/axios-setup';
 import { MessageThread } from '../models/message-thread';
 import { FileInfo } from '../models/file';
+import { PaginationParams } from '@/models/react-query-params';
 
-export const getMessageThreads = async (workspaceId: string) => {
-  return await webApi.get(`workspaces/${workspaceId}/messageThreads`);
+export const getMessageThreads = async (workspaceId: string, params: PaginationParams) => {
+  return await webApi.get(`workspaces/${workspaceId}/messageThreads`, { params });
+};
+
+export const getThread = async (threadId: string) => {
+  return await webApi.get(`/messagethreads/${threadId}`);
 };
 
 export const changeStatusFavorite = async ({
@@ -59,3 +64,22 @@ export const downloadFile = async (id: string): Promise<Blob> => {
 
   return response.data as Blob;
 };
+
+
+
+export const getThreadVariables = async (threadId: string): Promise<Record<string, any>> => {
+  const response = await webApi.get(`/flowruns/${threadId}/variables`);
+  return response.data as Record<string, any>;
+}
+
+
+export const updateVariable = async (
+  threadId: string,
+  variableName: string,
+  value: any
+): Promise<void> => {
+  await webApi.put(`/flowruns/${threadId}/variables/${variableName}`, 
+    value,
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+}

@@ -1,15 +1,21 @@
 import { Model } from '@/models/model';
 import webApi from '../utils/axios-setup';
 
-// Fetch threads for a given workspace
-export async function fetchModels(
-  { search, take, skip }: { search?: string; take?: number; skip?: number } = {}
-): Promise<{ data: Model[]; total: number }> {
-
-  const response = await webApi.get(
-    `models`,
-    { params: { search, take, skip } }
-  );
+export async function getModels(
+  search: string,
+  page: number,
+  limit: number,
+): Promise<{
+  data: Model[];
+  total: number;
+}> {
+  const response = await webApi.get(`models`, {
+    params: {
+      take: limit,
+      skip: limit * page,
+      search,
+    },
+  });
 
   const modelsMap = (response.data.data as Model[]) || [];
   const total = response.data.total ?? modelsMap.length;
@@ -19,12 +25,6 @@ export async function fetchModels(
   return { data: models, total };
 }
 
-export async function fetchModel(
-  id: string,
-): Promise<Model> {
-  const response = await webApi.get(
-    `models/${id}`
-  );
-
-  return response.data as Model;
+export async function getModel(id: string) {
+  return await webApi.get(`models/${id}`);
 }

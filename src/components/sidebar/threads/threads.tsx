@@ -35,12 +35,12 @@ import { SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { CircleInitials } from '@/components/circle-initials';
-import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
+import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/data/use-threads';
 import { Virtuoso } from 'react-virtuoso';
 import { renameThread } from '../../../apis/threads';
 import { MessageThread } from '../../../models/message-thread';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
+import { useWorkspaceThread } from '@/hooks/data/use-thread';
 
 export function Threads() {  
   const {

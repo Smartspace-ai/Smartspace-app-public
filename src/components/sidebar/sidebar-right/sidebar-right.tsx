@@ -20,8 +20,8 @@ import { Button, SvgIcon, Typography } from '@mui/material';
 import { MessageSquare } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { useTaggableWorkspaceUsers, useWorkspaceThreadComments } from '../../../hooks/use-workspace-thread-comments';
-import { MessageComment } from '../../../models/message-comment';
+import { useTaggableWorkspaceUsers, useWorkspaceThreadComments } from '../../../hooks/data/use-comments';
+import { MessageComment } from '../../../models/comment';
 import { getInitials } from '../../../utils/initials';
 import { Skeleton } from '../../ui/skeleton';
 

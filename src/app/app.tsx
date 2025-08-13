@@ -11,7 +11,7 @@ import TeamsAuthCallback from '@/pages/auth/teams/callback';
 import { Loader2 } from 'lucide-react';
 import Login from '../pages/Login/Login';
 import AppRoutes from '../routes/app-routes';
-import { SignalRProvider } from '../hooks/use-signalr';
+import { SignalRProvider } from '../hooks/signalr/use-signalr';
 
 export function App() {
   const { instance } = useMsal();

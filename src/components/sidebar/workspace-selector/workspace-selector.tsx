@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useActiveWorkspace, useWorkspaces } from '@/hooks/use-workspaces';
+import { useActiveWorkspace, useWorkspaces } from '@/hooks/data/use-workspaces';
 
 import { CircleInitials } from '@/components/circle-initials';
 import { Skeleton } from '@/components/ui/skeleton';

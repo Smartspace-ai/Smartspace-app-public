@@ -1,4 +1,4 @@
-import { useWorkspaceMessages } from '@/hooks/use-workspace-messages';
+import { useWorkspaceMessages } from '@/hooks/data/use-messages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
 import type React from 'react';
@@ -6,8 +6,8 @@ import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FileInfo } from '../../models/file';
 
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
-import { useActiveWorkspace } from '@/hooks/use-workspaces';
+import { useWorkspaceThread } from '@/hooks/data/use-thread';
+import { useActiveWorkspace } from '@/hooks/data/use-workspaces';
 import { MessageCreateContent } from '../../models/message';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';

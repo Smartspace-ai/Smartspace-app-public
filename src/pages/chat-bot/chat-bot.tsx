@@ -1,5 +1,5 @@
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
-import { useActiveWorkspace, useWorkspaces } from '@/hooks/use-workspaces';
+import { useWorkspaceThread } from '@/hooks/data/use-thread';
+import { useActiveWorkspace, useWorkspaces } from '@/hooks/data/use-workspaces';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Toaster } from 'sonner';
@@ -7,7 +7,7 @@ import Chat from '../../components/chat/chat';
 import SidebarLeft from '../../components/sidebar/sidebar-left/sidebar-left';
 import SidebarRight from '../../components/sidebar/sidebar-right/sidebar-right';
 import { SidebarInset } from '../../components/ui/sidebar';
-import { useWorkspaceMessages } from '../../hooks/use-workspace-messages';
+import { useWorkspaceMessages } from '../../hooks/data/use-messages';
   
 export function ChatBot() {
   const { threadId } = useParams<{ threadId?: string }>();

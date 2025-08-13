@@ -4,7 +4,7 @@ import { interactiveLoginRequest } from '../../app/msalConfig';
 import { Logo } from '../../assets/logo';
 import { Button } from '../../components/ui/button';
 import { useTeams } from '../../contexts/teams-context';
-import { useTeamsAuth } from '../../hooks/use-teams-auth';
+import { useTeamsAuth } from '../../hooks/auth/use-teams-auth';
 import styles from './Login.module.scss';
 
 export function Login() {

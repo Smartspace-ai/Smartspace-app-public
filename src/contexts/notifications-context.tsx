@@ -5,7 +5,7 @@ import {
   type FC,
   type ReactNode,
 } from 'react';
-import { useNotifications } from '../hooks/use-notifications';
+import { useNotifications } from '../hooks/data/use-notifications-list';
 import { NotificationsContextType } from '../interfaces/notification-type';
 
 const NotificationsContext = createContext<

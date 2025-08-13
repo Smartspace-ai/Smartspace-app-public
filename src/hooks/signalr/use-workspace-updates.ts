@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSignalR } from './use-signalr';
-import { MessageThread } from '../models/message-thread';
-import { MessageComment } from '../models/message-comment';
+import { MessageThread } from '../../models/message-thread';
+import { Comment } from '../../models/comment';
 
 export function useWorkspaceUpdates() {
   const { connection, joinGroup, leaveGroup } = useSignalR();
@@ -41,7 +41,7 @@ export function useWorkspaceUpdates() {
       queryClient.invalidateQueries({ queryKey: ['messages', thread.id] });
     };
 
-    const commentsHandler = (comment: MessageComment) => {
+    const commentsHandler = (comment: Comment) => {
       queryClient.invalidateQueries({
         queryKey: ['comments', comment.messageThreadId],
       });
