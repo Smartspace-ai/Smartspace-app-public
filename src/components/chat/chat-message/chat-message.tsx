@@ -395,7 +395,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
       case 'content':
         if (content) saveCollection(value.type);
         if (value.value == null) {
-          addValueToContent({ text: "Failed to generate response" })
+          addValueToContent({ text: `<span style="color:red">🐞 Failed to generate response</span>` })
         }
         else if (
           valueName === 'response' && value.value != null &&
