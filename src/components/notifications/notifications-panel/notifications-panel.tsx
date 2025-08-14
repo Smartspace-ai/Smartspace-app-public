@@ -89,6 +89,7 @@ export function NotificationPanel() {
         variant="ghost"
         size="icon"
         className="group relative h-8 w-8 rounded-lg :shadow-md transition-colors"
+        ref={buttonRef}
         onClick={() => setIsOpen((prev) => !prev)}
       >
         <Bell
@@ -119,6 +120,7 @@ export function NotificationPanel() {
           <motion.div
             id="notification-panel"
             className="absolute right-0 top-full z-50 mt-1 w-[320px] rounded-lg border bg-background shadow-lg overflow-hidden"
+            ref={panelRef}
           >
             <div className="flex items-center justify-between border-b px-3 py-2.5">
               <h2 className="text-sm font-medium flex items-center gap-1.5">
