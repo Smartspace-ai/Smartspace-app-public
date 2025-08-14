@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
   import {
   useNotificationMutations,
   useNotificationsQuery,
-} from '@/hooks/use-notifications-query';
+} from '@/hooks/use-notifications';
 import { cn } from '@/lib/utils';
 import { Notification, NotificationType } from '@/models/notification';
 import { getInitials } from '@/utils/initials';

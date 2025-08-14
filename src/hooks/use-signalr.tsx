@@ -15,7 +15,7 @@ import {
 } from '@microsoft/signalr';
 import { useQueryClient } from '@tanstack/react-query';
 import debounce from 'lodash/debounce';
-import { NotificationType } from '@/models/notification';
+import { NotificationType, normalizeNotificationType } from '@/models/notification';
 
 const signalRUri: string =
   (window as any)?.ssconfig?.Chat_Api_Uri ||
@@ -206,12 +206,18 @@ export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
           await localRejoinDesired();
           conn.on('ReceiveMessage', (_name: string, json: string) => {
             try {
-              const notif = JSON.parse(json) as import('@/models/notification').Notification;
-              console.log("notif", notif)
-              if (notif.notificationType === NotificationType.CommentUpdated) {
-                console.log("comment updated")
+              const raw = JSON.parse(json) as { notificationType?: unknown; NotificationType?: unknown } & Record<string, unknown>;
+              const rawType = raw?.notificationType ?? raw?.NotificationType;
+              const type = normalizeNotificationType(rawType);
+              if (type === NotificationType.CommentUpdated) {
                 queryClient.invalidateQueries({ queryKey: ['comments'] });
                 queryClient.invalidateQueries({ queryKey: ['threads'] });
+              }
+              if (type === NotificationType.MessageThreadUpdated) {
+                console.log("message thread updated")
+              }
+              if (type === NotificationType.WorkSpaceUpdated) {
+                console.log("work space updated")
               }
               queryClient.invalidateQueries({ queryKey: ['notifications'] });
             } catch (e) {
