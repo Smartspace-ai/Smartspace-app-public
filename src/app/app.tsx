@@ -47,7 +47,7 @@ export function App() {
       const msalAccount = instance.getActiveAccount();
       if (msalAccount && teamsUserId && msalAccount.homeAccountId !== teamsUserId) {
         // User changed, force logout
-        instance.logoutRedirect();
+        instance.logoutRedirect({ postLogoutRedirectUri: window.location.origin });
       }
     }
   }, [isInTeams, isTeamsInitialized, teamsUser, instance]);

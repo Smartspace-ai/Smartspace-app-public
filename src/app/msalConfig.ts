@@ -11,7 +11,7 @@ const GRAPH_SCOPES = ['profile', 'openid'];
 const GRAPH_ME_ENDPOINT = 'https://graph.microsoft.com/v1.0/me';
 const GRAPH_PHOTO_ENDPOINT = 'https://graph.microsoft.com/v1.0/me/photo/$value';
 
-const handleTrailingSlash = (url: string): string => {
+export const handleTrailingSlash = (url: string): string => {
   return url.endsWith('/') ? url : `${url}/`;
 };
 

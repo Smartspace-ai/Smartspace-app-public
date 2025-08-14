@@ -18,6 +18,8 @@ import {
 import { Sidebar, SidebarHeader } from '../../ui/sidebar';
 import Threads from '../threads/threads';
 import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
+import { handleTrailingSlash } from '../../../app/msalConfig';
+
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
   const { instance } = useMsal();
@@ -35,6 +37,7 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
 
     instance.logoutRedirect({
       account,
+      postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
     });
   };
 
