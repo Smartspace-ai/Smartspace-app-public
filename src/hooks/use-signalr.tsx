@@ -15,6 +15,7 @@ import {
 } from '@microsoft/signalr';
 import { useQueryClient } from '@tanstack/react-query';
 import debounce from 'lodash/debounce';
+import { NotificationType } from '@/models/notification';
 
 const signalRUri: string =
   (window as any)?.ssconfig?.Chat_Api_Uri ||
@@ -203,6 +204,20 @@ export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
             await conn.invoke('joinGroup', userGroup);
           }
           await localRejoinDesired();
+          conn.on('ReceiveMessage', (_name: string, json: string) => {
+            try {
+              const notif = JSON.parse(json) as import('@/models/notification').Notification;
+              console.log("notif", notif)
+              if (notif.notificationType === NotificationType.CommentUpdated) {
+                console.log("comment updated")
+                queryClient.invalidateQueries({ queryKey: ['comments'] });
+                queryClient.invalidateQueries({ queryKey: ['threads'] });
+              }
+              queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            } catch (e) {
+              console.error('Failed to parse notification payload', e);
+            }
+          });
 
           conn?.on(
             'BlocksUpdate',
@@ -228,6 +243,7 @@ export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
 
     return () => {
       startPromiseRef.current = null;
+      conn.off('ReceiveMessage');
       conn?.stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

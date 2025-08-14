@@ -2,7 +2,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { useNotificationsContext } from '@/contexts/notifications-context';
+import {
+  useMarkAllNotificationsAsRead,
+  useMarkNotificationAsRead,
+  useNotificationsQuery,
+} from '@/hooks/use-notifications-query';
 import { cn } from '@/lib/utils';
 import { Notification, NotificationType } from '@/models/notification';
 import { getInitials } from '@/utils/initials';
@@ -17,12 +21,9 @@ export function NotificationPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
-  const {
-    notifications,
-    totalUnread,
-    handleReadNotification,
-    handleMarkAllAsRead,
-  } = useNotificationsContext();
+  const notificationsQuery = useNotificationsQuery(showOnlyUnread);
+  const markOne = useMarkNotificationAsRead();
+  const markAll = useMarkAllNotificationsAsRead();
 
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -51,15 +52,16 @@ export function NotificationPanel() {
     }
   }, [isOpen]);
 
-  const hasUnreadNotifications = notifications.some((n) => !n.dismissedAt);
+  const notifications = (notificationsQuery.data?.pages || [])
+    .flatMap((p) => p.items);
 
-  const filteredNotifications = showOnlyUnread
-    ? notifications.filter((n) => !n.dismissedAt)
-    : notifications;
+  const totalUnread = notificationsQuery.data?.pages?.[0]?.unreadCount || 0;
+
+  const hasUnreadNotifications = notifications.some((n) => !n.dismissedAt);
 
   const handleClickNotification = (notification: Notification) => {
     if (!notification.dismissedAt) {
-      handleReadNotification?.(notification.id);
+      markOne.mutate(notification.id);
     }
 
     if (notification.threadId) {
@@ -147,7 +149,7 @@ export function NotificationPanel() {
                   variant="ghost"
                   size="sm"
                   className="w-full justify-center text-xs text-primary hover:text-primary hover:bg-primary/5 h-7 rounded-md"
-                  onClick={handleMarkAllAsRead}
+                  onClick={() => markAll.mutate()}
                 >
                   Mark all as read
                 </Button>
@@ -155,9 +157,11 @@ export function NotificationPanel() {
             )}
 
             <ScrollArea className="h-[320px]" type="always">
-              {filteredNotifications.length > 0 ? (
+              {notifications.length > 0 ? (
                 <div className="py-1">
-                  {filteredNotifications.map((notification) => (
+                  {notifications
+                    .filter((n) => (showOnlyUnread ? !n.dismissedAt : true))
+                    .map((notification) => (
                     <motion.div
                       key={notification.id}
                       className={cn(
