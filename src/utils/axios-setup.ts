@@ -25,31 +25,11 @@ webApi.interceptors.request.use(async (config) => {
     .filter(
       (scope: string) => scope.indexOf('smartspaceapi.config.access') === -1
     );
-
-  // Prefer an explicitly selected active account; fall back to first available
-  const activeAccount =
-    msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0] || null;
-
   const request = {
     scopes: scopes,
-    account: activeAccount ?? undefined,
-  } as const;
+  };
   try {
-    if (!activeAccount) {
-      // No account in cache yet – trigger interactive auth
-      const inTeamsEnvironment = isInTeams();
-      if (inTeamsEnvironment) {
-        await msalInstance.loginPopup({
-          ...interactiveLoginRequest,
-          redirectUri: undefined,
-        });
-      } else {
-        await msalInstance.loginRedirect(interactiveLoginRequest);
-        return config;
-      }
-    }
-
-    const response = await msalInstance.acquireTokenSilent(request as any);
+    const response = await msalInstance.acquireTokenSilent(request);
     config.headers.Authorization = `Bearer ${response.accessToken}`;
   } catch (error) {
     console.error('Error getting msal token:', error);
@@ -69,7 +49,7 @@ webApi.interceptors.request.use(async (config) => {
           await msalInstance.loginPopup({
             ...interactiveLoginRequest,
             redirectUri: undefined, // Don't use redirect URI for popup
-            // Avoid forcing consent every time; rely on interactiveLoginRequest defaults
+            prompt: 'consent', // Explicitly request consent
           });
         } else {
           console.log('In web browser - using redirect authentication');
@@ -80,12 +60,7 @@ webApi.interceptors.request.use(async (config) => {
         }
         
         // After successful interactive login (popup only), retry token acquisition
-        const updatedAccount =
-          msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
-        const response = await msalInstance.acquireTokenSilent({
-          scopes,
-          account: updatedAccount,
-        });
+        const response = await msalInstance.acquireTokenSilent(request);
         config.headers.Authorization = `Bearer ${response.accessToken}`;
       } catch (interactiveError) {
         console.error('Interactive authentication failed:', interactiveError);
