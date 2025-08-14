@@ -1,6 +1,6 @@
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import axios from 'axios';
-import { interactiveLoginRequest, loginRequest, isInTeams } from '../app/msalConfig';
+import { interactiveLoginRequest, isInTeams, loginRequest } from '../app/msalConfig';
 import { msalInstance } from '../main';
 
 function getBaseUrl(): string {
@@ -14,24 +14,16 @@ export const API = axios.create({
 
 API.interceptors.request.use(async (config) => {
   try {
-    const account = msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0];
+    const account = msalInstance.getActiveAccount();
     if (!account) {
-      // No cached account; trigger interactive auth
-      const inTeamsEnvironment = isInTeams();
-      if (inTeamsEnvironment) {
-        await msalInstance.loginPopup({
-          ...interactiveLoginRequest,
-          redirectUri: undefined,
-        });
-      } else {
-        await msalInstance.loginRedirect(interactiveLoginRequest);
-        return config;
-      }
+      throw new Error(
+        'No active account! Verify a user has been signed in and setActiveAccount has been called.'
+      );
     }
 
     const tokenResponse = await msalInstance.acquireTokenSilent({
       ...loginRequest,
-      account: msalInstance.getActiveAccount() || account,
+      account,
     });
 
     config.headers?.set('Authorization', `Bearer ${tokenResponse.accessToken}`);
@@ -57,6 +49,7 @@ API.interceptors.request.use(async (config) => {
           await msalInstance.loginPopup({
             ...interactiveLoginRequest,
             redirectUri: undefined, // Don't use redirect URI for popup
+            prompt: 'consent', // Explicitly request consent
           });
         } else {
           console.log('[MSAL] In web browser - using redirect authentication');
