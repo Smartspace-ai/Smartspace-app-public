@@ -32,7 +32,7 @@ const msalConfig: Configuration = {
     redirectUri: handleTrailingSlash(window.location.origin),
     postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
     // For Teams, we need to support popup flows
-    navigateToLoginRequestUrl: !isInTeams(),
+    navigateToLoginRequestUrl: false,
   },
   cache: {
     cacheLocation: 'localStorage', // Persists auth state across tabs/sessions
