@@ -48,12 +48,12 @@ msalInstance
       document.body.appendChild(document.createElement('div'));
     rootElement.id = 'root';
 
-    const root = ReactDOM.createRoot(rootElement);
-    root.render(
-      <StrictMode>
-        <MsalProvider instance={msalInstance}>
-          <App />
-        </MsalProvider>
-      </StrictMode>
-    );
-  });
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <StrictMode>
+      <MsalProvider instance={msalInstance}>
+        <App />
+      </MsalProvider>
+    </StrictMode>
+  );
+});
