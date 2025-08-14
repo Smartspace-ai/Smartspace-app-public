@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { useTaggableWorkspaceUsers, useWorkspaceThreadComments } from '../../../hooks/use-workspace-thread-comments';
 import { MessageComment } from '../../../models/message-comment';
 import { getInitials } from '../../../utils/initials';
+import { parseDateTime } from '../../../utils/parse-date-time';
 import { Skeleton } from '../../ui/skeleton';
 
 const MAX_COMMENT_LENGTH = 350;
@@ -54,18 +55,6 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
     } catch {
       // Error handled in hook
     }
-  };
-
-  const formatDate = (date: Date | string) => {
-    if (!date) return '';
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
   };
 
   useEffect(() => {
@@ -140,7 +129,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium truncate">{comment.createdBy}</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</p>
+                        <p className="text-xs text-muted-foreground">{parseDateTime(comment.createdAt)}</p>
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed flex flex-wrap gap-1">

@@ -51,6 +51,8 @@ export function NotificationPanel() {
     }
   }, [isOpen]);
 
+  const hasUnreadNotifications = notifications.some((n) => !n.dismissedAt);
+
   const filteredNotifications = showOnlyUnread
     ? notifications.filter((n) => !n.dismissedAt)
     : notifications;
@@ -86,10 +88,17 @@ export function NotificationPanel() {
         id="notification-trigger"
         variant="ghost"
         size="icon"
-        className="relative h-8 w-8 rounded-lg :shadow-md transition-colors"
+        className="group relative h-8 w-8 rounded-lg :shadow-md transition-colors"
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        <Bell className="h-4 w-4" />
+        <Bell
+          className={cn(
+            "h-4 w-4 transition-colors",
+            hasUnreadNotifications
+              ? "text-foreground"
+              : "text-muted-foreground group-hover:text-foreground"
+          )}
+        />
         <AnimatePresence>
           {totalUnread > 0 && (
             <motion.span
