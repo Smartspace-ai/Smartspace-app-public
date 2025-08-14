@@ -17,24 +17,24 @@ export function useNotificationsQuery(isUnreadOnly: boolean) {
 	});
 }
 
-export function useMarkNotificationAsRead() {
+export function useNotificationMutations() {
 	const queryClient = useQueryClient();
-	return useMutation({
+
+	const markAsReadMutation = useMutation({
 		mutationFn: (id: string) => markNotificationAsRead(id),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['notifications'] });
 		},
 	});
-}
 
-export function useMarkAllNotificationsAsRead() {
-	const queryClient = useQueryClient();
-	return useMutation({
+	const markAllAsReadMutation = useMutation({
 		mutationFn: () => markAllNotificationsAsRead(),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['notifications'] });
 		},
 	});
+
+	return { markAsReadMutation, markAllAsReadMutation };
 }
 
 

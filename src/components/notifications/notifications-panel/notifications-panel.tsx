@@ -2,9 +2,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import {
-  useMarkAllNotificationsAsRead,
-  useMarkNotificationAsRead,
+  import {
+  useNotificationMutations,
   useNotificationsQuery,
 } from '@/hooks/use-notifications-query';
 import { cn } from '@/lib/utils';
@@ -22,8 +21,7 @@ export function NotificationPanel() {
   const navigate = useNavigate();
 
   const notificationsQuery = useNotificationsQuery(showOnlyUnread);
-  const markOne = useMarkNotificationAsRead();
-  const markAll = useMarkAllNotificationsAsRead();
+  const { markAsReadMutation, markAllAsReadMutation } = useNotificationMutations();
 
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -61,7 +59,7 @@ export function NotificationPanel() {
 
   const handleClickNotification = (notification: Notification) => {
     if (!notification.dismissedAt) {
-      markOne.mutate(notification.id);
+      markAsReadMutation.mutate(notification.id);
     }
 
     if (notification.threadId) {
@@ -149,7 +147,7 @@ export function NotificationPanel() {
                   variant="ghost"
                   size="sm"
                   className="w-full justify-center text-xs text-primary hover:text-primary hover:bg-primary/5 h-7 rounded-md"
-                  onClick={() => markAll.mutate()}
+                  onClick={() => markAllAsReadMutation.mutate()}
                 >
                   Mark all as read
                 </Button>
