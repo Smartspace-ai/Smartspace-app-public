@@ -1,104 +1,40 @@
-import { Notification } from '@/models/notification';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  fetchNotifications,
-  markAllNotificationsAsRead,
-  markNotificationAsRead,
-} from '../apis/notifications';
+	fetchNotifications,
+	markAllNotificationsAsRead,
+	markNotificationAsRead,
+} from '@/apis/notifications';
 
 const LIMIT = 10;
 
-export const useNotifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [totalUnread, setTotalUnread] = useState<number>(0);
-  const [total, setTotal] = useState<number>(0);
-  const [isUnreadOnly, setIsUnreadOnly] = useState<boolean>(false);
-  const [isHasMore, setIsHasMore] = useState<boolean>(true);
-  const [newNotification, setNewNotification] = useState<Notification | null>(null);
-  const [page, setPage] = useState<number>(1);
+export function useNotificationsQuery(isUnreadOnly: boolean) {
+	return useInfiniteQuery({
+		queryKey: ['notifications', { unreadOnly: isUnreadOnly }],
+		queryFn: async ({ pageParam = 1 }) => fetchNotifications(pageParam, isUnreadOnly),
+		getNextPageParam: (lastPage, pages) =>
+			lastPage.items.length === LIMIT ? pages.length + 1 : undefined,
+		initialPageParam: 1,
+	});
+}
 
-  const isMounted = useRef(true);
+export function useNotificationMutations() {
+	const queryClient = useQueryClient();
 
-  const getNotifications = useCallback(
-    async (pageToLoad = 1, reset = false) => {
-      try {
-        const result = await fetchNotifications(pageToLoad, isUnreadOnly);
+	const markAsReadMutation = useMutation({
+		mutationFn: (id: string) => markNotificationAsRead(id),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['notifications'] });
+		},
+	});
 
-        if (!isMounted.current) return;
+	const markAllAsReadMutation = useMutation({
+		mutationFn: () => markAllNotificationsAsRead(),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['notifications'] });
+		},
+	});
 
-        setNotifications((prevNotifications) => {
-          const combined = reset
-            ? result.items
-            : [...prevNotifications, ...result.items];
+	return { markAsReadMutation, markAllAsReadMutation };
+}
 
-          const unique = Array.from(
-            new Map(combined.map((n) => [n.id, n])).values()
-          );
 
-          return unique;
-        });
-
-        setTotal(result.totalCount);
-        setTotalUnread(result.unreadCount ?? 0);
-        setIsHasMore(result.items.length === LIMIT);
-        setPage(pageToLoad);
-      } catch (err) {
-        console.error('Failed to load notifications', err);
-      }
-    },
-    [isUnreadOnly]
-  );
-
-  const handleReadNotification = useCallback(async (id: string) => {
-    try {
-      await markNotificationAsRead(id);
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, dismissedAt: new Date().toISOString() } : n
-        )
-      );
-      setTotalUnread((prev) => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Failed to mark notification as read', err);
-    }
-  }, []);
-
-  const handleMarkAllAsRead = useCallback(async () => {
-    try {
-      await markAllNotificationsAsRead();
-      setNotifications((prev) =>
-        prev.map((n) => ({
-          ...n,
-          dismissedAt: new Date().toISOString(),
-        }))
-      );
-      setTotalUnread(0);
-    } catch (err) {
-      console.error('Failed to mark all as read', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    getNotifications(1, true);
-  }, [isUnreadOnly, getNotifications]);
-
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  return {
-    notifications,
-    newNotification,
-    total,
-    totalUnread,
-    isUnreadOnly,
-    setIsUnreadOnly,
-    isHasMore,
-    getNotifications,
-    handleReadNotification,
-    handleMarkAllAsRead,
-  };
-};

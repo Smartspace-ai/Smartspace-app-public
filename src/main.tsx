@@ -17,14 +17,20 @@ export const msalInstance = new PublicClientApplication(msalConfig);
 // ✅ Initialize and set active account if one exists
 msalInstance
   .initialize()
-  .then(() => msalInstance.handleRedirectPromise())
-  .then((result) => {
-    if (result?.account) {
-      msalInstance.setActiveAccount(result.account);
-    } else {
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
-        msalInstance.setActiveAccount(accounts[0]);
+  .then(async () => {
+    try {
+      const result = await msalInstance.handleRedirectPromise();
+      if (result?.account) {
+        msalInstance.setActiveAccount(result.account);
+      } else {
+        const accounts = msalInstance.getAllAccounts();
+        if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
+          msalInstance.setActiveAccount(accounts[0]);
+        }
+      }
+    } catch (e: any) {
+      if (e?.errorCode !== 'state_not_found') {
+        console.error('[MSAL] handleRedirectPromise error:', e);
       }
     }
 

@@ -35,7 +35,6 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
 
     instance.logoutRedirect({
       account,
-      postLogoutRedirectUri: window.location.origin,
     });
   };
 
