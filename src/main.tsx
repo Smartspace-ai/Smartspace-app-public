@@ -1,18 +1,16 @@
+
 import {
   AuthenticationResult,
   EventMessage,
   EventType,
-  PublicClientApplication,
 } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
+import { msalInstance } from './auth/msalClient';
+
 
 import App from './app/app';
-import msalConfig from './app/msalConfig';
-
-// 🔑 MSAL instance creation
-export const msalInstance = new PublicClientApplication(msalConfig);
 
 // ✅ Initialize and set active account if one exists
 msalInstance.initialize().then(() => {

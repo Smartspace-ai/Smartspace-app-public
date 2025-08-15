@@ -2,7 +2,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { useNotificationsContext } from '@/contexts/notifications-context';
+  import {
+  useNotificationMutations,
+  useNotificationsQuery,
+} from '@/hooks/use-notifications';
 import { cn } from '@/lib/utils';
 import { Notification, NotificationType } from '@/models/notification';
 import { getInitials } from '@/utils/initials';
@@ -17,12 +20,8 @@ export function NotificationPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
-  const {
-    notifications,
-    totalUnread,
-    handleReadNotification,
-    handleMarkAllAsRead,
-  } = useNotificationsContext();
+  const notificationsQuery = useNotificationsQuery(showOnlyUnread);
+  const { markAsReadMutation, markAllAsReadMutation } = useNotificationMutations();
 
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -51,13 +50,16 @@ export function NotificationPanel() {
     }
   }, [isOpen]);
 
-  const filteredNotifications = showOnlyUnread
-    ? notifications.filter((n) => !n.dismissedAt)
-    : notifications;
+  const notifications = (notificationsQuery.data?.pages || [])
+    .flatMap((p) => p.items);
+
+  const totalUnread = notificationsQuery.data?.pages?.[0]?.unreadCount || 0;
+
+  const hasUnreadNotifications = notifications.some((n) => !n.dismissedAt);
 
   const handleClickNotification = (notification: Notification) => {
     if (!notification.dismissedAt) {
-      handleReadNotification?.(notification.id);
+      markAsReadMutation.mutate(notification.id);
     }
 
     if (notification.threadId) {
@@ -86,10 +88,18 @@ export function NotificationPanel() {
         id="notification-trigger"
         variant="ghost"
         size="icon"
-        className="relative h-8 w-8 rounded-lg :shadow-md transition-colors"
+        className="group relative h-8 w-8 rounded-lg :shadow-md transition-colors"
+        ref={buttonRef}
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        <Bell className="h-4 w-4" />
+        <Bell
+          className={cn(
+            "h-4 w-4 transition-colors",
+            hasUnreadNotifications
+              ? "text-foreground"
+              : "text-muted-foreground group-hover:text-foreground"
+          )}
+        />
         <AnimatePresence>
           {totalUnread > 0 && (
             <motion.span
@@ -110,6 +120,7 @@ export function NotificationPanel() {
           <motion.div
             id="notification-panel"
             className="absolute right-0 top-full z-50 mt-1 w-[320px] rounded-lg border bg-background shadow-lg overflow-hidden"
+            ref={panelRef}
           >
             <div className="flex items-center justify-between border-b px-3 py-2.5">
               <h2 className="text-sm font-medium flex items-center gap-1.5">
@@ -138,17 +149,19 @@ export function NotificationPanel() {
                   variant="ghost"
                   size="sm"
                   className="w-full justify-center text-xs text-primary hover:text-primary hover:bg-primary/5 h-7 rounded-md"
-                  onClick={handleMarkAllAsRead}
+                  onClick={() => markAllAsReadMutation.mutate()}
                 >
                   Mark all as read
                 </Button>
               </div>
             )}
 
-            <ScrollArea className="max-h-[320px]">
-              {filteredNotifications.length > 0 ? (
+            <ScrollArea className="h-[320px]" type="always">
+              {notifications.length > 0 ? (
                 <div className="py-1">
-                  {filteredNotifications.map((notification) => (
+                  {notifications
+                    .filter((n) => (showOnlyUnread ? !n.dismissedAt : true))
+                    .map((notification) => (
                     <motion.div
                       key={notification.id}
                       className={cn(
