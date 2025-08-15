@@ -1,24 +1,19 @@
-import { PublicClientApplication } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 
 import App from './app/app';
-import msalConfig from './app/msalConfig';
+import { msalInstance } from './auth/msalClient';
 
-// 🔑 MSAL instance creation
-export const msalInstance = new PublicClientApplication(msalConfig);
+// 🔑 MSAL instance is created in auth/msalClient.ts
 
 async function bootstrap() {
   await msalInstance.initialize();
-
   const result = await msalInstance.handleRedirectPromise();
-  console.log('[auth] result', !!result, result?.account?.username);
   if (result?.account) {
     msalInstance.setActiveAccount(result.account);
   } else {
     const accts = msalInstance.getAllAccounts();
-    console.log('[auth] accounts', accts.map(a => a.username));
     if (accts.length === 1) {
       msalInstance.setActiveAccount(accts[0]);
     }
