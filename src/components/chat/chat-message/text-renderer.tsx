@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { ControlProps, rankWith, schemaMatches } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 
+// comment to test merge pipeline
+
 const TextCheckControlBase = (
   props: ControlProps & { readonly?: boolean } & Record<string, any>
 ) => {
