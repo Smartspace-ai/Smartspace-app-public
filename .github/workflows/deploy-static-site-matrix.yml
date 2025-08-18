@@ -1,0 +1,91 @@
+name: Deploy static site (develop/staging/symphony)
+
+on:
+  workflow_run:
+    workflows:
+      - merge-develop-to-deployment
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - env: develop
+            env_file: ".env.develop"
+            secret_name: AZURE_STORAGE_CONNECTION_STRING_DEVELOP
+          - env: staging
+            env_file: ".env.staging"
+            secret_name: AZURE_STORAGE_CONNECTION_STRING_STAGING
+          - env: symphony
+            env_file: "env.symphony"
+            secret_name: AZURE_STORAGE_CONNECTION_STRING_SYMPHONY
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: deployments/develop
+
+      - name: Select env file
+        run: |
+          if [ ! -f "${{ matrix.env_file }}" ]; then
+            echo "::error::Env file ${{ matrix.env_file }} not found!"
+            exit 1
+          fi
+          cp "${{ matrix.env_file }}" .env
+
+      - name: Check storage account connection string for this environment exists
+        run: |
+          if [ -z "${{ secrets[matrix.secret_name] }}" ]; then
+            echo "::error::${{ matrix.secret_name }} secret is not set!"
+            exit 1
+          fi
+
+      - name: Check .env for required variables
+        run: |
+          required_vars=(
+            VITE_CLIENT_ID
+            VITE_CLIENT_AUTHORITY
+            VITE_CLIENT_SCOPES
+            VITE_CHAT_API_URI
+          )
+          for var in "${required_vars[@]}"; do
+            if ! grep -q "^$var=" .env; then
+              echo "::error::.env does not contain $var!"
+              exit 1
+            fi
+            value=$(grep "^$var=" .env | cut -d'=' -f2-)
+            if [ -z "$value" ]; then
+              echo "::error::$var in .env is empty!"
+              exit 1
+            fi
+          done
+
+      - name: Build your site
+        run: |
+          npm install
+          npm run build
+
+      - name: Deploy to Azure Storage
+        uses: azure/CLI@v1
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets[matrix.secret_name] }}
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az storage blob upload-batch \
+              --connection-string "$AZURE_STORAGE_CONNECTION_STRING" \
+              --source ./dist/smartspace \
+              --destination '$web' \
+              --overwrite true
+
+

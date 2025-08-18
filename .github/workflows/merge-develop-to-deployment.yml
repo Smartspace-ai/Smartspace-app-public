@@ -1,4 +1,4 @@
-name: Auto merge develop to deployments/develop
+name: merge-develop-to-deployment
 
 on:
   push:
