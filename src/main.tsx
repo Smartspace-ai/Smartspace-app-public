@@ -1,13 +1,12 @@
 import {
-  AuthenticationResult,
   EventMessage,
-  EventType,
-  PublicClientApplication,
+  PublicClientApplication
 } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 
+import { ErrorBoundary } from "react-error-boundary";
 import App from './app/app';
 import msalConfig from './app/msalConfig';
 
@@ -23,10 +22,9 @@ msalInstance.initialize().then(() => {
 
   // 🔁 Set active account on login success
   msalInstance.addEventCallback((event: EventMessage) => {
-    if (event.eventType === EventType.LOGIN_SUCCESS && event.payload) {
-      const payload = event.payload as AuthenticationResult;
-      const account = payload.account;
-      msalInstance.setActiveAccount(account);
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      msalInstance.setActiveAccount(accounts[0]);
     }
   });
 
@@ -38,9 +36,22 @@ msalInstance.initialize().then(() => {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <MsalProvider instance={msalInstance}>
-        <App />
-      </MsalProvider>
+      <ErrorBoundary
+        fallbackRender={fallbackRender}
+      >
+        <MsalProvider instance={msalInstance}>
+          <App />
+        </MsalProvider>
+      </ErrorBoundary>
     </StrictMode>
   );
 });
+
+function fallbackRender({ error }: { error: Error }) {
+  return (
+    <div role="alert">
+      <p>Something went wrong:</p>
+      <pre style={{ color: "red" }}>{error.message}</pre>
+    </div>
+  );
+}
