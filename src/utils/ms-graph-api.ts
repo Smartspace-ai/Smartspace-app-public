@@ -1,9 +1,7 @@
 import { loginRequest } from '@/app/msalConfig';
-import {
-  InteractionRequiredAuthError,
-  IPublicClientApplication,
-} from '@azure/msal-browser';
+import { InteractionRequiredAuthError, IPublicClientApplication } from '@azure/msal-browser';
 import GraphAPI from './api-graph';
+import { performTeamsInteractiveAuth } from './teams-auth';
 
 export async function callMsGraph<T = any>(
   graphEndpoint: string,
@@ -40,9 +38,31 @@ export async function callMsGraph<T = any>(
     // 👇 Key difference here
     return returnAsJson ? (apiResponse.data as T) : apiResponse.data;
   } catch (error: any) {
-    if (error instanceof InteractionRequiredAuthError) {
-      msalInstance?.loginRedirect(loginRequest);
-      return null;
+    if (error instanceof InteractionRequiredAuthError && msalInstance) {
+      const inTeams = (window as any).__teamsState?.isInTeams ?? false;
+      if (inTeams) {
+        const loginHint = (window as any).__teamsState?.teamsUser?.loginHint;
+        await performTeamsInteractiveAuth(msalInstance, loginHint);
+        const account = msalInstance.getActiveAccount();
+        if (account) {
+          const retry = await msalInstance.acquireTokenSilent({ ...loginRequest, account });
+          const accessToken = retry?.accessToken;
+          if (!accessToken) return null;
+          const apiResponse = await GraphAPI.get(graphEndpoint, {
+            headers: {
+              'Content-Type': contentType,
+              Accept: contentType === 'image/jpeg' ? 'image/jpeg' : 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            responseType: contentType === 'image/jpeg' ? 'blob' : 'json',
+          });
+          return returnAsJson ? (apiResponse.data as T) : apiResponse.data;
+        }
+        return null;
+      } else {
+        msalInstance.loginRedirect(loginRequest);
+        return null;
+      }
     }
 
     if (error?.response?.status === 404) {

@@ -17,11 +17,7 @@ const handleTrailingSlash = (url: string): string => {
 
 // Check if we're running in Teams
 const isInTeams = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const inTeamsParam = urlParams.get('inTeams') === 'true';
-  const parentCheck = window.parent !== window;
-  
-  return inTeamsParam || parentCheck;
+  return (window as any).__teamsState?.isInTeams ?? false;
 };
 
 // MSAL configuration object
@@ -31,8 +27,8 @@ const msalConfig: Configuration = {
     authority: AUTHORITY,
     redirectUri: handleTrailingSlash(window.location.origin),
     postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
-    // For Teams, we need to support popup flows
-    navigateToLoginRequestUrl: !isInTeams(),
+    // Avoid fragile redirect-to-original-url behavior; we'll handle navigation ourselves
+    navigateToLoginRequestUrl: false,
   },
   cache: {
     cacheLocation: 'localStorage', // Persists auth state across tabs/sessions

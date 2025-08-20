@@ -9,6 +9,7 @@ import * as ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from "react-error-boundary";
 import App from './app/app';
 import msalConfig from './app/msalConfig';
+import { TeamsProvider } from './contexts/teams-context';
 
 // 🔑 MSAL instance creation
 export const msalInstance = new PublicClientApplication(msalConfig);
@@ -39,9 +40,11 @@ msalInstance.initialize().then(() => {
       <ErrorBoundary
         fallbackRender={fallbackRender}
       >
-        <MsalProvider instance={msalInstance}>
-          <App />
-        </MsalProvider>
+        <TeamsProvider>
+          <MsalProvider instance={msalInstance}>
+            <App />
+          </MsalProvider>
+        </TeamsProvider>
       </ErrorBoundary>
     </StrictMode>
   );

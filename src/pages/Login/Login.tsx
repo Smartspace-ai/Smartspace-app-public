@@ -38,7 +38,7 @@ export function Login() {
     
     try {
       if (isInTeams) {
-        await login(); // Use Teams-aware login with login hints
+        await login(); // Teams auto/popup flow
       } else {
         await instance.loginRedirect(interactiveLoginRequest);
       }

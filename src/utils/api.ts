@@ -2,6 +2,7 @@ import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import axios from 'axios';
 import { interactiveLoginRequest, loginRequest } from '../app/msalConfig';
 import { msalInstance } from '../main';
+import { performTeamsInteractiveAuth } from './teams-auth';
 
 function getBaseUrl(): string {
   return import.meta.env.VITE_CHAT_API_URI || '';
@@ -35,22 +36,15 @@ API.interceptors.request.use(async (config) => {
     // If the error is due to interaction required (like consent_required),
     // trigger an interactive authentication flow
     if (error instanceof InteractionRequiredAuthError) {
-      const inTeamsEnvironment = isInTeams();
+      const inTeamsEnvironment = (window as any).__teamsState?.isInTeams ?? false;
       console.log('[MSAL] Interactive authentication required, triggering login...');
       console.log('[MSAL] In Teams environment:', inTeamsEnvironment);
       
       try {
-        const account = msalInstance.getActiveAccount();
-        
-        // Use popup in Teams, redirect in web browsers
         if (inTeamsEnvironment) {
-          console.log('[MSAL] In Teams - using popup authentication');
-          // Use a very explicit popup configuration for Teams
-          await msalInstance.loginPopup({
-            ...interactiveLoginRequest,
-            redirectUri: undefined, // Don't use redirect URI for popup
-            prompt: 'consent', // Explicitly request consent
-          });
+          console.log('[MSAL] In Teams - using Teams authenticate popup with consent');
+          const loginHint = (window as any).__teamsState?.teamsUser?.loginHint;
+          await performTeamsInteractiveAuth(msalInstance, loginHint);
         } else {
           console.log('[MSAL] In web browser - using redirect authentication');
           await msalInstance.loginRedirect(interactiveLoginRequest);

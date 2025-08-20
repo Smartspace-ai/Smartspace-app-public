@@ -5,13 +5,13 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { SidebarProvider } from '../components/ui/sidebar';
 import { NotificationsProvider } from '../contexts/notifications-context';
-import { TeamsProvider, useTeams } from '../contexts/teams-context';
+import { useTeams } from '../contexts/teams-context';
 
 import TeamsAuthCallback from '@/pages/auth/teams/callback';
 import { Loader2 } from 'lucide-react';
+import { SignalRProvider } from '../hooks/use-signalr';
 import Login from '../pages/Login/Login';
 import AppRoutes from '../routes/app-routes';
-import { SignalRProvider } from '../hooks/use-signalr';
 
 export function App() {
   const { instance } = useMsal();
@@ -41,17 +41,7 @@ export function App() {
     setIsMSALInitialized(true);
   }, [instance, isMSALInitialized]);
 
-  // Defensive: If Teams user and MSAL account are out of sync, force MSAL logout
-  useEffect(() => {
-    if (isInTeams && isTeamsInitialized) {
-      const teamsUserId = teamsUser?.id;
-      const msalAccount = instance.getActiveAccount();
-      if (msalAccount && teamsUserId && msalAccount.homeAccountId !== teamsUserId) {
-        // User changed, force logout
-        instance.logoutRedirect();
-      }
-    }
-  }, [isInTeams, isTeamsInitialized, teamsUser, instance]);
+  // Removed aggressive logout redirect to avoid loops in Teams (esp. mobile)
 
   const isAuthenticated = useIsAuthenticated();
 
@@ -66,29 +56,27 @@ export function App() {
 
   return (
     <div style={{ height: '100%', width: '100%', backgroundColor: 'white' }}>
-      <TeamsProvider>
-        {isAuthenticated ? (
-          <QueryClientProvider client={queryClient}>
-            <SidebarProvider>
-            <NotificationsProvider>
-                {/* Route-based app navigation */}
-                <BrowserRouter>
-                <SignalRProvider>
-                  <AppRoutes />
-                </SignalRProvider>
-                </BrowserRouter>
-            </NotificationsProvider>
-            </SidebarProvider>
-        </QueryClientProvider>
-        ) : (
-          <BrowserRouter>
-            <Routes>
-              <Route path="/auth/teams/callback" element={<TeamsAuthCallback />} />
-              <Route path="*" element={<Login />} />
-            </Routes>
-          </BrowserRouter>
-        )}
-      </TeamsProvider>
+      {isAuthenticated ? (
+        <QueryClientProvider client={queryClient}>
+          <SidebarProvider>
+          <NotificationsProvider>
+              {/* Route-based app navigation */}
+              <BrowserRouter>
+              <SignalRProvider>
+                <AppRoutes />
+              </SignalRProvider>
+              </BrowserRouter>
+          </NotificationsProvider>
+          </SidebarProvider>
+      </QueryClientProvider>
+      ) : (
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth/teams/callback" element={<TeamsAuthCallback />} />
+            <Route path="*" element={<Login />} />
+          </Routes>
+        </BrowserRouter>
+      )}
     </div>
   );
 }
