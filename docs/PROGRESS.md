@@ -8,6 +8,7 @@ Each entry corresponds to a merged PR with a short description.
 ## 2025
 
 ### August
+- **25-08-20**: chore, ui-v2-foundation (#53)
 
 
 ---
