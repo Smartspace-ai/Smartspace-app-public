@@ -1,0 +1,149 @@
+{
+  "meta": {
+    "description": "Rules for Cursor to follow during the Smartspace UI-v2 migration.",
+    "version": 1
+  },
+  "style": {
+    "typescript": true,
+    "preferTypeImports": true,
+    "semi": true,
+    "singleQuote": true,
+    "printWidth": 100,
+    "trailingComma": "es5"
+  },
+  "architecture": {
+    "preferFeatureFirst": true,
+    "oneWayImports": [
+      { "from": "platform/**", "to": ["features/**"] },
+      { "from": "shared/**", "to": ["features/**"] }
+    ],
+    "disallowFeatureToFeatureImports": true,
+    "aliases": {
+      "@/*": "src/*"
+    },
+    "newCodeGoesIn": [
+      "src/features/**",
+      "src/platform/**",
+      "src/shared/**",
+      "src/theme/**",
+      "src/pages/**"
+    ]
+  },
+  "routing": {
+    "library": "tanstack-router",
+    "paramsAreSourceOfTruth": true,
+    "searchStateInUrl": true,
+    "expectedParams": ["workspaceId", "threadId"],
+    "expectedSearch": ["panel", "q", "status", "sort", "tags", "cursor"],
+    "validateSearchWithZod": true,
+    "useNavigatePatch": true
+  },
+  "data": {
+    "serverStateLibrary": "tanstack-query",
+    "queryKeysPattern": true,
+    "avoidManualFetchInComponents": true,
+    "zodAtApiBoundary": true,
+    "normalizeErrors": true,
+    "preferNonBlockingFetch": true
+  },
+  "theming": {
+    "library": "mui",
+    "useThemeProvider": true,
+    "tokensFile": "src/theme/tokens.ts",
+    "createThemeFile": "src/theme/createMuiTheme.ts",
+    "overridesAllowed": true,
+    "mobileBehavior": {
+      "navDrawer": { "desktop": "permanent", "mobile": "temporary" },
+      "commentsDrawer": { "desktop": "permanent", "mobile": "bottom-sheet" },
+      "composerUsesSafeArea": true
+    }
+  },
+  "testing": {
+    "testRunner": "vitest",
+    "componentTesting": "react-testing-library",
+    "networkMocking": "msw",
+    "placeTestsNextToComponents": true,
+    "useRenderWithAppHelper": true,
+    "whatToTestNow": ["zodSchemas", "hookLogicIfNonTrivial"],
+    "whatToTestLater": ["componentFlows", "pageHappyPath", "errorStates"]
+  },
+  "scaffolds": {
+    "feature": {
+      "files": [
+        "src/features/{name}/queryKeys.ts",
+        "src/features/{name}/types.ts",
+        "src/features/{name}/service.ts",
+        "src/features/{name}/use{name|pascal}.ts",
+        "src/features/{name}/components/Index.tsx"
+      ]
+    },
+    "test": {
+      "renderHelper": "src/tests/render.tsx",
+      "setup": "src/tests/setup.ts",
+      "server": "src/tests/testServer.ts"
+    }
+  },
+  "instructions": [
+    "Use TanStack Router for routing. Never introduce react-router.",
+    "Put selection IDs (workspaceId, threadId) in params, not in context.",
+    "Put shareable UI state (panel, q, status, sort, tags, cursor) in URL search and validate via Zod.",
+    "Fetch data with TanStack Query hooks inside components; render skeletons while loading.",
+    "All network responses must be parsed with Zod in service.ts before reaching UI.",
+    "Create queryKeys.ts per feature; compose keys with params/search where relevant.",
+    "Prefer MUI primitives; style via theme overrides and sx, not inline CSS or Tailwind.",
+    "Tests: use Vitest + React Testing Library. Mock network with MSW only.",
+    "Place tests next to components (Component.test.tsx). Keep test IDs minimal; prefer role/name queries.",
+    "Do not import across features; share via src/shared if necessary.",
+    "Favor small components: MessageItem.tsx separate from MessagesList.tsx.",
+    "When adding filters/search, debounce before writing to URL and reset pagination cursor."
+  ],
+  "fileGuards": {
+    "avoidEditsIn": [
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      "coverage/**"
+    ]
+  },
+  "rewriteRules": [
+    {
+      "pattern": "src/components/**",
+      "action": "migrate-to-feature-folder",
+      "note": "Place UI into src/features/<domain>/components"
+    },
+    {
+      "pattern": "src/api/**",
+      "action": "migrate-to-service-with-zod",
+      "note": "Use service.ts + Zod parse; expose typed functions"
+    }
+  ],
+  "naming": {
+    "componentsPascalCase": true,
+    "hooksCamelCaseWithUsePrefix": true,
+    "testsSuffix": ".test.tsx",
+    "serviceFile": "service.ts",
+    "queryKeysFile": "queryKeys.ts"
+  },
+  "commits": {
+    "conventionalCommits": true,
+    "allowedTypes": ["feat", "fix", "refactor", "chore", "docs", "test", "perf", "style"],
+    "examples": [
+      "feat(messages): add optimistic send with rollback",
+      "feat(workspaces): searchable select with infinite scroll",
+      "refactor(app): extract QueryClient factory",
+      "chore(ci): add typecheck/lint/test/build workflow",
+      "docs(readme): add architecture & GIFs"
+    ]
+  },
+  "prs": {
+    "smallScopedChanges": true,
+    "requireScreenshotsWhenUiChanges": true,
+    "checklist": [
+      "Typecheck passes",
+      "Lint passes",
+      "Tests exist or placeholders added",
+      "Build succeeds",
+      "PROGRESS.md updated"
+    ]
+  }
+}
