@@ -1,7 +1,7 @@
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import axios from 'axios';
-import { interactiveLoginRequest } from '../app/msalConfig';
-import { msalInstance } from '../main';
+import { interactiveLoginRequest, isInTeams } from '../app/msalConfig';
+import { msalInstance } from '@/auth/msalClient';
 
 function getBaseUrl() {
   const configBaseUrl =
@@ -11,8 +11,9 @@ function getBaseUrl() {
   return baseUrl ? baseUrl : '';
 }
 
+const baseURL = getBaseUrl();
 const webApi = axios.create({
-  baseURL: getBaseUrl(),
+  baseURL,
 });
 
 webApi.interceptors.request.use(async (config) => {
@@ -38,13 +39,10 @@ webApi.interceptors.request.use(async (config) => {
     // trigger an interactive authentication flow
     if (error instanceof InteractionRequiredAuthError) {
       const inTeamsEnvironment = isInTeams();
-      console.log('Interactive authentication required, triggering login...');
-      console.log('In Teams environment:', inTeamsEnvironment);
       
       try {
         // Use popup in Teams, redirect in web browsers
         if (inTeamsEnvironment) {
-          console.log('In Teams - using popup authentication');
           // Use a very explicit popup configuration for Teams
           await msalInstance.loginPopup({
             ...interactiveLoginRequest,
@@ -52,7 +50,6 @@ webApi.interceptors.request.use(async (config) => {
             prompt: 'consent', // Explicitly request consent
           });
         } else {
-          console.log('In web browser - using redirect authentication');
           await msalInstance.loginRedirect(interactiveLoginRequest);
           // Note: After redirect, this code won't continue executing
           // The page will reload and the user will be authenticated
@@ -67,12 +64,9 @@ webApi.interceptors.request.use(async (config) => {
         
         // If we're in Teams and authentication fails, provide helpful messaging
         if (inTeamsEnvironment) {
-          console.log('Teams authentication failed. This might be due to popup blockers or Teams restrictions.');
-          console.log('User may need to manually refresh the Teams app or try again.');
           // Don't redirect in Teams - just log the error
         } else {
           // In web browsers, we could redirect to login page
-          console.log('Web authentication failed, could redirect to login');
           // window.location.href = '/login';
         }
       }

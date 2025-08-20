@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { SidebarProvider } from '../components/ui/sidebar';
-import { NotificationsProvider } from '../contexts/notifications-context';
 import { TeamsProvider, useTeams } from '../contexts/teams-context';
 
 import TeamsAuthCallback from '@/pages/auth/teams/callback';
@@ -70,14 +69,12 @@ export function App() {
         {isAuthenticated ? (
           <QueryClientProvider client={queryClient}>
             <SidebarProvider>
-            <NotificationsProvider>
                 {/* Route-based app navigation */}
                 <BrowserRouter>
                 <SignalRProvider>
                   <AppRoutes />
                 </SignalRProvider>
                 </BrowserRouter>
-            </NotificationsProvider>
             </SidebarProvider>
         </QueryClientProvider>
         ) : (
