@@ -5,6 +5,7 @@ const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
 const AUTHORITY = import.meta.env.VITE_CLIENT_AUTHORITY;
 const CHAT_API_URI = import.meta.env.VITE_CHAT_API_URI;
 const CUSTOM_SCOPES = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
+const TEAMS_SSO_RESOURCE = import.meta.env.VITE_TEAMS_SSO_RESOURCE;
 
 // Microsoft Graph scopes and endpoints
 const GRAPH_SCOPES = ['profile', 'openid'];
@@ -78,6 +79,19 @@ export const apiConfig = {
 export const graphConfig = {
   graphMeEndpoint: GRAPH_ME_ENDPOINT,
   graphPhotoEndpoint: GRAPH_PHOTO_ENDPOINT,
+};
+
+export const getTeamsResource = (): string => {
+  if (TEAMS_SSO_RESOURCE && typeof TEAMS_SSO_RESOURCE === 'string') {
+    return TEAMS_SSO_RESOURCE;
+  }
+  // Reasonable default when Application ID URI is not explicitly provided
+  try {
+    const host = window.location.host;
+    return `api://${host}/${CLIENT_ID}`;
+  } catch {
+    return `api://${CLIENT_ID}`;
+  }
 };
 
 export { isInTeams, msalConfig };

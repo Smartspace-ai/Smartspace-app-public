@@ -1,7 +1,8 @@
-import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import axios from 'axios';
-import { interactiveLoginRequest, isInTeams, loginRequest } from '../app/msalConfig';
 import { msalInstance } from '@/auth/msalClient';
+import { InteractionRequiredAuthError } from '@azure/msal-browser';
+import { authentication } from '@microsoft/teams-js';
+import axios from 'axios';
+import { getTeamsResource, interactiveLoginRequest, isInTeams, loginRequest } from '../app/msalConfig';
 
 function getBaseUrl(): string {
   return import.meta.env.VITE_CHAT_API_URI || '';
@@ -13,6 +14,14 @@ export const API = axios.create({
 });
 
 API.interceptors.request.use(async (config) => {
+  // Avoid triggering MSAL or Teams token while on the login screen
+  try {
+    const path = window.location?.pathname || ''
+    if (path.startsWith('/login')) {
+      return config
+    }
+  } catch {}
+
   try {
     const account = msalInstance.getActiveAccount();
     if (!account) {
@@ -36,48 +45,20 @@ API.interceptors.request.use(async (config) => {
     // trigger an interactive authentication flow
     if (error instanceof InteractionRequiredAuthError) {
       const inTeamsEnvironment = isInTeams();
-      // console.log('Interactive auth required. Teams:', inTeamsEnvironment);
       
       try {
-        const account = msalInstance.getActiveAccount();
-        
-        // Use popup in Teams, redirect in web browsers
         if (inTeamsEnvironment) {
-          // Use a very explicit popup configuration for Teams
-          await msalInstance.loginPopup({
-            ...interactiveLoginRequest,
-            redirectUri: undefined, // Don't use redirect URI for popup
-            prompt: 'consent', // Explicitly request consent
-          });
+          // Teams desktop/mobile: get a silent SSO token via Teams SDK
+          const resource = getTeamsResource();
+          const teamsToken = await authentication.getAuthToken({ silent: true, resources: [resource] });
+          config.headers?.set('Authorization', `Bearer ${teamsToken}`);
         } else {
           await msalInstance.loginRedirect(interactiveLoginRequest);
-          // Note: After redirect, this code won't continue executing
-          // The page will reload and the user will be authenticated
           return config;
         }
-        
-        // After successful interactive login (popup only), retry token acquisition
-        const updatedAccount = msalInstance.getActiveAccount();
-        if (!updatedAccount) {
-          throw new Error('No active account after interactive login');
-        }
-        
-        const tokenResponse = await msalInstance.acquireTokenSilent({
-          ...loginRequest,
-          account: updatedAccount,
-        });
-        
-        config.headers?.set('Authorization', `Bearer ${tokenResponse.accessToken}`);
       } catch (interactiveError) {
         // console.error('Interactive authentication failed:', interactiveError);
-        
-        // If we're in Teams and authentication fails, provide helpful messaging
-        if (inTeamsEnvironment) {
-          // Don't redirect in Teams - just log the error
-        } else {
-          // In web browsers, we could redirect to login page
-          // window.location.href = '/login';
-        }
+        // No redirect in Teams
       }
     }
     

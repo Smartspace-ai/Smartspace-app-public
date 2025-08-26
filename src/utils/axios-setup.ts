@@ -1,7 +1,8 @@
+import { msalInstance } from '@/auth/msalClient';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
+import { authentication } from '@microsoft/teams-js';
 import axios from 'axios';
 import { interactiveLoginRequest, isInTeams } from '../app/msalConfig';
-import { msalInstance } from '@/auth/msalClient';
 
 function getBaseUrl() {
   const configBaseUrl =
@@ -17,6 +18,14 @@ const webApi = axios.create({
 });
 
 webApi.interceptors.request.use(async (config) => {
+  // Avoid triggering MSAL flows while on the login screen
+  try {
+    const path = window.location?.pathname || ''
+    if (path.startsWith('/login')) {
+      return config
+    }
+  } catch {}
+
   const scopes = (
     (window as any)?.ssconfig?.Client_Scopes ||
     import.meta.env.VITE_CLIENT_SCOPES ||
@@ -41,24 +50,17 @@ webApi.interceptors.request.use(async (config) => {
       const inTeamsEnvironment = isInTeams();
       
       try {
-        // Use popup in Teams, redirect in web browsers
+        // In Teams (desktop/mobile), get a token from Teams SDK (SSO) without UI
         if (inTeamsEnvironment) {
-          // Use a very explicit popup configuration for Teams
-          await msalInstance.loginPopup({
-            ...interactiveLoginRequest,
-            redirectUri: undefined, // Don't use redirect URI for popup
-            prompt: 'consent', // Explicitly request consent
+          const teamsToken = await authentication.getAuthToken({
+            silent: true,
           });
+          // Attach as Bearer if your API accepts it directly
+          config.headers.Authorization = `Bearer ${teamsToken}`;
         } else {
           await msalInstance.loginRedirect(interactiveLoginRequest);
-          // Note: After redirect, this code won't continue executing
-          // The page will reload and the user will be authenticated
           return config;
         }
-        
-        // After successful interactive login (popup only), retry token acquisition
-        const response = await msalInstance.acquireTokenSilent(request);
-        config.headers.Authorization = `Bearer ${response.accessToken}`;
       } catch (interactiveError) {
         console.error('Interactive authentication failed:', interactiveError);
         

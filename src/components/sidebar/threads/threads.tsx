@@ -1,7 +1,14 @@
+import { useMatch, useNavigate } from '@tanstack/react-router';
 import {
   Edit,
   Loader2 // Add Loader2 for spinner
   ,
+
+
+
+
+
+
 
   MessageSquare,
   MoreHorizontal,
@@ -11,7 +18,6 @@ import {
 } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 
 import {
@@ -57,14 +63,18 @@ export function Threads() {
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { workspaceId: urlWorkspaceId, threadId } = useParams();
+  const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
+  const workspaceMatch = useMatch({ from: '/_protected/workspace/$workspaceId', shouldThrow: false });
+  const urlWorkspaceId = (threadMatch?.params?.workspaceId ?? workspaceMatch?.params?.workspaceId)!;
+  const threadId = threadMatch?.params?.threadId;
 
-  const {data: thread} = useWorkspaceThread({workspaceId: urlWorkspaceId, threadId: threadId})
+  const { data: thread, error: threadError } = useWorkspaceThread({ workspaceId: urlWorkspaceId, threadId: threadId })
 
   const handleThreadClick = (thread: MessageThread) => {
-    navigate(
-      `/workspace/${urlWorkspaceId}/thread/${thread.id}`,
-    );
+    navigate({
+      to: '/workspace/$workspaceId/thread/$threadId',
+      params: { workspaceId: urlWorkspaceId!, threadId: thread.id },
+    });
   };
 
   const [autoCreatedThreadId, setAutoCreatedThreadId] = useState<string | null>(null);
@@ -73,33 +83,39 @@ export function Threads() {
     const newThreadId = crypto.randomUUID();
 
     // might need to set isNew search param
-    navigate(
-      `/workspace/${urlWorkspaceId}/thread/${newThreadId}`,
-    );
+    navigate({
+      to: '/workspace/$workspaceId/thread/$threadId',
+      params: { workspaceId: urlWorkspaceId!, threadId: newThreadId },
+    });
   }
 
   useEffect(() => {
-    if (!threadId && threads === undefined) {
+    if (!isLoading && !threadId && threads?.length === 0) {
       const newThreadId = crypto.randomUUID();
       setAutoCreatedThreadId(newThreadId);
       
-      // might need to set isNew search param
-      navigate(
-        `/workspace/${urlWorkspaceId}/thread/${newThreadId}`,
-      );
+      navigate({
+        to: '/workspace/$workspaceId/thread/$threadId',
+        params: { workspaceId: urlWorkspaceId!, threadId: newThreadId },
+      });
       return;
     }
 
     if (threads && threads.length > 0 && (!threadId || threadId === autoCreatedThreadId)) {
       const firstThread = threads[0];
-      navigate(`/workspace/${urlWorkspaceId}/thread/${firstThread.id}`);
+      navigate({
+        to: '/workspace/$workspaceId/thread/$threadId',
+        params: { workspaceId: urlWorkspaceId!, threadId: firstThread.id },
+      });
       return;
     }
   }, [
     threads,
     isLoading,
     threadId,
+    autoCreatedThreadId,
     urlWorkspaceId,
+    navigate,
   ]);
 
   return (

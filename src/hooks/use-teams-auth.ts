@@ -1,17 +1,24 @@
+import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import { useMsal } from '@azure/msal-react';
-import { authentication } from '@microsoft/teams-js';
+import { app, authentication } from '@microsoft/teams-js';
 import { useCallback, useState } from 'react';
 
+import { getTeamsTokenWithRetry } from '@/utils/getTeamsToken';
 import { teamsLoginRequest } from '../app/msalConfig';
 import { useTeams } from '../contexts/teams-context';
 
 export const useTeamsAuth = () => {
-  const { instance, accounts } = useMsal();
+  const { instance } = useMsal();
   const { isInTeams: inTeams, isTeamsInitialized, teamsUser } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const login = useCallback(async () => {    
+    // Prevent re-entrancy/loops
+    if (isLoading || isAuthenticated) {
+      return;
+    }
     setIsLoading(true);
     setError(null);
 
@@ -19,7 +26,7 @@ export const useTeamsAuth = () => {
       try {   
         const loginHint = teamsUser?.loginHint;
 
-        // Try Teams SSO first with consent prompt if needed
+        // Try Teams SSO silently via MSAL
         try {
           await instance.ssoSilent({
             ...teamsLoginRequest,
@@ -27,93 +34,88 @@ export const useTeamsAuth = () => {
             loginHint,
           });
 
+          setIsAuthenticated(true);
           return; // Success - exit early
         } catch (ssoError) {
-          console.log('SSO failed, trying Teams authentication popup with consent:', ssoError);
+          // Fallback: Use Teams SDK token for mobile-specific SSO
+          try {
+            await app.initialize();
+          } catch (_initErr) {
+            // ignore initialization errors; getAuthToken may still surface useful errors
+          }
 
-          await authentication.authenticate({
-            url: await buildAuthUrl(loginHint),
-            width: 480,
-            height: 650
-          });
+          try {
+            // Use retry for flaky mobile environments
+            const token = await getTeamsTokenWithRetry(3, 800)
+            if (!token) {
+              throw ssoError
+            }
+            setIsAuthenticated(true);
+          } catch (teamsError: unknown) {
+            // Fallback: Teams interactive auth via popup to our callback, then MSAL silent
+            try {
+              const baseUrl = `${window.location.origin}/auth/teams/callback`
+              const url = loginHint ? `${baseUrl}?login_hint=${encodeURIComponent(loginHint)}` : baseUrl
+              await authentication.authenticate({ url, width: 480, height: 650 })
 
-          await instance.ssoSilent({
-            ...teamsLoginRequest,
-            prompt: 'none',
-            loginHint,
-          });
+              await instance.ssoSilent({
+                ...teamsLoginRequest,
+                prompt: 'none',
+                loginHint,
+              })
+              setIsAuthenticated(true)
+              return
+            } catch (interactiveErr) {
+              throw new Error(
+                `Teams getAuthToken failed: ${formatAuthError(teamsError)} | Interactive failed: ${formatAuthError(interactiveErr)}`
+              )
+            }
+          }
 
-          return; // Success - exit early
+          // If your API uses MSAL tokens, you might need an OBO exchange here.
+          // For now, presence of a token indicates user is authenticated in Teams.
+          return;
         }
       } catch (authError) {
         console.error('Authentication failed:', authError);
-        const errorMessage = authError instanceof Error ? authError.message : 'Authentication failed';
-        setError(errorMessage);
+        setError(formatAuthError(authError));
         throw authError; // Re-throw so calling component can handle it
       } finally {
         setIsLoading(false);
       }
     }
-  }, [instance, inTeams, isTeamsInitialized, teamsUser]);
+  }, [instance, inTeams, isTeamsInitialized, teamsUser, isLoading, isAuthenticated]);
   
-  // Helper function to build the authentication URL for Teams
-  const buildAuthUrl = async (loginHint: string | undefined) => {
-    const clientId = import.meta.env.VITE_CLIENT_ID;
-    const tenantId = import.meta.env.VITE_CLIENT_AUTHORITY?.split('/').pop() || 'common';
-    // Use a dedicated callback route for Teams auth
-    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/teams/callback`);
-    const scopes = encodeURIComponent(teamsLoginRequest.scopes?.join(' ') || '');
-
-    // PKCE: generate code_verifier and code_challenge
-    const codeVerifier = generateRandomString();
-    const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);
-    localStorage.setItem('pkce_code_verifier', codeVerifier);
-
-    let url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
-      `client_id=${clientId}&` +
-      `response_type=code&` +
-      `redirect_uri=${redirectUri}&` +
-      `scope=${scopes}&` +
-      `response_mode=fragment&` +
-      `code_challenge=${codeChallenge}&` +
-      `code_challenge_method=S256`;
-
-    // Add login hint if available
-    if (loginHint) {
-      url += `&login_hint=${encodeURIComponent(loginHint)}`;
+  function formatAuthError(err: unknown): string {
+    try {
+      // MSAL error types
+      if (err instanceof InteractionRequiredAuthError) {
+        return `MSAL InteractionRequired: ${err.errorCode || ''} ${err.subError || ''}`.trim();
+      }
+      if (err && typeof err === 'object') {
+        const anyErr = err as Record<string, unknown>;
+        const parts: string[] = [];
+        if (anyErr.name) parts.push(String(anyErr.name));
+        if (anyErr.errorMessage) parts.push(String(anyErr.errorMessage));
+        if (anyErr.errorCode) parts.push(String(anyErr.errorCode));
+        if (anyErr.subError) parts.push(String(anyErr.subError));
+        if (anyErr.message) parts.push(String(anyErr.message));
+        if (anyErr.stack) parts.push('stack');
+        const msg = parts.filter(Boolean).join(' | ');
+        return msg || JSON.stringify(anyErr) || 'Authentication failed';
+      }
+      if (typeof err === 'string') return err;
+      return 'Authentication failed';
+    } catch {
+      return 'Authentication failed';
     }
-
-    return url;
-  };
-
-  // Helper to generate a random string for PKCE
-  function generateRandomString(length = 43) {
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-    let result = '';
-    const values = new Uint8Array(length);
-    window.crypto.getRandomValues(values);
-    for (let i = 0; i < values.length; i++) {
-      result += charset[values[i] % charset.length];
-    }
-    return result;
   }
-
-  // Helper to generate PKCE code_challenge from code_verifier
-  async function pkceChallengeFromVerifier(verifier: string) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const digest = await window.crypto.subtle.digest('SHA-256', data);
-    return btoa(String.fromCharCode(...new Uint8Array(digest)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  }
-
-
+  
   return {
     login,
     isLoading,
     error,
     isInTeams: inTeams,
+    isAuthenticated,
   };
 }; 

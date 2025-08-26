@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import styles from '../../Login/Login.module.scss';
 
-// Only import Teams SDK dynamically to avoid SSR issues
-import { authentication } from '@microsoft/teams-js';
+import { teamsLoginRequest } from '@/app/msalConfig';
+import { app, authentication } from '@microsoft/teams-js';
 
 const TeamsAuthCallback = () => {
   const [error, setError] = useState<string | null>(null);
@@ -11,11 +11,18 @@ const TeamsAuthCallback = () => {
     let isMounted = true;
     const handleAuth = async () => {
       try {
+        // Ensure Teams auth APIs are initialized (required on Teams mobile)
+        try {
+          await app.initialize();
+        } catch {
+          // ignore if already initialized or not required
+        }
         // Extract code or error from URL fragment or query
         const params = new URLSearchParams(window.location.hash.substring(1) || window.location.search.substring(1));
         const code = params.get('code');
         const error = params.get('error');
         const error_description = params.get('error_description')
+        const login_hint = params.get('login_hint') || undefined;
         if (error_description) {
           setError(error_description);
           return;
@@ -60,6 +67,30 @@ const TeamsAuthCallback = () => {
           }
           return;
         }
+        // No code yet: kick off the authorize flow with PKCE from this popup
+        const clientId = import.meta.env.VITE_CLIENT_ID;
+        const tenantId = import.meta.env.VITE_CLIENT_AUTHORITY?.split('/').pop() || 'common';
+        const redirectUri = encodeURIComponent(`${window.location.origin}/auth/teams/callback`);
+        const scopes = encodeURIComponent(teamsLoginRequest.scopes?.join(' ') || '');
+
+        const codeVerifier = generateRandomString();
+        const codeChallenge = await pkceChallengeFromVerifier(codeVerifier);
+        localStorage.setItem('pkce_code_verifier', codeVerifier);
+
+        let authorizeUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
+          `client_id=${clientId}&` +
+          `response_type=code&` +
+          `redirect_uri=${redirectUri}&` +
+          `scope=${scopes}&` +
+          `response_mode=fragment&` +
+          `code_challenge=${codeChallenge}&` +
+          `code_challenge_method=S256`;
+
+        if (login_hint) {
+          authorizeUrl += `&login_hint=${encodeURIComponent(login_hint)}`;
+        }
+
+        window.location.replace(authorizeUrl);
         return;
 
       } catch (err) {
@@ -85,5 +116,28 @@ const TeamsAuthCallback = () => {
     </div>
   );
 };
+
+// Helper to generate a random string for PKCE
+function generateRandomString(length = 43) {
+  const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  let result = '';
+  const values = new Uint8Array(length);
+  window.crypto.getRandomValues(values);
+  for (let i = 0; i < values.length; i++) {
+    result += charset[values[i] % charset.length];
+  }
+  return result;
+}
+
+// Helper to generate PKCE code_challenge from code_verifier
+async function pkceChallengeFromVerifier(verifier: string) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await window.crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
 
 export default TeamsAuthCallback; 

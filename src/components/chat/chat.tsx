@@ -2,12 +2,13 @@ import { useWorkspaceMessages } from '@/hooks/use-workspace-messages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FileInfo } from '../../models/file';
 
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
+import { Stack } from '@mui/material';
 import { MessageCreateContent } from '../../models/message';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
@@ -38,6 +39,8 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
   const [isDraggingOverChat, setIsDraggingOverChat] = useState(false);
   const [imagesForMessage, setImagesForMessage] = useState<FileInfo[]>([]);
+
+
 
   // Copy to clipboard handler
   const copyMessageToClipboard = (message: string, id: number) => {
@@ -155,15 +158,22 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     }
   };
 
+  useEffect(() => {
+    console.log('hi');
+    console.log("threadId", threadId);
+  }, []);
+
   return (
-    <div
-      className="ss-chat flex flex-col h-full border bg-card text-card-foreground shadow-sm bg-gradient-to-b from-background from-30% via-primary/0 via-70% to-primary/20 to-100%"
+    <Stack
+      direction="column"
+      className="ss-chat border bg-card text-card-foreground shadow-sm bg-gradient-to-b from-background from-30% via-primary/0 via-70% to-primary/20 to-100%"
+      sx={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%', width: '100%', overflow: 'hidden', alignSelf: 'stretch' }}
       onDragEnter={handleDragEnterChat}
       onDragLeave={handleDragLeaveChat}
       onDragOver={handleDragOverChat}
       onDrop={handleDropChat}
     >
-      <ChatHeader activeThread={activeThread} />
+      <ChatHeader />
 
       <AnimatePresence>
         {isDraggingOverChat && (
@@ -195,19 +205,22 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
         )}
       </AnimatePresence>
 
-      <ChatBody
-        messages={messages}
-        copiedMessageId={copiedMessageId}
-        messagesEndRef={messagesEndRef}
-        copyMessageToClipboard={copyMessageToClipboard}
-        isVisible={isVisible}
-        isLoading={isLoading}
-        isSendingMessage={isSendingMessage}
-        isBotResponding={isBotResponding}
-        commentsDraw={{} as any}
-        waitingResponse={false}
-        addValueToMessage={addValueToMessage}
-      />
+      {/* Content area */}
+      <Stack direction="column" sx={{ flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+        <ChatBody
+          messages={messages}
+          copiedMessageId={copiedMessageId}
+          messagesEndRef={messagesEndRef}
+          copyMessageToClipboard={copyMessageToClipboard}
+          isVisible={isVisible}
+          isLoading={isLoading}
+          isSendingMessage={isSendingMessage}
+          isBotResponding={isBotResponding}
+          commentsDraw={{} as any}
+          waitingResponse={false}
+          addValueToMessage={addValueToMessage}
+        />
+      </Stack>
 
       <ChatComposer
         workspace={activeWorkspace}
@@ -229,7 +242,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
         imagesForMessage={imagesForMessage}
         variablesFormRef={variablesFormRef}
       />
-    </div>
+    </Stack>
   );
 }
 

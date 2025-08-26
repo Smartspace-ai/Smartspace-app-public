@@ -192,7 +192,7 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
 
     Object.entries(workspace.variables).forEach(([varName, varConfig]) => {
       let schemaToUse = varConfig.schema;
-      let varNameToUse = varName;
+      const  varNameToUse = varName;
       
       // If this is an object with only one property, flatten it
       if (schemaToUse.type === 'object' && 
@@ -249,7 +249,7 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
       );
 
       // Configure UI elements with sizing and read-only state
-      let elementConfig: any = {};
+      const elementConfig: any = {};
       
       // Add read-only for variables with 'Read' access
       if (varConfig.access === 'Read') {

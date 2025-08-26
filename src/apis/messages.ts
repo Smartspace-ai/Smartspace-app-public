@@ -5,12 +5,17 @@ import { Subject } from 'rxjs';
 // Fetch all messages in a given message thread
 export async function fetchMessages(threadId: string): Promise<Message[]> {
   try {
-    const response = await webApi.get(`messagethreads/${threadId}/messages`);
-    const messages = (response.data.data as Message[]) || [];
-    return messages.map((message) => new Message(message));
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-    throw new Error('Failed to fetch messages');
+    const response = await webApi.get(`messagethreads/${threadId}/messages`)
+    const messages = (response.data.data as Message[]) || []
+    return messages.map((message) => new Message(message))
+  } catch (error: any) {
+    const status = error?.response?.status
+    const code = error?.response?.data?.code || error?.code
+    // Gracefully handle not-found threads as empty message lists
+    if (status === 404 || code === 'MT404') {
+      return []
+    }
+    throw error
   }
 }
 

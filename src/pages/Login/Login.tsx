@@ -1,6 +1,6 @@
 import { useMsal } from '@azure/msal-react';
 import { useEffect, useState } from 'react';
-import { interactiveLoginRequest } from '../../app/msalConfig';
+import { getTeamsResource, interactiveLoginRequest } from '../../app/msalConfig';
 import { Logo } from '../../assets/logo';
 import { Button } from '../../components/ui/button';
 import { useTeams } from '../../contexts/teams-context';
@@ -8,11 +8,20 @@ import { useTeamsAuth } from '../../hooks/use-teams-auth';
 import styles from './Login.module.scss';
 
 export function Login() {
-  const { instance, accounts } = useMsal();
-  const { login, isLoading, error, isInTeams } = useTeamsAuth();
+  // Grab intended redirect path from URL if present
+  const redirectParam = new URLSearchParams(window.location.search).get('redirect') ?? '/workspace';
+
+  const { instance, accounts, inProgress } = useMsal();
+  const { login, isLoading, error, isInTeams, isAuthenticated } = useTeamsAuth();
   const { isTeamsInitialized, teamsUser } = useTeams();
   const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
   const [showGenericError, setShowGenericError] = useState(false);
+  // Show generic error when there's an authentication error
+  useEffect(() => {
+    if (error) {
+      setShowGenericError(true);
+    }
+  }, [error]);
 
   // Auto-attempt Teams authentication when in Teams (only once)
   useEffect(() => {
@@ -25,27 +34,61 @@ export function Login() {
     }
   }, [isInTeams, isTeamsInitialized, isLoading, hasAttemptedAutoLogin, login, accounts.length]);
 
-  // Show generic error when there's an authentication error
+  // If we are signed in, send to intended page
+  // In Teams, redirect as soon as Teams SSO succeeds (ignore MSAL inProgress churn)
   useEffect(() => {
-    if (error) {
-      setShowGenericError(true);
+    if (isInTeams && isAuthenticated) {
+      window.location.replace(redirectParam)
+      return
     }
-  }, [error]);
+    if (!isInTeams && accounts.length > 0 && inProgress === 'none') {
+      window.location.replace(redirectParam)
+    }
+  }, [accounts.length, inProgress, redirectParam, isAuthenticated, isInTeams]);
+
+  // Avoid flashing the login UI while MSAL is handling redirect or we already have an account
+  // In Teams, keep the UI visible so we can surface detailed errors on mobile
+  if (!isInTeams && (accounts.length > 0 || inProgress !== 'none')) {
+    return null;
+  }
+
 
   // Fallback manual login for browser or if Teams SSO fails
   const handleManualLogin = async () => {
+    if (accounts.length > 0) {
+      window.location.replace(redirectParam)
+      return
+    }
+    // Log state for debugging
+    // eslint-disable-next-line no-console
+    const busy = inProgress !== 'none'
+    if (busy) {
+      return;
+    }
     setShowGenericError(false); // Clear previous errors
     
     try {
       if (isInTeams) {
         await login(); // Use Teams-aware login with login hints
       } else {
-        await instance.loginRedirect(interactiveLoginRequest);
+        await instance.loginRedirect({
+          ...interactiveLoginRequest,
+        });
       }
     } catch (authError) {
       // Show generic error on failure
       setShowGenericError(true);
-      console.error('Manual login failed:', authError);
+      // eslint-disable-next-line no-console
+      console.error('[Login] Manual login failed:', authError);
+    }
+  };
+
+  // Explicit Teams interactive fallback (mobile-safe)
+  const handleTeamsLogin = async () => {
+    try {
+      await login();
+    } catch (e) {
+      // Swallow; detailed error is shown via diagnostics
     }
   };
 
@@ -93,10 +136,28 @@ export function Login() {
     );
   };
 
+  // Lightweight diagnostics to display on mobile Teams
+  const diagnostics = {
+    isInTeams,
+    isTeamsInitialized,
+    msalInProgress: inProgress,
+    msalAccounts: accounts.length,
+    teamsUser: teamsUser
+      ? {
+          id: teamsUser.id,
+          loginHint: (teamsUser as unknown as { loginHint?: string }).loginHint,
+          userPrincipalName: (teamsUser as unknown as { userPrincipalName?: string }).userPrincipalName,
+          displayName: (teamsUser as unknown as { displayName?: string }).displayName,
+        }
+      : null,
+    teamsResource: getTeamsResource?.() || undefined,
+    lastError: error,
+  };
+
   return (
     <div className={`ss-login ${styles['container']}`}>
-      {/* Full-screen centered container with light gray background */}
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      {/* Guaranteed full-viewport container regardless of surrounding layout */}
+      <div className="fixed inset-0 z-[1000] w-screen h-screen flex items-center justify-center bg-gray-100">
         {/* Card container for the login form */}
         <div className="flex flex-col justify-center items-center p-8 bg-white shadow-md rounded-lg min-w-[300px] max-w-[400px]">
           {/* App logo */}
@@ -104,25 +165,34 @@ export function Login() {
             <Logo />
           </div>
 
-          {/* Always show login button */}
-          {
-            isInTeams?
-            <div>
-              Signing in with Teams...
+          {/* Login controls */}
+          {isInTeams ? (
+            <div className="w-full flex flex-col items-stretch gap-2">
+              <div className="text-sm text-gray-700 mb-1">Signing in with Teams…</div>
+              <Button onClick={handleTeamsLogin} disabled={isLoading} className="w-full text-lg">
+                {isLoading ? 'Working…' : 'Sign in with Teams'}
+              </Button>
             </div>
-            :
+          ) : (
             <Button 
               onClick={handleManualLogin} 
-              disabled={isLoading}
+              disabled={isLoading || inProgress !== 'none'}
               className="w-full text-lg mb-4"
             >
               {getButtonText()}
             </Button>
-          }
+          )}
 
-          {/* Show generic error message when authentication fails */}
-          {(showGenericError || error) && !isLoading && (
+          {/* Show error message even while loading to surface Teams/MSAL details on mobile */}
+          {(showGenericError || error) && (
             getErrorMessage()
+          )}
+
+          {/* Diagnostics: always show in Teams to aid mobile debugging */}
+          {isInTeams && (
+            <pre className="text-xs text-left whitespace-pre-wrap break-words mt-3 p-2 bg-gray-50 border rounded w-full max-w-[400px] overflow-auto">
+{JSON.stringify(diagnostics, null, 2)}
+            </pre>
           )}
         </div>
       </div>

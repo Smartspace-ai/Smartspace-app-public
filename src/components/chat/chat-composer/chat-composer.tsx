@@ -2,14 +2,14 @@
 
 import { Button } from '@/components/ui/button';
 import { useFileMutations } from '@/hooks/use-files';
+import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { Workspace } from '@/models/workspace';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Paperclip, X, FileText, FileImage, FileVideo, FileAudio, FileArchive, FileCode, FileSpreadsheet, Presentation } from 'lucide-react';
+import { Check, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Paperclip, Presentation, X } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { FileInfo } from '../../../models/file';
 import { ChatVariablesForm, ChatVariablesFormRef } from '../chat-variables-form/chat-variables-form';
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 
 // Utility function to get file type icon
 const getFileIcon = (fileName: string, fileType: string) => {
@@ -217,15 +217,15 @@ export default function ChatComposer({
   const sendDisabled = (!newMessage.trim() && !uploadedFiles?.length && !imagesForMessage.length) || isUploadingFiles || disabled || thread?.isFlowRunning;
 
   return (
-    <div className="ss-chat__composerh max-h-[60%] flex-shrink-0 overflow-y-auto w-full mt-auto bg-sidebar border-t px-4 py-4">
+    <div className="ss-chat__composer max-h-[60%] flex-shrink-0 w-full mt-auto bg-sidebar border-t px-4 py-4">
 
       {workspace && threadId && (
         <ChatVariablesForm workspace={workspace} threadId={threadId} ref={variablesFormRef} />
       )}
       
       {Object.keys(workspace?.variables ?? {}).length > 0 && <hr className="mb-2 mt-1" />}
-      <div className="max-w-5xl mx-auto rounded-md border shadow-sm bg-background ">
-        <div className="w-full mx-auto max-h-[400px] overflow-y-auto">
+      <div className="w-full rounded-md border shadow-sm bg-background ">
+        <div className="w-full max-h-[400px] overflow-y-auto">
           <div
             ref={dropzoneRef}
             className={`flex flex-col overflow-hidden transition-all ${

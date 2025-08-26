@@ -1,93 +1,70 @@
-import { useIsAuthenticated, useMsal } from '@azure/msal-react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+// src/app/app.tsx
+import { useIsAuthenticated, useMsal } from '@azure/msal-react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { useEffect, useMemo } from 'react'
 
-import { SidebarProvider } from '../components/ui/sidebar';
-import { TeamsProvider, useTeams } from '../contexts/teams-context';
+import { SidebarProvider } from '@/components/ui/sidebar'
+import { TeamsProvider, useTeams } from '@/contexts/teams-context'
+import { SignalRProvider } from '@/hooks/use-signalr'
+import { Loader2 } from 'lucide-react'
 
-import TeamsAuthCallback from '@/pages/auth/teams/callback';
-import { Loader2 } from 'lucide-react';
-import Login from '../pages/Login/Login';
-import AppRoutes from '../routes/app-routes';
-import { SignalRProvider } from '../hooks/use-signalr';
-
-export function App() {
-  const { instance } = useMsal();
-  const { isInTeams, isTeamsInitialized, teamsUser } = useTeams();
-  const [isMSALInitialized, setIsMSALInitialized] = useState(false);
-  const [queryClient] = useState(
+export function AppProviders({ children }: { children: React.ReactNode }) {
+  const queryClient = useMemo(
     () =>
       new QueryClient({
         defaultOptions: {
           queries: {
-            refetchOnWindowFocus: false, // Disable auto-refetch on window focus
+            refetchOnWindowFocus: false,
             retry: false,
+            refetchOnReconnect: false,
+            staleTime: 30_000,
           },
         },
-      })
-  );
+      }),
+    []
+  )
 
+  return (
+    <TeamsProvider>
+      <InnerProviders queryClient={queryClient}>{children}</InnerProviders>
+    </TeamsProvider>
+  )
+}
+
+function InnerProviders({ children, queryClient }: { children: React.ReactNode; queryClient: QueryClient }) {
+  const { instance } = useMsal()
+  const { isInTeams, isTeamsInitialized } = useTeams()
+  useIsAuthenticated()
+
+  // Ensure an MSAL active account is set
   useEffect(() => {
-    // On initial mount, set the first available account as active
-    const current = instance.getActiveAccount();
-    const all = instance.getAllAccounts();
-
+    const current = instance.getActiveAccount()
+    const all = instance.getAllAccounts()
     if (!current && all.length > 0) {
-      instance.setActiveAccount(all[0]);
+      instance.setActiveAccount(all[0])
     }
+  }, [instance])
 
-    setIsMSALInitialized(true);
-  }, [instance, isMSALInitialized]);
-
-  // Defensive: If Teams user and MSAL account are out of sync, force MSAL logout
-  useEffect(() => {
-    if (isInTeams && isTeamsInitialized) {
-      const teamsUserId = teamsUser?.id;
-      const msalAccount = instance.getActiveAccount();
-      if (msalAccount && teamsUserId && msalAccount.homeAccountId !== teamsUserId) {
-        // User changed, force logout
-        instance.logoutRedirect();
-      }
-    }
-  }, [isInTeams, isTeamsInitialized, teamsUser, instance]);
-
-  const isAuthenticated = useIsAuthenticated();
-
-  // Defensive: If in Teams, only render after both MSAL and Teams are initialized
-  if (!isMSALInitialized || (isInTeams && !isTeamsInitialized)) {
+  // If running inside Teams, wait for Teams init before rendering
+  if (isInTeams && !isTeamsInitialized) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
-    );
+    )
   }
 
   return (
-    <div style={{ height: '100%', width: '100%', backgroundColor: 'white' }}>
-      <TeamsProvider>
-        {isAuthenticated ? (
-          <QueryClientProvider client={queryClient}>
-            <SidebarProvider>
-                {/* Route-based app navigation */}
-                <BrowserRouter>
-                <SignalRProvider>
-                  <AppRoutes />
-                </SignalRProvider>
-                </BrowserRouter>
-            </SidebarProvider>
-        </QueryClientProvider>
-        ) : (
-          <BrowserRouter>
-            <Routes>
-              <Route path="/auth/teams/callback" element={<TeamsAuthCallback />} />
-              <Route path="*" element={<Login />} />
-            </Routes>
-          </BrowserRouter>
-        )}
-      </TeamsProvider>
-    </div>
-  );
+    <QueryClientProvider client={queryClient}>
+      <SidebarProvider defaultRightOpen>
+        <SignalRProvider>
+          {children}
+        </SignalRProvider>
+      </SidebarProvider>
+      {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
+    </QueryClientProvider>
+  )
 }
 
-export default App;
+export default AppProviders
