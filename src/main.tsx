@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom/client'
 
 import { EventMessage } from '@azure/msal-browser'
 import { MsalProvider } from '@azure/msal-react'
-import { msalInstance } from './auth/msalClient'
+import { msalInstance } from './domains/auth/msalClient'
 
 import { ErrorBoundary } from 'react-error-boundary'
 

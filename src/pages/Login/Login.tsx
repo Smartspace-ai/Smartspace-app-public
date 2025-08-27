@@ -1,21 +1,34 @@
+import { useTeamsAuth } from '@/domains/auth/use-teams-auth';
 import { useMsal } from '@azure/msal-react';
+import { jwtDecode } from 'jwt-decode';
 import { useEffect, useState } from 'react';
 import { getTeamsResource, interactiveLoginRequest } from '../../app/msalConfig';
 import { Logo } from '../../assets/logo';
 import { Button } from '../../components/ui/button';
 import { useTeams } from '../../contexts/teams-context';
-import { useTeamsAuth } from '../../hooks/use-teams-auth';
 import styles from './Login.module.scss';
 
 export function Login() {
   // Grab intended redirect path from URL if present
-  const redirectParam = new URLSearchParams(window.location.search).get('redirect') ?? '/workspace';
+  const redirectParam = new URLSearchParams(window.location.search).get('redirect') ?? '/_protected/workspace';
 
   const { instance, accounts, inProgress } = useMsal();
-  const { login, isLoading, error, isInTeams, isAuthenticated } = useTeamsAuth();
+  const { login, isLoading, error, isInTeams, isAuthenticated, teamsToken } = useTeamsAuth();
+  // Debug removed for production
+  let persistedToken: string | null = null
+  try {
+    persistedToken = sessionStorage.getItem('teamsAuthToken')
+  } catch (_e) { /* ignore */ }
+  const enableTeamsAutoLogin = import.meta.env.VITE_TEAMS_AUTOLOGIN === 'true'
   const { isTeamsInitialized, teamsUser } = useTeams();
   const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
   const [showGenericError, setShowGenericError] = useState(false);
+  const computeRedirectUrl = () => {
+    const raw = new URLSearchParams(window.location.search).get('redirect') ?? '/_protected/workspace'
+    const url = new URL(raw, window.location.origin)
+    return url.toString()
+  }
+  const redirectTarget = computeRedirectUrl()
   // Show generic error when there's an authentication error
   useEffect(() => {
     if (error) {
@@ -23,28 +36,27 @@ export function Login() {
     }
   }, [error]);
 
-  // Auto-attempt Teams authentication when in Teams (only once)
+  // Optional auto-attempt Teams authentication; disabled by default to prevent loops on mobile
   useEffect(() => {
+    if (!enableTeamsAutoLogin) return
     if (isInTeams && isTeamsInitialized && accounts.length === 0 && !isLoading && !hasAttemptedAutoLogin) {
-      setHasAttemptedAutoLogin(true);
+      setHasAttemptedAutoLogin(true)
       login().catch(() => {
-        // If auto-login fails, show generic error and allow manual retry
-        setShowGenericError(true);
-      });
+        setShowGenericError(true)
+      })
     }
-  }, [isInTeams, isTeamsInitialized, isLoading, hasAttemptedAutoLogin, login, accounts.length]);
+  }, [enableTeamsAutoLogin, isInTeams, isTeamsInitialized, isLoading, hasAttemptedAutoLogin, login, accounts.length])
 
-  // If we are signed in, send to intended page
-  // In Teams, redirect as soon as Teams SSO succeeds (ignore MSAL inProgress churn)
+  // Auto-redirect when authenticated (Teams or Web)
   useEffect(() => {
-    if (isInTeams && isAuthenticated) {
+    if (isInTeams && (isAuthenticated || persistedToken)) {
       window.location.replace(redirectParam)
       return
     }
     if (!isInTeams && accounts.length > 0 && inProgress === 'none') {
       window.location.replace(redirectParam)
     }
-  }, [accounts.length, inProgress, redirectParam, isAuthenticated, isInTeams]);
+  }, [accounts.length, inProgress, redirectParam, isAuthenticated, isInTeams, persistedToken]);
 
   // Avoid flashing the login UI while MSAL is handling redirect or we already have an account
   // In Teams, keep the UI visible so we can surface detailed errors on mobile
@@ -90,6 +102,12 @@ export function Login() {
     } catch (e) {
       // Swallow; detailed error is shown via diagnostics
     }
+  };
+
+  const handleContinue = () => {
+    try {
+      window.location.replace(redirectTarget)
+    } catch (_e) { /* ignore */ }
   };
 
   const getButtonText = () => {
@@ -152,7 +170,34 @@ export function Login() {
       : null,
     teamsResource: getTeamsResource?.() || undefined,
     lastError: error,
+    tokenPreview: (() => {
+      const tok = teamsToken || persistedToken
+      if (!tok) return null
+      const len = tok.length
+      const head = tok.slice(0, 12)
+      const tail = tok.slice(-8)
+      return `${head}…${tail} (${len} chars)`
+    })(),
+    claims: (() => {
+      try {
+        const tok = teamsToken || persistedToken
+        if (!tok) return null
+        const c: any = jwtDecode(tok)
+        return {
+          aud: c?.aud,
+          iss: c?.iss,
+          tid: c?.tid,
+          oid: c?.oid,
+          exp: c?.exp ? new Date(c.exp * 1000).toISOString() : undefined,
+        }
+      } catch {
+        return 'decode failed'
+      }
+    })(),
   };
+
+  // Prominent Teams error panel content
+  const showTeamsErrorPanel = isInTeams && (showGenericError || !!error)
 
   return (
     <div className={`ss-login ${styles['container']}`}>
@@ -172,6 +217,19 @@ export function Login() {
               <Button onClick={handleTeamsLogin} disabled={isLoading} className="w-full text-lg">
                 {isLoading ? 'Working…' : 'Sign in with Teams'}
               </Button>
+
+              {(isAuthenticated || !!persistedToken) && (
+                <Button onClick={handleContinue} className="w-full text-lg" variant="secondary">
+                  Continue to app
+                </Button>
+              )}
+
+              {showTeamsErrorPanel && (
+                <div className="mt-2 p-3 rounded border border-red-200 bg-red-50 text-red-800 text-sm">
+                  <div className="font-semibold mb-1">Teams sign-in error</div>
+                  {getErrorMessage()}
+                </div>
+              )}
             </div>
           ) : (
             <Button 
@@ -188,12 +246,7 @@ export function Login() {
             getErrorMessage()
           )}
 
-          {/* Diagnostics: always show in Teams to aid mobile debugging */}
-          {isInTeams && (
-            <pre className="text-xs text-left whitespace-pre-wrap break-words mt-3 p-2 bg-gray-50 border rounded w-full max-w-[400px] overflow-auto">
-{JSON.stringify(diagnostics, null, 2)}
-            </pre>
-          )}
+          {/* Diagnostics removed for production */}
         </div>
       </div>
     </div>

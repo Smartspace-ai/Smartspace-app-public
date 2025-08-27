@@ -16,7 +16,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProtectedWorkspaceIndexRouteImport } from './routes/_protected/workspace/index'
-import { Route as AuthTeamsCallbackRouteImport } from './routes/auth/teams/callback'
 import { Route as ProtectedWorkspaceWorkspaceIdIndexRouteImport } from './routes/_protected/workspace/$workspaceId/index'
 import { Route as ProtectedWorkspaceWorkspaceId_layoutRouteImport } from './routes/_protected/workspace/$workspaceId/__layout'
 import { Route as ProtectedWorkspaceWorkspaceIdThreadThreadIdRouteImport } from './routes/_protected/workspace/$workspaceId/thread/$threadId'
@@ -55,11 +54,6 @@ const ProtectedWorkspaceIndexRoute = ProtectedWorkspaceIndexRouteImport.update({
   path: '/workspace/',
   getParentRoute: () => ProtectedRoute,
 } as any)
-const AuthTeamsCallbackRoute = AuthTeamsCallbackRouteImport.update({
-  id: '/auth/teams/callback',
-  path: '/auth/teams/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProtectedWorkspaceWorkspaceIdIndexRoute =
   ProtectedWorkspaceWorkspaceIdIndexRouteImport.update({
     id: '/',
@@ -82,7 +76,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/notFound': typeof _rootNotFoundRoute
-  '/auth/teams/callback': typeof AuthTeamsCallbackRoute
   '/workspace': typeof ProtectedWorkspaceIndexRoute
   '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceId_layoutRoute
   '/workspace/$workspaceId/': typeof ProtectedWorkspaceWorkspaceIdIndexRoute
@@ -92,7 +85,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/notFound': typeof _rootNotFoundRoute
-  '/auth/teams/callback': typeof AuthTeamsCallbackRoute
   '/workspace': typeof ProtectedWorkspaceIndexRoute
   '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdIndexRoute
   '/workspace/$workspaceId/thread/$threadId': typeof ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute
@@ -103,7 +95,6 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/login': typeof LoginRoute
   '/__root/notFound': typeof _rootNotFoundRoute
-  '/auth/teams/callback': typeof AuthTeamsCallbackRoute
   '/_protected/workspace/': typeof ProtectedWorkspaceIndexRoute
   '/_protected/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdRouteWithChildren
   '/_protected/workspace/$workspaceId/__layout': typeof ProtectedWorkspaceWorkspaceId_layoutRoute
@@ -116,7 +107,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/notFound'
-    | '/auth/teams/callback'
     | '/workspace'
     | '/workspace/$workspaceId'
     | '/workspace/$workspaceId/'
@@ -126,7 +116,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/notFound'
-    | '/auth/teams/callback'
     | '/workspace'
     | '/workspace/$workspaceId'
     | '/workspace/$workspaceId/thread/$threadId'
@@ -136,7 +125,6 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/login'
     | '/__root/notFound'
-    | '/auth/teams/callback'
     | '/_protected/workspace/'
     | '/_protected/workspace/$workspaceId'
     | '/_protected/workspace/$workspaceId/__layout'
@@ -149,7 +137,6 @@ export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
   _rootNotFoundRoute: typeof _rootNotFoundRoute
-  AuthTeamsCallbackRoute: typeof AuthTeamsCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -195,13 +182,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/workspace'
       preLoaderRoute: typeof ProtectedWorkspaceIndexRouteImport
       parentRoute: typeof ProtectedRoute
-    }
-    '/auth/teams/callback': {
-      id: '/auth/teams/callback'
-      path: '/auth/teams/callback'
-      fullPath: '/auth/teams/callback'
-      preLoaderRoute: typeof AuthTeamsCallbackRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_protected/workspace/$workspaceId/': {
       id: '/_protected/workspace/$workspaceId/'
@@ -268,7 +248,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
   _rootNotFoundRoute: _rootNotFoundRoute,
-  AuthTeamsCallbackRoute: AuthTeamsCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

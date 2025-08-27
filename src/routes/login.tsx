@@ -1,4 +1,4 @@
-import { msalInstance } from '@/auth/msalClient'
+import { msalInstance } from '@/domains/auth/msalClient'
 import Login from '@/pages/Login/Login'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 

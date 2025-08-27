@@ -1,6 +1,6 @@
-import { msalInstance } from '@/auth/msalClient';
+import { msalInstance } from '@/domains/auth/msalClient';
+import { acquireNaaToken } from '@/domains/auth/naaClient';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import { authentication } from '@microsoft/teams-js';
 import axios from 'axios';
 import { interactiveLoginRequest, isInTeams } from '../app/msalConfig';
 
@@ -26,52 +26,37 @@ webApi.interceptors.request.use(async (config) => {
     }
   } catch {}
 
+  const inTeamsEnvironment = ((window as any)?.__teamsState?.isInTeams === true) || isInTeams();
+
+  // Teams: use NAA to get delegated API token (no fallback)
+  if (inTeamsEnvironment) {
+    try {
+      const scopes = [`api://e3f39d90-9235-435e-ba49-681727352613/smartspaceapi.chat.access`]
+      const token = await acquireNaaToken(scopes)
+      if (token) config.headers.Authorization = `Bearer ${token}`
+    } catch {
+      // Leave request unauthenticated on failure
+    }
+    return config
+  }
+
+  // Web (non-Teams): use MSAL
   const scopes = (
     (window as any)?.ssconfig?.Client_Scopes ||
     import.meta.env.VITE_CLIENT_SCOPES ||
     ''
   )
     .split(' ')
-    .filter(
-      (scope: string) => scope.indexOf('smartspaceapi.config.access') === -1
-    );
-  const request = {
-    scopes: scopes,
-  };
+    .filter((scope: string) => scope.indexOf('smartspaceapi.config.access') === -1);
+  const request = { scopes };
   try {
     const response = await msalInstance.acquireTokenSilent(request);
     config.headers.Authorization = `Bearer ${response.accessToken}`;
   } catch (error) {
-    console.error('Error getting msal token:', error);
-    
-    // If the error is due to interaction required (like consent_required),
-    // trigger an interactive authentication flow
     if (error instanceof InteractionRequiredAuthError) {
-      const inTeamsEnvironment = isInTeams();
-      
       try {
-        // In Teams (desktop/mobile), get a token from Teams SDK (SSO) without UI
-        if (inTeamsEnvironment) {
-          const teamsToken = await authentication.getAuthToken({
-            silent: true,
-          });
-          // Attach as Bearer if your API accepts it directly
-          config.headers.Authorization = `Bearer ${teamsToken}`;
-        } else {
-          await msalInstance.loginRedirect(interactiveLoginRequest);
-          return config;
-        }
-      } catch (interactiveError) {
-        console.error('Interactive authentication failed:', interactiveError);
-        
-        // If we're in Teams and authentication fails, provide helpful messaging
-        if (inTeamsEnvironment) {
-          // Don't redirect in Teams - just log the error
-        } else {
-          // In web browsers, we could redirect to login page
-          // window.location.href = '/login';
-        }
-      }
+        await msalInstance.loginRedirect(interactiveLoginRequest);
+      } catch {}
     }
   }
 

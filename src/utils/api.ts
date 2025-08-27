@@ -1,8 +1,8 @@
-import { msalInstance } from '@/auth/msalClient';
+import { msalInstance } from '@/domains/auth/msalClient';
+import { acquireNaaToken } from '@/domains/auth/naaClient';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import { authentication } from '@microsoft/teams-js';
 import axios from 'axios';
-import { getTeamsResource, interactiveLoginRequest, isInTeams, loginRequest } from '../app/msalConfig';
+import { interactiveLoginRequest, isInTeams, loginRequest } from '../app/msalConfig';
 
 function getBaseUrl(): string {
   return import.meta.env.VITE_CHAT_API_URI || '';
@@ -23,6 +23,16 @@ API.interceptors.request.use(async (config) => {
   } catch {}
 
   try {
+    const inTeamsEnvironment = ((window as any)?.__teamsState?.isInTeams === true) || isInTeams();
+    if (inTeamsEnvironment) {
+      try {
+        const scopes = [`api://e3f39d90-9235-435e-ba49-681727352613/smartspaceapi.chat.access`]
+        const token = await acquireNaaToken(scopes)
+        if (token) config.headers?.set('Authorization', `Bearer ${token}`)
+      } catch {}
+      return config
+    }
+
     const account = msalInstance.getActiveAccount();
     if (!account) {
       throw new Error(
@@ -45,21 +55,16 @@ API.interceptors.request.use(async (config) => {
     // trigger an interactive authentication flow
     if (error instanceof InteractionRequiredAuthError) {
       const inTeamsEnvironment = isInTeams();
-      
       try {
         if (inTeamsEnvironment) {
-          // Teams desktop/mobile: get a silent SSO token via Teams SDK
-          const resource = getTeamsResource();
-          const teamsToken = await authentication.getAuthToken({ silent: true, resources: [resource] });
-          config.headers?.set('Authorization', `Bearer ${teamsToken}`);
+          const scopes = [`api://e3f39d90-9235-435e-ba49-681727352613/smartspaceapi.chat.access`]
+          const token = await acquireNaaToken(scopes)
+          if (token) config.headers?.set('Authorization', `Bearer ${token}`)
         } else {
           await msalInstance.loginRedirect(interactiveLoginRequest);
           return config;
         }
-      } catch (interactiveError) {
-        // console.error('Interactive authentication failed:', interactiveError);
-        // No redirect in Teams
-      }
+      } catch {}
     }
     
     return config;
