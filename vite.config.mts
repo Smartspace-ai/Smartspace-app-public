@@ -14,7 +14,7 @@ export default defineConfig({
     port: 4300,
     host: 'localhost',
     // Allow current and previously used ngrok hosts
-    allowedHosts: ['3713aa4fb034.ngrok-free.app'],
+    allowedHosts: ['cf241b0a7e68.ngrok.app'],
   },
 
   preview: {
