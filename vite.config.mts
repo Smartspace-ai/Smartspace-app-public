@@ -1,7 +1,7 @@
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin'
 import react from '@vitejs/plugin-react'
 import path from 'path'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 
 // ✅ correct import
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
@@ -15,6 +15,14 @@ export default defineConfig({
     host: 'localhost',
     // Allow current and previously used ngrok hosts
     allowedHosts: ['cf241b0a7e68.ngrok.app'],
+    proxy: {
+      '/api': {
+        target: 'https://localhost:7242',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
 
   preview: {

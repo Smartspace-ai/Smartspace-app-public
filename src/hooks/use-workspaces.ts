@@ -22,6 +22,7 @@ export function useWorkspaces(searchTerm?: string) {
   const {
     data: workspaces = [],
     isLoading,
+    isFetched,
     error,
     refetch,
   } = useQuery({
@@ -54,6 +55,8 @@ export function useWorkspaces(searchTerm?: string) {
   return {
     workspaces,
     isLoading,
+    isFetched,
+    canQuery,
     error,
     refetch,
     handleWorkspaceChange,
