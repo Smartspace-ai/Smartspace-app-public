@@ -35,13 +35,18 @@ export const useTeamsAuth = () => {
             const url = new URL(redirectParam, window.location.origin)
             sessionStorage.setItem('teamsAuthRedirectUrl', url.toString())
             window.location.replace(url.toString())
-          } catch (_e) {}
+          } catch (_e) {
+            // ignore
+          }
         }
 
-        try { await app.initialize(); } catch (_e) {}
+        try { await app.initialize(); } catch (_e) {
+          // ignore
+        }
 
+        // Request exactly the API app's Application ID URI scope (no host prefix)
         const resourceAppId = 'e3f39d90-9235-435e-ba49-681727352613'
-        const scopes = [`api://${window.location.host}/${resourceAppId}/smartspaceapi.chat.access`]
+        const scopes = [`api://${resourceAppId}/smartspaceapi.chat.access`]
         const token = await acquireNaaToken(scopes)
         setTeamsToken(token)
         setIsAuthenticated(true)

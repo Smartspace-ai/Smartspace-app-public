@@ -1,8 +1,7 @@
 import { useTeamsAuth } from '@/domains/auth/use-teams-auth';
 import { useMsal } from '@azure/msal-react';
-import { jwtDecode } from 'jwt-decode';
 import { useEffect, useState } from 'react';
-import { getTeamsResource, interactiveLoginRequest } from '../../app/msalConfig';
+import { interactiveLoginRequest } from '../../app/msalConfig';
 import { Logo } from '../../assets/logo';
 import { Button } from '../../components/ui/button';
 import { useTeams } from '../../contexts/teams-context';
@@ -13,22 +12,17 @@ export function Login() {
   const redirectParam = new URLSearchParams(window.location.search).get('redirect') ?? '/_protected/workspace';
 
   const { instance, accounts, inProgress } = useMsal();
-  const { login, isLoading, error, isInTeams, isAuthenticated, teamsToken } = useTeamsAuth();
+  const { login, isLoading, error, isInTeams, isAuthenticated } = useTeamsAuth();
   // Debug removed for production
   let persistedToken: string | null = null
   try {
     persistedToken = sessionStorage.getItem('teamsAuthToken')
   } catch (_e) { /* ignore */ }
-  const enableTeamsAutoLogin = import.meta.env.VITE_TEAMS_AUTOLOGIN === 'true'
+  // Teams should auto-login (desktop and mobile)
   const { isTeamsInitialized, teamsUser } = useTeams();
   const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
   const [showGenericError, setShowGenericError] = useState(false);
-  const computeRedirectUrl = () => {
-    const raw = new URLSearchParams(window.location.search).get('redirect') ?? '/_protected/workspace'
-    const url = new URL(raw, window.location.origin)
-    return url.toString()
-  }
-  const redirectTarget = computeRedirectUrl()
+  // Compute redirect at use site only; helper removed
   // Show generic error when there's an authentication error
   useEffect(() => {
     if (error) {
@@ -36,16 +30,15 @@ export function Login() {
     }
   }, [error]);
 
-  // Optional auto-attempt Teams authentication; disabled by default to prevent loops on mobile
+  // Auto-attempt Teams authentication (desktop and mobile)
   useEffect(() => {
-    if (!enableTeamsAutoLogin) return
-    if (isInTeams && isTeamsInitialized && accounts.length === 0 && !isLoading && !hasAttemptedAutoLogin) {
+    if (isInTeams && isTeamsInitialized && !isLoading && !hasAttemptedAutoLogin) {
       setHasAttemptedAutoLogin(true)
       login().catch(() => {
         setShowGenericError(true)
       })
     }
-  }, [enableTeamsAutoLogin, isInTeams, isTeamsInitialized, isLoading, hasAttemptedAutoLogin, login, accounts.length])
+  }, [isInTeams, isTeamsInitialized, isLoading, hasAttemptedAutoLogin, login])
 
   // Auto-redirect when authenticated (Teams or Web)
   useEffect(() => {
@@ -95,20 +88,7 @@ export function Login() {
     }
   };
 
-  // Explicit Teams interactive fallback (mobile-safe)
-  const handleTeamsLogin = async () => {
-    try {
-      await login();
-    } catch (e) {
-      // Swallow; detailed error is shown via diagnostics
-    }
-  };
-
-  const handleContinue = () => {
-    try {
-      window.location.replace(redirectTarget)
-    } catch (_e) { /* ignore */ }
-  };
+  // Teams auto-login; no manual handlers needed
 
   const getButtonText = () => {
     if (isLoading) {
@@ -154,47 +134,7 @@ export function Login() {
     );
   };
 
-  // Lightweight diagnostics to display on mobile Teams
-  const diagnostics = {
-    isInTeams,
-    isTeamsInitialized,
-    msalInProgress: inProgress,
-    msalAccounts: accounts.length,
-    teamsUser: teamsUser
-      ? {
-          id: teamsUser.id,
-          loginHint: (teamsUser as unknown as { loginHint?: string }).loginHint,
-          userPrincipalName: (teamsUser as unknown as { userPrincipalName?: string }).userPrincipalName,
-          displayName: (teamsUser as unknown as { displayName?: string }).displayName,
-        }
-      : null,
-    teamsResource: getTeamsResource?.() || undefined,
-    lastError: error,
-    tokenPreview: (() => {
-      const tok = teamsToken || persistedToken
-      if (!tok) return null
-      const len = tok.length
-      const head = tok.slice(0, 12)
-      const tail = tok.slice(-8)
-      return `${head}…${tail} (${len} chars)`
-    })(),
-    claims: (() => {
-      try {
-        const tok = teamsToken || persistedToken
-        if (!tok) return null
-        const c: any = jwtDecode(tok)
-        return {
-          aud: c?.aud,
-          iss: c?.iss,
-          tid: c?.tid,
-          oid: c?.oid,
-          exp: c?.exp ? new Date(c.exp * 1000).toISOString() : undefined,
-        }
-      } catch {
-        return 'decode failed'
-      }
-    })(),
-  };
+  // Diagnostics removed for production
 
   // Prominent Teams error panel content
   const showTeamsErrorPanel = isInTeams && (showGenericError || !!error)
@@ -214,16 +154,6 @@ export function Login() {
           {isInTeams ? (
             <div className="w-full flex flex-col items-stretch gap-2">
               <div className="text-sm text-gray-700 mb-1">Signing in with Teams…</div>
-              <Button onClick={handleTeamsLogin} disabled={isLoading} className="w-full text-lg">
-                {isLoading ? 'Working…' : 'Sign in with Teams'}
-              </Button>
-
-              {(isAuthenticated || !!persistedToken) && (
-                <Button onClick={handleContinue} className="w-full text-lg" variant="secondary">
-                  Continue to app
-                </Button>
-              )}
-
               {showTeamsErrorPanel && (
                 <div className="mt-2 p-3 rounded border border-red-200 bg-red-50 text-red-800 text-sm">
                   <div className="font-semibold mb-1">Teams sign-in error</div>
