@@ -14,15 +14,7 @@ export default defineConfig({
     port: 4300,
     host: 'localhost',
     // Allow current and previously used ngrok hosts
-    allowedHosts: ['cf241b0a7e68.ngrok.app'],
-    proxy: {
-      '/api': {
-        target: 'https://localhost:7242',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-    },
+    allowedHosts: [ 'ec7e7e0fd983.ngrok.app'],
   },
 
   preview: {

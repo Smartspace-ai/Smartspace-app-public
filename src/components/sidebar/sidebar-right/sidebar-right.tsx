@@ -18,7 +18,7 @@ import { MentionUser } from '@/models/mention-user';
 import { Send } from '@mui/icons-material';
 import { Button, SvgIcon, Typography } from '@mui/material';
 import { MessageSquare } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTaggableWorkspaceUsers, useWorkspaceThreadComments } from '../../../hooks/use-workspace-thread-comments';
 import { MessageComment } from '../../../models/message-comment';
@@ -70,7 +70,11 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
   }, [taggableUsers, searchTerm]);
   
   return (
-    <Sidebar side="right" className="ss-sidebar__right border-l bg-background shadow-md">
+    <Sidebar
+      side="right"
+      className="ss-sidebar__right border-l bg-background shadow-md"
+      style={{ '--sidebar-width-mobile': '60vw' } as CSSProperties}
+    >
       <div className="bg-background flex flex-col h-full">
         <SidebarHeader className="h-[55px] shrink-0 flex justify-between border-b px-3">
           <div className="flex flex-1 items-center gap-2">

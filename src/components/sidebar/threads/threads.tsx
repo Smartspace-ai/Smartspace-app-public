@@ -10,6 +10,8 @@ import {
 
 
 
+
+
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -38,7 +40,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
+import { SidebarContent, SidebarFooter, useSidebar } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { CircleInitials } from '@/components/circle-initials';
@@ -50,6 +52,7 @@ import { MessageThread } from '../../../models/message-thread';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
 export function Threads() {  
+  const { isMobile, setOpenMobileLeft } = useSidebar();
   const {
     threads,
     isLoading,
@@ -75,6 +78,9 @@ export function Threads() {
       to: '/workspace/$workspaceId/thread/$threadId',
       params: { workspaceId: urlWorkspaceId!, threadId: thread.id },
     });
+    if (isMobile) {
+      setOpenMobileLeft(false);
+    }
   };
 
   const [autoCreatedThreadId, setAutoCreatedThreadId] = useState<string | null>(null);

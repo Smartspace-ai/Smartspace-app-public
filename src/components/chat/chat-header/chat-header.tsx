@@ -30,17 +30,17 @@ export function ChatHeader() {
         {/* Workspace and thread display */}
         <div className="flex items-center">
           {activeWorkspace?
-            <span className="font-medium text-sm">
+            <span className="font-medium text-xs">
               {activeWorkspace?.name}
             </span>
             :
-            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-4 w-28" />
           }
           {activeThread?.name && (
             <>
               <span className="mx-2 text-gray-400">/</span>
               <span
-                className="text-sm font-medium text-neutral-500 truncate max-w-[300px]"
+                className="text-xs font-medium text-neutral-500 truncate max-w-[240px]"
                 title={activeThread.name}
                 key={`thread-title-${activeThread.id}`} // Force re-render when thread changes
               >

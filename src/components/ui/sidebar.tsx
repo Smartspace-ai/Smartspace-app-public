@@ -23,7 +23,7 @@ const SIDEBAR_COOKIE_NAME = 'sidebar';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 const SIDEBAR_KEYBOARD_SHORTCUT = 'k';
 const SIDEBAR_WIDTH = '300px';
-const SIDEBAR_WIDTH_MOBILE = '85vw'; // Use viewport width for mobile
+const SIDEBAR_WIDTH_MOBILE = '80vw'; // Use viewport width for mobile
 const SIDEBAR_WIDTH_ICON = '48px';
 const MOBILE_BREAKPOINT = 1100; // md breakpoint
 
@@ -302,7 +302,9 @@ const Sidebar = forwardRef<
         <Sheet open={openMobile} onOpenChange={setOpenMobile}>
           <SheetContent
             side={side}
-            className="w-[--sidebar-width-mobile] p-0 bg-sidebar text-sidebar-foreground"
+            hideClose
+            style={{ width: SIDEBAR_WIDTH_MOBILE }}
+            className="p-0 bg-sidebar text-sidebar-foreground"
           >
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
