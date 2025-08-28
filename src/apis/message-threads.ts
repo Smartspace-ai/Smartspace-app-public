@@ -1,5 +1,5 @@
+import webApi from '@/domains/auth/axios-setup';
 import { MessageThread } from '../models/message-thread';
-import webApi from '../utils/axios-setup';
 
 // Fetch threads for a given workspace
 export async function fetchThreads(

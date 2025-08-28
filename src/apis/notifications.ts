@@ -1,5 +1,5 @@
+import webApi from '@/domains/auth/axios-setup';
 import { Notification } from '@/models/notification';
-import webApi from '../utils/axios-setup';
 
 const LIMIT = 10;
 

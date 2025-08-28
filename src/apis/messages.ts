@@ -1,5 +1,5 @@
+import webApi from '@/domains/auth/axios-setup';
 import { Message, MessageCreateContent, MessageFile } from '@/models/message';
-import webApi from '@/utils/axios-setup';
 import { Subject } from 'rxjs';
 
 // Fetch all messages in a given message thread

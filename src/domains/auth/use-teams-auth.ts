@@ -44,11 +44,15 @@ export const useTeamsAuth = () => {
           // ignore
         }
 
-        // Request exactly the API app's Application ID URI scope (no host prefix)
         const resourceAppId = 'e3f39d90-9235-435e-ba49-681727352613'
         const scopes = [`api://${resourceAppId}/smartspaceapi.chat.access`]
         const token = await acquireNaaToken(scopes)
         setTeamsToken(token)
+        try {
+          sessionStorage.setItem('teamsAuthToken', token)
+        } catch (_e) {
+          // ignore persistence failures
+        }
         setIsAuthenticated(true)
         redirectAfterAuth()
         return
