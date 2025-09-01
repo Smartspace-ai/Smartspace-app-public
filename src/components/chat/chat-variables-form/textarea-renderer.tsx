@@ -98,14 +98,15 @@ const TextareaRenderer: React.FC<TextareaRendererProps> = ({
           padding: '0.75rem',
           border: hasError ? '2px solid #ef4444' : '1px solid #d1d5db',
           borderRadius: '6px',
-          fontSize: '0.875rem',
+          fontSize: '16px',
           lineHeight: '1.5',
           fontFamily: 'inherit',
           backgroundColor: isDisabled ? '#f9fafb' : '#ffffff',
           color: isDisabled ? '#9ca3af' : '#111827',
           outline: 'none',
           transition: 'border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-          boxShadow: hasError ? '0 0 0 1px #ef4444' : 'none'
+          boxShadow: hasError ? '0 0 0 1px #ef4444' : 'none',
+          WebkitTextSizeAdjust: '100%'
         }}
         onFocus={(e) => {
           if (!hasError) {

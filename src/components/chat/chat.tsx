@@ -116,16 +116,11 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     }
   }, [newMessage, uploadedFiles, sendMessage, imagesForMessage]);
 
-  // Submit on Enter (not Shift+Enter)
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSendMessage();
-      }
-    },
-    [handleSendMessage]
-  );
+  // Do not submit on Enter; allow newline
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Prevent default sending behavior elsewhere; Enter inserts newline
+    return;
+  }, []);
 
   // Drag-and-drop handlers
   const handleDragEnterChat = (e: React.DragEvent) => {
@@ -162,6 +157,15 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     console.log('hi');
     console.log("threadId", threadId);
   }, []);
+
+  // When navigating to a specific thread, scroll messages to the bottom once loaded
+  useEffect(() => {
+    if (!threadId || isLoading) return;
+    const timeoutId = window.setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [threadId, isLoading]);
 
   return (
     <Stack

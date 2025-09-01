@@ -1,7 +1,6 @@
 // src/app/app.tsx
 import { useIsAuthenticated, useMsal } from '@azure/msal-react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useEffect, useMemo } from 'react'
 
 import { SidebarProvider } from '@/components/ui/sidebar'
@@ -62,7 +61,6 @@ function InnerProviders({ children, queryClient }: { children: React.ReactNode; 
           {children}
         </SignalRProvider>
       </SidebarProvider>
-      {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
     </QueryClientProvider>
   )
 }

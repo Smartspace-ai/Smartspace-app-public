@@ -1,13 +1,16 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { useSidebar } from '@/components/ui/sidebar';
 import { useFileMutations } from '@/hooks/use-files';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { Workspace } from '@/models/workspace';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Paperclip, Presentation, X } from 'lucide-react';
+import { ArrowBigUp, Check, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Maximize2, Minimize2, Paperclip, Presentation, X } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FileInfo } from '../../../models/file';
 import { ChatVariablesForm, ChatVariablesFormRef } from '../chat-variables-form/chat-variables-form';
 
@@ -99,6 +102,8 @@ export default function ChatComposer({
   const dropzoneRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showExpand, setShowExpand] = useState(false);
   const [filePreviewUrls, setFilePreviewUrls] = useState<
     { url: string; isImage: boolean; name: string }[]
   >([]);
@@ -106,13 +111,33 @@ export default function ChatComposer({
 
   const prevUrlsRef = useRef<string[]>([]);
   const {data: thread} = useWorkspaceThread({workspaceId: workspace?.id, threadId: threadId})
+  const isMobile = useIsMobile();
+  const { leftOpen, rightOpen } = useSidebar();
+
+  const adjustTextareaHeight = (textarea: HTMLTextAreaElement | null) => {
+    if (!textarea) return;
+    const MAX_TEXTAREA_HEIGHT = 240; // px
+    textarea.style.height = 'auto';
+    const desired = Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT);
+    textarea.style.height = `${desired}px`;
+    textarea.style.overflowY = textarea.scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
+
+    // Determine when to show expand button (>= 4 visible lines)
+    const computed = window.getComputedStyle(textarea);
+    let lineHeight = parseFloat(computed.lineHeight || '');
+    if (!lineHeight || Number.isNaN(lineHeight)) {
+      const fontSize = parseFloat(computed.fontSize || '16');
+      lineHeight = fontSize * 1.4; // fallback approximation
+    }
+    if (lineHeight > 0) {
+      const visibleLines = Math.round(desired / lineHeight);
+      setShowExpand(visibleLines >= 4);
+    }
+  };
 
   // Auto-adjust textarea height when message changes (including when cleared)
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
+    adjustTextareaHeight(textareaRef.current);
   }, [newMessage]);
 
   useEffect(() => {
@@ -220,11 +245,13 @@ export default function ChatComposer({
     <div className="ss-chat__composer max-h-[60%] flex-shrink-0 w-full mt-auto bg-sidebar border-t px-4 py-4">
 
       {workspace && threadId && (
-        <ChatVariablesForm workspace={workspace} threadId={threadId} ref={variablesFormRef} />
+        <div className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${!isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''} transition-[max-width] duration-300 ease-in-out`}>
+          <ChatVariablesForm workspace={workspace} threadId={threadId} ref={variablesFormRef} />
+        </div>
       )}
-      
-      {Object.keys(workspace?.variables ?? {}).length > 0 && <hr className="mb-2 mt-1" />}
-      <div className="w-full rounded-md border shadow-sm bg-background ">
+      {Object.keys(workspace?.variables ?? {}).length > 0 && <hr className="my-2" />}
+
+      <div className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${!isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''} bg-background ${isMobile ? '' : 'rounded-md border shadow-sm'} transition-[max-width] duration-300 ease-in-out`}>
         <div className="w-full max-h-[400px] overflow-y-auto">
           <div
             ref={dropzoneRef}
@@ -329,34 +356,184 @@ export default function ChatComposer({
               )}
             </AnimatePresence>
 
-            <textarea
-              ref={textareaRef}
-              value={newMessage}
-              onChange={(e) => {
-                setNewMessage(e.target.value);
+            {isMobile ? (
+              <div className="flex items-center gap-2 px-3 py-2">
+                {supportsFiles && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground self-end"
+                    disabled={disabled || isUploadingFiles}
+                    onClick={handlePaperclipClick}
+                  >
+                    <Paperclip className="h-4 w-4" />
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      multiple
+                      className="hidden"
+                    />
+                  </Button>
+                )}
 
-                // Auto-resize logic
-                e.target.style.height = "auto"; // Reset to auto so shrinking works too
-                e.target.style.height = `${e.target.scrollHeight}px`;
-              }}
-              onInput={(e) => {
-                // Ensures expansion even if value is set programmatically
-                e.currentTarget.style.height = "auto";
-                e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                isDragging
-                  ? "Drop files here..."
-                  : disabled
-                  ? "Select a thread to start chatting..."
-                  : "Type a message..."
-              }
-              className="w-full resize-none border-0 bg-transparent px-5 py-4 text-sm focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[100px]"
-              disabled={disabled}
-            />
+                <div className="relative flex-1">
+                  <textarea
+                    ref={textareaRef}
+                    rows={1}
+                    value={newMessage}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      adjustTextareaHeight(e.target);
+                    }}
+                    onInput={(e) => {
+                      adjustTextareaHeight(e.currentTarget);
+                    }}
+                    onKeyDown={handleKeyDown}
+                    placeholder={
+                      isDragging
+                        ? "Drop files here..."
+                        : disabled
+                        ? "Select a thread to start chatting..."
+                        : "Type a message..."
+                    }
+                    className="w-full resize-none border-0 rounded-none bg-transparent px-2 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors max-h-60 overflow-y-auto"
+                    style={{ fontSize: 16, WebkitTextSizeAdjust: '100%' }}
+                    disabled={disabled}
+                  />
+                  {showExpand && !isFullscreen && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 absolute top-1 right-1 text-muted-foreground hover:text-foreground"
+                      onClick={() => setIsFullscreen(true)}
+                      aria-label="Expand"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                <Button
+                  onClick={() => {
+                    handleSendMessage();
+                    handleRemoveAllFiles();
+                  }}
+                  variant="default"
+                  size="icon"
+                  className={`h-10 w-10 rounded-full self-end ${
+                    sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  disabled={sendDisabled}
+                  aria-label="Send"
+                >
+                  <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  rows={1}
+                  value={newMessage}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    adjustTextareaHeight(e.target);
+                  }}
+                  onInput={(e) => {
+                    adjustTextareaHeight(e.currentTarget);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder={
+                    isDragging
+                      ? "Drop files here..."
+                      : disabled
+                      ? "Select a thread to start chatting..."
+                      : "Type a message..."
+                  }
+                  className={`w-full resize-none border-0 rounded-none bg-transparent px-5 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors max-h-60 overflow-y-auto`}
+                  style={{ fontSize: 16, WebkitTextSizeAdjust: '100%' }}
+                  disabled={disabled}
+                />
+              </div>
+            )}
           </div>
         </div>
+        {isMobile && isFullscreen && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-x-0" style={{ top: '5vh', height: '95vh', left: 0, right: 0, zIndex: 1300 }}>
+            <div className="relative h-full w-full bg-background border shadow-lg">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsFullscreen(false);
+                }}
+                aria-label="Collapse"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+              <div className="flex flex-col h-full">
+                <div className="flex-1">
+                  <textarea
+                    rows={10}
+                    value={newMessage}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                    }}
+                    onKeyDown={handleKeyDown}
+                    placeholder={disabled ? "Select a thread to start chatting..." : "Type a message..."}
+                    className="w-full h-full resize-none border-0 bg-background p-4 text-sm focus-visible:outline-none focus-visible:ring-0"
+                    style={{ fontSize: 16, WebkitTextSizeAdjust: '100%' }}
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 border-t bg-background">
+                  {supportsFiles && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      disabled={disabled || isUploadingFiles}
+                      onClick={handlePaperclipClick}
+                    >
+                      <Paperclip className="h-4 w-4" />
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                        multiple
+                        className="hidden"
+                      />
+                    </Button>
+                  )}
+                  <div className="flex-1" />
+                  <Button
+                    onClick={() => {
+                      handleSendMessage();
+                      handleRemoveAllFiles();
+                    }}
+                    variant="default"
+                    size="icon"
+                    className={`h-10 w-10 rounded-full ${
+                      sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    disabled={sendDisabled}
+                    aria-label="Send"
+                  >
+                    <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+        {!isMobile && (
         <div className="flex items-center justify-between px-4 py-2 bg-background">
           <div className="flex items-center gap-3">
             {supportsFiles && (
@@ -405,6 +582,7 @@ export default function ChatComposer({
             )}
           </Button>
         </div>
+        )}
       </div>
     </div>
   );

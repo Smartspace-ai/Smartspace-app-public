@@ -9,7 +9,6 @@ import { msalInstance } from './domains/auth/msalClient'
 import { ErrorBoundary } from 'react-error-boundary'
 
 import { RouterProvider, createRouter } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { routeTree } from './routeTree.gen'
 
 function fallbackRender({ error }: { error: Error }) {
@@ -61,9 +60,6 @@ msalInstance.initialize().then(() => {
       <ErrorBoundary fallbackRender={fallbackRender}>
         <MsalProvider instance={msalInstance}>
           <RouterProvider router={router} />
-          {import.meta.env.DEV ? (
-            <TanStackRouterDevtools router={router} position="bottom-right" initialIsOpen={false} />
-          ) : null}
         </MsalProvider>
       </ErrorBoundary>
     </StrictMode>,

@@ -5,6 +5,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
+import { Button as UIButton } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sidebar,
@@ -12,12 +13,14 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from '@/components/ui/sidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import { MentionInput } from '@/components/mention-input/mention-input';
 import { MentionUser } from '@/models/mention-user';
+ 
 import { Send } from '@mui/icons-material';
-import { Button, SvgIcon, Typography } from '@mui/material';
-import { MessageSquare } from 'lucide-react';
+import { Button as MuiButton, SvgIcon, Typography } from '@mui/material';
+import { ArrowBigUp, MessageSquare } from 'lucide-react';
 import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTaggableWorkspaceUsers, useWorkspaceThreadComments } from '../../../hooks/use-workspace-thread-comments';
@@ -36,6 +39,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
   const [threadComment, setThreadComment] = useState({plain: '', withMentions: ''});
   const [searchTerm, setSearchTerm] = useState('');
   const [mentionList, setMentionList] = useState<MentionUser[]>([]);
+  // Using responsive layout; not focusing input on open anymore
 
   const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -68,6 +72,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
       user.displayName.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [taggableUsers, searchTerm]);
+  const isMobile = useIsMobile();
   
   return (
     <Sidebar
@@ -75,7 +80,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
       className="ss-sidebar__right border-l bg-background shadow-md"
       style={{ '--sidebar-width-mobile': '60vw' } as CSSProperties}
     >
-      <div className="bg-background flex flex-col h-full">
+      <div className="bg-background flex flex-col h-full min-h-0">
         <SidebarHeader className="h-[55px] shrink-0 flex justify-between border-b px-3">
           <div className="flex flex-1 items-center gap-2">
             <Breadcrumb>
@@ -93,8 +98,8 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="p-0">
-          <ScrollArea className="h-full">
+        <SidebarContent className="p-0 min-h-0">
+          <ScrollArea className="flex-1 min-h-0">
             <div className="space-y-3 p-4">
               {isLoading ? (
                 <div className="flex flex-col space-y-4 p-4">
@@ -147,43 +152,89 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
           </ScrollArea>
         </SidebarContent>
 
-        <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)] h-55">
+        <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)] shrink-0">
           <form onSubmit={handleAddComment}>
-            <div>
-              <MentionInput
-                value={threadComment}
-                onChange={setThreadComment}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                users={filteredUsers || []}
-                mentionList={mentionList}
-                setMentionList={setMentionList}
-              />
-              <Typography
-                color="textSecondary"
-                textAlign="right"
-                fontSize={12}
-                marginTop={1}
-              >
-                {threadComment.plain.length}/{MAX_COMMENT_LENGTH}
-              </Typography>
-            </div>
-            <Button
-              loading={isAddingComment}
-              loadingIndicator="Loading…"
-              color="primary"
-              sx={{ alignSelf: 'end' }}
-              disabled={threadComment.plain.trim().length === 0}
-              variant="contained"
-              type="submit"
-              startIcon={
-                <SvgIcon fontSize="small">
-                  <Send />
-                </SvgIcon>
-              }
-            >
-              Post
-            </Button>
+            {isMobile ? (
+              <div className="relative">
+                <MentionInput
+                  value={threadComment}
+                  onChange={setThreadComment}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  users={filteredUsers || []}
+                  mentionList={mentionList}
+                  setMentionList={setMentionList}
+                  minRows={3}
+                  maxRows={6}
+                  showFullscreenToggle={false}
+                  placeholder="Type a comment..."
+                  inputSx={{
+                    '& .MuiInputBase-root': {
+                      pr: 10,
+                    },
+                    '& textarea': {
+                      lineHeight: 1.4,
+                      maxHeight: 144,
+                      overflowY: 'auto',
+                    },
+                  }}
+                />
+                <div className="absolute bottom-1 right-11 text-xs text-muted-foreground select-none bg-background/80 px-1 rounded">
+                  {threadComment.plain.length}/{MAX_COMMENT_LENGTH}
+                </div>
+                <UIButton
+                  type="submit"
+                  variant="default"
+                  size="icon"
+                  className={`h-9 w-9 rounded-full absolute bottom-1 right-1 ${threadComment.plain.trim().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={threadComment.plain.trim().length === 0 || isAddingComment}
+                  aria-label="Post comment"
+                >
+                  <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
+                </UIButton>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <MentionInput
+                    value={threadComment}
+                    onChange={setThreadComment}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    users={filteredUsers || []}
+                    mentionList={mentionList}
+                    setMentionList={setMentionList}
+                    minRows={5}
+                    showFullscreenToggle={false}
+                    placeholder="Type a comment..."
+                  />
+                  <Typography
+                    color="textSecondary"
+                    textAlign="right"
+                    fontSize={12}
+                    marginTop={1}
+                  >
+                    {threadComment.plain.length}/{MAX_COMMENT_LENGTH}
+                  </Typography>
+                </div>
+                <MuiButton
+                  loading={isAddingComment}
+                  loadingIndicator="Loading…"
+                  color="primary"
+                  sx={{ alignSelf: 'end' }}
+                  disabled={threadComment.plain.trim().length === 0}
+                  variant="contained"
+                  type="submit"
+                  startIcon={
+                    <SvgIcon fontSize="small">
+                      <Send />
+                    </SvgIcon>
+                  }
+                >
+                  Post
+                </MuiButton>
+              </>
+            )}
           </form>
         </SidebarFooter>
       </div>

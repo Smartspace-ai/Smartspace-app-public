@@ -11,11 +11,13 @@ import { parseDateTime } from '../../../utils/parse-date-time';
 
 import { downloadFile } from '@/apis/files';
 import { useActiveUser } from '@/hooks/use-active-user';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { useMatch } from '@tanstack/react-router';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
+import { useSidebar } from '../../ui/sidebar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
 
@@ -50,11 +52,13 @@ export default function ChatBody({
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const scrollTopRef = useRef<number>(0);
   const { data: activeWorkspace } = useActiveWorkspace();
+  const isMobile = useIsMobile();
   const activeUser = useActiveUser();
   const [isAtBottom, setIsAtBottom] = useState(true);
   const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
   const threadId = threadMatch?.params?.threadId;
   const { data: thread, isPending: threadLoading, error: threadError } = useWorkspaceThread({ workspaceId: activeWorkspace?.id, threadId: threadId })
+  const { leftOpen, rightOpen } = useSidebar();
 
   useEffect(() => {
     if (isVisible && viewportRef.current) {
@@ -128,7 +132,10 @@ export default function ChatBody({
             setIsAtBottom(viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold);
           }}
         >
-          <div ref={contentRef} className="flex flex-col w-full px-2 sm:px-3 md:px-4">
+          <div
+            ref={contentRef}
+            className={`flex flex-col w-full ${!isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''} px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
+          >
             {messages.map((message, index) => (
               <div
                 className="ss-chat__message w-full"

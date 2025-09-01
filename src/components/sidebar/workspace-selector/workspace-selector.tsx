@@ -3,6 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useActiveWorkspace, useWorkspaces } from '@/hooks/use-workspaces';
 
 import { CircleInitials } from '@/components/circle-initials';
+import { useSidebar } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 import debounce from 'lodash/debounce';
 import { ChevronDown } from 'lucide-react';
@@ -36,6 +37,8 @@ export function WorkspaceSelector() {
 
   const { workspaces, isLoading, handleWorkspaceChange } = useWorkspaces(debouncedSearchTerm);
   const { data: activeWorkspace } = useActiveWorkspace();
+  // Close sidebar on workspace selection (mobile)
+  const { isMobile, setOpenMobileLeft } = useSidebar();
 
   return (
     <div className="px-4 pt-3 pb-2 ">
@@ -56,6 +59,7 @@ export function WorkspaceSelector() {
                   onChange={e => setSearchTerm(e.target.value)}
                   placeholder="Search workspaces..."
                   className="truncate font-medium bg-transparent outline-none border-none p-0 m-0 text-xs w-full"
+                  style={{ fontSize: 16, WebkitTextSizeAdjust: '100%' }}
                   onClick={e => e.stopPropagation()}
                   onKeyDown={e => e.stopPropagation()}
                 />
@@ -96,6 +100,10 @@ export function WorkspaceSelector() {
                       handleWorkspaceChange(ws);
                       setOpen(false);
                       setSearchTerm('');
+                      // Close left sidebar on mobile after navigating
+                      if (isMobile) {
+                        setOpenMobileLeft(false);
+                      }
                     }}
                   />
                 ))

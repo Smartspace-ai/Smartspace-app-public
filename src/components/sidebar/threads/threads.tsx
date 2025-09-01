@@ -12,6 +12,15 @@ import {
 
 
 
+
+
+
+
+
+
+
+
+
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -44,7 +53,7 @@ import { SidebarContent, SidebarFooter, useSidebar } from '@/components/ui/sideb
 import { Skeleton } from '@/components/ui/skeleton';
 
 import { CircleInitials } from '@/components/circle-initials';
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
+// import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
 import { renameThread } from '../../../apis/message-threads';
@@ -68,15 +77,17 @@ export function Threads() {
   const navigate = useNavigate();
   const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
   const workspaceMatch = useMatch({ from: '/_protected/workspace/$workspaceId', shouldThrow: false });
-  const urlWorkspaceId = (threadMatch?.params?.workspaceId ?? workspaceMatch?.params?.workspaceId)!;
+  const urlWorkspaceId = threadMatch?.params?.workspaceId ?? workspaceMatch?.params?.workspaceId;
   const threadId = threadMatch?.params?.threadId;
 
-  const { data: thread, error: threadError } = useWorkspaceThread({ workspaceId: urlWorkspaceId, threadId: threadId })
+  // Removed unused thread fetch to avoid extra renders and warnings
 
   const handleThreadClick = (thread: MessageThread) => {
+    const workspaceIdToUse = thread.workSpaceId ?? urlWorkspaceId;
+    if (!workspaceIdToUse) return;
     navigate({
       to: '/workspace/$workspaceId/thread/$threadId',
-      params: { workspaceId: urlWorkspaceId!, threadId: thread.id },
+      params: { workspaceId: workspaceIdToUse, threadId: thread.id },
     });
     if (isMobile) {
       setOpenMobileLeft(false);
@@ -89,10 +100,15 @@ export function Threads() {
     const newThreadId = crypto.randomUUID();
 
     // might need to set isNew search param
+    const targetWorkspaceId = urlWorkspaceId ?? threads?.[0]?.workSpaceId;
+    if (!targetWorkspaceId) return;
     navigate({
       to: '/workspace/$workspaceId/thread/$threadId',
-      params: { workspaceId: urlWorkspaceId!, threadId: newThreadId },
+      params: { workspaceId: targetWorkspaceId, threadId: newThreadId },
     });
+    if (isMobile) {
+      setOpenMobileLeft(false);
+    }
   }
 
   useEffect(() => {
@@ -100,19 +116,24 @@ export function Threads() {
       const newThreadId = crypto.randomUUID();
       setAutoCreatedThreadId(newThreadId);
       
-      navigate({
-        to: '/workspace/$workspaceId/thread/$threadId',
-        params: { workspaceId: urlWorkspaceId!, threadId: newThreadId },
-      });
+      if (urlWorkspaceId) {
+        navigate({
+          to: '/workspace/$workspaceId/thread/$threadId',
+          params: { workspaceId: urlWorkspaceId, threadId: newThreadId },
+        });
+      }
       return;
     }
 
-    if (threads && threads.length > 0 && (!threadId || threadId === autoCreatedThreadId)) {
+    if (threads && threads.length > 0 && (!threadId || (autoCreatedThreadId && threadId === autoCreatedThreadId))) {
       const firstThread = threads[0];
-      navigate({
-        to: '/workspace/$workspaceId/thread/$threadId',
-        params: { workspaceId: urlWorkspaceId!, threadId: firstThread.id },
-      });
+      const workspaceIdToUse = firstThread.workSpaceId ?? urlWorkspaceId;
+      if (workspaceIdToUse) {
+        navigate({
+          to: '/workspace/$workspaceId/thread/$threadId',
+          params: { workspaceId: workspaceIdToUse, threadId: firstThread.id },
+        });
+      }
       return;
     }
   }, [
@@ -256,7 +277,7 @@ function ThreadItem({
 
   const { setFavoriteMutation } = useThreadSetFavorite(thread.workSpaceId, thread.id)
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (
       e.target instanceof Element &&
       (e.target.closest('button') || e.target.closest('[role="menuitem"]'))
@@ -299,7 +320,7 @@ function ThreadItem({
       className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-accent cursor-pointer transition-all rounded-lg ${
         isActive ? 'bg-accent shadow-sm' : ''
       }`}
-      onClick={handleClick}
+      onPointerDown={handlePointerDown}
       onMouseEnter={() => onHover(thread.id)}
       onMouseLeave={() => {
         if (hoveredThreadId === thread.id && openMenuId !== thread.id) {
@@ -320,7 +341,7 @@ function ThreadItem({
             {thread.totalMessages === 1 ? 'message' : 'messages'}  {' '}
           </div>
 
-          {(thread.isFlowRunning && thread) ? (
+          {thread.isFlowRunning ? (
             <div className="text-amber-500 font-medium flex items-center gap-1">
               <Loader2 className="h-4 w-4 animate-spin" /> 
               <p className='text-xs'>Running…</p>
@@ -418,16 +439,14 @@ function ThreadItemMenu({
         <Button
           variant="ghost"
           size="icon"
-          className={`h-5 w-5 absolute right-1.5 top-1.5 p-0 transition-opacity rounded-full ${
-            isHovered || isMenuOpen ? 'opacity-100' : 'opacity-0'
-          } ${
+          className={`h-7 w-7 absolute right-1.5 top-1.5 p-0 rounded-full opacity-100 z-10 ${
             isActive
-              ? 'text-slate-700 hover:bg-slate-300'
-              : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+              ? 'text-gray-500 hover:bg-gray-200'
+              : 'text-gray-400 hover:bg-gray-200 hover:text-gray-600'
           }`}
-          onClick={(e) => e.stopPropagation()}
+          
         >
-          <MoreHorizontal className="h-3 w-3" />
+          <MoreHorizontal className="h-4 w-4" />
           <span className="sr-only">More options</span>
         </Button>
       </DropdownMenuTrigger>

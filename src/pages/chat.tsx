@@ -17,7 +17,7 @@ export default function ChatBotPage() {
   const workspaceMatch = useMatch({ from: '/_protected/workspace/$workspaceId', shouldThrow: false })
   const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false })
   const threadId = threadMatch?.params?.threadId
-  const workspaceId = (workspaceMatch as any)?.params?.workspaceId
+  const workspaceId = workspaceMatch?.params?.workspaceId
   const { threads, isLoading: threadsLoading, isFetched: threadsFetched } = useWorkspaceThreads()
   const { workspaces, isLoading: workspacesLoading } = useWorkspaces()
 
