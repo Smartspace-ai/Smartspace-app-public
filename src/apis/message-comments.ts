@@ -1,5 +1,5 @@
+import webApi from '@/domains/auth/axios-setup';
 import { MessageComment } from '@/models/message-comment';
-import webApi from '../utils/axios-setup';
 import { MentionUser } from './../models/mention-user';
 
 // Fetch all comments for a given thread

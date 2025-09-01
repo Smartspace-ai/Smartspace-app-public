@@ -1,14 +1,20 @@
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MentionUser } from '@/models/mention-user';
 import {
   Avatar,
+  IconButton,
   List,
   ListItemAvatar,
   ListItemButton,
   ListItemText,
   Popover,
+  SxProps,
   TextField,
+  Theme,
 } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { Maximize2, Minimize2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getCaretCoordinates } from './textarea-caret';
 
 interface PopoverPosition {
@@ -30,10 +36,17 @@ interface MentionInputProps {
   users: MentionUser[];
   mentionList: MentionUser[];
   setMentionList: React.Dispatch<React.SetStateAction<MentionUser[]>>;
+  minRows?: number;
+  maxRows?: number;
+  inputSx?: SxProps<Theme>;
+  autoFocus?: boolean;
+  shouldFocus?: boolean;
+  placeholder?: string;
+  showFullscreenToggle?: boolean;
 }
 
 export const MentionInput = (props: MentionInputProps) => {
-  const { value, onChange, setSearchTerm, users, mentionList, setMentionList } =
+  const { value, onChange, setSearchTerm, users, mentionList, setMentionList, minRows, maxRows, inputSx, autoFocus, shouldFocus, placeholder, showFullscreenToggle = true } =
     props;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [selectIndex, setSelectIndex] = useState(0);
@@ -43,6 +56,9 @@ export const MentionInput = (props: MentionInputProps) => {
     left: 0,
     direction: 'above',
   });
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showExpand, setShowExpand] = useState(false);
+  const isMobile = useIsMobile();
 
   const closePopover = () => {
     setOpenPopover(false);
@@ -62,7 +78,7 @@ export const MentionInput = (props: MentionInputProps) => {
     return { atIndex, candidate, caret };
   };
 
-  const updateAtAnchorPosition = () => {
+  const updateAtAnchorPosition = useCallback(() => {
     const el = inputRef.current;
     if (!el) return;
 
@@ -78,17 +94,31 @@ export const MentionInput = (props: MentionInputProps) => {
     const topInViewport = rect.top + coords.top - el.scrollTop;
     const leftInViewport = rect.left + coords.left - el.scrollLeft;
 
-    const direction: 'above' | 'below' =
-      window.innerHeight - topInViewport < 300 ? 'above' : 'below';
+    // On mobile, always position above the input to avoid keyboard overlap
+    // On desktop, use the original logic with a threshold
+    const direction: 'above' | 'below' = isMobile
+      ? 'above'
+      : window.innerHeight - topInViewport < 300 ? 'above' : 'below';
+
+    let adjustedTop = topInViewport;
+
+    if (direction === 'above') {
+      // For mobile or when positioning above, position the anchor higher up
+      // so the popup appears above the input instead of at the caret position
+      const popupHeightEstimate = 200; // Estimate popup height
+      adjustedTop = Math.max(10, topInViewport - popupHeightEstimate);
+    } else {
+      adjustedTop = topInViewport + lineHeight;
+    }
 
     setPopoverPosition({
-      top: direction === 'above' ? topInViewport : topInViewport + lineHeight,
+      top: adjustedTop,
       left: leftInViewport,
       direction,
     });
-  };
+  }, [isMobile]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newValue = e.target.value;
 
     // Determine if the caret is currently within an active mention context
@@ -113,6 +143,22 @@ export const MentionInput = (props: MentionInputProps) => {
       buildWithMentionsFromPlain(newValue, mentionList);
     onChange({ plain: newValue, withMentions });
     setMentionList(newMentionList);
+
+    // line count check for expand toggle
+    
+    if (el) {
+      const style = window.getComputedStyle(el);
+      let lineHeight = parseFloat(style.lineHeight || '');
+      if (!lineHeight || Number.isNaN(lineHeight)) {
+        const fontSize = parseFloat(style.fontSize || '16');
+        lineHeight = fontSize * 1.4;
+      }
+      if (lineHeight > 0) {
+        const computedHeight = Math.min(el.scrollHeight, el.clientHeight || el.scrollHeight);
+        const lines = Math.round(computedHeight / lineHeight);
+        setShowExpand(lines >= 4);
+      }
+    }
   };
 
   const handleUserSelect = (user: MentionUser) => {
@@ -144,7 +190,7 @@ export const MentionInput = (props: MentionInputProps) => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const active = getActiveMention();
     const shouldHandleMentionKeys = openPopover && !!active;
     if (shouldHandleMentionKeys) {
@@ -221,29 +267,120 @@ export const MentionInput = (props: MentionInputProps) => {
       window.removeEventListener('scroll', recalc);
       window.removeEventListener('resize', recalc);
     };
-  }, [openPopover]);
+  }, [openPopover, updateAtAnchorPosition]);
+
+  // Focus when explicitly requested
+  useEffect(() => {
+    if (shouldFocus && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus({ preventScroll: true } as any);
+      }, 30);
+    }
+  }, [shouldFocus]);
+
+  // When value updates externally, recompute expand visibility
+  useEffect(() => {
+    const el = inputRef.current;
+    if (el) {
+      const style = window.getComputedStyle(el);
+      let lineHeight = parseFloat(style.lineHeight || '');
+      if (!lineHeight || Number.isNaN(lineHeight)) {
+        const fontSize = parseFloat(style.fontSize || '16');
+        lineHeight = fontSize * 1.4;
+      }
+      if (lineHeight > 0) {
+        const computedHeight = Math.min(el.scrollHeight, el.clientHeight || el.scrollHeight);
+        const lines = Math.round(computedHeight / lineHeight);
+        setShowExpand(lines >= 4);
+      }
+    }
+  }, [value.plain]);
 
   return (
     <>
-      <TextField
-        inputRef={inputRef}
-        minRows={4}
-        maxRows={10}
-        multiline
-        fullWidth
-        value={value.plain}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        sx={{
-          '& .MuiInputBase-root': {
-            px: 1,
-            py: 0.5,
-          },
-          '& .MuiInputBase-inputMultiline': {
-            overflowY: 'auto',
-          },
-        }}
-      />
+      {!isFullscreen && (
+        <div style={{ position: 'relative' }}>
+          <TextField
+            inputRef={inputRef}
+            minRows={minRows ?? 4}
+            maxRows={maxRows ?? 10}
+            multiline
+            fullWidth
+            value={value.plain}
+            placeholder={placeholder}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            autoFocus={autoFocus}
+            sx={[
+              {
+                '& .MuiInputBase-root': {
+                  px: 1,
+                  py: 0.5,
+                  backgroundColor: 'var(--card, var(--background, #fff))',
+                },
+                '& .MuiInputBase-inputMultiline': {
+                  overflowY: 'auto',
+                  fontSize: '16px',
+                  WebkitTextSizeAdjust: '100%',
+                  backgroundColor: 'var(--card, var(--background, #fff))',
+                },
+                '& .MuiInputBase-input': {
+                  backgroundColor: 'var(--card, var(--background, #fff))',
+                },
+              },
+              inputSx,
+            ]}
+          />
+          {showFullscreenToggle && showExpand && (
+            <IconButton
+              onClick={() => setIsFullscreen(true)}
+              size="small"
+              aria-label="Expand"
+              sx={{ position: 'absolute', top: 4, right: 4 }}
+            >
+              <Maximize2 size={16} />
+            </IconButton>
+          )}
+        </div>
+      )}
+      {isFullscreen && typeof document !== 'undefined' && createPortal(
+        <div style={{ position: 'fixed', top: '5vh', height: '95vh', left: 0, right: 0, zIndex: 1300 }}>
+          <div style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--background, #fff)', border: '1px solid var(--border, rgba(0,0,0,0.12))', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+            <IconButton
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsFullscreen(false);
+              }}
+              size="small"
+              aria-label="Collapse"
+              sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
+            >
+              <Minimize2 size={16} />
+            </IconButton>
+            <div style={{ width: '100%', height: '100%', padding: 8 }}>
+              <TextField
+                inputRef={inputRef}
+                multiline
+                fullWidth
+                value={value.plain}
+                placeholder={placeholder}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                autoFocus
+                minRows={Math.max(minRows ?? 10, 10)}
+                sx={{
+                  height: '100%',
+                  '& .MuiInputBase-root': { height: '100%', alignItems: 'flex-start', backgroundColor: 'var(--card, var(--background, #fff))' },
+                  '& .MuiInputBase-inputMultiline': { height: '100%', overflowY: 'auto', fontSize: '16px', WebkitTextSizeAdjust: '100%', backgroundColor: 'var(--card, var(--background, #fff))' },
+                  '& .MuiInputBase-input': { backgroundColor: 'var(--card, var(--background, #fff))' },
+                }}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       <Popover
         disablePortal
         disableAutoFocus={true}

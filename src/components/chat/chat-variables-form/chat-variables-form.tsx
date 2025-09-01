@@ -192,7 +192,7 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
 
     Object.entries(workspace.variables).forEach(([varName, varConfig]) => {
       let schemaToUse = varConfig.schema;
-      let varNameToUse = varName;
+      const  varNameToUse = varName;
       
       // If this is an object with only one property, flatten it
       if (schemaToUse.type === 'object' && 
@@ -237,6 +237,7 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
       }
 
       // Categorize fields for layout
+      const isModelSelector = (schemaToUse as any)['x-model-selector'] === true || schemaToUse.title === 'ModelId';
       const isCompact = (
         schemaToUse.type === 'boolean' ||
         schemaToUse.enum ||
@@ -244,12 +245,11 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
         schemaToUse.anyOf ||
         schemaToUse.format === 'uuid' ||
         (schemaToUse.type === 'number' && !schemaToUse.multipleOf) ||
-        (schemaToUse.type === 'string' && schemaToUse.maxLength && schemaToUse.maxLength <= 50) ||
-        (schemaToUse as any)['x-model-selector']
+        (schemaToUse.type === 'string' && schemaToUse.maxLength && schemaToUse.maxLength <= 50)
       );
 
       // Configure UI elements with sizing and read-only state
-      let elementConfig: any = {};
+      const elementConfig: any = {};
       
       // Add read-only for variables with 'Read' access
       if (varConfig.access === 'Read') {
@@ -265,7 +265,10 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
         uiElements[varNameToUse] = elementConfig;
       }
 
-      if (isCompact) {
+      // Place model selector inline with compact fields on desktop
+      if (isModelSelector) {
+        compactFields.push(varNameToUse);
+      } else if (isCompact) {
         compactFields.push(varNameToUse);
       } else {
         fullWidthFields.push(varNameToUse);
@@ -350,7 +353,7 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="w-full">
       <div>
         <div>
           <style>
@@ -358,6 +361,11 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
               /* Only target the horizontal layout compact fields */
               .MuiGrid-container .MuiGrid-item {
                 flex: 0 0 auto !important;
+              }
+              .MuiGrid-container {
+                align-items: flex-start !important;
+                justify-content: flex-start !important;
+                text-align: left !important;
               }
               
               /* Specific sizing for compact fields in horizontal layout only */
@@ -402,6 +410,42 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
               .jsonforms-renderer-set > * {
                 margin-bottom: 4px !important;
                 margin-top: 0 !important;
+              }
+
+              /* Mobile tweaks */
+              @media (max-width: 640px) {
+                .jsonforms-control {
+                  padding-top: 0 !important;
+                  padding-bottom: 0 !important;
+                }
+                .MuiFormControl-root,
+                .jsonforms-vertical-layout > * ,
+                .jsonforms-renderer-set > * {
+                  margin-bottom: 2px !important;
+                  margin-top: 0 !important;
+                }
+                .MuiGrid-container .MuiAutocomplete-root {
+                  width: 100% !important;
+                  min-width: 0 !important;
+                }
+                /* Make the model selector shrink to its content width on mobile */
+                .MuiGrid-container .model-id-autocomplete {
+                  width: -moz-fit-content !important;
+                  width: fit-content !important;
+                  max-width: 100% !important;
+                  flex: 0 0 auto !important;
+                  margin-left: auto !important;
+                  margin-right: auto !important;
+                  display: flex !important;
+                  justify-content: center !important;
+                }
+                .MuiGrid-container .MuiTextField-root[data-field-type="number"] {
+                  width: 96px !important;
+                  min-width: 80px !important;
+                }
+                .MuiGrid-container .MuiFormControlLabel-root {
+                  margin-right: 8px !important;
+                }
               }
             `}
           </style>

@@ -1,14 +1,16 @@
-import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useSignalR } from './use-signalr';
-import { MessageThread } from '../models/message-thread';
+import { useMatch, useNavigate } from '@tanstack/react-router';
+import { useEffect } from 'react';
 import { MessageComment } from '../models/message-comment';
+import { MessageThread } from '../models/message-thread';
+import { useSignalR } from './use-signalr';
 
 export function useWorkspaceUpdates() {
   const { connection, joinGroup, leaveGroup } = useSignalR();
   const queryClient = useQueryClient();
-  const { workspaceId, threadId } = useParams();
+  const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
+  const workspaceId = threadMatch?.params?.workspaceId;
+  const threadId = threadMatch?.params?.threadId;
   const navigate = useNavigate();
   // Join/leave workspace SignalR group
   useEffect(() => {
@@ -52,7 +54,12 @@ export function useWorkspaceUpdates() {
         queryKey: ['threads', workspaceId],
       });
       if (thread.id === threadId) {
-        navigate(`/workspaces/${workspaceId}`);
+        navigate({
+          to: '/workspace/$workspaceId',
+          params: {
+            workspaceId: workspaceId
+          }
+        });
       }
     };
 
