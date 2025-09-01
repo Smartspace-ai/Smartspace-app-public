@@ -434,6 +434,10 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
                   width: fit-content !important;
                   max-width: 100% !important;
                   flex: 0 0 auto !important;
+                  margin-left: auto !important;
+                  margin-right: auto !important;
+                  display: flex !important;
+                  justify-content: center !important;
                 }
                 .MuiGrid-container .MuiTextField-root[data-field-type="number"] {
                   width: 96px !important;
