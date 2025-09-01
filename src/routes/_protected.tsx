@@ -15,16 +15,8 @@ export const Route = createFileRoute('/_protected')({
     const isAuthenticated = !!active || accounts.length > 0
 
     if (!isAuthenticated && !isEmbedded && !hasTeamsContext && !hasTeamsToken) {
-      const path = location.pathname && location.pathname !== '/' ? location.pathname : '/workspace'
-      const reason = 'AuthRequired'
-      const error = {
-        isAuthenticated,
-        isEmbedded,
-        hasTeamsContext,
-        hasTeamsToken,
-        location: location.pathname,
-      }
-      throw redirect({ to: '/no-access', search: { redirect: path, reason, error } as Record<string, any> })
+      const path = location.pathname && location.pathname !== '/' ? location.pathname : '/'
+      throw redirect({ to: '/login', search: { redirect: path } })
     }
   },
   component: () => <Outlet />,
