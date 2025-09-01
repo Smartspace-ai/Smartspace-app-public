@@ -20,14 +20,10 @@ const appName = config.appName;
 const appId = config.appId;
 const version = config.version;
 
-// Tab app (Teams) client ID
 const clientId = process.env.VITE_CLIENT_ID;
 if (!clientId) {
   throw new Error('VITE_CLIENT_ID is not set in .env');
 }
-
-// API (resource) app client ID - used for webApplicationInfo.resource
-// Provide VITE_API_APP_ID=e3f39d90-9235-435e-ba49-681727352613 in .env
 
 const manifest = {
   "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
@@ -73,8 +69,7 @@ const manifest = {
   ],
   "webApplicationInfo": {
     "id": clientId,
-    // If VITE_API_APP_ID is provided, use it for the Application ID URI resource; otherwise fall back to tab clientId
-    "resource": "api://" + baseUrl.replace(/^https?:\/\//, '') + "/" + (clientId)
+    "resource": "api://" + baseUrl.replace(/^https?:\/\//, '') + "/" + clientId
   }
 };
 

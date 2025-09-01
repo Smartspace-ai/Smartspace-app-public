@@ -1,10 +1,8 @@
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import { defineConfig } from 'vitest/config'
-
-// ✅ correct import
-import { tanstackRouter } from '@tanstack/router-plugin/vite'
+/// <reference types='vitest' />
+import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   root: __dirname,
@@ -13,29 +11,25 @@ export default defineConfig({
   server: {
     port: 4300,
     host: 'localhost',
-    // Allow current and previously used ngrok hosts
-    allowedHosts: [ 'e1371d0c8a66.ngrok.app'],
-  },
+},
 
   preview: {
     port: 4400,
     host: 'localhost',
   },
 
-  plugins: [
-    react(),
-    nxViteTsPaths(),
-    tanstackRouter({
-      routesDirectory: './src/routes',
-      generatedRouteTree: './src/routeTree.gen.ts',
-    }),
-  ],
+  plugins: [react(), nxViteTsPaths()],
 
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
+
+  // Uncomment this if you are using workers.
+  // worker: {
+  //  plugins: [ nxViteTsPaths() ],
+  // },
 
   build: {
     outDir: './dist/smartspace',
@@ -51,10 +45,11 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+
     reporters: ['default'],
     coverage: {
       reportsDirectory: './coverage/smartspace',
       provider: 'v8',
     },
   },
-})
+});
