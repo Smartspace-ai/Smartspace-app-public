@@ -9,7 +9,7 @@ import styles from './Login.module.scss';
 
 export function Login() {
   // Grab intended redirect path from URL if present
-  const redirectParam = new URLSearchParams(window.location.search).get('redirect') ?? '/_protected/workspace';
+  const redirectParam = new URLSearchParams(window.location.search).get('redirect') ?? '/workspace';
 
   const { instance, accounts, inProgress } = useMsal();
   const { login, isLoading, error, isInTeams, isAuthenticated } = useTeamsAuth();
