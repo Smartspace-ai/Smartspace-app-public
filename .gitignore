@@ -45,7 +45,6 @@ Thumbs.db
 .env*
 
 !*.env
-!*.env.develop
 !*.env.example
 
 /teams/*.zip
