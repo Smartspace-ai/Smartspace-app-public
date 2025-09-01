@@ -1,4 +1,4 @@
-import { ModelRole } from '../enums/model-role';
+
 import { parseDateTime } from '../utils/parse-date-time';
 import { ModelConfiguration } from './model-configuration';
 
@@ -39,25 +39,6 @@ export class Workspace {
         splitName.length === 1
           ? splitName[0][0]
           : `${splitName[0][0]}${splitName[splitName.length - 1][0]}`;
-    }
-
-    // Temporarily add roles to exisitng workspaces
-    const hasAgent = (this.modelConfigurations || []).find(
-      (mc: ModelConfiguration) => mc.role === ModelRole.Agent
-    );
-
-    if (!hasAgent) {
-      this.modelConfigurations?.push(
-        new ModelConfiguration({ role: ModelRole.Agent })
-      );
-    }
-    const hasDocument = (this.modelConfigurations || []).find(
-      (mc: ModelConfiguration) => mc.role === ModelRole.Document
-    );
-    if (!hasDocument) {
-      this.modelConfigurations?.push(
-        new ModelConfiguration({ role: ModelRole.Document })
-      );
     }
   }
 }

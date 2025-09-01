@@ -6,8 +6,8 @@ import {
 } from '@/apis/message-threads';
 
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { MessageThread } from '../models/message-thread';
 import { useActiveWorkspace } from './use-workspaces';
 
@@ -20,9 +20,8 @@ export function useWorkspaceThreads(take = 20) {
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  const { threadId } = useParams<{
-    threadId?: string;
-  }>();
+ const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
+ const threadId = threadMatch?.params?.threadId;
 
   // Fetch threads for the active workspace
   const {
@@ -31,6 +30,7 @@ export function useWorkspaceThreads(take = 20) {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    isFetched,
     error,
     refetch,
   } = useInfiniteQuery({
@@ -57,6 +57,9 @@ export function useWorkspaceThreads(take = 20) {
     },
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.nextSkip : undefined,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: false,
   });
 
   const flattenedThreads = data?.pages.flatMap((page) => page.threads);
@@ -72,7 +75,13 @@ export function useWorkspaceThreads(take = 20) {
     }) => createThread(name, workspaceId),
     onSuccess: (newThread) => {
       refetch();
-      navigate(`/workspace/${activeWorkspace?.id}/thread/${newThread.id}`);
+      navigate({
+        to: '/workspace/$workspaceId/thread/$threadId',
+        params: {
+          workspaceId: activeWorkspace?.id ?? '',
+          threadId: newThread.id
+        }
+      });
       setIsCreatingThread(false);
     },
   });
@@ -83,7 +92,12 @@ export function useWorkspaceThreads(take = 20) {
     onSuccess: (_, deletedThreadId) => {
       refetch();
       if (threadId === deletedThreadId) {
-        navigate(`/workspace/${activeWorkspace?.id}`);
+        navigate({
+          to: '/workspace/$workspaceId',
+          params: {
+            workspaceId: activeWorkspace?.id ?? ''
+          }
+        });
       }
     },
   });
@@ -135,6 +149,7 @@ export function useWorkspaceThreads(take = 20) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isFetched,
     totalCount: data?.pages?.[0]?.total ?? flattenedThreads?.length,
     isLoading,
     error,

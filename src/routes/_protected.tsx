@@ -1,0 +1,32 @@
+import { msalInstance } from '@/domains/auth/msalClient'
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/_protected')({
+  beforeLoad: async ({ location }) => {
+    // Allow render when embedded (e.g., inside Microsoft Teams)
+    const isEmbedded = window.self !== window.top
+    // Heuristics for Teams mobile where iframe detection may differ
+    const teamsState = (window as any).__teamsState as { isInitialized?: boolean } | undefined
+    const hasTeamsContext = !!teamsState?.isInitialized
+    const hasTeamsToken = !!sessionStorage.getItem('teamsAuthToken')
+
+    const active = msalInstance.getActiveAccount()
+    const accounts = msalInstance.getAllAccounts()
+    const isAuthenticated = !!active || accounts.length > 0
+
+    if (!isAuthenticated && !isEmbedded && !hasTeamsContext && !hasTeamsToken) {
+      const path = location.pathname && location.pathname !== '/' ? location.pathname : '/workspace'
+      const reason = 'AuthRequired'
+      const error = {
+        isAuthenticated,
+        isEmbedded,
+        hasTeamsContext,
+        hasTeamsToken,
+        location: location.pathname,
+      }
+      throw redirect({ to: '/no-access', search: { redirect: path, reason, error } as Record<string, any> })
+    }
+  },
+  component: () => <Outlet />,
+})
+
