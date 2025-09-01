@@ -12,14 +12,13 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as _rootNotFoundRouteImport } from './routes/__root.notFound'
-import { Route as ProtectedRouteImport } from './routes/_protected'
-import { Route as NoAccessRouteImport } from './routes/no-access'
-import { Route as ProtectedWorkspaceWorkspaceId_layoutRouteImport } from './routes/_protected/workspace/$workspaceId/__layout'
-import { Route as ProtectedWorkspaceWorkspaceIdIndexRouteImport } from './routes/_protected/workspace/$workspaceId/index'
-import { Route as ProtectedWorkspaceWorkspaceIdThreadThreadIdRouteImport } from './routes/_protected/workspace/$workspaceId/thread/$threadId'
-import { Route as ProtectedWorkspaceIndexRouteImport } from './routes/_protected/workspace/index'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProtectedRouteImport } from './routes/_protected'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProtectedWorkspaceIndexRouteImport } from './routes/_protected/workspace/index'
+import { Route as ProtectedWorkspaceWorkspaceIdIndexRouteImport } from './routes/_protected/workspace/$workspaceId/index'
+import { Route as ProtectedWorkspaceWorkspaceId_layoutRouteImport } from './routes/_protected/workspace/$workspaceId/__layout'
+import { Route as ProtectedWorkspaceWorkspaceIdThreadThreadIdRouteImport } from './routes/_protected/workspace/$workspaceId/thread/$threadId'
 
 const ProtectedWorkspaceWorkspaceIdRouteImport = createFileRoute(
   '/_protected/workspace/$workspaceId',
@@ -28,11 +27,6 @@ const ProtectedWorkspaceWorkspaceIdRouteImport = createFileRoute(
 const _rootNotFoundRoute = _rootNotFoundRouteImport.update({
   id: '/__root/notFound',
   path: '/notFound',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NoAccessRoute = NoAccessRouteImport.update({
-  id: '/no-access',
-  path: '/no-access',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -81,7 +75,6 @@ const ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/no-access': typeof NoAccessRoute
   '/notFound': typeof _rootNotFoundRoute
   '/workspace': typeof ProtectedWorkspaceIndexRoute
   '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceId_layoutRoute
@@ -91,7 +84,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/no-access': typeof NoAccessRoute
   '/notFound': typeof _rootNotFoundRoute
   '/workspace': typeof ProtectedWorkspaceIndexRoute
   '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdIndexRoute
@@ -102,7 +94,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_protected': typeof ProtectedRouteWithChildren
   '/login': typeof LoginRoute
-  '/no-access': typeof NoAccessRoute
   '/__root/notFound': typeof _rootNotFoundRoute
   '/_protected/workspace/': typeof ProtectedWorkspaceIndexRoute
   '/_protected/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdRouteWithChildren
@@ -115,7 +106,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/no-access'
     | '/notFound'
     | '/workspace'
     | '/workspace/$workspaceId'
@@ -125,7 +115,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/no-access'
     | '/notFound'
     | '/workspace'
     | '/workspace/$workspaceId'
@@ -135,7 +124,6 @@ export interface FileRouteTypes {
     | '/'
     | '/_protected'
     | '/login'
-    | '/no-access'
     | '/__root/notFound'
     | '/_protected/workspace/'
     | '/_protected/workspace/$workspaceId'
@@ -148,7 +136,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
-  NoAccessRoute: typeof NoAccessRoute
   _rootNotFoundRoute: typeof _rootNotFoundRoute
 }
 
@@ -166,13 +153,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/no-access': {
-      id: '/no-access'
-      path: '/no-access'
-      fullPath: '/no-access'
-      preLoaderRoute: typeof NoAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected': {
@@ -267,7 +247,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
-  NoAccessRoute: NoAccessRoute,
   _rootNotFoundRoute: _rootNotFoundRoute,
 }
 export const routeTree = rootRouteImport

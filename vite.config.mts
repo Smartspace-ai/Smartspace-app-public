@@ -3,6 +3,7 @@ import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
+import TanStackRouterVite from '@tanstack/router-plugin/vite';
 
 export default defineConfig({
   root: __dirname,
@@ -18,7 +19,7 @@ export default defineConfig({
     host: 'localhost',
   },
 
-  plugins: [react(), nxViteTsPaths()],
+  plugins: [TanStackRouterVite(), react(), nxViteTsPaths()],
 
   resolve: {
     alias: {
