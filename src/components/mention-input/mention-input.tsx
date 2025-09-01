@@ -1,18 +1,19 @@
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MentionUser } from '@/models/mention-user';
 import {
-    Avatar,
-    IconButton,
-    List,
-    ListItemAvatar,
-    ListItemButton,
-    ListItemText,
-    Popover,
-    SxProps,
-    TextField,
-    Theme,
+  Avatar,
+  IconButton,
+  List,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
+  Popover,
+  SxProps,
+  TextField,
+  Theme,
 } from '@mui/material';
 import { Maximize2, Minimize2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getCaretCoordinates } from './textarea-caret';
 
@@ -57,6 +58,7 @@ export const MentionInput = (props: MentionInputProps) => {
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpand, setShowExpand] = useState(false);
+  const isMobile = useIsMobile();
 
   const closePopover = () => {
     setOpenPopover(false);
@@ -76,7 +78,7 @@ export const MentionInput = (props: MentionInputProps) => {
     return { atIndex, candidate, caret };
   };
 
-  const updateAtAnchorPosition = () => {
+  const updateAtAnchorPosition = useCallback(() => {
     const el = inputRef.current;
     if (!el) return;
 
@@ -92,15 +94,29 @@ export const MentionInput = (props: MentionInputProps) => {
     const topInViewport = rect.top + coords.top - el.scrollTop;
     const leftInViewport = rect.left + coords.left - el.scrollLeft;
 
-    const direction: 'above' | 'below' =
-      window.innerHeight - topInViewport < 300 ? 'above' : 'below';
+    // On mobile, always position above the input to avoid keyboard overlap
+    // On desktop, use the original logic with a threshold
+    const direction: 'above' | 'below' = isMobile
+      ? 'above'
+      : window.innerHeight - topInViewport < 300 ? 'above' : 'below';
+
+    let adjustedTop = topInViewport;
+
+    if (direction === 'above') {
+      // For mobile or when positioning above, position the anchor higher up
+      // so the popup appears above the input instead of at the caret position
+      const popupHeightEstimate = 200; // Estimate popup height
+      adjustedTop = Math.max(10, topInViewport - popupHeightEstimate);
+    } else {
+      adjustedTop = topInViewport + lineHeight;
+    }
 
     setPopoverPosition({
-      top: direction === 'above' ? topInViewport : topInViewport + lineHeight,
+      top: adjustedTop,
       left: leftInViewport,
       direction,
     });
-  };
+  }, [isMobile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -251,7 +267,7 @@ export const MentionInput = (props: MentionInputProps) => {
       window.removeEventListener('scroll', recalc);
       window.removeEventListener('resize', recalc);
     };
-  }, [openPopover]);
+  }, [openPopover, updateAtAnchorPosition]);
 
   // Focus when explicitly requested
   useEffect(() => {
