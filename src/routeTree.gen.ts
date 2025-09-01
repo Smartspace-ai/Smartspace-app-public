@@ -12,14 +12,14 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as _rootNotFoundRouteImport } from './routes/__root.notFound'
-import { Route as NoAccessRouteImport } from './routes/no-access'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProtectedWorkspaceIndexRouteImport } from './routes/_protected/workspace/index'
-import { Route as ProtectedWorkspaceWorkspaceIdIndexRouteImport } from './routes/_protected/workspace/$workspaceId/index'
+import { Route as NoAccessRouteImport } from './routes/no-access'
 import { Route as ProtectedWorkspaceWorkspaceId_layoutRouteImport } from './routes/_protected/workspace/$workspaceId/__layout'
+import { Route as ProtectedWorkspaceWorkspaceIdIndexRouteImport } from './routes/_protected/workspace/$workspaceId/index'
 import { Route as ProtectedWorkspaceWorkspaceIdThreadThreadIdRouteImport } from './routes/_protected/workspace/$workspaceId/thread/$threadId'
+import { Route as ProtectedWorkspaceIndexRouteImport } from './routes/_protected/workspace/index'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
 
 const ProtectedWorkspaceWorkspaceIdRouteImport = createFileRoute(
   '/_protected/workspace/$workspaceId',
@@ -161,18 +161,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof _rootNotFoundRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/no-access': {
-      id: '/no-access'
-      path: '/no-access'
-      fullPath: '/no-access'
-      preLoaderRoute: typeof NoAccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/no-access': {
+      id: '/no-access'
+      path: '/no-access'
+      fullPath: '/no-access'
+      preLoaderRoute: typeof NoAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected': {

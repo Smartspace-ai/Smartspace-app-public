@@ -7,7 +7,7 @@ export const Route = createFileRoute('/login')({
     const accounts = msalInstance.getAllAccounts()
     if (accounts.length > 0) {
       const params = new URLSearchParams(location.search ?? '')
-      const target = params.get('redirect') || '/'
+      const target = params.get('redirect') || '/workspace'
       throw redirect({ to: target })
     }
   },
