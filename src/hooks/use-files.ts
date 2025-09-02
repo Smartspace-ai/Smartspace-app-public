@@ -1,10 +1,10 @@
 import { getFileDownloadUrl } from '@/apis/files';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMatch } from '@tanstack/react-router';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
+import { downloadFile, getFileInfo, uploadFiles } from '../apis/files';
 import { FileInfo } from '../models/file';
-import { uploadFiles, downloadFile, getFileInfo } from '../apis/files';
-import { useParams } from 'react-router-dom';
-import { useState, useCallback } from 'react';
 
 // Hook for downloading a file from a secured source URI
 export const useQueryFiles = () => {
@@ -55,11 +55,9 @@ export const useQueryFiles = () => {
 
 // Custom hook for getting a specific file's info
 export const useQueryFileInfo = (id?: string) => {
-  const params = useParams();
-  const scope = {
-    workspaceId: params.workspaceId,
-    threadId: params.threadId,
-  };
+  const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
+  const scope = { workspaceId: threadMatch?.params?.workspaceId, threadId: threadMatch?.params?.threadId } as { workspaceId?: string, threadId?: string };
+
   return useQuery<FileInfo, Error>({
     queryKey: ['fileInfo', id, scope],
     queryFn: async () => {
@@ -72,8 +70,8 @@ export const useQueryFileInfo = (id?: string) => {
 
 // All mutations and state for file management
 export const useFileMutations = () => {
-  const { workspaceId, threadId } = useParams();
-  const scope = { workspaceId, threadId };
+  const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
+  const scope = { workspaceId: threadMatch?.params?.workspaceId, threadId: threadMatch?.params?.threadId } as { workspaceId?: string, threadId?: string };
 
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
   const [fileProgress, setFileProgress] = useState<Record<string, number>>({});

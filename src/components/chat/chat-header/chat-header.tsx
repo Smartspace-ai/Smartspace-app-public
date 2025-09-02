@@ -2,16 +2,22 @@ import { MessageSquare, PanelLeft } from 'lucide-react';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
-import { MessageThread } from '@/models/message-thread';
+
+ 
+import { useActiveThread } from '@/hooks/use-workspace-thread';
+import { useWorkspaceUpdates } from '@/hooks/use-workspace-updates';
+ 
 import { NotificationPanel } from '../../notifications/notifications-panel/notifications-panel';
 import { Separator } from '../../ui/separator';
 import { SidebarTrigger } from '../../ui/sidebar';
-import { useWorkspaceUpdates } from '@/hooks/use-workspace-updates';
 
-export function ChatHeader({activeThread}: {activeThread?: MessageThread}) {
+export function ChatHeader() {
   const { data: activeWorkspace } = useActiveWorkspace();
+  const { data: activeThread } = useActiveThread();
   useWorkspaceUpdates()
+  
 
+  
   return (
     <header className="ss-chat__header flex h-[54px] shrink-0 items-center gap-2 bg-background border-b ">
       <div className="flex flex-1 items-center gap-2 px-4">
@@ -24,17 +30,17 @@ export function ChatHeader({activeThread}: {activeThread?: MessageThread}) {
         {/* Workspace and thread display */}
         <div className="flex items-center">
           {activeWorkspace?
-            <span className="font-medium text-sm">
+            <span className="font-medium text-xs">
               {activeWorkspace?.name}
             </span>
             :
-            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-4 w-28" />
           }
           {activeThread?.name && (
             <>
               <span className="mx-2 text-gray-400">/</span>
               <span
-                className="text-sm font-medium text-neutral-500 truncate max-w-[300px]"
+                className="text-xs font-medium text-neutral-500 truncate max-w-[240px]"
                 title={activeThread.name}
                 key={`thread-title-${activeThread.id}`} // Force re-render when thread changes
               >
@@ -53,6 +59,7 @@ export function ChatHeader({activeThread}: {activeThread?: MessageThread}) {
           className="text-muted-foreground hover:text-foreground h-8 w-8"
         />
       </div>
+      
     </header>
   );
 }

@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-  import {
+import {
   useNotificationMutations,
   useNotificationsQuery,
 } from '@/hooks/use-notifications';
@@ -10,15 +10,18 @@ import { cn } from '@/lib/utils';
 import { Notification, NotificationType } from '@/models/notification';
 import { getInitials } from '@/utils/initials';
 import { parseDateTimeHuman } from '@/utils/parse-date-time';
+import { useMatch, useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, MessageCircle, MessageSquare } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 export function NotificationPanel() {
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+
+  const workspaceMatch = useMatch({ from: '/_protected/workspace/$workspaceId', shouldThrow: false });
+  const workspaceId = workspaceMatch?.params?.workspaceId ?? '';
 
   const notificationsQuery = useNotificationsQuery(showOnlyUnread);
   const { markAsReadMutation, markAllAsReadMutation } = useNotificationMutations();
@@ -63,9 +66,13 @@ export function NotificationPanel() {
     }
 
     if (notification.threadId) {
-      navigate(
-        `/workspace/${notification.workSpaceId}/thread/${notification.threadId}`
-      );
+      navigate({
+        to: '/workspace/$workspaceId/thread/$threadId',
+        params: {
+          workspaceId: workspaceId,
+          threadId: notification.threadId
+        }
+      });
     }
 
     setIsOpen(false);

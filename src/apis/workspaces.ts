@@ -1,5 +1,5 @@
+import webApi from '@/domains/auth/axios-setup';
 import { Workspace } from '../models/workspace';
-import webApi from '../utils/axios-setup';
 
 // Fetches the list of workspaces from the backend API
 export async function fetchWorkspaces(searchTerm?: string): Promise<Workspace[]> {

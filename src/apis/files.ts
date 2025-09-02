@@ -1,4 +1,4 @@
-import webApi from '../utils/axios-setup';
+import webApi from '@/domains/auth/axios-setup';
 
 export interface FileInfo {
   id: string;

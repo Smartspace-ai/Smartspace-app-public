@@ -1,6 +1,6 @@
 import { ControlProps, RankedTester, rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 interface BooleanRendererProps extends ControlProps {
   data: any;
@@ -20,6 +20,14 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
   visible,
   enabled
 }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const updateIsMobile = () => setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 640);
+    updateIsMobile();
+    window.addEventListener('resize', updateIsMobile);
+    return () => window.removeEventListener('resize', updateIsMobile);
+  }, []);
   const handleToggle = useCallback(() => {
     handleChange(path, !data);
   }, [handleChange, path, data]);
@@ -33,19 +41,20 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
   const isChecked = Boolean(data);
 
   return (
-    <div style={{ paddingTop: '8px', display: 'flex', flexDirection: 'row', minHeight: '56px' }}>
+    <div style={{ paddingTop: 0, display: 'flex', flexDirection: 'row', alignItems: 'center', minHeight: isMobile ? '36px' : '40px' }}>
       {/* Label */}
-      {label && (
+      {label && !isMobile && (
         <label 
           htmlFor={`toggle-${path}`}
           style={{ 
             fontSize: '0.875rem',
-            marginRight: '8px',
+            marginRight: isMobile ? '6px' : '8px',
             fontWeight: 500, 
             color: hasError ? '#ef4444' : '#475569',
             cursor: isDisabled ? 'not-allowed' : 'pointer',
             userSelect: 'none',
-            marginBottom: '8px'
+            marginBottom: 0,
+            lineHeight: '24px'
           }}
           onClick={!isDisabled ? handleToggle : undefined}
         >
@@ -59,15 +68,17 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
         type="button"
         role="switch"
         aria-checked={isChecked}
+        aria-label={label}
         onClick={handleToggle}
         disabled={isDisabled}
         style={{
           position: 'relative',
           display: 'inline-flex',
           alignItems: 'center',
-          width: '44px',
-          height: '24px',
-          borderRadius: '12px',
+          width: isMobile ? 'auto' : '44px',
+          height: isMobile ? '28px' : '24px',
+          padding: isMobile ? '2px 10px' : undefined,
+          borderRadius: isMobile ? '9999px' : '12px',
           border: 'none',
           cursor: isDisabled ? 'not-allowed' : 'pointer',
           backgroundColor: isChecked ? '#6366f1' : '#e5e7eb',
@@ -75,7 +86,10 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
           outline: 'none',
           opacity: isDisabled ? 0.6 : 1,
           boxShadow: hasError ? '0 0 0 2px #ef4444' : 'none',
-          alignSelf: 'flex-start'
+          alignSelf: 'center',
+          color: isMobile ? (isChecked ? '#ffffff' : '#374151') : undefined,
+          fontSize: isMobile ? '0.75rem' : undefined,
+          fontWeight: isMobile ? 600 : undefined
         }}
         onFocus={(e) => {
           if (!hasError) {
@@ -88,19 +102,30 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
           }
         }}
       >
-        <span
-          style={{
-            position: 'absolute',
-            left: isChecked ? '22px' : '2px',
-            top: '2px',
-            width: '20px',
-            height: '20px',
-            borderRadius: '50%',
-            backgroundColor: '#ffffff',
-            transition: 'left 0.2s ease-in-out',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-          }}
-        />
+        {!isMobile && (
+          <span
+            style={{
+              position: 'absolute',
+              left: isChecked ? '22px' : '2px',
+              top: '2px',
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              backgroundColor: '#ffffff',
+              transition: 'left 0.2s ease-in-out',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}
+          />
+        )}
+        {isMobile && (
+          <span style={{
+            padding: '0 2px',
+            lineHeight: 1,
+            whiteSpace: 'nowrap'
+          }}>
+            {label}
+          </span>
+        )}
       </button>
 
       {/* Description and Errors */}
@@ -108,7 +133,7 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
         <div style={{ 
           color: '#6b7280', 
           fontSize: '0.75rem',
-          marginTop: '4px'
+          marginTop: isMobile ? '2px' : '4px'
         }}>
           {description}
         </div>
@@ -118,7 +143,7 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
         <div style={{ 
           color: '#ef4444', 
           fontSize: '0.75rem',
-          marginTop: '4px'
+          marginTop: isMobile ? '2px' : '4px'
         }}>
           {errors}
         </div>

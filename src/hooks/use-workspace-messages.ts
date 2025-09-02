@@ -1,18 +1,19 @@
 import { addInputToMessage, fetchMessages, postMessage } from '@/apis/messages';
 import {
-    Message,
-    MessageCreateContent,
-    MessageFile,
-    MessageValueType,
+  Message,
+  MessageCreateContent,
+  MessageFile,
+  MessageValueType,
 } from '@/models/message';
 
 import { uploadFiles } from '@/apis/files';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 import { Subject } from 'rxjs';
 import { toast } from 'sonner';
 import { useActiveUser } from './use-active-user';
+import { useWorkspaceThreads } from './use-workspace-threads';
 
 export function useWorkspaceMessages(
   workspaceId?: string,
@@ -21,6 +22,8 @@ export function useWorkspaceMessages(
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const activeUser = useActiveUser();
+  // Wait for the thread list to load before enabling thread-specific queries
+  const { isLoading: threadsLoading, threads } = useWorkspaceThreads();
 
   // Fetch messages for the current thread
   const {
@@ -28,7 +31,6 @@ export function useWorkspaceMessages(
     isLoading,
     error,
     refetch,
-    isFetching,
   } = useQuery<Message[], Error>({
     queryKey: ['messages', threadId],
     queryFn: async () => {
@@ -36,9 +38,11 @@ export function useWorkspaceMessages(
       const result = await fetchMessages(threadId);
       return result.reverse(); // Latest at the bottom
     },
-    enabled: !!threadId,
+    enabled: !!threadId && !threadsLoading,
     retry: false,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 30_000,
   });
 
   const [isBotResponding, setIsBotResponding] = useState(false);
@@ -301,15 +305,22 @@ export function useWorkspaceMessages(
     variables?: Record<string, any>
   ) => {
     if (!threadId) {
-      threadId = crypto.randomUUID();
-      if (!workspaceId) {
-        console.error('No active workspace to create thread in');
+      // Ensure thread list is ready before deciding what to do
+      if (threadsLoading) {
+        toast.message('Loading threads. Please wait...');
         return;
       }
-
-      navigate(
-        `/workspace/${workspaceId}/thread/${threadId}`,
-      );
+      if (threads && threads.length > 0 && workspaceId) {
+        // Navigate to the first existing thread instead of a random id
+        navigate({
+          to: '/workspace/$workspaceId/thread/$threadId',
+          params: { workspaceId, threadId: threads[0].id },
+        });
+        return;
+      }
+      // No threads available yet: ask user to create/select a thread
+      toast.error('Please create or select a thread first.');
+      return;
     }
 
     setIsBotResponding(true);
