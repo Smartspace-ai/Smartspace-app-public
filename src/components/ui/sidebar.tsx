@@ -152,14 +152,12 @@ const SidebarProvider = forwardRef<
             _setLeftOpen(false);
             _setRightOpen(false);
           } else {
-            // Expand on desktop
             _setLeftOpen(defaultLeftOpen);
             _setRightOpen(defaultRightOpen);
+            // setting this only if not mobile, otherwise resize on mobile happens when keyboard is opened
+            setOpenMobileLeft(false);
+            setOpenMobileRight(false);
           }
-
-          // Close mobile sheets
-          setOpenMobileLeft(false);
-          setOpenMobileRight(false);
         };
 
         handleResize(); // Call on load
