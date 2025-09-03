@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { llmModelIcons } from '../../../assets/providers';
 import { useModels } from '../../../hooks/use-models';
 import { Model } from '../../../models/model';
+import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog';
 
 interface ModelIdRendererProps {
   data: any;
@@ -87,10 +88,14 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
     search: searchTerm,
     take: 50 
   });
+  const [listModels, setListModels] = useState<Model[]>([]);
+  useEffect(() => {
+    if (modelsData?.data) {
+      setListModels(modelsData.data);
+    }
+  }, [modelsData?.data]);
 
-  const models = modelsData?.data || [];
-
-  const selectedModel = (data && models.length) ? models.find(model => model.id === data) : null;
+  const selectedModel = (data && listModels.length) ? listModels.find(model => model.id === data) : null;
 
   // Compute the input value to show either the search term or the selected model's name
   const displayInputValue = useMemo(() => {
@@ -115,7 +120,8 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
     // Clear search when selection is made
     setSearchValue('');
     setDebouncedSearchValue('');
-  }, [handleChange, path]);
+    setIsOpen(false);
+  }, [handleChange, path, setIsOpen]);
 
   const handleInputChange = useCallback((_event: any, newInputValue: string, reason: string) => {
     // Only update search value when user is typing, not when selecting
@@ -123,6 +129,9 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
       setSearchValue(newInputValue);
     }
   }, []);
+
+  // Prevent focus/blur jitter causing flicker by keeping dialog open during typing
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
 
   const handleOpen = useCallback(() => {
     setIsOpen(true);
@@ -134,6 +143,67 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
     setSearchValue('');
   }, []);
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+
+  if (isMobile) {
+    const providerInfo = selectedModel ? getProviderInfo(selectedModel.modelDeploymentProviderType || '') : null;
+    return (
+      <div className="w-full flex justify-center">
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              disabled={!enabled}
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 bg-accent text-foreground/90 hover:bg-accent/80 transition-colors"
+              style={{ width: 'fit-content', maxWidth: '100%' }}
+            >
+              {providerInfo?.iconSrc && (
+                <img src={providerInfo.iconSrc} alt="Provider" className="h-4 w-4" />
+              )}
+              <span className="text-sm truncate">
+                {selectedModel ? (selectedModel.displayName || selectedModel.name) : (label || 'Select model')}
+              </span>
+            </button>
+          </DialogTrigger>
+          <DialogContent hideClose onOpenAutoFocus={(e) => e.preventDefault()} className="p-0 w-[90vw] max-w-sm sm:max-w-sm h-[70vh] flex flex-col gap-0 data-[state=open]:animate-none data-[state=closed]:animate-none">
+            <div className="flex flex-col h-full w-full">
+              <div className="flex-1 overflow-y-auto w-full max-w-[360px] mx-auto">
+                {isLoading && listModels.length === 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  </div>
+                )}
+                <ul className="divide-y w-full">
+                  {listModels.map((option) => (
+                    <li key={option.id} className="px-3 py-2 hover:bg-accent cursor-pointer"
+                        onClick={() => handleModelChange(null as any, option)}>
+                      <div className="flex items-center gap-2">
+                        {getProviderInfo(option.modelDeploymentProviderType || '').iconSrc && (
+                          <img src={getProviderInfo(option.modelDeploymentProviderType || '').iconSrc!} className="h-4 w-4" />
+                        )}
+                        <span className="text-sm">{option.displayName || option.name}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="px-2 py-1 border-t bg-background flex justify-center">
+                <TextField
+                  value={searchValue}
+                  onChange={(e) => setSearchValue((e.target as HTMLInputElement).value)}
+                  placeholder="Search models..."
+                  size="small"
+                  className="w-full max-w-[360px] m-0"
+                  sx={{ m: 0, p: 0 }}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
   return (
     <Autocomplete<Model>
       value={selectedModel}
@@ -142,7 +212,7 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
       onInputChange={handleInputChange}
       onOpen={handleOpen}
       onClose={handleClose}
-      options={models}
+      options={listModels}
       getOptionLabel={(option) => {
         return option.displayName || option.name || '';
       }}

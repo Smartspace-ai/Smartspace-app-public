@@ -1,23 +1,25 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import React, { useEffect, useRef, useState } from 'react';
 
+import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { Draw } from '@/models/draw';
 import { Message, MessageValueType } from '@/models/message';
 import { useQueryFiles } from '../../../hooks/use-files';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 
 import { downloadFile } from '@/apis/files';
 import { useActiveUser } from '@/hooks/use-active-user';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
+import { useMatch } from '@tanstack/react-router';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Avatar, AvatarFallback } from '../../ui/avatar';
+import { useSidebar } from '../../ui/sidebar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
-import { useParams } from 'react-router-dom';
 
 interface ChatBodyProps {
   messages: Message[];
@@ -50,10 +52,13 @@ export default function ChatBody({
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const scrollTopRef = useRef<number>(0);
   const { data: activeWorkspace } = useActiveWorkspace();
+  const isMobile = useIsMobile();
   const activeUser = useActiveUser();
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const { threadId } = useParams();
-  const {data: thread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId: threadId})
+  const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
+  const threadId = threadMatch?.params?.threadId;
+  const { data: thread, isPending: threadLoading, error: threadError } = useWorkspaceThread({ workspaceId: activeWorkspace?.id, threadId: threadId })
+  const { leftOpen, rightOpen } = useSidebar();
 
   useEffect(() => {
     if (isVisible && viewportRef.current) {
@@ -76,10 +81,10 @@ export default function ChatBody({
     return () => observer.disconnect();
   }, [contentRef.current, messagesEndRef.current, isAtBottom]);
 
-  if (isLoading) {
+  if (threadLoading) {
     return (
       <div className="ss-chat__body flex-shrink-10 flex-1 overflow-y-auto">
-        <div className="space-y-8 max-w-3xl mx-auto p-4">
+        <div className="space-y-8 p-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex gap-3">
               <Skeleton className="h-8 w-8 rounded-full" />
@@ -93,12 +98,11 @@ export default function ChatBody({
       </div>
     );
   }
+
   if (messages.length === 0) {
     return (
       <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
         <h3 className="text-lg font-medium mb-2">{activeWorkspace?.name ?? 'No messages yet'}</h3>
-
-
         {activeWorkspace?.firstPrompt && (
           <div className="max-w-3xl mx-auto p-4 whitespace-pre-wrap">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -113,7 +117,7 @@ export default function ChatBody({
   const messageHasSomeResponse = messages.length && messages[messages.length - 1].values?.some(v => v.type === MessageValueType.OUTPUT)
 
   return (
-    <div className="ss-chat__body flex-shrink-10 flex-1 h-full w-full overflow-hidden">
+    <div className="ss-chat__body" style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%', width: '100%', overflow: 'hidden' }}>
       <ScrollAreaPrimitive.Root className="relative overflow-hidden h-full w-full">
         <ScrollAreaPrimitive.Viewport
           ref={viewportRef}
@@ -128,10 +132,13 @@ export default function ChatBody({
             setIsAtBottom(viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold);
           }}
         >
-          <div ref={contentRef} className="flex flex-col w-full">
+          <div
+            ref={contentRef}
+            className={`flex flex-col w-full ${!isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''} px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
+          >
             {messages.map((message, index) => (
               <div
-                className="ss-chat__message w-full px-2 max-w-3xl mx-auto"
+                className="ss-chat__message w-full"
                 key={message.id || index}
               >
                 <ChatMessage

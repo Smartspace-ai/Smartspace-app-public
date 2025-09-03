@@ -21,9 +21,25 @@ export function useWorkspaceThreadComments(threadId?: string) {
     refetch,
   } = useQuery({
     queryKey: ['comments', threadId],
-    queryFn: () =>
-      threadId ? fetchComments(threadId) : Promise.resolve([]),
+    queryFn: async () => {
+      if (!threadId) return []
+      try {
+        return await fetchComments(threadId)
+      } catch (e: any) {
+        const code = e?.response?.data?.code || e?.code
+        if (code === 'MT404') {
+          // Thread not found → render empty comments without retry
+          return []
+        }
+        throw e
+      }
+    },
     enabled: !!threadId,
+    retry: (failureCount, e: any) => {
+      const code = e?.response?.data?.code || e?.code
+      return code !== 'MT404' && failureCount < 2
+    },
+    refetchOnWindowFocus: false,
   });
 
   // Refetch comments when the thread changes

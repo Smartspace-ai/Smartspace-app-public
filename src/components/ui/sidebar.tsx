@@ -23,7 +23,7 @@ const SIDEBAR_COOKIE_NAME = 'sidebar';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 const SIDEBAR_KEYBOARD_SHORTCUT = 'k';
 const SIDEBAR_WIDTH = '300px';
-const SIDEBAR_WIDTH_MOBILE = '85vw'; // Use viewport width for mobile
+const SIDEBAR_WIDTH_MOBILE = '90vw'; // Use viewport width for mobile
 const SIDEBAR_WIDTH_ICON = '48px';
 const MOBILE_BREAKPOINT = 1100; // md breakpoint
 
@@ -82,6 +82,7 @@ const SidebarProvider = forwardRef<
     const isMobile = useIsMobile();
     const [openMobileLeft, setOpenMobileLeft] = useState(false);
     const [openMobileRight, setOpenMobileRight] = useState(false);
+    const [mobileViewportHeight, setMobileViewportHeight] = useState<number | undefined>(undefined);
 
     const [_leftOpen, _setLeftOpen] = useState(defaultLeftOpen);
     const [_rightOpen, _setRightOpen] = useState(defaultRightOpen);
@@ -106,6 +107,7 @@ const SidebarProvider = forwardRef<
           _setLeftOpen(openState);
         }
         document.cookie = `${SIDEBAR_COOKIE_NAME}_left=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+        // URL syncing removed per request
       },
       [setLeftOpenProp, leftOpen]
     );
@@ -120,6 +122,7 @@ const SidebarProvider = forwardRef<
           _setRightOpen(openState);
         }
         document.cookie = `${SIDEBAR_COOKIE_NAME}_right=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+        // URL syncing removed per request
       },
       [setRightOpenProp, rightOpen]
     );
@@ -166,6 +169,23 @@ const SidebarProvider = forwardRef<
       }, 50);
     }, []);
 
+    // On mobile, adjust sheet height to the visible viewport to avoid pushing content
+    useEffect(() => {
+      if (!isMobile) return;
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const update = () => setMobileViewportHeight(vv.height);
+      update();
+      vv.addEventListener('resize', update);
+      vv.addEventListener('scroll', update);
+      return () => {
+        vv.removeEventListener('resize', update);
+        vv.removeEventListener('scroll', update);
+      };
+    }, [isMobile, openMobileLeft, openMobileRight]);
+
+    
+
     useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.metaKey || event.ctrlKey) {
@@ -182,6 +202,8 @@ const SidebarProvider = forwardRef<
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }, [toggleLeftSidebar, toggleRightSidebar]);
+
+    // URL-based initialization removed per request
 
     const state = leftOpen || rightOpen ? 'expanded' : 'collapsed';
 
@@ -300,9 +322,12 @@ const Sidebar = forwardRef<
         <Sheet open={openMobile} onOpenChange={setOpenMobile}>
           <SheetContent
             side={side}
-            className="w-[--sidebar-width-mobile] p-0 bg-sidebar text-sidebar-foreground"
+            hideClose
+            style={{ width: SIDEBAR_WIDTH_MOBILE }}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            className="p-0 bg-sidebar text-sidebar-foreground"
           >
-            <div className="flex h-full w-full flex-col">{children}</div>
+            <div className="flex h-full w-full flex-col min-h-0">{children}</div>
           </SheetContent>
         </Sheet>
       );
