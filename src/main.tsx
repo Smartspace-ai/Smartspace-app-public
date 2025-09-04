@@ -6,9 +6,8 @@ import { EventMessage } from '@azure/msal-browser'
 import { MsalProvider } from '@azure/msal-react'
 import { msalInstance } from './domains/auth/msalClient'
 
-import { ErrorBoundary } from 'react-error-boundary'
-
 import { RouterProvider, createRouter } from '@tanstack/react-router'
+import { ErrorBoundary } from 'react-error-boundary'
 import { routeTree } from './routeTree.gen'
 
 function fallbackRender({ error }: { error: Error }) {
@@ -62,18 +61,6 @@ msalInstance.initialize().then(() => {
           <RouterProvider router={router} />
         </MsalProvider>
       </ErrorBoundary>
-    </StrictMode>
-  );
-});
-
-function fallbackRender({ error }: { error: Error }) {
-  return (
-    <div role="alert">
-      <p>Something went wrong:</p>
-      <pre style={{ color: "red" }}>{error.message}</pre>
-    </div>
-  );
-}
     </StrictMode>,
   )
 })
