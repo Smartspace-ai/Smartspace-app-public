@@ -42,5 +42,5 @@ export const formatErrorMessage = (error: MessageError): string => {
   const emoji = error.isRetryable ? '⚠️' : '❌';
   const title = error.title || 'Error';
 
-  return `${emoji} ${title}: ${error.message}`;
+  return `${emoji} **${title}**\n\n${error.message}`;
 };
