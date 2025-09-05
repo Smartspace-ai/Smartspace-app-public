@@ -1,6 +1,5 @@
-import {
-  Message,
-} from '@/domains/messages';
+import { Message } from '@/domains/messages';
+import { formatErrorMessage, getErrorMessage } from '@/domains/messages/error-utils';
 import { JsonSchema } from '@jsonforms/core';
 import {
   materialCells,
@@ -325,6 +324,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
 
   const results: ReactNode[] = [];
 
+
   let content: ContentItem[] | null = null;
   let sources: any[] | null = null;
   let files: MessageFile[] | null = null;
@@ -484,6 +484,28 @@ export const ChatMessage: FC<ChatMessageProps> = ({
         content={content}
         files={files}
         sources={sources}
+        userOutput={null}
+        userInput={null}
+        useMessageFile={useMessageFile}
+        downloadFile={downloadFile}
+        saveFile={saveFile}
+        useQueryFiles={useQueryFiles}
+      />
+    );
+  }
+
+  // Check for errors and show appropriate error messages
+  if (message.code && message.code === 429) {
+    const error = getErrorMessage(message.code);
+    results.push(
+      <ValueCollection
+        key={`error-${message.code}`}
+        createdBy="Chatbot"
+        createdAt={message.createdAt}
+        type={MessageValueType.OUTPUT}
+        content={[{ text: formatErrorMessage(error) }]}
+        files={null}
+        sources={null}
         userOutput={null}
         userInput={null}
         useMessageFile={useMessageFile}

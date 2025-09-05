@@ -8,6 +8,7 @@ export const MessageFileSchema = z.object({
   uniqueName: z.string().optional(),
 });
 
+
 // MessageCreateContent schema
 export const MessageCreateContentSchema = z.object({
   text: z.string().optional(),
@@ -46,6 +47,7 @@ export const MessageSchema = z.object({
   blockId: z.string().optional(),
   optimistic: z.boolean().optional().default(false),
 });
+
 
 // Type exports for TypeScript
 export type MessageFile = z.infer<typeof MessageFileSchema>;
