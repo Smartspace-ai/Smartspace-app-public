@@ -1,3 +1,6 @@
+import {
+  Message,
+} from '@/domains/messages';
 import { JsonSchema } from '@jsonforms/core';
 import {
   materialCells,
@@ -6,15 +9,16 @@ import {
 import { JsonForms } from '@jsonforms/react';
 import { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import _ from 'lodash';
-import { FileText, FileImage, FileVideo, FileAudio, FileArchive, FileCode, FileSpreadsheet, Presentation } from 'lucide-react';
+import { FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Presentation } from 'lucide-react';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { cn } from '../../../lib/utils';
 import {
-  Message,
   MessageContent,
   MessageFile,
   MessageValueType,
 } from '../../../models/message';
+
+
 import { MessageResponseSource } from '../../../models/message-response-source';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';

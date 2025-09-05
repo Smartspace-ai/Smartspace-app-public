@@ -45,6 +45,11 @@ export class Message {
   messageThreadId?: string;
   name?: string;
   values?: MessageValue[];
+  code?: number;
+  message?: string;
+  data?: any;
+  blockId?:string;
+
 
   optimistic?: boolean = false;
 

@@ -1,4 +1,4 @@
-import { useWorkspaceMessages } from '@/hooks/use-workspace-messages';
+import { useWorkspaceMessages } from '@/domains/messages/useMessages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
 import type React from 'react';
