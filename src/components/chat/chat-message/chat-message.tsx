@@ -14,8 +14,8 @@ import { cn } from '../../../lib/utils';
 import {
   MessageContent,
   MessageFile,
-  MessageValueType,
-} from '../../../models/message';
+} from '@/domains/messages/schemas';
+import { MessageValueType } from '@/domains/messages/types';
 
 
 import { MessageResponseSource } from '../../../models/message-response-source';
@@ -495,7 +495,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
   }
 
   // Check for errors and show appropriate error messages
-  message.errorMessageList?.forEach((error) => {
+  message.errors?.forEach((error) => {
     results.push(
       <ValueCollection
         key={`error-${error.code}`}

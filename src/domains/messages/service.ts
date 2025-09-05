@@ -1,6 +1,6 @@
 import webApi from '@/domains/auth/axios-setup';
 import { Subject } from 'rxjs';
-import { Message, MessageCreateContent, MessageFile, MessageSchema } from './schemas';
+import { Message, MessageContent, MessageFile, MessageSchema } from './schemas';
 
 // Fetch all messages in a given message thread
 export async function fetchMessages(threadId: string): Promise<Message[]> {
@@ -63,7 +63,7 @@ export async function postMessage({
 }: {
   workSpaceId: string;
   threadId: string;
-  contentList?: MessageCreateContent[];
+  contentList?: MessageContent[];
   files?: MessageFile[];
   variables?: Record<string, unknown>;
 }): Promise<Subject<Message>> {

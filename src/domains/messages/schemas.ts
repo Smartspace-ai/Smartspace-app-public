@@ -1,4 +1,4 @@
-import { MessageValueType } from '@/models/message';
+import { MessageValueType } from '@/domains/messages/types';
 import { z } from 'zod';
 
 // MessageFile schema
@@ -13,13 +13,6 @@ export const MessageErrorMessageSchema = z.object({
   message: z.string().optional(),
   data: z.string().optional(),
   blockId: z.string().optional()
-});
-
-
-// MessageCreateContent schema
-export const MessageCreateContentSchema = z.object({
-  text: z.string().optional(),
-  image: MessageFileSchema.optional(),
 });
 
 // Message schema
@@ -39,7 +32,7 @@ export const MessageSchema = z.object({
   createdByUserId: z.string().optional(),
   messageThreadId: z.string().optional(),
   name: z.string().optional(),
-  errorMessageList: z.array(MessageErrorMessageSchema).optional(),
+  errors: z.array(MessageErrorMessageSchema).optional(),
   values: z.array(z.object({
     name: z.string(),
     value: z.any(),
@@ -57,7 +50,13 @@ export const MessageSchema = z.object({
 });
 
 
+export const MessageContentSchema = z.object({
+  text: z.string().optional(),
+  image: MessageFileSchema.optional(),
+});
+
+
 // Type exports for TypeScript
 export type MessageFile = z.infer<typeof MessageFileSchema>;
-export type MessageCreateContent = z.infer<typeof MessageCreateContentSchema>;
 export type Message = z.infer<typeof MessageSchema>;
+export type MessageContent = z.infer<typeof MessageContentSchema>;

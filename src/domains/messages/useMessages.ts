@@ -1,11 +1,11 @@
 import {
   Message,
-  MessageCreateContent,
+  MessageContent,
   MessageFile,
   MessageSchema,
 } from '@/domains/messages/schemas';
 import { addInputToMessage, fetchMessages, postMessage } from '@/domains/messages/service';
-import { MessageValueType } from '@/models/message';
+import { MessageValueType } from '@/domains/messages/types';
 
 import { uploadFiles } from '@/apis/files';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -53,7 +53,7 @@ export function useWorkspaceMessages(
     Subject<Message>,
     Error,
     {
-      contentList?: MessageCreateContent[];
+      contentList?: MessageContent[];
       files?: MessageFile[];
       variables?: Record<string, unknown>;
     }
@@ -301,7 +301,7 @@ export function useWorkspaceMessages(
 
   // Public method to send a message
   const sendMessage = (
-    contentList?: MessageCreateContent[],
+    contentList?: MessageContent[],
     files?: MessageFile[],
     variables?: Record<string, unknown>
   ) => {
