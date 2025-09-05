@@ -1,3 +1,5 @@
+import { Message } from '@/domains/messages';
+import { getErrorMessage } from '@/domains/messages/error-utils';
 import { JsonSchema } from '@jsonforms/core';
 import {
   materialCells,
@@ -6,15 +8,16 @@ import {
 import { JsonForms } from '@jsonforms/react';
 import { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import _ from 'lodash';
-import { FileText, FileImage, FileVideo, FileAudio, FileArchive, FileCode, FileSpreadsheet, Presentation } from 'lucide-react';
+import { FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Presentation } from 'lucide-react';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { cn } from '../../../lib/utils';
 import {
-  Message,
   MessageContent,
   MessageFile,
-  MessageValueType,
-} from '../../../models/message';
+} from '@/domains/messages/schemas';
+import { MessageValueType } from '@/domains/messages/types';
+
+
 import { MessageResponseSource } from '../../../models/message-response-source';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
@@ -321,6 +324,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
 
   const results: ReactNode[] = [];
 
+
   let content: ContentItem[] | null = null;
   let sources: any[] | null = null;
   let files: MessageFile[] | null = null;
@@ -489,6 +493,27 @@ export const ChatMessage: FC<ChatMessageProps> = ({
       />
     );
   }
+
+  // Check for errors and show appropriate error messages
+  message.errors?.forEach((error) => {
+    results.push(
+      <ValueCollection
+        key={`error-${error.code}`}
+        createdBy="Chatbot"
+        createdAt={message.createdAt}
+        type={MessageValueType.OUTPUT}
+        content={[{ text: getErrorMessage(error.code) }]}
+        files={null}
+        sources={null}
+        userOutput={null}
+        userInput={null}
+        useMessageFile={useMessageFile}
+        downloadFile={downloadFile}
+        saveFile={saveFile}
+        useQueryFiles={useQueryFiles}
+      />
+    );
+  });
 
   return <>{results}</>;
 };

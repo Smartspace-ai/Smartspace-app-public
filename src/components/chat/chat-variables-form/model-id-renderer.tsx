@@ -86,12 +86,19 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
   // Fetch models with search functionality
   const { data: modelsData, isLoading } = useModels({ 
     search: searchTerm,
-    take: 50 
+    take: 1000 
   });
   const [listModels, setListModels] = useState<Model[]>([]);
   useEffect(() => {
     if (modelsData?.data) {
-      setListModels(modelsData.data);
+      const sorted = [...modelsData.data].sort((a, b) => {
+        const aName = (a.displayName || a.name || '').toLowerCase();
+        const bName = (b.displayName || b.name || '').toLowerCase();
+        if (aName < bName) return -1;
+        if (aName > bName) return 1;
+        return 0;
+      });
+      setListModels(sorted);
     }
   }, [modelsData?.data]);
 
