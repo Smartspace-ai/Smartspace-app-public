@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Message } from '@/domains/messages';
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { Draw } from '@/models/draw';
-import { MessageValueType } from '@/models/message';
+import { MessageValueType } from '@/domains/messages/types';
 
 import { useQueryFiles } from '../../../hooks/use-files';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
