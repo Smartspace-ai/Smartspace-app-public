@@ -1,5 +1,5 @@
 import { Message } from '@/domains/messages';
-import { formatErrorMessage, getErrorMessage } from '@/domains/messages/error-utils';
+import { getErrorMessage } from '@/domains/messages/error-utils';
 import { JsonSchema } from '@jsonforms/core';
 import {
   materialCells,
@@ -495,15 +495,14 @@ export const ChatMessage: FC<ChatMessageProps> = ({
   }
 
   // Check for errors and show appropriate error messages
-  if (message.code && message.code === 429) {
-    const error = getErrorMessage(message.code);
+  message.errorMessageList?.forEach((error) => {
     results.push(
       <ValueCollection
-        key={`error-${message.code}`}
+        key={`error-${error.code}`}
         createdBy="Chatbot"
         createdAt={message.createdAt}
         type={MessageValueType.OUTPUT}
-        content={[{ text: formatErrorMessage(error) }]}
+        content={[{ text: getErrorMessage(error.code) }]}
         files={null}
         sources={null}
         userOutput={null}
@@ -514,7 +513,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
         useQueryFiles={useQueryFiles}
       />
     );
-  }
+  });
 
   return <>{results}</>;
 };

@@ -8,6 +8,13 @@ export const MessageFileSchema = z.object({
   uniqueName: z.string().optional(),
 });
 
+export const MessageErrorMessageSchema = z.object({
+  code: z.number(),
+  message: z.string().optional(),
+  data: z.string().optional(),
+  blockId: z.string().optional()
+});
+
 
 // MessageCreateContent schema
 export const MessageCreateContentSchema = z.object({
@@ -32,6 +39,7 @@ export const MessageSchema = z.object({
   createdByUserId: z.string().optional(),
   messageThreadId: z.string().optional(),
   name: z.string().optional(),
+  errorMessageList: z.array(MessageErrorMessageSchema).optional(),
   values: z.array(z.object({
     name: z.string(),
     value: z.any(),
