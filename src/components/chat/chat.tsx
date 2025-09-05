@@ -116,11 +116,23 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     }
   }, [newMessage, uploadedFiles, sendMessage, imagesForMessage]);
 
-  // Do not submit on Enter; allow newline
+  // Enter sends; Shift/Ctrl+Enter insert newline
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    // Prevent default sending behavior elsewhere; Enter inserts newline
-    return;
-  }, []);
+    if (e.key !== 'Enter') return;
+    // Allow newline when holding Shift or Ctrl
+    if (e.shiftKey || e.ctrlKey) return;
+
+    // Send on plain Enter
+    e.preventDefault();
+
+    const messageEmpty = newMessage.trim().length === 0;
+    const noFilesAttached = uploadedFiles.length === 0 && imagesForMessage.length === 0;
+    const blocked = isUploadingFiles || isSendingMessage || activeThread?.isFlowRunning;
+
+    if (!(messageEmpty && noFilesAttached) && !blocked) {
+      handleSendMessage();
+    }
+  }, [newMessage, uploadedFiles, imagesForMessage, isUploadingFiles, isSendingMessage, activeThread?.isFlowRunning, handleSendMessage]);
 
   // Drag-and-drop handlers
   const handleDragEnterChat = (e: React.DragEvent) => {
@@ -152,11 +164,6 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
       handleFilesSelected(filesArray);
     }
   };
-
-  useEffect(() => {
-    console.log('hi');
-    console.log("threadId", threadId);
-  }, []);
 
   // When navigating to a specific thread, scroll messages to the bottom once loaded
   useEffect(() => {
