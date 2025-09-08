@@ -28,9 +28,7 @@ API.interceptors.request.use(async (config) => {
   const inTeamsEnvironment = isInTeams();
   if (inTeamsEnvironment) {
     try {
-      const scopes = [
-        `api://e3f39d90-9235-435e-ba49-681727352613/smartspaceapi.chat.access`,
-      ];
+      const scopes = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || []
       const token = await acquireNaaToken(scopes);
       if (token) config.headers?.set('Authorization', `Bearer ${token}`);
     } catch {
