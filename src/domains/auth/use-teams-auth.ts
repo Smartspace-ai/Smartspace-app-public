@@ -44,8 +44,7 @@ export const useTeamsAuth = () => {
           // ignore
         }
 
-        const resourceAppId = 'e3f39d90-9235-435e-ba49-681727352613'
-        const scopes = [`api://${resourceAppId}/smartspaceapi.chat.access`]
+        const scopes = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || []
         const token = await acquireNaaToken(scopes)
         setTeamsToken(token)
         try {
