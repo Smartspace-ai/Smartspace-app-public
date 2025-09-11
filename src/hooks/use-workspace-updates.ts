@@ -1,3 +1,4 @@
+import { messagesKeys } from '@/domains/messages/queryKeys';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
@@ -40,7 +41,7 @@ export function useWorkspaceUpdates() {
       queryClient.invalidateQueries({
         queryKey: ['threads', thread.id],
       });
-      queryClient.invalidateQueries({ queryKey: ['messages', thread.id] });
+      queryClient.invalidateQueries({ queryKey: messagesKeys.byThread(thread.id) });
     };
 
     const commentsHandler = (comment: MessageComment) => {

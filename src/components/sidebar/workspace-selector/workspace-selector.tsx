@@ -1,10 +1,10 @@
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useActiveWorkspace, useWorkspaces } from '@/hooks/use-workspaces';
+import { Button } from '@/shared/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 
 import { CircleInitials } from '@/components/circle-initials';
-import { useSidebar } from '@/components/ui/sidebar';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useSidebar } from '@/shared/ui/sidebar';
+import { Skeleton } from '@/shared/ui/skeleton';
 import debounce from 'lodash/debounce';
 import { ChevronDown } from 'lucide-react';
 import React, { useEffect, useState } from 'react';

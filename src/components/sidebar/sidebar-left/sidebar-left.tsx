@@ -3,10 +3,9 @@ import { useActiveUser } from '@/hooks/use-active-user';
 import { useMsal } from '@azure/msal-react';
 import { LogOut } from 'lucide-react';
 import { ComponentProps } from 'react';
+import { handleTrailingSlash } from '../../../app/msalConfig';
 import { Logo } from '../../../assets/logo';
-import { getAvatarColour } from '../../../utils/avatar-colour';
-import { getInitials } from '../../../utils/initials';
-import { Avatar, AvatarFallback, AvatarImage } from '../../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../../../shared/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +13,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../../ui/dropdown-menu';
-import { Sidebar, SidebarHeader } from '../../ui/sidebar';
+} from '../../../shared/ui/dropdown-menu';
+import { Sidebar, SidebarHeader } from '../../../shared/ui/sidebar';
+import { getAvatarColour } from '../../../utils/avatar-colour';
+import { getInitials } from '../../../utils/initials';
 import Threads from '../threads/threads';
 import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
-import { handleTrailingSlash } from '../../../app/msalConfig';
 
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {

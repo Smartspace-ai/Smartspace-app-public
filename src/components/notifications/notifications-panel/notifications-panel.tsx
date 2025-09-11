@@ -1,13 +1,13 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
 import {
   useNotificationMutations,
   useNotificationsQuery,
 } from '@/hooks/use-notifications';
 import { cn } from '@/lib/utils';
 import { Notification, NotificationType } from '@/models/notification';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
+import { Button } from '@/shared/ui/button';
+import { ScrollArea } from '@/shared/ui/scroll-area';
+import { Switch } from '@/shared/ui/switch';
 import { getInitials } from '@/utils/initials';
 import { parseDateTimeHuman } from '@/utils/parse-date-time';
 import { useMatch, useNavigate } from '@tanstack/react-router';

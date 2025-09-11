@@ -1,6 +1,6 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent } from '../../shared/ui/card';
 
 interface HTMLBlockProps {
   content: string;

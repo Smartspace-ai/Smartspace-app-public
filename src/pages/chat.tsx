@@ -4,11 +4,14 @@ import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { Toaster } from 'sonner';
 
-import Chat from '@/components/chat/chat';
 import SidebarLeft from '@/components/sidebar/sidebar-left/sidebar-left';
 import SidebarRight from '@/components/sidebar/sidebar-right/sidebar-right';
 import { useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { useWorkspaces } from '@/hooks/use-workspaces';
+import ChatHeader from '@/ui/header/chat-header';
+import MessageComposer from '@/ui/messages/MessageComposer';
+import MessageList from '@/ui/messages/MessageList';
+import { RouteIdsProvider } from './WorkspaceThreadPage/RouteIdsProvider';
 // Params: workspaceId is guaranteed (we are under that route); threadId is optional
 
 export default function ChatBotPage() {
@@ -51,16 +54,18 @@ export default function ChatBotPage() {
 
   // workspace page
   return (
-    <>
+    <RouteIdsProvider>
       <Stack direction="row" sx={{ height: '100dvh', width: '100vw', overflow: 'hidden', alignItems: 'stretch' }}>
         <SidebarLeft />
         {/* Middle column */}
         <Stack direction="column" sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
-          <Chat threadId={threadId} isVisible />
+          <ChatHeader />
+          <MessageList />
+          <MessageComposer/>
         </Stack>
         <SidebarRight threadId={threadId} />
       </Stack>
       <Toaster />
-    </>
+      </RouteIdsProvider>
   )
 }

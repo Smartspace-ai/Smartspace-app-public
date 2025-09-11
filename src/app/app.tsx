@@ -3,9 +3,9 @@ import { useIsAuthenticated, useMsal } from '@azure/msal-react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
 
-import { SidebarProvider } from '@/components/ui/sidebar'
 import { TeamsProvider, useTeams } from '@/contexts/teams-context'
 import { SignalRProvider } from '@/hooks/use-signalr'
+import { SidebarProvider } from '@/shared/ui/sidebar'
 import { Loader2 } from 'lucide-react'
 
 export function AppProviders({ children }: { children: React.ReactNode }) {

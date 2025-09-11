@@ -1,19 +1,19 @@
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Avatar, AvatarFallback } from '@/shared/ui/avatar';
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
-} from '@/components/ui/breadcrumb';
-import { Button as UIButton } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from '@/shared/ui/breadcrumb';
+import { Button as UIButton } from '@/shared/ui/button';
+import { ScrollArea } from '@/shared/ui/scroll-area';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-} from '@/components/ui/sidebar';
-import { useIsMobile } from '@/hooks/use-mobile';
+} from '@/shared/ui/sidebar';
 
 import { MentionInput } from '@/components/mention-input/mention-input';
 import { MentionUser } from '@/models/mention-user';
@@ -25,9 +25,9 @@ import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useTaggableWorkspaceUsers, useWorkspaceThreadComments } from '../../../hooks/use-workspace-thread-comments';
 import { MessageComment } from '../../../models/message-comment';
+import { Skeleton } from '../../../shared/ui/skeleton';
 import { getInitials } from '../../../utils/initials';
 import { parseDateTime } from '../../../utils/parse-date-time';
-import { Skeleton } from '../../ui/skeleton';
 
 const MAX_COMMENT_LENGTH = 350;
 

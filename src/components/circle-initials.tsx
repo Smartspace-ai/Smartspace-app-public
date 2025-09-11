@@ -1,4 +1,4 @@
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar } from '@/shared/ui/avatar';
 
 import { getInitials } from '../utils/initials';
 

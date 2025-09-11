@@ -1,0 +1,31 @@
+import { useMatch, useParams } from '@tanstack/react-router';
+import React, { createContext, useContext, useMemo } from 'react';
+
+export type RouteIds = {
+  workspaceId: string;
+  threadId: string;
+};
+
+const RouteIdsContext = createContext<RouteIds | null>(null);
+
+export function RouteIdsProvider({ children }: { children: React.ReactNode }) {
+  // Always-available workspaceId from parent route
+  const { workspaceId } = useParams({
+    from: '/_protected/workspace/$workspaceId',
+  });
+  // Optional threadId from child route (do not throw if not active)
+  const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
+  const threadId = threadMatch?.params?.threadId ?? '';
+
+  const value = useMemo(() => ({ workspaceId, threadId }), [workspaceId, threadId]);
+  return <RouteIdsContext.Provider value={value}>{children}</RouteIdsContext.Provider>;
+}
+
+export function useRouteIds(): RouteIds {
+  const ctx = useContext(RouteIdsContext);
+  if (!ctx) {
+    throw new Error('useRouteIds must be used within <RouteIdsProvider>.');
+  }
+  return ctx;
+}
+

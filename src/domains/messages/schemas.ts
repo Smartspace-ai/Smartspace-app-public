@@ -1,12 +1,25 @@
-import { MessageValueType } from '@/domains/messages/types';
+import { MessageResponseSourceType, MessageValueType } from '@/domains/messages/enums';
 import { z } from 'zod';
+import { FileInfoSchema } from '../files/schemas';
 
-// MessageFile schema
-export const MessageFileSchema = z.object({
-  id: z.string(),
+
+// MessageResponseSource schema
+export const MessageResponseSourceSchema = z.object ({
+  index: z.number(),
+  uri: z.string(),
   name: z.string().nullish(),
-  uniqueName: z.string().nullish(),
+  sourceType: z.nativeEnum(MessageResponseSourceType).nullish(),
 });
+
+// MessageResponse schema
+export const MessageResponseSchema = z.object({
+  content: z.string(),
+  messageId: z.string(),
+  sources: z.array(MessageResponseSourceSchema).nullish(),
+  isReplying: z.boolean().nullish().default(false),
+  requestedJsonSchema: z.string().nullish(),
+});
+
 
 export const MessageErrorMessageSchema = z.object({
   code: z.number(),
@@ -19,40 +32,47 @@ export const MessageErrorMessageSchema = z.object({
 export const MessageSchema = z.object({
   id: z.string().nullish(),
   content: z.string().nullish(),
-  contentList: z.array(z.object({
-    text: z.string().nullish(),
-    image: MessageFileSchema.nullish(),
-  })).nullish(),
-  files: z.array(MessageFileSchema).nullish(),
+  contentList: z
+    .array(
+      z.object({
+        text: z.string().nullish(),
+        image: FileInfoSchema.nullish(),
+      })
+    )
+    .nullish(),
+  files: z.array(FileInfoSchema).nullish(),
   createdAt: z.union([z.date(), z.string()]),
   createdBy: z.string().nullish(),
   hasComments: z.boolean().nullish().default(false),
   response: z.any().nullish(),
-  comments: z.array(z.any()).nullish(), 
+  comments: z.array(z.any()).nullish(),
   createdByUserId: z.string().nullish(),
   messageThreadId: z.string().nullish(),
   name: z.string().nullish(),
   errors: z.array(MessageErrorMessageSchema).nullish(),
-  values: z.array(z.object({
-    name: z.string(),
-    value: z.any(),
-    type: z.nativeEnum(MessageValueType),
-    channels: z.record(z.number()),
-    createdAt: z.union([z.date(), z.string()]),
-    createdBy: z.string(),
-    createdByUserId: z.string().nullish(),
-  })).nullish(),
+  values: z
+    .array(
+      z.object({
+        name: z.string(),
+        value: z.any(),
+        type: z.nativeEnum(MessageValueType),
+        channels: z.record(z.number()),
+        createdAt: z.union([z.date(), z.string()]),
+        createdBy: z.string(),
+        createdByUserId: z.string().nullish(),
+      })
+    )
+    .nullish(),
   optimistic: z.boolean().nullish().default(false),
 });
 
-
-export const MessageContentSchema = z.object({
+export const MessageItemContentSchema = z.object({
   text: z.string().nullish(),
-  image: MessageFileSchema.nullish(),
+  image: FileInfoSchema.nullish(),
 });
 
-
 // Type exports for TypeScript
-export type MessageFile = z.infer<typeof MessageFileSchema>;
 export type Message = z.infer<typeof MessageSchema>;
-export type MessageContent = z.infer<typeof MessageContentSchema>;
+export type MessageContentItem = z.infer<typeof MessageItemContentSchema>;
+export type MessageResponseSource = z.infer<typeof MessageResponseSourceSchema>;
+export type MessageResponse = z.infer<typeof MessageResponseSchema>;

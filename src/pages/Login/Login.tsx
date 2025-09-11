@@ -3,8 +3,8 @@ import { useMsal } from '@azure/msal-react';
 import { useEffect, useState } from 'react';
 import { interactiveLoginRequest } from '../../app/msalConfig';
 import { Logo } from '../../assets/logo';
-import { Button } from '../../components/ui/button';
 import { useTeams } from '../../contexts/teams-context';
+import { Button } from '../../shared/ui/button';
 import styles from './Login.module.scss';
 
 export function Login() {

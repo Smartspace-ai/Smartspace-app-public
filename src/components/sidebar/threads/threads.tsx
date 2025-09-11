@@ -21,6 +21,7 @@ import {
 
 
 
+
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -40,17 +41,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
+} from '@/shared/ui/alert-dialog';
+import { Button } from '@/shared/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { SidebarContent, SidebarFooter, useSidebar } from '@/components/ui/sidebar';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '@/shared/ui/dropdown-menu';
+import { SidebarContent, SidebarFooter, useSidebar } from '@/shared/ui/sidebar';
+import { Skeleton } from '@/shared/ui/skeleton';
 
 import { CircleInitials } from '@/components/circle-initials';
 // import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
