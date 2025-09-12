@@ -7,30 +7,18 @@ import {
   ListItemAvatar,
   ListItemButton,
   ListItemText,
-  Popover,
+  Paper,
   SxProps,
   TextField,
   Theme,
 } from '@mui/material';
 import { Maximize2, Minimize2 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getCaretCoordinates } from './textarea-caret';
-
-interface PopoverPosition {
-  top: number;
-  left: number;
-  direction: 'above' | 'below';
-}
 
 interface MentionInputProps {
   value: { plain: string; withMentions: string };
-  onChange: React.Dispatch<
-    React.SetStateAction<{
-      plain: string;
-      withMentions: string;
-    }>
-  >;
+  onChange: React.Dispatch<React.SetStateAction<{ plain: string; withMentions: string }>>;
   searchTerm: string;
   setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
   users: MentionUser[];
@@ -46,24 +34,55 @@ interface MentionInputProps {
 }
 
 export const MentionInput = (props: MentionInputProps) => {
-  const { value, onChange, setSearchTerm, users, mentionList, setMentionList, minRows, maxRows, inputSx, autoFocus, shouldFocus, placeholder, showFullscreenToggle = true } =
-    props;
+  const {
+    value,
+    onChange,
+    setSearchTerm,
+    users,
+    mentionList,
+    setMentionList,
+    minRows,
+    maxRows,
+    inputSx,
+    autoFocus,
+    shouldFocus,
+    placeholder,
+    showFullscreenToggle = true,
+  } = props;
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null); // wrapper the menu pins to
   const [selectIndex, setSelectIndex] = useState(0);
   const [openPopover, setOpenPopover] = useState(false);
-  const [popoverPosition, setPopoverPosition] = useState<PopoverPosition>({
-    top: 0,
-    left: 0,
-    direction: 'above',
-  });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpand, setShowExpand] = useState(false);
-  const isMobile = useIsMobile();
+  useIsMobile();
+
+  const baseSx: SxProps<Theme> = {
+    '& .MuiInputBase-root': {
+      px: 1,
+      py: 0.5,
+      backgroundColor: 'var(--card, var(--background, #fff))',
+    },
+    '& .MuiInputBase-inputMultiline': {
+      overflowY: 'auto',
+      fontSize: '16px',
+      WebkitTextSizeAdjust: '100%',
+      backgroundColor: 'var(--card, var(--background, #fff))',
+    },
+    '& .MuiInputBase-input': {
+      backgroundColor: 'var(--card, var(--background, #fff))',
+    },
+  };
+  const mergedSx: SxProps<Theme> = inputSx
+    ? Array.isArray(inputSx)
+      ? [baseSx, ...inputSx]
+      : [baseSx, inputSx]
+    : baseSx;
 
   const closePopover = () => {
     setOpenPopover(false);
     setSelectIndex(0);
-    setPopoverPosition({ top: 0, left: 0, direction: 'above' });
   };
 
   const getActiveMention = () => {
@@ -78,63 +97,20 @@ export const MentionInput = (props: MentionInputProps) => {
     return { atIndex, candidate, caret };
   };
 
-  const updateAtAnchorPosition = useCallback(() => {
-    const el = inputRef.current;
-    if (!el) return;
-
-    const caret = el.selectionEnd ?? 0;
-    const atIndex = el.value.lastIndexOf('@', caret - 1);
-    if (atIndex === -1) return;
-
-    const coords = getCaretCoordinates(el, atIndex);
-    const rect = el.getBoundingClientRect();
-    const style = window.getComputedStyle(el);
-    const lineHeight = parseFloat(style.lineHeight) || 24;
-
-    const topInViewport = rect.top + coords.top - el.scrollTop;
-    const leftInViewport = rect.left + coords.left - el.scrollLeft;
-
-    // On mobile, always position above the input to avoid keyboard overlap
-    // On desktop, use the original logic with a threshold
-    const direction: 'above' | 'below' = isMobile
-      ? 'above'
-      : window.innerHeight - topInViewport < 300 ? 'above' : 'below';
-
-    let adjustedTop = topInViewport;
-
-    if (direction === 'above') {
-      // For mobile or when positioning above, position the anchor higher up
-      // so the popup appears above the input instead of at the caret position
-      const popupHeightEstimate = 200; // Estimate popup height
-      adjustedTop = Math.max(10, topInViewport - popupHeightEstimate);
-    } else {
-      adjustedTop = topInViewport + lineHeight;
-    }
-
-    setPopoverPosition({
-      top: adjustedTop,
-      left: leftInViewport,
-      direction,
-    });
-  }, [isMobile]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newValue = e.target.value;
 
-    // Determine if the caret is currently within an active mention context
+    // Detect active mention
     const el = inputRef.current;
     let active = null as null | { atIndex: number; candidate: string; caret: number };
     if (el) {
-      // Temporarily set element value so selection math is accurate during change
-      // (React controlled input already has this value queued.)
-      el.value = newValue;
+      el.value = newValue; // keep selection math accurate during change
       active = getActiveMention();
     }
 
     if (active) {
       setSearchTerm(active.candidate);
       setOpenPopover(true);
-      updateAtAnchorPosition();
     } else {
       setOpenPopover(false);
     }
@@ -145,7 +121,6 @@ export const MentionInput = (props: MentionInputProps) => {
     setMentionList(newMentionList);
 
     // line count check for expand toggle
-    
     if (el) {
       const style = window.getComputedStyle(el);
       let lineHeight = parseFloat(style.lineHeight || '');
@@ -167,9 +142,7 @@ export const MentionInput = (props: MentionInputProps) => {
       const recentAt = value.plain.lastIndexOf('@', caretPosition - 1);
       const inserted = user.displayName + ' ';
       const newPlainValue =
-        value.plain.slice(0, recentAt + 1) +
-        inserted +
-        value.plain.slice(caretPosition);
+        value.plain.slice(0, recentAt + 1) + inserted + value.plain.slice(caretPosition);
 
       const updatedMentionList = mentionList.some((m) => m.id === user.id)
         ? mentionList
@@ -182,7 +155,6 @@ export const MentionInput = (props: MentionInputProps) => {
       setMentionList(newMentionList);
       closePopover();
 
-      // Place caret just after the inserted mention and trailing space
       requestAnimationFrame(() => {
         const pos = recentAt + 1 + inserted.length;
         inputRef.current?.setSelectionRange(pos, pos);
@@ -190,24 +162,16 @@ export const MentionInput = (props: MentionInputProps) => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     const active = getActiveMention();
     const shouldHandleMentionKeys = openPopover && !!active;
     if (shouldHandleMentionKeys) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        if (selectIndex < users.length - 1) {
-          setSelectIndex(selectIndex + 1);
-        } else {
-          setSelectIndex(0);
-        }
+        setSelectIndex((i) => (i < users.length - 1 ? i + 1 : 0));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        if (selectIndex > 0) {
-          setSelectIndex(selectIndex - 1);
-        } else {
-          setSelectIndex(users.length - 1);
-        }
+        setSelectIndex((i) => (i > 0 ? i - 1 : users.length - 1));
       } else if (e.key === 'Enter') {
         if (users.length > 0) {
           e.preventDefault();
@@ -250,30 +214,11 @@ export const MentionInput = (props: MentionInputProps) => {
     }
   };
 
-  //this should keep the popover positioned correctly if the window scrolls or the textarea scrolls
-  useEffect(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    const recalc = () => {
-      if (openPopover) updateAtAnchorPosition();
-    };
-
-    el.addEventListener('scroll', recalc, { passive: true });
-    window.addEventListener('scroll', recalc, { passive: true });
-    window.addEventListener('resize', recalc);
-
-    return () => {
-      el.removeEventListener('scroll', recalc);
-      window.removeEventListener('scroll', recalc);
-      window.removeEventListener('resize', recalc);
-    };
-  }, [openPopover, updateAtAnchorPosition]);
-
   // Focus when explicitly requested
   useEffect(() => {
     if (shouldFocus && inputRef.current) {
       setTimeout(() => {
-        inputRef.current?.focus({ preventScroll: true } as any);
+        inputRef.current?.focus({ preventScroll: true } as FocusOptions);
       }, 30);
     }
   }, [shouldFocus]);
@@ -296,10 +241,48 @@ export const MentionInput = (props: MentionInputProps) => {
     }
   }, [value.plain]);
 
+  // Pinned mentions menu (absolute inside the same wrapper as the TextField) — ABOVE the box
+  const MentionMenu = (
+    <Paper
+      elevation={3}
+      sx={{
+        position: 'absolute',
+        bottom: '100%',   // ⬅️ anchor to the top edge of the field
+        left: 0,
+        right: 0,
+        mb: 0.5,          // small gap above the field
+        zIndex: (t) => t.zIndex.modal + 1,
+        maxHeight: 260,
+        overflowY: 'auto',
+      }}
+      // Prevent blur on the textarea when clicking the menu
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      <List>
+        {users.map((user, index) => (
+          <ListItemButton
+            key={user.id}
+            selected={index === selectIndex}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUserSelect(user);
+            }}
+          >
+            <ListItemAvatar>
+              <Avatar alt={user.displayName}>{user.initials}</Avatar>
+            </ListItemAvatar>
+            <ListItemText primary={user.displayName} />
+          </ListItemButton>
+        ))}
+      </List>
+    </Paper>
+  );
+
   return (
     <>
       {!isFullscreen && (
-        <div style={{ position: 'relative' }}>
+        // Anchor wrapper — the menu is absolutely positioned inside this
+        <div ref={anchorRef} style={{ position: 'relative' }}>
           <TextField
             inputRef={inputRef}
             minRows={minRows ?? 4}
@@ -311,25 +294,7 @@ export const MentionInput = (props: MentionInputProps) => {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             autoFocus={autoFocus}
-            sx={[
-              {
-                '& .MuiInputBase-root': {
-                  px: 1,
-                  py: 0.5,
-                  backgroundColor: 'var(--card, var(--background, #fff))',
-                },
-                '& .MuiInputBase-inputMultiline': {
-                  overflowY: 'auto',
-                  fontSize: '16px',
-                  WebkitTextSizeAdjust: '100%',
-                  backgroundColor: 'var(--card, var(--background, #fff))',
-                },
-                '& .MuiInputBase-input': {
-                  backgroundColor: 'var(--card, var(--background, #fff))',
-                },
-              },
-              inputSx,
-            ]}
+            sx={mergedSx}
           />
           {showFullscreenToggle && showExpand && (
             <IconButton
@@ -341,88 +306,83 @@ export const MentionInput = (props: MentionInputProps) => {
               <Maximize2 size={16} />
             </IconButton>
           )}
+          {openPopover && users.length > 0 && MentionMenu}
         </div>
       )}
-      {isFullscreen && typeof document !== 'undefined' && createPortal(
-        <div style={{ position: 'fixed', top: '5vh', height: '95vh', left: 0, right: 0, zIndex: 1300 }}>
-          <div style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--background, #fff)', border: '1px solid var(--border, rgba(0,0,0,0.12))', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-            <IconButton
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsFullscreen(false);
+
+      {isFullscreen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              top: '5vh',
+              height: '95vh',
+              left: 0,
+              right: 0,
+              zIndex: 1300,
+            }}
+          >
+            {/* Separate wrapper in fullscreen; menu still pins to the field */}
+            <div
+              ref={anchorRef}
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                background: 'var(--background, #fff)',
+                border: '1px solid var(--border, rgba(0,0,0,0.12))',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
               }}
-              size="small"
-              aria-label="Collapse"
-              sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
             >
-              <Minimize2 size={16} />
-            </IconButton>
-            <div style={{ width: '100%', height: '100%', padding: 8 }}>
-              <TextField
-                inputRef={inputRef}
-                multiline
-                fullWidth
-                value={value.plain}
-                placeholder={placeholder}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                autoFocus
-                minRows={Math.max(minRows ?? 10, 10)}
-                sx={{
-                  height: '100%',
-                  '& .MuiInputBase-root': { height: '100%', alignItems: 'flex-start', backgroundColor: 'var(--card, var(--background, #fff))' },
-                  '& .MuiInputBase-inputMultiline': { height: '100%', overflowY: 'auto', fontSize: '16px', WebkitTextSizeAdjust: '100%', backgroundColor: 'var(--card, var(--background, #fff))' },
-                  '& .MuiInputBase-input': { backgroundColor: 'var(--card, var(--background, #fff))' },
+              <IconButton
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsFullscreen(false);
                 }}
-              />
+                size="small"
+                aria-label="Collapse"
+                sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
+              >
+                <Minimize2 size={16} />
+              </IconButton>
+              <div style={{ width: '100%', height: '100%', padding: 8 }}>
+                <TextField
+                  inputRef={inputRef}
+                  multiline
+                  fullWidth
+                  value={value.plain}
+                  placeholder={placeholder}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyDown}
+                  autoFocus
+                  minRows={Math.max(minRows ?? 10, 10)}
+                  sx={{
+                    height: '100%',
+                    '& .MuiInputBase-root': {
+                      height: '100%',
+                      alignItems: 'flex-start',
+                      backgroundColor: 'var(--card, var(--background, #fff))',
+                    },
+                    '& .MuiInputBase-inputMultiline': {
+                      height: '100%',
+                      overflowY: 'auto',
+                      fontSize: '16px',
+                      WebkitTextSizeAdjust: '100%',
+                      backgroundColor: 'var(--card, var(--background, #fff))',
+                    },
+                    '& .MuiInputBase-input': {
+                      backgroundColor: 'var(--card, var(--background, #fff))',
+                    },
+                  }}
+                />
+              </div>
+              {openPopover && users.length > 0 && MentionMenu}
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      <Popover
-        disablePortal
-        disableAutoFocus={true}
-        open={
-          users.length > 0 &&
-          openPopover &&
-          popoverPosition.top !== 0 &&
-          popoverPosition.left !== 0
-        }
-        onClose={closePopover}
-        anchorReference="anchorPosition"
-        anchorPosition={popoverPosition}
-        anchorOrigin={{
-          vertical: popoverPosition.direction === 'above' ? 'top' : 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: popoverPosition.direction === 'above' ? 'bottom' : 'top',
-          horizontal: 'left',
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-      >
-        <List>
-          {users.map((user, index) => (
-            <ListItemButton
-              key={user.id}
-              selected={index === selectIndex}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleUserSelect(user);
-              }}
-            >
-              <ListItemAvatar>
-                <Avatar src={user.display} />
-              </ListItemAvatar>
-              <ListItemText primary={user.displayName} />
-            </ListItemButton>
-          ))}
-        </List>
-      </Popover>
+          </div>,
+          document.body
+        )}
     </>
   );
 };
@@ -431,8 +391,7 @@ const buildWithMentionsFromPlain = (
   plain: string,
   list: MentionUser[],
 ): { withMentions: string; mentionList: MentionUser[] } => {
-  if (!list || list.length === 0)
-    return { withMentions: plain, mentionList: [] };
+  if (!list || list.length === 0) return { withMentions: plain, mentionList: [] };
 
   const displayNameToId = new Map(list.map((u) => [u.displayName, u.id]));
   const alternation = list
@@ -442,21 +401,15 @@ const buildWithMentionsFromPlain = (
 
   const mentionRegex = new RegExp(`@(${alternation})(?=$|\\W)`, 'g');
 
-  const newWithMentions = plain.replace(
-    mentionRegex,
-    (_match, displayName: string) => {
-      const id = displayNameToId.get(displayName);
-      return id ? `@[${displayName}](${id})` : _match;
-    },
-  );
+  const newWithMentions = plain.replace(mentionRegex, (_match, displayName: string) => {
+    const id = displayNameToId.get(displayName);
+    return id ? `@[${displayName}](${id})` : _match;
+  });
 
   const mentionedIds = new Set(
     [...newWithMentions.matchAll(/@\[[^\]]+\]\(([^)]+)\)/g)].map((m) => m[1]),
   );
   const newMentionList = list.filter((user) => mentionedIds.has(user.id));
 
-  return {
-    withMentions: newWithMentions,
-    mentionList: newMentionList as MentionUser[],
-  };
+  return { withMentions: newWithMentions, mentionList: newMentionList as MentionUser[] };
 };
