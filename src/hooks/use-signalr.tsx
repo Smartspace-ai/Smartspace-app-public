@@ -1,12 +1,4 @@
-import {
-  createContext,
-  FC,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from 'react';
+import { normalizeNotificationType, NotificationType } from '@/shared/models/notification';
 import { useMsal } from '@azure/msal-react';
 import {
   HubConnection,
@@ -15,7 +7,15 @@ import {
 } from '@microsoft/signalr';
 import { useQueryClient } from '@tanstack/react-query';
 import debounce from 'lodash/debounce';
-import { NotificationType, normalizeNotificationType } from '@/models/notification';
+import {
+  createContext,
+  FC,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 const signalRUri: string =
   (window as any)?.ssconfig?.Chat_Api_Uri ||

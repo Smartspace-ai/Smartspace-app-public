@@ -73,6 +73,8 @@ export const MessageItemContentSchema = z.object({
 
 // Type exports for TypeScript
 export type Message = z.infer<typeof MessageSchema>;
+export const messageSchemaList = z.array(MessageSchema);
+export type MessageList = z.infer<typeof messageSchemaList>;
 export type MessageContentItem = z.infer<typeof MessageItemContentSchema>;
 export type MessageResponseSource = z.infer<typeof MessageResponseSourceSchema>;
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;

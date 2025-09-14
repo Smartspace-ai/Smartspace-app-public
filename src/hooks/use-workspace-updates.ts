@@ -2,8 +2,8 @@ import { messagesKeys } from '@/domains/messages/queryKeys';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
-import { MessageComment } from '../models/message-comment';
-import { MessageThread } from '../models/message-thread';
+import { MessageComment } from '../shared/models/message-comment';
+import { MessageThread } from '../shared/models/message-thread';
 import { useSignalR } from './use-signalr';
 
 export function useWorkspaceUpdates() {

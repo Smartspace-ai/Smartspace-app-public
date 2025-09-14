@@ -1,7 +1,7 @@
 import { MessageContentItem } from '@/domains/messages/schemas';
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '../../shared/ui/button';
+import { Button } from '../../shared/ui/shadcn/button';
 
 
 enum CopyState {

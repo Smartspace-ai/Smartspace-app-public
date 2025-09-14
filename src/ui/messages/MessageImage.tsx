@@ -1,9 +1,9 @@
 import { FC, useEffect, useMemo } from 'react';
 
+import { useDownloadFileBlobQuery, } from '@/domains/files/mutations';
 import { FileInfo } from '@/domains/files/schemas';
-import { useDownloadFileBlobQuery, } from '@/domains/files/useFiles';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
-import { Skeleton } from '@/shared/ui/skeleton';
+import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 
 export const ChatMessageImage: FC<{image: FileInfo}> = ({image}) => {
   const { workspaceId, threadId } = useRouteIds();

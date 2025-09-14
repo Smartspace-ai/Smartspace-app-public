@@ -1,15 +1,15 @@
 import type React from 'react';
 
-import { Button } from '@/shared/ui/button';
+import { Button } from '@/shared/ui/shadcn/button';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/dialog';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
+} from '@/shared/ui/shadcn/dialog';
+import { Input } from '@/shared/ui/shadcn/input';
+import { Label } from '@/shared/ui/shadcn/label';
 
 interface ThreadRenameModalProps {
   isOpen: boolean;

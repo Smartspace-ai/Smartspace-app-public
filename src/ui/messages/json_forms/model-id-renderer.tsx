@@ -4,9 +4,9 @@ import { Autocomplete, TextField } from '@mui/material';
 import { Loader2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { llmModelIcons } from '../../../assets/providers';
-import { useModels } from '../../../hooks/use-models';
-import { Model } from '../../../models/model';
-import { Dialog, DialogContent, DialogTrigger } from '../../../shared/ui/dialog';
+import { useModels } from '../../../domains/models/queries';
+import { Model } from '../../../domains/models/schemas';
+import { Dialog, DialogContent, DialogTrigger } from '../../../shared/ui/shadcn/dialog';
 
 interface ModelIdRendererProps {
   data: any;

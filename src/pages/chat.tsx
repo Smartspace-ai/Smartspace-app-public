@@ -6,8 +6,8 @@ import { Toaster } from 'sonner';
 
 import SidebarLeft from '@/components/sidebar/sidebar-left/sidebar-left';
 import SidebarRight from '@/components/sidebar/sidebar-right/sidebar-right';
+import { useWorkspaces } from '@/domains/workspaces/useWorkspaces';
 import { useWorkspaceThreads } from '@/hooks/use-workspace-threads';
-import { useWorkspaces } from '@/hooks/use-workspaces';
 import ChatHeader from '@/ui/header/chat-header';
 import MessageComposer from '@/ui/messages/MessageComposer';
 import MessageList from '@/ui/messages/MessageList';

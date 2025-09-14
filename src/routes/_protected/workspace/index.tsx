@@ -1,4 +1,4 @@
-import { useWorkspaces } from '@/hooks/use-workspaces'
+import { useWorkspaces } from '@/domains/workspaces/useWorkspaces'
 import NoWorkspacesAvailable from '@/pages/no_workspaces_available'
 import TeamsLoader from '@/pages/teams_loader'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'

@@ -1,7 +1,7 @@
+import { useFileMutations } from '@/domains/files/mutations';
 import { FileInfo } from '@/domains/files/schemas';
-import { useFileMutations } from '@/domains/files/useFiles';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
-import { Button } from '@/shared/ui/button';
+import { Button } from '@/shared/ui/shadcn/button';
 import { Check, Download, Loader2, X } from 'lucide-react';
 
 export function ChatMessageFileDownload({

@@ -5,7 +5,7 @@ import { useEffect, useMemo } from 'react'
 
 import { TeamsProvider, useTeams } from '@/contexts/teams-context'
 import { SignalRProvider } from '@/hooks/use-signalr'
-import { SidebarProvider } from '@/shared/ui/sidebar'
+import { SidebarProvider } from '@/shared/ui/shadcn/sidebar'
 import { Loader2 } from 'lucide-react'
 
 export function AppProviders({ children }: { children: React.ReactNode }) {

@@ -1,5 +1,5 @@
 import { useIsMobile } from '@/hooks/use-mobile';
-import { MentionUser } from '@/models/mention-user';
+import { MentionUser } from '@/shared/models/mention-user';
 import {
   Avatar,
   IconButton,

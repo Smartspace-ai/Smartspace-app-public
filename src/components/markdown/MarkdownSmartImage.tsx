@@ -1,9 +1,9 @@
 // ---- MarkdownSmartImage.tsx
 'use client';
 
-import { useDownloadFileBlobQuery } from '@/domains/files/useFiles';
+import { useDownloadFileBlobQuery } from '@/domains/files/mutations';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
-import { Skeleton } from '@/shared/ui/skeleton';
+import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 import React, { useEffect, useMemo } from 'react';
 
 type ImgProps = React.ImgHTMLAttributes<HTMLImageElement> & {

@@ -4,18 +4,18 @@ import { useEffect, useRef, useState } from 'react';
 import { MessageValueType } from '@/domains/messages/enums';
 import { useMessages } from '@/domains/messages/useMessages';
 
-import { useActiveUser } from '@/hooks/use-active-user';
+import { useWorkspaceThread } from '@/domains/threads/use-workspace-thread';
+import { useActiveUser } from '@/domains/users/use-active-user';
+import { useWorkspaceQuery } from '@/domains/workspaces/useWorkspaces';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
-import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Avatar, AvatarFallback } from '../../shared/ui/avatar';
-import { useSidebar } from '../../shared/ui/sidebar';
-import { Skeleton } from '../../shared/ui/skeleton';
-import { getInitials } from '../../utils/initials';
-import { parseDateTime } from '../../utils/parse-date-time';
+import { Avatar, AvatarFallback } from '../../shared/ui/shadcn/avatar';
+import { useSidebar } from '../../shared/ui/shadcn/sidebar';
+import { Skeleton } from '../../shared/ui/shadcn/skeleton';
+import { getInitials } from '../../shared/utils/initials';
+import { parseDateTime } from '../../shared/utils/parse-date-time';
 import MessageItem from './MessageItem';
 
 
@@ -28,7 +28,7 @@ export default function MessageList() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
 
-  const { data: activeWorkspace } = useActiveWorkspace();
+  const { data: activeWorkspace } = useWorkspaceQuery();
 
 
   const activeUser = useActiveUser();

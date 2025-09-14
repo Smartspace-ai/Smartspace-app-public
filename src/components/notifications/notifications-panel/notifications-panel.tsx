@@ -1,15 +1,15 @@
 import {
   useNotificationMutations,
   useNotificationsQuery,
-} from '@/hooks/use-notifications';
+} from '@/domains/notifications/useNotifications';
 import { cn } from '@/lib/utils';
-import { Notification, NotificationType } from '@/models/notification';
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar';
-import { Button } from '@/shared/ui/button';
-import { ScrollArea } from '@/shared/ui/scroll-area';
-import { Switch } from '@/shared/ui/switch';
-import { getInitials } from '@/utils/initials';
-import { parseDateTimeHuman } from '@/utils/parse-date-time';
+import { Notification, NotificationType } from '@/shared/models/notification';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/shadcn/avatar';
+import { Button } from '@/shared/ui/shadcn/button';
+import { ScrollArea } from '@/shared/ui/shadcn/scroll-area';
+import { Switch } from '@/shared/ui/shadcn/switch';
+import { getInitials } from '@/shared/utils/initials';
+import { parseDateTimeHuman } from '@/shared/utils/parse-date-time';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, MessageCircle, MessageSquare } from 'lucide-react';

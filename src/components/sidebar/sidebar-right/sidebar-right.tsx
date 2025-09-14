@@ -1,33 +1,33 @@
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar';
+import { Avatar, AvatarFallback } from '@/shared/ui/shadcn/avatar';
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
-} from '@/shared/ui/breadcrumb';
-import { Button as UIButton } from '@/shared/ui/button';
-import { ScrollArea } from '@/shared/ui/scroll-area';
+} from '@/shared/ui/shadcn/breadcrumb';
+import { Button as UIButton } from '@/shared/ui/shadcn/button';
+import { ScrollArea } from '@/shared/ui/shadcn/scroll-area';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-} from '@/shared/ui/sidebar';
+} from '@/shared/ui/shadcn/sidebar';
 
 import { MentionInput } from '@/components/mention-input/mention-input';
-import { MentionUser } from '@/models/mention-user';
+import { MentionUser } from '@/shared/models/mention-user';
  
 import { Send } from '@mui/icons-material';
 import { Button as MuiButton, SvgIcon, Typography } from '@mui/material';
 import { ArrowBigUp, MessageSquare } from 'lucide-react';
 import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { useTaggableWorkspaceUsers, useWorkspaceThreadComments } from '../../../hooks/use-workspace-thread-comments';
-import { MessageComment } from '../../../models/message-comment';
-import { Skeleton } from '../../../shared/ui/skeleton';
-import { getInitials } from '../../../utils/initials';
-import { parseDateTime } from '../../../utils/parse-date-time';
+import { useTaggableWorkspaceUsers, useWorkspaceThreadComments } from '../../../domains/comments/use-workspace-thread-comments';
+import { MessageComment } from '../../../shared/models/message-comment';
+import { Skeleton } from '../../../shared/ui/shadcn/skeleton';
+import { getInitials } from '../../../shared/utils/initials';
+import { parseDateTime } from '../../../shared/utils/parse-date-time';
 
 const MAX_COMMENT_LENGTH = 350;
 

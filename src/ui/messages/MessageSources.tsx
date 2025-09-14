@@ -1,5 +1,5 @@
 
-import { useFileMutations } from '@/domains/files/useFiles';
+import { useFileMutations } from '@/domains/files/mutations';
 import { MessageResponseSourceType } from '@/domains/messages/enums';
 import { MessageResponseSource } from '@/domains/messages/schemas';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';

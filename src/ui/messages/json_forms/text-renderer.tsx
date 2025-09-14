@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
-import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
+import { Input } from '@/shared/ui/shadcn/input';
+import { Label } from '@/shared/ui/shadcn/label';
 import { ControlProps, rankWith, schemaMatches } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 

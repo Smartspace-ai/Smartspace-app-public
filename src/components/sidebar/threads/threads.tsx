@@ -22,6 +22,9 @@ import {
 
 
 
+
+
+
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -41,24 +44,24 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/shared/ui/alert-dialog';
-import { Button } from '@/shared/ui/button';
+} from '@/shared/ui/shadcn/alert-dialog';
+import { Button } from '@/shared/ui/shadcn/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/shared/ui/dropdown-menu';
-import { SidebarContent, SidebarFooter, useSidebar } from '@/shared/ui/sidebar';
-import { Skeleton } from '@/shared/ui/skeleton';
+} from '@/shared/ui/shadcn/dropdown-menu';
+import { SidebarContent, SidebarFooter, useSidebar } from '@/shared/ui/shadcn/sidebar';
+import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 
 import { CircleInitials } from '@/components/circle-initials';
 // import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
 import { renameThread } from '../../../apis/message-threads';
-import { MessageThread } from '../../../models/message-thread';
+import { MessageThread } from '../../../shared/models/message-thread';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
 export function Threads() {  

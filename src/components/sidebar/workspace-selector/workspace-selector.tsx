@@ -1,14 +1,14 @@
-import { useActiveWorkspace, useWorkspaces } from '@/hooks/use-workspaces';
-import { Button } from '@/shared/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
+import { useWorkspaceQuery, useWorkspaces } from '@/domains/workspaces/useWorkspaces';
+import { Button } from '@/shared/ui/shadcn/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/shadcn/popover';
 
 import { CircleInitials } from '@/components/circle-initials';
-import { useSidebar } from '@/shared/ui/sidebar';
-import { Skeleton } from '@/shared/ui/skeleton';
+import { useSidebar } from '@/shared/ui/shadcn/sidebar';
+import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 import debounce from 'lodash/debounce';
 import { ChevronDown } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { Workspace } from '../../../models/workspace';
+import { Workspace } from '../../../shared/models/workspace';
 
 export function WorkspaceSelector() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,7 +36,7 @@ export function WorkspaceSelector() {
   }, [open]);
 
   const { workspaces, isLoading, handleWorkspaceChange } = useWorkspaces(debouncedSearchTerm);
-  const { data: activeWorkspace } = useActiveWorkspace();
+  const { data: activeWorkspace } = useWorkspaceQuery();
   // Close sidebar on workspace selection (mobile)
   const { isMobile, setOpenMobileLeft } = useSidebar();
 

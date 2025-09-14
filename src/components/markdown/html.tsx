@@ -1,6 +1,6 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/shadcn/tabs';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Card, CardContent } from '../../shared/ui/card';
+import { Card, CardContent } from '../../shared/ui/shadcn/card';
 
 interface HTMLBlockProps {
   content: string;

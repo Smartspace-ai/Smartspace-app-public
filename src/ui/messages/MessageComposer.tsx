@@ -1,12 +1,12 @@
 'use client';
 
 import { getFileIcon } from '@/domains/files/utils';
-import { Button } from '@/shared/ui/button';
+import { Button } from '@/shared/ui/shadcn/button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowBigUp, Check, Maximize2, Minimize2, Paperclip, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { ChatVariablesForm } from './json_forms/chat-variables-form';
-import { useMessageComposerVm } from './MessageComposerVm';
+import { useMessageComposerVm } from './MessageComposer.vm';
 
 export default function MessageComposer() {
   const vm = useMessageComposerVm();
