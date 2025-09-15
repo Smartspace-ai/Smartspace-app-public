@@ -55,6 +55,3 @@ export const acquireNaaToken = async (scopes: string[]): Promise<string> => {
     return token
   }
 }
-
-
-

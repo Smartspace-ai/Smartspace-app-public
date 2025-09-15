@@ -1,10 +1,10 @@
-import webApi from '@/domains/auth/axios-setup';
+import { api } from '@/platform/api/apiClient';
 import { Subject } from 'rxjs';
 import { Message, MessageContent, MessageFile, MessageSchema } from './schemas';
 
 // Fetch all messages in a given message thread
 export async function fetchMessages(threadId: string): Promise<Message[]> {
-  const response = await webApi.get(`messagethreads/${threadId}/messages`);
+  const response = await api.get(`messagethreads/${threadId}/messages`);
   const messages = response.data?.data || [];
   return messages.map((message: unknown) => MessageSchema.parse(message));
 }
@@ -23,7 +23,7 @@ export async function addInputToMessage({
 }): Promise<Message> {
   let result: Message | null = null;
 
-  await webApi.post(
+  await api.post(
     `/messages/${messageId}/values`,
     { name, value, channels },
     {
@@ -97,7 +97,7 @@ export async function postMessage({
   const observable = new Subject<Message>();
 
   try {
-    await webApi.post(
+    await api.post(
       `/messages`,
       payload,
       {

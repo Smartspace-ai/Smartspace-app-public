@@ -1,0 +1,35 @@
+import { msalInstance } from '@/platform/auth/msalClient';
+import { interactiveLoginRequest, loginRequest } from '@/platform/auth/msalConfig';
+import { AuthAdapter, GetTokenOptions } from '../types';
+
+export function createMsalWebAdapter(): AuthAdapter {
+  async function ensureActive() {
+    const current = msalInstance.getActiveAccount();
+    const all = msalInstance.getAllAccounts();
+    if (!current && all.length > 0) msalInstance.setActiveAccount(all[0]);
+  }
+  return {
+    async getAccessToken(opts?: GetTokenOptions) {
+      await ensureActive();
+      const acct = msalInstance.getActiveAccount();
+      if (!acct) {
+        if (opts?.silentOnly) throw new Error('No active account');
+        await msalInstance.loginPopup(interactiveLoginRequest);
+      }
+      try {
+        const r = await msalInstance.acquireTokenSilent({ ...loginRequest, account: msalInstance.getActiveAccount()! });
+        return r.accessToken;
+      } catch {
+        if (opts?.silentOnly) throw new Error('Silent token failed');
+        const r = await msalInstance.acquireTokenPopup(loginRequest);
+        return r.accessToken;
+      }
+    },
+    async getSession() {
+      const a = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
+      return a ? { accountId: a.homeAccountId, displayName: a.name ?? undefined } : null;
+    },
+    async signIn() { await msalInstance.loginPopup(interactiveLoginRequest); },
+    async signOut() { await msalInstance.logoutPopup(); },
+  };
+}
