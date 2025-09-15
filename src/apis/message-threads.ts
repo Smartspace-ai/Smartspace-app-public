@@ -26,6 +26,7 @@ export async function fetchThread(
   const response = await api.get(
     `workspaces/${workspaceId}/messagethreads/${id}`
   );
+  console.log("Thread",response.data);
 
   return response.data as MessageThread;
 }
