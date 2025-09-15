@@ -25,10 +25,11 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     sendMessage,
     uploadFiles,
     isSendingMessage,
-    isBotResponding,
     isUploadingFiles,
     addValueToMessage,
   } = useWorkspaceMessages(activeWorkspace?.id, threadId);
+
+  const {data:thread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const variablesFormRef = useRef<ChatVariablesFormRef>(null);
@@ -226,7 +227,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
           isVisible={isVisible}
           isLoading={isLoading}
           isSendingMessage={isSendingMessage}
-          isBotResponding={isBotResponding}
+          isBotResponding={thread?.isFlowRunning ?? false}
           commentsDraw={{} as any}
           waitingResponse={false}
           addValueToMessage={addValueToMessage}

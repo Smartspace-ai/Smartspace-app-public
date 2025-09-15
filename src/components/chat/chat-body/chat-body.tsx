@@ -2,9 +2,9 @@ import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { Message } from '@/domains/messages';
+import { MessageValueType } from '@/domains/messages/types';
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { Draw } from '@/models/draw';
-import { MessageValueType } from '@/domains/messages/types';
 
 import { useQueryFiles } from '../../../hooks/use-files';
 import { saveFile, useMessageFile } from '../../../hooks/use-message-file';
@@ -147,7 +147,6 @@ export default function ChatBody({
                   userId={activeUser.id}
                   avatar={getInitials(message.createdBy ?? 'You')}
                   message={message}
-                  messageId={message.id}
                   isLast={index === messages.length - 1}
                   useMessageFile={useMessageFile}
                   downloadFile={downloadFile}
@@ -156,7 +155,7 @@ export default function ChatBody({
                   addValueToMessage={addValueToMessage}
                 />
 
-                {index === messages.length - 1 && (isBotResponding || thread?.isFlowRunning) && (
+                {index === messages.length - 1 && (isBotResponding ) && (
                   messageHasSomeResponse? 
                     <div className="p-3 min-h-3">
                       <div className="flex space-x-2 p-1">

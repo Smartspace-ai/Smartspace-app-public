@@ -1,7 +1,7 @@
-import { loginRequest } from '@/app/msalConfig';
+import { loginRequest } from '@/platform/auth/msalConfig';
 import {
-  InteractionRequiredAuthError,
-  IPublicClientApplication,
+    InteractionRequiredAuthError,
+    IPublicClientApplication,
 } from '@azure/msal-browser';
 import GraphAPI from './api-graph';
 

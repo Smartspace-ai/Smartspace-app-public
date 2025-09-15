@@ -254,7 +254,11 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
       // Add read-only for variables with 'Read' access
       if (varConfig.access === 'Read') {
         elementConfig['ui:readonly'] = true;
+        elementConfig['readOnly'] = true;
       }
+      
+      // Always pass the access level to the renderer
+      elementConfig['access'] = varConfig.access;
       
       // Change ModelId label to Model
       if (schemaToUse.title === 'ModelId') {

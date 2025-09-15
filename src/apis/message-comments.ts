@@ -1,5 +1,5 @@
-import webApi from '@/domains/auth/axios-setup';
 import { MessageComment } from '@/models/message-comment';
+import { api } from '@/platform/api/apiClient';
 import { MentionUser } from './../models/mention-user';
 
 // Fetch all comments for a given thread
@@ -7,7 +7,7 @@ export async function fetchComments(
   threadId: string
 ): Promise<MessageComment[]> {
   try {
-    const response = await webApi.get(`/messageThreads/${threadId}/comments`);
+    const response = await api.get(`/messageThreads/${threadId}/comments`);
 
     if (!response.data.data) {
       throw new Error(`Failed to fetch comments: ${response.statusText}`);
@@ -39,7 +39,7 @@ export async function addComment(
     // Simulate latency (can be removed in production)
     await new Promise((resolve) => setTimeout(resolve, 400));
 
-    const response = await webApi.post(`/messageThreads/${threadId}/comments`, {
+    const response = await api.post(`/messageThreads/${threadId}/comments`, {
       content,
       mentionedUsers: mentionedUsers.map((user) => user.id),
     });
@@ -68,7 +68,7 @@ export async function addComment(
 // Fetch users who have access to the workspace for @mention
 export async function fetchTaggableUsers(workspaceId: string): Promise<MentionUser[]> {
   try {
-    const res = await webApi.get(`/workspaces/${workspaceId}/users`);
+    const res = await api.get(`/workspaces/${workspaceId}/users`);
     return res.data.map(
       (u: any) =>
         new MentionUser({
