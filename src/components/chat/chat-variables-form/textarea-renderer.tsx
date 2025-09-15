@@ -49,7 +49,9 @@ const TextareaRenderer: React.FC<TextareaRendererProps> = ({
     return null;
   }
 
-  const isDisabled = !enabled;
+  // Get readOnly from uischema (set when access === 'Read')
+  const readOnly = (uischema as any)?.access === 'Read';
+  const isDisabled = !enabled || readOnly;
   const hasError = errors && errors.length > 0;
 
   // Get textarea-specific options from schema

@@ -6,10 +6,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FileInfo } from '../../models/file';
 
+import { MessageContent } from '@/domains/messages/schemas';
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { Stack } from '@mui/material';
-import { MessageCreateContent } from '../../models/message';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
@@ -25,10 +25,11 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     sendMessage,
     uploadFiles,
     isSendingMessage,
-    isBotResponding,
     isUploadingFiles,
     addValueToMessage,
   } = useWorkspaceMessages(activeWorkspace?.id, threadId);
+
+  const {data:thread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const variablesFormRef = useRef<ChatVariablesFormRef>(null);
@@ -95,7 +96,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
       }
 
       // Build message content
-      let contentList: MessageCreateContent[] = [];
+      let contentList: MessageContent[] = [];
       const message = newMessage.trim();
       if (message.length > 0) {
         contentList.push({ text: message });
@@ -226,7 +227,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
           isVisible={isVisible}
           isLoading={isLoading}
           isSendingMessage={isSendingMessage}
-          isBotResponding={isBotResponding}
+          isBotResponding={thread?.isFlowRunning ?? false}
           commentsDraw={{} as any}
           waitingResponse={false}
           addValueToMessage={addValueToMessage}

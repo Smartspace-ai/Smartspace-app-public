@@ -1,13 +1,8 @@
-import {
-  createContext,
-  FC,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from 'react';
-import { useMsal } from '@azure/msal-react';
+import { useTeams } from '@/contexts/teams-context';
+import { useActiveUser } from '@/hooks/use-active-user';
+import { normalizeNotificationType, NotificationType } from '@/models/notification';
+import { useAuth } from '@/platform/auth/session';
+import { useIsAuthenticated } from '@azure/msal-react';
 import {
   HubConnection,
   HubConnectionBuilder,
@@ -15,7 +10,15 @@ import {
 } from '@microsoft/signalr';
 import { useQueryClient } from '@tanstack/react-query';
 import debounce from 'lodash/debounce';
-import { NotificationType, normalizeNotificationType } from '@/models/notification';
+import {
+  createContext,
+  FC,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 const signalRUri: string =
   (window as any)?.ssconfig?.Chat_Api_Uri ||
@@ -36,8 +39,18 @@ type SignalRProviderProps = {
 };
 
 export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
-  const { accounts } = useMsal();
+  const { getAccessToken } = useAuth();
+  const { id: activeUserId } = useActiveUser();
+  const { isInTeams, isTeamsInitialized, teamsUser } = useTeams();
+  const msalIsAuthenticated = useIsAuthenticated();
   const queryClient = useQueryClient();
+
+  // Determine authentication status using the same pattern as other parts of the app
+  const teamsTokenPresent = (() => {
+    try { return !!sessionStorage.getItem('teamsAuthToken') } catch { return false }
+  })();
+  const isTeamsAuthed = isInTeams && (teamsTokenPresent || (!!teamsUser && isTeamsInitialized));
+  const isAuthenticated = isTeamsAuthed || msalIsAuthenticated;
 
   const [connection, setConnection] = useState<HubConnection>();
   const desiredGroupsRef = useRef<Set<string>>(new Set());
@@ -139,7 +152,7 @@ export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
 
   // SignalR for real-time notifications
   useEffect(() => {
-    if (!accounts.length || !signalRUri || !queryClient) return;
+    if (!isAuthenticated || !signalRUri || !queryClient) return;
 
     // If a connection already exists and isn't fully disconnected, reuse it
     if (
@@ -155,13 +168,21 @@ export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
         signalRUri +
           (signalRUri.endsWith('/') ? 'notifications' : '/notifications'),
         {
-          accessTokenFactory: () => accounts[0]?.idToken?.toString() || '',
+          accessTokenFactory: async () => {
+            try {
+              const scopes = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
+              const token = await getAccessToken({ scopes });
+              return token ?? '';
+            } catch {
+              return '';
+            }
+          },
         },
       )
       .withAutomaticReconnect()
       .build();
 
-    const userGroup = accounts[0].localAccountId;
+    const userGroup = activeUserId && activeUserId !== 'anonymous' ? activeUserId : undefined;
     if (userGroup) desiredGroupsRef.current.add(userGroup);
 
     const localRetryInvoke = async (
@@ -253,7 +274,7 @@ export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
       conn?.stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts, queryClient, signalRUri]);
+  }, [isAuthenticated, queryClient, signalRUri, getAccessToken, activeUserId]);
 
   return (
     <SignalRContext.Provider

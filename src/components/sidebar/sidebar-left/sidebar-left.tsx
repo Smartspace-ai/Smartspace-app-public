@@ -1,5 +1,6 @@
 import { useTeams } from '@/contexts/teams-context';
 import { useActiveUser } from '@/hooks/use-active-user';
+import { handleTrailingSlash } from '@/platform/auth/msalConfig';
 import { useMsal } from '@azure/msal-react';
 import { LogOut } from 'lucide-react';
 import { ComponentProps } from 'react';
@@ -18,7 +19,6 @@ import {
 import { Sidebar, SidebarHeader } from '../../ui/sidebar';
 import Threads from '../threads/threads';
 import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
-import { handleTrailingSlash } from '../../../app/msalConfig';
 
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {

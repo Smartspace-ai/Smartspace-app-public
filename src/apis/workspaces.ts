@@ -1,9 +1,9 @@
-import webApi from '@/domains/auth/axios-setup';
+import { api } from '@/platform/api/apiClient';
 import { Workspace } from '../models/workspace';
 
 // Fetches the list of workspaces from the backend API
 export async function fetchWorkspaces(searchTerm?: string): Promise<Workspace[]> {
-  const response = await webApi.get('/workspaces', {
+  const response = await api.get('/workspaces', {
     params: {
       search: searchTerm
     }
@@ -18,7 +18,7 @@ export async function fetchWorkspaces(searchTerm?: string): Promise<Workspace[]>
 
 // Fetches the list of workspaces from the backend API
 export async function fetchWorkspace(id: string): Promise<Workspace> {
-  const response = await webApi.get(`/workspaces/${id}`);
+  const response = await api.get(`/workspaces/${id}`);
 
   // Map raw API response to Workspace model instances
   const data = new Workspace(response.data);
