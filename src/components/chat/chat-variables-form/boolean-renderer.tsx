@@ -36,7 +36,11 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
     return null;
   }
 
-  const isDisabled = !enabled;
+  // Get readOnly from uischema (set when access === 'Read')
+  const readOnly = (uischema as any)?.access === 'Read';
+  const isDisabled = !enabled || readOnly;
+  
+
   const hasError = errors && errors.length > 0;
   const isChecked = Boolean(data);
 

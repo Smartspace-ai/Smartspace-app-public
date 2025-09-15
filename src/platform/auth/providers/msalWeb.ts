@@ -29,7 +29,7 @@ export function createMsalWebAdapter(): AuthAdapter {
       const a = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
       return a ? { accountId: a.homeAccountId, displayName: a.name ?? undefined } : null;
     },
-    async signIn() { await msalInstance.loginPopup(interactiveLoginRequest); },
+    async signIn() { await msalInstance.loginRedirect(interactiveLoginRequest); },
     async signOut() { await msalInstance.logoutPopup(); },
   };
 }

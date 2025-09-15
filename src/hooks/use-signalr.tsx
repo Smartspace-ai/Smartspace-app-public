@@ -4,20 +4,20 @@ import { normalizeNotificationType, NotificationType } from '@/models/notificati
 import { useAuth } from '@/platform/auth/session';
 import { useIsAuthenticated } from '@azure/msal-react';
 import {
-    HubConnection,
-    HubConnectionBuilder,
-    HubConnectionState,
+  HubConnection,
+  HubConnectionBuilder,
+  HubConnectionState,
 } from '@microsoft/signalr';
 import { useQueryClient } from '@tanstack/react-query';
 import debounce from 'lodash/debounce';
 import {
-    createContext,
-    FC,
-    useCallback,
-    useContext,
-    useEffect,
-    useRef,
-    useState,
+  createContext,
+  FC,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
 } from 'react';
 
 const signalRUri: string =

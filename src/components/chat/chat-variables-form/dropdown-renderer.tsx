@@ -26,7 +26,8 @@ const DropdownRenderer: React.FC<DropdownRendererProps> = ({
   label,
   description,
   errors,
-  required
+  required,
+  uischema
 }) => {
   // Get options from oneOf or anyOf
   const options = schema.oneOf || schema.anyOf || schema.enum?.map((value: any) => ({ const: value, title: value })) || [];
@@ -40,13 +41,17 @@ const DropdownRenderer: React.FC<DropdownRendererProps> = ({
   const currentOption = options.find((option: any) => option.const === data);
   const displayValue = data || '';
 
+  // Get readOnly from uischema (set when access === 'Read')
+  const readOnly = (uischema as any)?.access === 'Read';
+  const isDisabled = !enabled || readOnly;
+
   return (
     <FormControl 
       variant="outlined" 
       size="small" 
       fullWidth
       error={!!errors}
-      disabled={!enabled}
+      disabled={isDisabled}
       className="compact-field"
       sx={{
         minWidth: '220px'
