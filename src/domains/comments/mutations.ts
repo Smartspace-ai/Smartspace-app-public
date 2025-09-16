@@ -51,6 +51,7 @@ export function useAddComment(threadId: string) {
         ['comments', variables.threadId],
         (old: Comment[] | undefined) => (old ?? []).filter((c) => !c.id.startsWith('temp-'))
       );
+      console.error('Failed to add comment. Please try again.', _error);
       toast.error('Failed to add comment. Please try again.');
     },
   });

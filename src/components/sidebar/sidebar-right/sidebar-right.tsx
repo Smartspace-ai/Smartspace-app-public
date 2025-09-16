@@ -60,7 +60,6 @@ export function SidebarRight() {
       setThreadComment({ plain: '', withMentions: '' });
       setSearchTerm('');
       setMentionList([]);
-      toast.success('Comment added');
     } catch {
       // Error handled in hook
     }

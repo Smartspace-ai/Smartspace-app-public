@@ -26,7 +26,10 @@ export async function addComment(
       content,
       mentionedUsers: mentionedUsers.map((user) => user.id),
     });
-    return CommentSchema.parse(response.data);
+    return CommentSchema.parse({
+      ...response.data,
+      messageThreadId: threadId,
+    });
 }
 
 
