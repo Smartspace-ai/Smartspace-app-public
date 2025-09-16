@@ -21,7 +21,7 @@ export default function ChatBotPage() {
   const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false })
   const threadId = threadMatch?.params?.threadId
   const workspaceId = workspaceMatch?.params?.workspaceId
-  const { data:{ threads} = {}, isLoading: threadsLoading, isFetched: threadsFetched } = useThreads(workspaceId || "")
+  const { data:{ data: threads = []} = {}, isLoading: threadsLoading, isFetched: threadsFetched } = useThreads(workspaceId || "")
   const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces()
 
   // If no workspaceId in URL, select the first workspace after list loads
