@@ -1,6 +1,6 @@
-import { interactiveLoginRequest, isInTeams } from '@/app/msalConfig';
-import { msalInstance } from '@/domains/auth/msalClient';
-import { acquireNaaToken } from '@/domains/auth/naaClient';
+import { msalInstance } from '@/platform/auth/msalClient';
+import { interactiveLoginRequest, isInTeams } from '@/platform/auth/msalConfig';
+import { acquireNaaToken } from '@/platform/auth/naaClient';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import axios from 'axios';
 
@@ -8,11 +8,11 @@ function getBaseUrl() {
   const configBaseUrl =
     (window as any)?.ssconfig?.Chat_Api_Uri ||
     import.meta.env.VITE_CHAT_API_URI;
-  const baseUrl = configBaseUrl;
-  return baseUrl ? baseUrl : '';
+  return configBaseUrl ? configBaseUrl : '';
 }
 
 const baseURL = getBaseUrl();
+
 const webApi = axios.create({
   baseURL,
 });
@@ -20,26 +20,27 @@ const webApi = axios.create({
 webApi.interceptors.request.use(async (config) => {
   // Avoid triggering MSAL flows while on the login screen
   try {
-    const path = window.location?.pathname || ''
+    const path = window.location?.pathname || '';
     if (path.startsWith('/login')) {
-      return config
+      return config;
     }
   } catch {
     // ignore
   }
 
-  const inTeamsEnvironment = ((window as any)?.__teamsState?.isInTeams === true) || isInTeams();
+  const inTeamsEnvironment =
+    ((window as any)?.__teamsState?.isInTeams === true) || isInTeams();
 
   // Teams: use NAA to get delegated API token (no fallback)
   if (inTeamsEnvironment) {
     try {
-      const scopes = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || []
-      const token = await acquireNaaToken(scopes)
-      if (token) config.headers.Authorization = `Bearer ${token}`
+      const scopes = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
+      const token = await acquireNaaToken(scopes);
+      if (token) config.headers.Authorization = `Bearer ${token}`;
     } catch {
       // Leave request unauthenticated on failure
     }
-    return config
+    return config;
   }
 
   // Web (non-Teams): use MSAL
@@ -49,11 +50,20 @@ webApi.interceptors.request.use(async (config) => {
     ''
   )
     .split(' ')
-    .filter((scope: string) => scope.indexOf('smartspaceapi.config.access') === -1);
+    .filter((scope: string) => !scope.includes('smartspaceapi.config.access'));
+
   const request = { scopes };
+
   try {
     const response = await msalInstance.acquireTokenSilent(request);
-    config.headers.Authorization = `Bearer ${response.accessToken}`;
+
+    // ✅ safer way of accessing token
+    const accessToken =
+      (response && 'accessToken' in response && response.accessToken) || null;
+
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
   } catch (error) {
     if (error instanceof InteractionRequiredAuthError) {
       try {
@@ -67,4 +77,5 @@ webApi.interceptors.request.use(async (config) => {
   return config;
 });
 
-export default webApi;
+export { webApi as api };
+

@@ -191,13 +191,13 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                   {threadComment.plain.length}/{MAX_COMMENT_LENGTH}
                 </div>
 
-                {/* Green circular submit button */}
+                {/* Primary colored circular submit button */}
                 <UIButton
                   type="submit"
                   variant="default"
                   size="icon"
-                  className={`h-9 w-9 rounded-full absolute bottom-1 right-1 
-                    bg-green-500 hover:bg-green-600 text-white 
+                  className={`h-9 w-9 rounded-full absolute bottom-1.5 right-1.5 
+                    bg-primary hover:bg-primary/90 text-primary-foreground 
                     ${threadComment.plain.trim().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={threadComment.plain.trim().length === 0 || isAddingComment}
                   aria-label="Post comment"

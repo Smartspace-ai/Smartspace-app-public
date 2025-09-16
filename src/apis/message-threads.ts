@@ -1,4 +1,4 @@
-import webApi from '@/domains/auth/axios-setup';
+import { api } from '@/platform/api/apiClient';
 import { MessageThread } from '../models/message-thread';
 
 // Fetch threads for a given workspace
@@ -7,7 +7,7 @@ export async function fetchThreads(
   { take, skip }: { take?: number; skip?: number } = {}
 ): Promise<{ threads: MessageThread[]; total: number }> {
 
-  const response = await webApi.get(
+  const response = await api.get(
     `workspaces/${workspaceId}/messagethreads`,
     { params: { take, skip } }
   );
@@ -23,9 +23,10 @@ export async function fetchThreads(
 export async function fetchThread(
   workspaceId: string, id: string,
 ): Promise<MessageThread> {
-  const response = await webApi.get(
+  const response = await api.get(
     `workspaces/${workspaceId}/messagethreads/${id}`
   );
+  console.log("Thread",response.data);
 
   return response.data as MessageThread;
 }
@@ -36,7 +37,7 @@ export async function setFavorite(
   favourite: boolean
 ): Promise<MessageThread> {
   try {
-    const response = await webApi.put(
+    const response = await api.put(
       `/messagethreads/${threadId}/favorited`,
       favourite,
       { headers: { 'Content-Type': 'application/json' } }
@@ -55,7 +56,7 @@ export async function renameThread(
   name: string
 ): Promise<MessageThread> {
   try {
-    const response = await webApi.put(
+    const response = await api.put(
       `/messagethreads/${thread.id}/name`,
       name,
       { headers: { 'Content-Type': 'application/json' } }
@@ -71,7 +72,7 @@ export async function renameThread(
 // Delete a message thread by ID
 export async function deleteThread(threadId: string): Promise<void> {
   try {
-    await webApi.delete(`/messagethreads/${threadId}`);
+    await api.delete(`/messagethreads/${threadId}`);
   } catch (error) {
     console.error('Error deleting thread:', error);
   }
@@ -83,7 +84,7 @@ export async function createThread(
   workspaceId: string
 ): Promise<MessageThread> {
   try {
-    const response = await webApi.post(
+    const response = await api.post(
       `workspaces/${workspaceId}/messageThreads`,
       { name }
     );
@@ -101,7 +102,7 @@ export async function updateThread(
   updates: Partial<MessageThread>
 ): Promise<MessageThread> {
   try {
-    const response = await webApi.patch(`/messagethreads/${threadId}`, updates);
+    const response = await api.patch(`/messagethreads/${threadId}`, updates);
 
     return new MessageThread(response.data);
   } catch (error) {
@@ -111,7 +112,7 @@ export async function updateThread(
 }
 
 export async function fetchThreadVariables(threadId: string): Promise<Record<string, any>> {
-  const response = await webApi.get(`/flowruns/${threadId}/variables`);
+  const response = await api.get(`/flowruns/${threadId}/variables`);
   return response.data as Record<string, any>;
 }
 
@@ -122,7 +123,7 @@ export async function updateVariable(
   variableName: string,
   value: any
 ): Promise<void> {
-  await webApi.put(`/flowruns/${flowRunId}/variables/${variableName}`, 
+  await api.put(`/flowruns/${flowRunId}/variables/${variableName}`, 
     value,
     { headers: { 'Content-Type': 'application/json' } }
   );

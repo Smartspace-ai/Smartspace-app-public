@@ -43,7 +43,7 @@ export function useWorkspaceMessages(
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    staleTime: 30_000,
+    staleTime: 8,
   });
 
   const [isBotResponding, setIsBotResponding] = useState(false);

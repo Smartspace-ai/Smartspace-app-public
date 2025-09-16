@@ -27,6 +27,7 @@ export function useWorkspaceThread({workspaceId, threadId}: { workspaceId?: stri
       return code !== 'MT404' && failureCount < 2;
     },
     refetchOnWindowFocus: false,
+    staleTime: 8,
   });
 
   return threadQuery;

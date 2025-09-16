@@ -1,5 +1,5 @@
-import { msalInstance } from '@/domains/auth/msalClient'
-import Login from '@/pages/Login/Login'
+import { Login } from '@/pages/Login/Login'
+import { msalInstance } from '@/platform/auth/msalClient'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/login')({
@@ -11,6 +11,10 @@ export const Route = createFileRoute('/login')({
       throw redirect({ to: target })
     }
   },
-  component: () => <Login />,
+  component: LoginRoute,
 })
+
+function LoginRoute() {
+  return <Login />;
+}
 
