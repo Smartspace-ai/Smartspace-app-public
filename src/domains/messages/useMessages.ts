@@ -15,6 +15,6 @@ export function useMessages(threadId: string) {
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    staleTime: 30_000,
+    staleTime: 8,
   });
 }

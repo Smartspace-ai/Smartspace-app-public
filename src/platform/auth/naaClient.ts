@@ -10,7 +10,7 @@ export const naaInit = () => {
         // ignore
       }
       const clientId = import.meta.env.VITE_CLIENT_ID as string
-      const tenantId = (import.meta.env.VITE_TENANT_ID as string) || 'fd656490-ea47-45d1-a9a2-d102f4d92017'
+      const tenantId = import.meta.env.VITE_TENANT_ID as string
       const authority = `https://login.microsoftonline.com/${tenantId}`
       const config: Configuration = {
         auth: {
@@ -55,6 +55,3 @@ export const acquireNaaToken = async (scopes: string[]): Promise<string> => {
     return token
   }
 }
-
-
-

@@ -123,9 +123,15 @@ export default function MessageList() {
               >
                 <MessageItem
                   message={message}
+                  isLast={index === messages.length - 1}
+                  useMessageFile={useMessageFile}
+                  downloadFile={downloadFile}
+                  saveFile={saveFile}
+                  useQueryFiles={useQueryFiles}
+                  addValueToMessage={addValueToMessage}
                 />
 
-                {index === messages.length - 1 && (thread?.isFlowRunning) && (
+                {index === messages.length - 1 && (isBotResponding ) && (
                   messageHasSomeResponse? 
                     <div className="p-3 min-h-3">
                       <div className="flex space-x-2 p-1">

@@ -1,9 +1,9 @@
 import { useTeams } from '@/contexts/teams-context';
 import { useActiveUser } from '@/domains/users/use-active-user';
+import { handleTrailingSlash } from '@/platform/auth/msalConfig';
 import { useMsal } from '@azure/msal-react';
 import { LogOut } from 'lucide-react';
 import { ComponentProps } from 'react';
-import { handleTrailingSlash } from '../../../app/msalConfig';
 import { Logo } from '../../../assets/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../shared/ui/shadcn/avatar';
 import {

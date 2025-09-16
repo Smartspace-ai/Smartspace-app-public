@@ -54,7 +54,8 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
   label,
   description,
   errors,
-  required
+  required,
+  uischema
 }) => {
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
@@ -152,6 +153,10 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
 
+  // Get readOnly from uischema (set when access === 'Read')
+  const readOnly = (uischema as any)?.access === 'Read';
+  const isDisabled = !enabled || readOnly;
+
   if (isMobile) {
     const providerInfo = selectedModel ? getProviderInfo(selectedModel.modelDeploymentProviderType || '') : null;
     return (
@@ -160,7 +165,7 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
           <DialogTrigger asChild>
             <button
               type="button"
-              disabled={!enabled}
+              disabled={isDisabled}
               className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 bg-accent text-foreground/90 hover:bg-accent/80 transition-colors"
               style={{ width: 'fit-content', maxWidth: '100%' }}
             >
@@ -227,7 +232,7 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
         return option.id === value?.id;
       }}
       loading={isLoading}
-      disabled={!enabled}
+      disabled={isDisabled}
       clearOnBlur={false}
       selectOnFocus={false}
       handleHomeEndKeys={false}

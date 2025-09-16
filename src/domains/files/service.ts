@@ -1,4 +1,4 @@
-import webApi from '@/domains/auth/axios-setup';
+import { api } from '@/platform/api/apiClient';
 import { FileInfoSchema, type FileInfo, type FileScope } from './schemas';
 
 export const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
@@ -25,7 +25,7 @@ const uploadFileInChunks = async (
     if (scope.workspaceId) formData.append('workspaceId', scope.workspaceId);
     if (scope.threadId) formData.append('threadId', scope.threadId);
 
-    const response = await webApi.post(`/files`, formData, {
+    const response = await api.post(`/files`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
 
@@ -62,7 +62,7 @@ export const uploadFiles = async (
       if (scope.workspaceId) formData.append('workspaceId', scope.workspaceId);
       if (scope.threadId) formData.append('threadId', scope.threadId);
 
-      const response = await webApi.post(`/files`, formData, {
+      const response = await api.post(`/files`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       fileInfo = FileInfoSchema.parse((response.data as unknown[])[0]);
@@ -78,7 +78,7 @@ export const downloadFile = async (
   scope?: FileScope,
 ): Promise<Blob> => {
   // For GET requests, we need to use params for scope
-  const response = await webApi.get(`/files/${id}/download`, {
+  const response = await api.get(`/files/${id}/download`, {
     responseType: 'blob',
     params: scope,
     headers: {
@@ -93,7 +93,7 @@ export const getFileInfo = async (
   id: string,
   scope: FileScope,
 ): Promise<FileInfo> => {
-  const response = await webApi.get(`/files/${id}`, {
+  const response = await api.get(`/files/${id}`, {
     params: scope,
   });
 
@@ -101,10 +101,11 @@ export const getFileInfo = async (
 };
 
 export const getFileDownloadUrl = async (sourceUri: string) => {
-  const response = await webApi.get(sourceUri);
+  const response = await api.get(sourceUri);
+
   return response.data?.uri;
 };
 
 export const downloadBlob = async (sourceUri: string) => {
-  return (await webApi.get(sourceUri)) as Blob;
+  return (await api.get(sourceUri)) as Blob;
 };

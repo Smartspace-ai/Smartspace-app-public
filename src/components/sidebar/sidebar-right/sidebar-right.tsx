@@ -19,7 +19,7 @@ import { MentionInput } from '@/components/mention-input/mention-input';
 import { MentionUser } from '@/shared/models/mention-user';
  
 import { Send } from '@mui/icons-material';
-import { Button as MuiButton, SvgIcon, Typography } from '@mui/material';
+import { Typography } from '@mui/material';
 import { ArrowBigUp, MessageSquare } from 'lucide-react';
 import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -34,25 +34,24 @@ const MAX_COMMENT_LENGTH = 350;
 export function SidebarRight({ threadId }: { threadId: string | undefined }) {
   const { comments, isLoading, addComment, isAddingComment } = useWorkspaceThreadComments(threadId);
   const { users: taggableUsers } = useTaggableWorkspaceUsers();
-  const MAX_CHAR_LIMIT = 350;
   const commentsEndRef = useRef<HTMLDivElement>(null);
-  const [threadComment, setThreadComment] = useState({plain: '', withMentions: ''});
+  const [threadComment, setThreadComment] = useState({ plain: '', withMentions: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [mentionList, setMentionList] = useState<MentionUser[]>([]);
-  // Using responsive layout; not focusing input on open anymore
+  const isMobile = useIsMobile();
 
   const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!threadComment.plain.trim()) return;
 
-    if (threadComment.plain.length > MAX_CHAR_LIMIT) {
-      toast.error(`Comments are limited to ${MAX_CHAR_LIMIT} characters`);
+    if (threadComment.plain.length > MAX_COMMENT_LENGTH) {
+      toast.error(`Comments are limited to ${MAX_COMMENT_LENGTH} characters`);
       return;
     }
 
     try {
       await addComment(threadComment.plain, mentionList);
-      setThreadComment({plain: '', withMentions: ''});
+      setThreadComment({ plain: '', withMentions: '' });
       setSearchTerm('');
       setMentionList([]);
       toast.success('Comment added');
@@ -72,8 +71,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
       user.displayName.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [taggableUsers, searchTerm]);
-  const isMobile = useIsMobile();
-  
+
   return (
     <Sidebar
       side="right"
@@ -103,19 +101,21 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
             <div className="space-y-3 p-4">
               {isLoading ? (
                 <div className="flex flex-col space-y-4 p-4">
-                  {Array(3).fill(0).map((_, index) => (
-                    <div key={index} className="rounded-lg border p-3 animate-pulse">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Skeleton className="h-8 w-8 rounded-full" />
-                        <div className="flex-1 space-y-1">
-                          <Skeleton className="h-4 w-24" />
-                          <Skeleton className="h-3 w-16" />
+                  {Array(3)
+                    .fill(0)
+                    .map((_, index) => (
+                      <div key={index} className="rounded-lg border p-3 animate-pulse">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                          <div className="flex-1 space-y-1">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-3 w-16" />
+                          </div>
                         </div>
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4 mt-1" />
                       </div>
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-3/4 mt-1" />
-                    </div>
-                  ))}
+                    ))}
                 </div>
               ) : comments.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">
@@ -129,7 +129,10 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                 </div>
               ) : (
                 comments.map((comment: MessageComment) => (
-                  <div key={comment.id} className="rounded-lg border bg-card p-3 transition-all shadow-md hover:shadow-lg">
+                  <div
+                    key={comment.id}
+                    className="rounded-lg border bg-card p-3 transition-all shadow-md hover:shadow-lg"
+                  >
                     <div className="flex items-center gap-2 mb-2">
                       <Avatar className="h-7 w-7">
                         <AvatarFallback className="bg-muted text-muted-foreground text-xs">
@@ -138,7 +141,9 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium truncate">{comment.createdBy}</p>
-                        <p className="text-xs text-muted-foreground">{parseDateTime(comment.createdAt)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {parseDateTime(comment.createdAt)}
+                        </p>
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed flex flex-wrap gap-1">
@@ -152,10 +157,12 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
           </ScrollArea>
         </SidebarContent>
 
-        <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)] shrink-0">
+        {/* Allow the pinned dropdown to overflow past the footer if needed */}
+        <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)] shrink-0 overflow-visible">
           <form onSubmit={handleAddComment}>
             {isMobile ? (
-              <div className="relative">
+              // Allow the local wrapper to show the absolute dropdown
+              <div className="relative overflow-visible">
                 <MentionInput
                   value={threadComment}
                   onChange={setThreadComment}
@@ -179,14 +186,19 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                     },
                   }}
                 />
+
                 <div className="absolute bottom-1 right-11 text-xs text-muted-foreground select-none bg-background/80 px-1 rounded">
                   {threadComment.plain.length}/{MAX_COMMENT_LENGTH}
                 </div>
+
+                {/* Primary colored circular submit button */}
                 <UIButton
                   type="submit"
                   variant="default"
                   size="icon"
-                  className={`h-9 w-9 rounded-full absolute bottom-1 right-1 ${threadComment.plain.trim().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`h-9 w-9 rounded-full absolute bottom-1.5 right-1.5 
+                    bg-primary hover:bg-primary/90 text-primary-foreground 
+                    ${threadComment.plain.trim().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={threadComment.plain.trim().length === 0 || isAddingComment}
                   aria-label="Post comment"
                 >
@@ -195,7 +207,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
               </div>
             ) : (
               <>
-                <div>
+                <div className="relative overflow-visible">
                   <MentionInput
                     value={threadComment}
                     onChange={setThreadComment}
@@ -208,31 +220,30 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                     showFullscreenToggle={false}
                     placeholder="Type a comment..."
                   />
-                  <Typography
-                    color="textSecondary"
-                    textAlign="right"
-                    fontSize={12}
-                    marginTop={1}
-                  >
+                  <Typography color="textSecondary" textAlign="right" fontSize={12} marginTop={1}>
                     {threadComment.plain.length}/{MAX_COMMENT_LENGTH}
                   </Typography>
                 </div>
-                <MuiButton
-                  loading={isAddingComment}
-                  loadingIndicator="Loading…"
-                  color="primary"
-                  sx={{ alignSelf: 'end' }}
-                  disabled={threadComment.plain.trim().length === 0}
-                  variant="contained"
+
+                {/* Proper loading button for MUI */}
+                <UIButton
                   type="submit"
-                  startIcon={
-                    <SvgIcon fontSize="small">
-                      <Send />
-                    </SvgIcon>
-                  }
+                  variant="default"
+                  className="self-end"
+                  disabled={threadComment.plain.trim().length === 0 || isAddingComment}
                 >
-                  Post
-                </MuiButton>
+                  {isAddingComment ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Posting...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Send className="h-4 w-4" />
+                      Post
+                    </div>
+                  )}
+                </UIButton>
               </>
             )}
           </form>

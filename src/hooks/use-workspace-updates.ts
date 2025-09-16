@@ -9,7 +9,10 @@ import { useSignalR } from './use-signalr';
 export function useWorkspaceUpdates() {
   const { connection, joinGroup, leaveGroup } = useSignalR();
   const queryClient = useQueryClient();
-  const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
+  const threadMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/thread/$threadId',
+    shouldThrow: false,
+  });
   const workspaceId = threadMatch?.params?.workspaceId;
   const threadId = threadMatch?.params?.threadId;
   const navigate = useNavigate();
@@ -20,12 +23,12 @@ export function useWorkspaceUpdates() {
     const group = `${workspaceId}`;
 
     joinGroup?.(group).catch((e) =>
-      console.error('join workspace group failed', group, e),
+      console.error('join workspace group failed', group, e)
     );
 
     return () => {
       leaveGroup?.(group).catch((e) =>
-        console.error('leave workspace group failed', group, e),
+        console.error('leave workspace group failed', group, e)
       );
     };
   }, [workspaceId, connection, joinGroup, leaveGroup]);
@@ -37,6 +40,9 @@ export function useWorkspaceUpdates() {
     const threadUpdateHandler = (thread: MessageThread) => {
       queryClient.invalidateQueries({
         queryKey: ['threads', workspaceId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['workspace', workspaceId, 'thread', threadId],
       });
       queryClient.invalidateQueries({
         queryKey: ['threads', thread.id],
@@ -58,8 +64,8 @@ export function useWorkspaceUpdates() {
         navigate({
           to: '/workspace/$workspaceId',
           params: {
-            workspaceId: workspaceId
-          }
+            workspaceId: workspaceId,
+          },
         });
       }
     };
