@@ -43,8 +43,8 @@ export const useInfiniteThreads = (
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage: ThreadsResponse, allPages: ThreadsResponse[]) => {
-      const totalLoaded = allPages.reduce((acc, page) => acc + page.threads.length, 0);
-      return totalLoaded < lastPage.totalThreads ? allPages.length : undefined;
+      const totalLoaded = allPages.reduce((acc, page) => acc + page.data.length, 0);
+      return totalLoaded < lastPage.total ? allPages.length : undefined;
     },
     enabled: enabled && !!workspaceId,
     refetchOnWindowFocus: false,

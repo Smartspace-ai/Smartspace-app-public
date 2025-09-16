@@ -9,6 +9,11 @@ import {
 
 
 
+
+
+
+
+
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -54,11 +59,7 @@ export function Threads() {
   const { isMobile, setOpenMobileLeft } = useSidebar();
   const {workspaceId} = useRouteIds();
  const {data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage} = useInfiniteThreads(workspaceId);
-  
-  // Flatten all threads from all pages
-  const threads = useMemo(() => {
-    return data?.pages.flatMap(page => page.threads) ?? [];
-  }, [data]);
+  const threads = useMemo(() => data?.pages.flatMap(page => page.data) ?? [], [data]);
 
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
