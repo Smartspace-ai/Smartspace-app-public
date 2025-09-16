@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import { filesMutationKeys } from './queryKeys';
+import { filesKeys } from './queryKeys';
 import { FileInfo, FileScope } from './schemas';
 import { downloadFile, getFileDownloadUrl, uploadFiles } from './service';
 
@@ -19,7 +19,7 @@ export const useFileMutations = (scope: FileScope) => {
   }, []);
 
   const uploadFilesMutation = useMutation({
-    mutationKey: filesMutationKeys.upload,
+    mutationKey: filesKeys.mutation.upload(scope),
     mutationFn: async (files: File[]): Promise<FileInfo[]> => {
       clearUploadState();
 
@@ -49,7 +49,7 @@ export const useFileMutations = (scope: FileScope) => {
   });
 
   const downloadFileMutation = useMutation({
-    mutationKey: filesMutationKeys.download,
+    mutationKey: filesKeys.mutation.download(''),
     mutationFn: async (fileInfo: FileInfo) => {
       const blob = await downloadFile(fileInfo.id, scope);
       saveFile(blob, fileInfo.name);
@@ -58,7 +58,7 @@ export const useFileMutations = (scope: FileScope) => {
   });
 
   const downloadFileByUriMutation = useMutation({
-    mutationKey: filesMutationKeys.downloadByUri,
+    mutationKey: filesKeys.mutation.downloadByUri(''),
     mutationFn: async ({
       name,
       sourceUri,

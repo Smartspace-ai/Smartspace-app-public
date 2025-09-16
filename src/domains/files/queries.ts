@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { filesQueryKeys } from './queryKeys';
+import { filesKeys } from './queryKeys';
 import { FileScope } from './schemas';
 import { downloadFile } from './service';
 
@@ -8,7 +8,7 @@ import { downloadFile } from './service';
 
 export const useDownloadFileBlobQuery = (fileId: string, scope: FileScope) => {
   return useQuery({
-    queryKey: filesQueryKeys.downloadBlob(fileId),
+    queryKey: filesKeys.downloadBlob(fileId),
     queryFn: async () => {
       return downloadFile(fileId, scope);
     },

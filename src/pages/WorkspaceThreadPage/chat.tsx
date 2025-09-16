@@ -11,7 +11,7 @@ import ChatHeader from '@/ui/header/chat-header';
 import MessageComposer from '@/ui/messages/MessageComposer';
 import MessageList from '@/ui/messages/MessageList';
 import SidebarLeft from '@/ui/thread_draw/sidebar-left';
-import { RouteIdsProvider } from './WorkspaceThreadPage/RouteIdsProvider';
+import { RouteIdsProvider } from './RouteIdsProvider';
 // Params: workspaceId is guaranteed (we are under that route); threadId is optional
 
 export default function ChatBotPage() {

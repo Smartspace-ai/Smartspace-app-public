@@ -1,12 +1,14 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { threadsKeys } from './queryKeys';
 import { MessageThread } from './schemas';
 import { deleteThread, setFavorite, updateThread, updateVariable } from './service';
 
 
 export function useUpdateVariable() {
   return useMutation({
+    mutationKey: threadsKeys.updateVariable('', ''),
     mutationFn: async ({
       flowRunId,
       variableName,
@@ -28,6 +30,7 @@ export function useUpdateVariable() {
 
 export function useSetFavorite() {
   return useMutation({
+    mutationKey: threadsKeys.setFavorite(''),
     mutationFn: async ({ threadId, favorite }: { threadId: string; favorite: boolean }) => {
       await setFavorite(threadId, favorite);
     },
@@ -40,6 +43,7 @@ export function useSetFavorite() {
 
 export function useUpdateThread() {
   return useMutation({
+    mutationKey: threadsKeys.updateThread(''),
     mutationFn: async ({ threadId, updates }: { threadId: string; updates: Partial<MessageThread> }) => {
       await updateThread(threadId, updates);
     },
@@ -52,6 +56,7 @@ export function useUpdateThread() {
 
 export function useDeleteThread() {
   return useMutation({
+    mutationKey: threadsKeys.deleteThread(''),
     mutationFn: async ({ threadId }: { threadId: string }) => {
       await deleteThread(threadId);
     },

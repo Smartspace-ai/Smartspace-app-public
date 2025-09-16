@@ -1,6 +1,7 @@
 import { useActiveUser } from '@/domains/users/use-active-user';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { commentsKeys } from './queryKeys';
 import { Comment, CommentSchema, MentionUser } from "./schemas";
 import { addComment } from './service';
 
@@ -17,6 +18,7 @@ export function useAddComment(threadId: string) {
 
 
   return useMutation<Comment, unknown, AddCommentVariables>({
+    mutationKey: commentsKeys.mutation.add(threadId),
     mutationFn: async ({ threadId, content, mentionedUsers = [] }) => {
       const tempId = `temp-${Date.now()}`;
       const optimisticComment = CommentSchema.parse({
@@ -30,14 +32,14 @@ export function useAddComment(threadId: string) {
       });
   
       queryClient.setQueryData(
-        ['comments', threadId],
+        commentsKeys.list(threadId),
         (old: Comment[] | undefined) => ([...(old ?? []), optimisticComment])
       );
   
       const realComment = await addComment(threadId, content, mentionedUsers);
   
       queryClient.setQueryData(
-        ['comments', threadId],
+        commentsKeys.list(threadId),
         (old: Comment[] | undefined) => {
           const withoutTemp = (old ?? []).filter((c) => c.id !== tempId);
           return [...withoutTemp, realComment];
@@ -48,7 +50,7 @@ export function useAddComment(threadId: string) {
     },
     onError: (_error, variables) => {
       queryClient.setQueryData(
-        ['comments', variables.threadId],
+        commentsKeys.list(variables.threadId),
         (old: Comment[] | undefined) => (old ?? []).filter((c) => !c.id.startsWith('temp-'))
       );
       console.error('Failed to add comment. Please try again.', _error);

@@ -1,15 +1,14 @@
+import { FileInfo } from '@/domains/files/schemas';
 import { api } from '@/platform/api/apiClient';
 import { Subject } from 'rxjs';
-import { FileInfo } from '../files';
-import { Message, MessageContentItem, MessageSchema } from './schemas';
+import { Message, MessageContentItem, MessageSchema, messageSchemaList } from './schemas';
 
 
 
 // Fetch all messages in a given message thread
 export async function fetchMessages(threadId: string): Promise<Message[]> {
   const response = await api.get(`messagethreads/${threadId}/messages`);
-  const messages = response.data?.data || [];
-  return messages.map((message: unknown) => MessageSchema.parse(message));
+  return messageSchemaList.parse(response.data);
 }
 
 // Send structured input (e.g. form values) to a specific message

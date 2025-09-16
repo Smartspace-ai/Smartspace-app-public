@@ -8,8 +8,7 @@ export function useMessages(threadId: string) {
     enabled: !!threadId,
     queryKey: threadId ? messagesKeys.list(threadId) : messagesKeys.lists(),
     queryFn: async (): Promise<Message[]> => {
-      const result = await fetchMessages(threadId); // Zod-validated in service.ts
-      // Oldest → newest (or flip if you prefer)
+      const result = await fetchMessages(threadId); 
       return result.reverse();
     },
     retry: false,

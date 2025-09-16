@@ -7,4 +7,9 @@ export const notificationsKeys = {
 
 	infinite: (opts?: { unreadOnly?: boolean }) =>
 		[...notificationsKeys.lists(), 'infinite', { unreadOnly: !!opts?.unreadOnly }] as const,
+
+	mutations: {
+		markAsRead: () => [...notificationsKeys.all, 'mutations', 'markAsRead'] as const,
+		markAllAsRead: () => [...notificationsKeys.all, 'mutations', 'markAllAsRead'] as const,
+	},
 };

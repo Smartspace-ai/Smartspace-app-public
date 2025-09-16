@@ -1,7 +1,7 @@
+import { FileInfo } from '@/domains/files/schemas';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Subject } from 'rxjs';
 import { toast } from 'sonner';
-import { FileInfo } from '../files';
 import { MessageValueType } from './enums';
 import { messagesKeys } from './queryKeys';
 import { Message, MessageContentItem, MessageSchema } from './schemas';
