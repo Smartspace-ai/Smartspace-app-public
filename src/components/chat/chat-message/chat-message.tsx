@@ -1,5 +1,10 @@
 import { Message } from '@/domains/messages';
 import { getErrorMessage } from '@/domains/messages/error-utils';
+import {
+  MessageContent,
+  MessageFile,
+} from '@/domains/messages/schemas';
+import { MessageValueType } from '@/domains/messages/types';
 import { JsonSchema } from '@jsonforms/core';
 import {
   materialCells,
@@ -11,11 +16,6 @@ import _ from 'lodash';
 import { FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Presentation } from 'lucide-react';
 import { FC, ReactNode, useEffect, useState } from 'react';
 import { cn } from '../../../lib/utils';
-import {
-  MessageContent,
-  MessageFile,
-} from '@/domains/messages/schemas';
-import { MessageValueType } from '@/domains/messages/types';
 
 
 import { MessageResponseSource } from '../../../models/message-response-source';
@@ -191,7 +191,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
                 <div key={`image-${i}`} className="mb-3 last:mb-0">
                   <ChatMessageImage
                     image={item.image}
-                    name={item.image.name}
+                    name={item.image.name ?? ''}
                     useMessageFile={useMessageFile}
                   />
                 </div>

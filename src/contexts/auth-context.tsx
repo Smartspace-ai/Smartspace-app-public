@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useMemo } from 'react'
 
-import { interactiveLoginRequest, loginRequest } from '@/app/msalConfig'
 import { useTeams } from '@/contexts/teams-context'
-import { acquireNaaToken } from '@/domains/auth/naaClient'
-import { useTeamsAuth } from '@/domains/auth/use-teams-auth'
+import { interactiveLoginRequest, loginRequest } from '@/platform/auth/msalConfig'
+import { acquireNaaToken } from '@/platform/auth/naaClient'
+import { useTeamsAuth } from '@/platform/auth/use-teams-auth'
 import { useIsAuthenticated, useMsal } from '@azure/msal-react'
 
 type AuthContextValue = {

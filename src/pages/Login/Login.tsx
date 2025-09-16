@@ -1,7 +1,7 @@
-import { useTeamsAuth } from '@/domains/auth/use-teams-auth';
+import { interactiveLoginRequest } from '@/platform/auth/msalConfig';
+import { useTeamsAuth } from '@/platform/auth/use-teams-auth';
 import { useMsal } from '@azure/msal-react';
 import { useEffect, useState } from 'react';
-import { interactiveLoginRequest } from '../../app/msalConfig';
 import { Logo } from '../../assets/logo';
 import { Button } from '../../components/ui/button';
 import { useTeams } from '../../contexts/teams-context';

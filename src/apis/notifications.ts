@@ -1,5 +1,5 @@
-import webApi from '@/domains/auth/axios-setup';
 import { Notification } from '@/models/notification';
+import { api } from '@/platform/api/apiClient';
 
 const LIMIT = 10;
 
@@ -19,7 +19,7 @@ export async function fetchNotifications(
   try {
     const skip = (page - 1) * LIMIT;
 
-    const response = await webApi.get('/notification', {
+    const response = await api.get('/notification', {
       params: {
         unread: isUnreadOnly,
         skip,
@@ -58,7 +58,7 @@ export async function markNotificationAsRead(
   notificationId: string
 ): Promise<void> {
   try {
-    await webApi.put('/notification/update', [notificationId]);
+    await api.put('/notification/update', [notificationId]);
   } catch (error) {
     console.error(
       `Error marking notification ${notificationId} as read:`,
@@ -73,7 +73,7 @@ export async function markNotificationAsRead(
  */
 export async function markAllNotificationsAsRead(): Promise<void> {
   try {
-    await webApi.put('/notification/updateall');
+    await api.put('/notification/updateall');
   } catch (error) {
     console.error('Error marking all notifications as read:', error);
     throw new Error('Failed to mark all notifications as read');
