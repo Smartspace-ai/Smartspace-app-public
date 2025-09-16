@@ -3,13 +3,13 @@ import {
   useNotificationMutations,
   useNotificationsQuery,
 } from '@/domains/notifications/useNotifications';
-import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/shadcn/avatar';
 import { Button } from '@/shared/ui/shadcn/button';
 import { ScrollArea } from '@/shared/ui/shadcn/scroll-area';
 import { Switch } from '@/shared/ui/shadcn/switch';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTimeHuman } from '@/shared/utils/parse-date-time';
+import { cn } from '@/shared/utils/utils';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, MessageCircle, MessageSquare } from 'lucide-react';

@@ -4,8 +4,8 @@ import { handleTrailingSlash } from '@/platform/auth/msalConfig';
 import { useMsal } from '@azure/msal-react';
 import { LogOut } from 'lucide-react';
 import { ComponentProps } from 'react';
-import { Logo } from '../../../assets/logo';
-import { Avatar, AvatarFallback, AvatarImage } from '../../../shared/ui/shadcn/avatar';
+import { Logo } from '../../assets/logo';
+import { Avatar, AvatarFallback, AvatarImage } from '../../shared/ui/shadcn/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,12 +13,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../../../shared/ui/shadcn/dropdown-menu';
-import { Sidebar, SidebarHeader } from '../../../shared/ui/shadcn/sidebar';
-import { getAvatarColour } from '../../../shared/utils/avatar-colour';
-import { getInitials } from '../../../shared/utils/initials';
-import Threads from '../threads/threads';
-import { WorkspaceSelector } from '../workspace-selector/workspace-selector';
+} from '../../shared/ui/shadcn/dropdown-menu';
+import { Sidebar, SidebarHeader } from '../../shared/ui/shadcn/sidebar';
+import { getAvatarColour } from '../../shared/utils/avatar-colour';
+import { getInitials } from '../../shared/utils/initials';
+import Threads from './threads';
+import { WorkspaceSelector } from './workspace-selector';
 
 
 export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {

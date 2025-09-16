@@ -14,6 +14,10 @@ import {
 
 
 
+
+
+
+
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -45,11 +49,11 @@ import {
 import { SidebarContent, SidebarFooter, useSidebar } from '@/shared/ui/shadcn/sidebar';
 import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 
-import { CircleInitials } from '@/components/circle-initials';
 import { useDeleteThread, useSetFavorite, useUpdateThread } from '@/domains/threads/mutations';
 import { useInfiniteThreads } from '@/domains/threads/queries';
 import { MessageThread } from '@/domains/threads/schemas';
 import { renameThread } from '@/domains/threads/service';
+import { CircleInitials } from '@/shared/components/circle-initials';
 import { Virtuoso } from 'react-virtuoso';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 

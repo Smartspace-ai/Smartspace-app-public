@@ -1,8 +1,8 @@
 import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
 import { Button } from '@/shared/ui/shadcn/button';
 import { Sheet, SheetContent } from '@/shared/ui/shadcn/sheet';
 import { TooltipProvider } from '@/shared/ui/shadcn/tooltip';
+import { cn } from '@/shared/utils/utils';
 import { Slot } from '@radix-ui/react-slot';
 import { PanelLeft } from 'lucide-react';
 import {

@@ -15,8 +15,8 @@ import {
   SidebarHeader,
 } from '@/shared/ui/shadcn/sidebar';
 
-import { MentionInput } from '@/components/mention-input/mention-input';
 import { MentionUser } from '@/domains/workspaces/schemas';
+import { MentionInput } from '@/ui/comments_draw/mention-input';
  
 import { useComments } from '@/domains/comments/queries';
 import { Comment } from '@/domains/comments/schemas';
@@ -29,9 +29,9 @@ import { Typography } from '@mui/material';
 import { ArrowBigUp, MessageSquare } from 'lucide-react';
 import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Skeleton } from '../../../shared/ui/shadcn/skeleton';
-import { getInitials } from '../../../shared/utils/initials';
-import { parseDateTime } from '../../../shared/utils/parse-date-time';
+import { Skeleton } from '../../shared/ui/shadcn/skeleton';
+import { getInitials } from '../../shared/utils/initials';
+import { parseDateTime } from '../../shared/utils/parse-date-time';
 
 const MAX_COMMENT_LENGTH = 350;
 

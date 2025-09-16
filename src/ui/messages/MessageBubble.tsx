@@ -1,15 +1,15 @@
 // src/ui/messages/MessageList/MessageBubble.tsx
-import { MyMarkdown } from '@/components/markdown/MyMarkdown';
 import { FileInfo } from '@/domains/files/schemas';
 import { getFileIcon } from '@/domains/files/utils';
 import { getDefaultValues } from '@/domains/json_forms/utils';
 import { MessageValueType } from '@/domains/messages/enums';
 import { MessageContentItem, MessageResponseSource } from '@/domains/messages/schemas';
-import { cn } from '@/lib/utils';
+import { MyMarkdown } from '@/shared/components/markdown/MyMarkdown';
 import { Avatar, AvatarFallback } from '@/shared/ui/shadcn/avatar';
 import { Button } from '@/shared/ui/shadcn/button';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parse-date-time';
+import { cn } from '@/shared/utils/utils';
 import { JsonSchema } from '@jsonforms/core';
 import { materialCells, materialRenderers } from '@jsonforms/material-renderers';
 import { JsonForms } from '@jsonforms/react';

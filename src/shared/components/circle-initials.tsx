@@ -1,6 +1,6 @@
 import { Avatar } from '@/shared/ui/shadcn/avatar';
 
-import { getInitials } from '../shared/utils/initials';
+import { getInitials } from '../utils/initials';
 
 
 export function CircleInitials({text, className}: { text: string, className?: string }) {

@@ -4,13 +4,13 @@ import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { Toaster } from 'sonner';
 
-import SidebarLeft from '@/components/sidebar/sidebar-left/sidebar-left';
-import SidebarRight from '@/components/sidebar/sidebar-right/sidebar-right';
 import { useThreads } from '@/domains/threads/queries';
 import { useWorkspaces } from '@/domains/workspaces/queries';
+import SidebarRight from '@/ui/comments_draw/sidebar-right';
 import ChatHeader from '@/ui/header/chat-header';
 import MessageComposer from '@/ui/messages/MessageComposer';
 import MessageList from '@/ui/messages/MessageList';
+import SidebarLeft from '@/ui/thread_draw/sidebar-left';
 import { RouteIdsProvider } from './WorkspaceThreadPage/RouteIdsProvider';
 // Params: workspaceId is guaranteed (we are under that route); threadId is optional
 

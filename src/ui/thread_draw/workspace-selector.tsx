@@ -2,9 +2,9 @@ import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
 import { Button } from '@/shared/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/shadcn/popover';
 
-import { CircleInitials } from '@/components/circle-initials';
 import { Workspace } from '@/domains/workspaces/schemas';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+import { CircleInitials } from '@/shared/components/circle-initials';
 import { useSidebar } from '@/shared/ui/shadcn/sidebar';
 import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 import { useNavigate } from '@tanstack/react-router';
