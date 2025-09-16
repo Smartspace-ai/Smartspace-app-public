@@ -16,7 +16,7 @@ import {
 } from '@/shared/ui/shadcn/sidebar';
 
 import { MentionInput } from '@/components/mention-input/mention-input';
-import { MentionUser } from '@/domains/comments/schemas';
+import { MentionUser } from '@/domains/workspaces/schemas';
  
 import { useComments } from '@/domains/comments/queries';
 import { Comment } from '@/domains/comments/schemas';
