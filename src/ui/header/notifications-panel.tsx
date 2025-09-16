@@ -1,8 +1,8 @@
-import { Notification, NotificationType } from '@/domains/notifications/schemas';
+import { useMarkAllAsRead, useMarkAsRead } from '@/domains/notifications/mutations';
 import {
-  useNotificationMutations,
   useNotificationsQuery,
-} from '@/domains/notifications/useNotifications';
+} from '@/domains/notifications/queries';
+import { Notification, NotificationType } from '@/domains/notifications/schemas';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/shadcn/avatar';
 import { Button } from '@/shared/ui/shadcn/button';
 import { ScrollArea } from '@/shared/ui/shadcn/scroll-area';
@@ -24,7 +24,8 @@ export function NotificationPanel() {
   const workspaceId = workspaceMatch?.params?.workspaceId ?? '';
 
   const notificationsQuery = useNotificationsQuery(showOnlyUnread);
-  const { markAsReadMutation, markAllAsReadMutation } = useNotificationMutations();
+  const { mutate: markAsRead } = useMarkAsRead();
+  const { mutate: markAllAsRead } = useMarkAllAsRead();
 
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -62,7 +63,7 @@ export function NotificationPanel() {
 
   const handleClickNotification = (notification: Notification) => {
     if (!notification.dismissedAt) {
-      markAsReadMutation.mutate(notification.id);
+      markAsRead(notification.id);
     }
 
     if (notification.threadId) {
@@ -156,7 +157,7 @@ export function NotificationPanel() {
                   variant="ghost"
                   size="sm"
                   className="w-full justify-center text-xs text-primary hover:text-primary hover:bg-primary/5 h-7 rounded-md"
-                  onClick={() => markAllAsReadMutation.mutate()}
+                  onClick={() => markAllAsRead()}
                 >
                   Mark all as read
                 </Button>

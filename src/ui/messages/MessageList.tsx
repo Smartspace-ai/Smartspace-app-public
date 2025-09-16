@@ -2,10 +2,9 @@ import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { useEffect, useRef, useState } from 'react';
 
 import { MessageValueType } from '@/domains/messages/enums';
-import { useMessages } from '@/domains/messages/useMessages';
+import { useMessages } from '@/domains/messages/queries';
 
 import { useThread } from '@/domains/threads/queries';
-import { useActiveUser } from '@/domains/users/use-active-user';
 import { useWorkspace } from '@/domains/workspaces/queries';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
@@ -31,7 +30,6 @@ export default function MessageList() {
   const { data: activeWorkspace } = useWorkspace(workspaceId);
 
 
-  const activeUser = useActiveUser();
   const [isAtBottom, setIsAtBottom] = useState(true);
 
   const { data: thread, isPending: threadLoading, error: threadError } = useThread({ workspaceId, threadId })

@@ -1,8 +1,7 @@
 import { useTeams } from '@/contexts/teams-context';
 import { normalizeNotificationType, NotificationType } from '@/domains/notifications/schemas';
-import { useActiveUser } from '@/domains/users/use-active-user';
 
-import { useAuth } from '@/platform/auth/session';
+import { useAuth, useUserId } from '@/platform/auth/session';
 import { useIsAuthenticated } from '@azure/msal-react';
 import {
   HubConnection,
@@ -40,12 +39,12 @@ type SignalRProviderProps = {
 };
 
 export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
-  const { getAccessToken } = useAuth();
-  const { id: activeUserId } = useActiveUser();
+  const { adapter } = useAuth();
+  const activeUserId = useUserId();
   const { isInTeams, isTeamsInitialized, teamsUser } = useTeams();
   const msalIsAuthenticated = useIsAuthenticated();
   const queryClient = useQueryClient();
-
+  console.log('activeUserId', activeUserId);
   // Determine authentication status using the same pattern as other parts of the app
   const teamsTokenPresent = (() => {
     try { return !!sessionStorage.getItem('teamsAuthToken') } catch { return false }
@@ -172,7 +171,7 @@ export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
           accessTokenFactory: async () => {
             try {
               const scopes = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
-              const token = await getAccessToken({ scopes });
+              const token = await adapter.getAccessToken({ scopes });
               return token ?? '';
             } catch {
               return '';
@@ -275,7 +274,7 @@ export const SignalRProvider: FC<SignalRProviderProps> = ({ children }) => {
       conn?.stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, queryClient, signalRUri, getAccessToken, activeUserId]);
+  }, [isAuthenticated, queryClient, signalRUri, adapter, activeUserId]);
 
   return (
     <SignalRContext.Provider

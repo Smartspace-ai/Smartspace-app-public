@@ -1,6 +1,6 @@
 import { useTeams } from '@/contexts/teams-context';
-import { useActiveUser } from '@/domains/users/use-active-user';
 import { handleTrailingSlash } from '@/platform/auth/msalConfig';
+import { useUserId } from '@/platform/auth/session';
 import { useMsal } from '@azure/msal-react';
 import { LogOut } from 'lucide-react';
 import { ComponentProps } from 'react';
@@ -25,7 +25,8 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
   const { instance } = useMsal();
   const { isInTeams } = useTeams();
 
-  const activeUser = useActiveUser();
+  const activeUserId = useUserId();
+  // const getActiveUser = useGetActiveUser();
 
   const handleLogout = () => {
     const account = instance.getActiveAccount();
@@ -58,12 +59,12 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
                     <Avatar className="h-8 w-8">
                       <AvatarImage
                         // src={activeUser.profilePhoto}
-                        alt={activeUser.name}
+                        alt={activeUserId}
                       />
                       <AvatarFallback
-                        className={`text-xs ${getAvatarColour(activeUser.name)}`}
+                        className={`text-xs ${getAvatarColour(activeUserId)}`}
                       >
-                        {getInitials(activeUser.name)}
+                        {getInitials(activeUserId)}
                       </AvatarFallback>
                     </Avatar>
                   </div>
@@ -74,18 +75,18 @@ export function SidebarLeft({ ...props }: ComponentProps<typeof Sidebar>) {
                       <Avatar className="h-9 w-9">
                         <AvatarImage
                           // src={activeUser.profilePhoto}
-                          alt={activeUser.name}
+                          alt={activeUserId}
                         />
                         <AvatarFallback className="text-xs">
-                          {getInitials(activeUser.name)}
+                          {getInitials(activeUserId)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="text-sm font-medium leading-none mb-1">
-                          {activeUser.name}
+                          {activeUserId}
                         </p>
                         <p className="text-xs leading-none text-muted-foreground">
-                          {activeUser.email}
+                          {activeUserId}
                         </p>
                       </div>
                     </div>

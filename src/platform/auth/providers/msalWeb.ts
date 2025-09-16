@@ -27,7 +27,7 @@ export function createMsalWebAdapter(): AuthAdapter {
     },
     async getSession() {
       const a = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
-      return a ? { accountId: a.homeAccountId, displayName: a.name ?? undefined } : null;
+      return a ? { accountId: a.localAccountId, displayName: a.name ?? undefined } : null;
     },
     async signIn() { 
       // Store the intended redirect URL before redirecting

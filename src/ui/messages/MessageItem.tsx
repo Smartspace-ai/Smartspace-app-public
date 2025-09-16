@@ -5,11 +5,10 @@ import { FC, ReactNode } from 'react';
 
 // domains
 import { FileInfo } from '@/domains/files/schemas';
-import { Message } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 import { getMessageErrorText } from '@/domains/messages/errors';
-import { MessageContentItem } from '@/domains/messages/schemas';
-import { useAddInputToMessage } from '@/domains/messages/useSendMessage';
+import { useAddInputToMessage } from '@/domains/messages/mutations';
+import { Message, MessageContentItem } from '@/domains/messages/schemas';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 // local UI

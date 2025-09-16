@@ -2,7 +2,7 @@
 
 import { useFileMutations } from '@/domains/files/mutations';
 import { FileInfo } from '@/domains/files/schemas';
-import { useSendMessage } from '@/domains/messages/useSendMessage';
+import { useSendMessage } from '@/domains/messages/mutations';
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 import { useIsMobile } from '@/hooks/use-mobile';

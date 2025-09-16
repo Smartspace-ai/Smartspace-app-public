@@ -23,7 +23,7 @@ export function Login() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const currentSession = await auth.getSession();
+        const currentSession = await auth.adapter.getSession();
         setSession(currentSession);
         if (currentSession) {
           navigate({ to: redirectParam, replace: true });
@@ -42,7 +42,7 @@ export function Login() {
       setIsLoading(true);
       setError(null);
       
-      auth.signIn().then(() => {
+      auth.adapter.signIn().then(() => {
         // After successful Teams sign in, navigate to the redirect URL
         navigate({ to: redirectParam, replace: true });
       }).catch((err: unknown) => {
@@ -74,7 +74,7 @@ export function Login() {
     setError(null);
     
     try {
-      await auth.signIn();
+      await auth.adapter.signIn();
       // For web auth (MSAL), signIn() performs a redirect, so we don't navigate here
       // For Teams auth, the redirect will be handled by the auto-login effect
     } catch (authError: unknown) {
