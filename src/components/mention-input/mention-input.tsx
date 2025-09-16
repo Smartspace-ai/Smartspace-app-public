@@ -1,5 +1,5 @@
+import { MentionUser } from '@/domains/workspaces/schemas';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { MentionUser } from '@/shared/models/mention-user';
 import {
   Avatar,
   IconButton,
