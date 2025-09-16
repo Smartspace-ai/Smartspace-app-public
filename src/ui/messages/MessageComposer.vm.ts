@@ -3,8 +3,8 @@
 import { useFileMutations } from '@/domains/files/mutations';
 import { FileInfo } from '@/domains/files/schemas';
 import { useSendMessage } from '@/domains/messages/useSendMessage';
-import { useWorkspaceThread } from '@/domains/threads/use-workspace-thread';
-import { useWorkspaceQuery } from '@/domains/workspaces/useWorkspaces';
+import { useThread } from '@/domains/threads/queries';
+import { useWorkspace } from '@/domains/workspaces/queries';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 import { useSidebar } from '@/shared/ui/shadcn/sidebar';
@@ -41,8 +41,8 @@ export function useMessageComposerVm() {
   // Data/UX context
   const isMobile = useIsMobile();
   const { leftOpen, rightOpen } = useSidebar();
-  const { data: workspace } = useWorkspaceQuery();
-  const { data: thread } = useWorkspaceThread({ workspaceId, threadId });
+  const { data: workspace } = useWorkspace(workspaceId);
+  const { data: thread } = useThread({ workspaceId, threadId });
 
   // Uploads (centralized via useFileMutations)
   const { uploadFilesMutation } = useFileMutations({ workspaceId, threadId });

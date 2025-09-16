@@ -1,4 +1,4 @@
-import { useWorkspaces } from '@/domains/workspaces/useWorkspaces'
+import { useWorkspaces } from '@/domains/workspaces/queries'
 import NoWorkspacesAvailable from '@/pages/no_workspaces_available'
 import TeamsLoader from '@/pages/teams_loader'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_protected/workspace/')({
 
 function WorkspaceIndex() {
   const navigate = useNavigate()
-  const { workspaces, isLoading, isFetched, canQuery } = useWorkspaces()
+  const { data: workspaces, isLoading, isFetched } = useWorkspaces()
 
   useEffect(() => {
     if (isLoading) return
@@ -27,7 +27,7 @@ function WorkspaceIndex() {
     return <TeamsLoader message="Loading workspaces…" />
   }
 
-  if (canQuery && isFetched && workspaces && workspaces.length === 0) {
+  if (isFetched && workspaces && workspaces.length === 0) {
     return <NoWorkspacesAvailable />
   }
 

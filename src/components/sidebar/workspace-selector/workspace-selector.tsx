@@ -1,21 +1,24 @@
-import { useWorkspaceQuery, useWorkspaces } from '@/domains/workspaces/useWorkspaces';
+import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
 import { Button } from '@/shared/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/shadcn/popover';
 
 import { CircleInitials } from '@/components/circle-initials';
+import { Workspace } from '@/domains/workspaces/schemas';
+import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 import { useSidebar } from '@/shared/ui/shadcn/sidebar';
 import { Skeleton } from '@/shared/ui/shadcn/skeleton';
+import { useNavigate } from '@tanstack/react-router';
 import debounce from 'lodash/debounce';
 import { ChevronDown } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { Workspace } from '../../../shared/models/workspace';
 
 export function WorkspaceSelector() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
-
+  const {workspaceId} = useRouteIds();
+  const navigate = useNavigate();
   // Debounce search term update
   const debouncedSetSearchTerm = useState(() => debounce((value: string) => {
     setDebouncedSearchTerm(value);
@@ -35,8 +38,8 @@ export function WorkspaceSelector() {
     }
   }, [open]);
 
-  const { workspaces, isLoading, handleWorkspaceChange } = useWorkspaces(debouncedSearchTerm);
-  const { data: activeWorkspace } = useWorkspaceQuery();
+  const { data: workspaces, isLoading } = useWorkspaces(debouncedSearchTerm);
+  const { data: activeWorkspace } = useWorkspace(workspaceId);
   // Close sidebar on workspace selection (mobile)
   const { isMobile, setOpenMobileLeft } = useSidebar();
 
@@ -76,7 +79,7 @@ export function WorkspaceSelector() {
         <PopoverContent className="rounded-lg p-0 border w-full min-w-[260px] max-h-120 overflow-auto">
           { isLoading? <Skeleton className="h-40 w-full rounded-lg" />
           : <div className='p-1 shadow-lg'>
-              {workspaces.length === 0 ? (
+              {workspaces && workspaces.length === 0 ? (
                 <div className="px-3 py-6 text-center text-gray-500">
                   {debouncedSearchTerm ? (
                     <div className="text-xs">
@@ -91,13 +94,17 @@ export function WorkspaceSelector() {
                   )}
                 </div>
               ) : (
-                workspaces.map((workspace) => (
+                workspaces && workspaces.map((workspace) => (
                   <WorkspaceItem
                     key={workspace.id}
                     isActive={activeWorkspace?.id === workspace.id}
                     workspace={workspace}
                     onSelect={ws => {
-                      handleWorkspaceChange(ws);
+                      navigate({
+                        to: '/workspace/$workspaceId',
+                        params: { workspaceId: ws.id },
+                        replace: true,
+                      })
                       setOpen(false);
                       setSearchTerm('');
                       // Close left sidebar on mobile after navigating

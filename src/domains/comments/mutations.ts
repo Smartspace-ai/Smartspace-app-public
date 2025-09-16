@@ -1,30 +1,22 @@
 import { useActiveUser } from '@/domains/users/use-active-user';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Comment, CommentSchema, MentionUser } from "./schemas";
-import { addComment, fetchComments } from './service';
+import { addComment } from './service';
 
 
-export function useComments(threadId: string) {
+export function useAddComment(threadId: string) {
   const queryClient = useQueryClient();
   const activeUser = useActiveUser();
-  const queryComments = useQuery({
-    queryKey: ['comments', threadId],
-    queryFn: async () => {
-        return await fetchComments(threadId)
-    },
-    refetchOnWindowFocus: false,
-  });
 
-
-  // Add a comment with optimistic update
   type AddCommentVariables = {
     threadId: string;
     content: string;
     mentionedUsers?: MentionUser[];
   };
 
-  const addCommentMutation = useMutation<Comment, unknown, AddCommentVariables>({
+
+  return useMutation<Comment, unknown, AddCommentVariables>({
     mutationFn: async ({ threadId, content, mentionedUsers = [] }) => {
       const tempId = `temp-${Date.now()}`;
       const optimisticComment = CommentSchema.parse({
@@ -63,11 +55,9 @@ export function useComments(threadId: string) {
     },
   });
 
-  return {
-    queryComments, 
-    addCommentMutation,
-  };
 }
+
+
 
 
 

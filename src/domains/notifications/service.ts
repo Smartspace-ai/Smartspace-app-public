@@ -1,4 +1,4 @@
-import webApi from '@/domains/auth/axios-setup';
+import { api } from '@/platform/api/apiClient';
 import { Notification, NotificationsEnvelopeSchema } from './schemas';
 
 
@@ -17,7 +17,7 @@ export async function fetchNotifications(
 ): Promise<NotificationList> {
   const skip = (page - 1) * LIMIT;
 
-  const response = await webApi.get('/notification', {
+  const response = await api.get('/notification', {
     params: { unread: isUnreadOnly, skip, take: LIMIT },
   });
 
@@ -37,10 +37,10 @@ export async function fetchNotifications(
 
 /** Mark a specific notification as read. */
 export async function markNotificationAsRead(notificationId: string): Promise<void> {
-  return await webApi.put('/notification/update', [notificationId]);
+  return await api.put('/notification/update', [notificationId]);
 }
 
 /** Mark all notifications as read. */
 export async function markAllNotificationsAsRead(): Promise<void> {
-  return await webApi.put('/notification/updateall');
+  return await api.put('/notification/updateall');
 }

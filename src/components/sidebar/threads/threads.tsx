@@ -9,22 +9,6 @@ import {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -32,7 +16,7 @@ import {
   Trash2
 } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -57,24 +41,24 @@ import { SidebarContent, SidebarFooter, useSidebar } from '@/shared/ui/shadcn/si
 import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 
 import { CircleInitials } from '@/components/circle-initials';
-// import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
-import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
+import { useDeleteThread, useSetFavorite, useUpdateThread } from '@/domains/threads/mutations';
+import { useInfiniteThreads } from '@/domains/threads/queries';
+import { MessageThread } from '@/domains/threads/schemas';
+import { renameThread } from '@/domains/threads/service';
 import { Virtuoso } from 'react-virtuoso';
-import { renameThread } from '../../../apis/message-threads';
-import { MessageThread } from '../../../shared/models/message-thread';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
+
+import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 export function Threads() {  
   const { isMobile, setOpenMobileLeft } = useSidebar();
-  const {
-    threads,
-    isLoading,
-    updateThreadMetadata,
-    handleDeleteThread,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useWorkspaceThreads();
+  const {workspaceId} = useRouteIds();
+ const {data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage} = useInfiniteThreads(workspaceId);
+  
+  // Flatten all threads from all pages
+  const threads = useMemo(() => {
+    return data?.pages.flatMap(page => page.threads) ?? [];
+  }, [data]);
 
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -115,8 +99,10 @@ export function Threads() {
     }
   }
 
+
+
   useEffect(() => {
-    if (!isLoading && !threadId && threads?.length === 0) {
+    if (!isLoading && !threadId && threads.length === 0) {
       const newThreadId = crypto.randomUUID();
       setAutoCreatedThreadId(newThreadId);
       
@@ -129,7 +115,7 @@ export function Threads() {
       return;
     }
 
-    if (threads && threads.length > 0 && (!threadId || (autoCreatedThreadId && threadId === autoCreatedThreadId))) {
+    if (threads.length > 0 && (!threadId || (autoCreatedThreadId && threadId === autoCreatedThreadId))) {
       const firstThread = threads[0];
       const workspaceIdToUse = firstThread.workSpaceId ?? urlWorkspaceId;
       if (workspaceIdToUse) {
@@ -163,7 +149,7 @@ export function Threads() {
         <SidebarContent className="p-0">
           {isLoading ? (
             <ThreadsLoadingSkeleton />
-          ) : threads?.length ?? 0 > 0 ? (
+          ) : threads.length > 0 ? (
             <Virtuoso
               data={threads}
               overscan={200}
@@ -183,8 +169,6 @@ export function Threads() {
                     onThreadClick={handleThreadClick}
                     onHover={setHoveredThreadId}
                     onMenuOpenChange={setOpenMenuId}
-                    updateThreadMetadata={updateThreadMetadata}
-                    handleDeleteThread={handleDeleteThread}
                   />
                 </div>
               )}
@@ -257,11 +241,6 @@ type ThreadItemProps = {
   onThreadClick: (thread: MessageThread) => void;
   onHover: (id: string | null) => void;
   onMenuOpenChange: (id: string | null) => void;
-  updateThreadMetadata: (
-    threadId: string,
-    updates: Partial<MessageThread>
-  ) => void;
-  handleDeleteThread: (threadId: string) => void;
 };
 
 function ThreadItem({
@@ -272,14 +251,14 @@ function ThreadItem({
   onThreadClick,
   onHover,
   onMenuOpenChange,
-  updateThreadMetadata,
-  handleDeleteThread,
 }: ThreadItemProps) {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [newThreadName, setNewThreadName] = useState(thread.name);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const { setFavoriteMutation } = useThreadSetFavorite(thread.workSpaceId, thread.id)
+  const { mutate: setFavoriteMutation, isPending: isSetFavoritePending } = useSetFavorite()
+  const { mutate: updateThreadMutation } = useUpdateThread()
+  const { mutate: deleteThreadMutation } = useDeleteThread()
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (
@@ -296,7 +275,7 @@ function ThreadItem({
       try {
         onMenuOpenChange(null);
         await renameThread(thread, newThreadName);
-        updateThreadMetadata(thread.id, { name: newThreadName });
+        updateThreadMutation({ threadId: thread.id, updates: { name: newThreadName } });
         setIsRenameModalOpen(false);
         toast.success('Thread renamed successfully');
       } catch (error) {
@@ -309,7 +288,7 @@ function ThreadItem({
   const handleDeleteThreadItem = async () => {
     try {
       onMenuOpenChange(null);
-      handleDeleteThread(thread.id);
+      deleteThreadMutation({ threadId: thread.id });
       setIsDeleteDialogOpen(false);
       toast.success('Thread deleted successfully');
     } catch (error) {
@@ -357,7 +336,7 @@ function ThreadItem({
           )}
 
           <div className='flex-grow'></div>
-          {setFavoriteMutation.isPending  && !thread.isFlowRunning  ? (
+          {isSetFavoritePending  && !thread.isFlowRunning  ? (
             <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
           ) :
             thread.favorited && (
@@ -376,7 +355,7 @@ function ThreadItem({
         isHovered={hoveredThreadId === thread.id}
         isMenuOpen={openMenuId === thread.id}
         onMenuOpenChange={(open) => onMenuOpenChange(open ? thread.id : null)}
-        onFavorite={() => setFavoriteMutation.mutate({ favorite: !thread.favorited })}
+        onFavorite={() => setFavoriteMutation({ threadId: thread.id, favorite: !thread.favorited })}
         onRename={() => setIsRenameModalOpen(true)}
         onDelete={() => setIsDeleteDialogOpen(true)}
       />

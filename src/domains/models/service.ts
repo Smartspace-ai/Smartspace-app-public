@@ -1,4 +1,4 @@
-import webApi from '@/domains/auth/axios-setup';
+import { api } from '@/platform/api/apiClient';
 import { Model, ModelSchema, ModelsEnvelopeSchema } from './schemas';
 
 // Fetch threads for a given workspace
@@ -10,7 +10,7 @@ export async function fetchModels({
   data: Model[];
   total: number;
 }> {
-  const response = await webApi.get(`models`, {
+  const response = await api.get(`models`, {
     params: { search, take, skip },
   });
 
@@ -18,6 +18,6 @@ export async function fetchModels({
 }
 
 export async function fetchModel(id: string): Promise<Model> {
-  const response = await webApi.get(`models/${id}`);
+  const response = await api.get(`models/${id}`);
   return ModelSchema.parse(response.data);
 }

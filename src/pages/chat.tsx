@@ -6,8 +6,8 @@ import { Toaster } from 'sonner';
 
 import SidebarLeft from '@/components/sidebar/sidebar-left/sidebar-left';
 import SidebarRight from '@/components/sidebar/sidebar-right/sidebar-right';
-import { useWorkspaces } from '@/domains/workspaces/useWorkspaces';
-import { useWorkspaceThreads } from '@/hooks/use-workspace-threads';
+import { useThreads } from '@/domains/threads/queries';
+import { useWorkspaces } from '@/domains/workspaces/queries';
 import ChatHeader from '@/ui/header/chat-header';
 import MessageComposer from '@/ui/messages/MessageComposer';
 import MessageList from '@/ui/messages/MessageList';
@@ -21,8 +21,8 @@ export default function ChatBotPage() {
   const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false })
   const threadId = threadMatch?.params?.threadId
   const workspaceId = workspaceMatch?.params?.workspaceId
-  const { threads, isLoading: threadsLoading, isFetched: threadsFetched } = useWorkspaceThreads()
-  const { workspaces, isLoading: workspacesLoading } = useWorkspaces()
+  const { data:{ threads} = {}, isLoading: threadsLoading, isFetched: threadsFetched } = useThreads(workspaceId || "")
+  const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces()
 
   // If no workspaceId in URL, select the first workspace after list loads
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function ChatBotPage() {
           <MessageList />
           <MessageComposer/>
         </Stack>
-        <SidebarRight threadId={threadId} />
+        <SidebarRight/>
       </Stack>
       <Toaster />
       </RouteIdsProvider>

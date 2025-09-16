@@ -16,24 +16,30 @@ import {
 } from '@/shared/ui/shadcn/sidebar';
 
 import { MentionInput } from '@/components/mention-input/mention-input';
-import { MentionUser } from '@/shared/models/mention-user';
+import { MentionUser } from '@/domains/comments/schemas';
  
+import { useComments } from '@/domains/comments/queries';
+import { Comment } from '@/domains/comments/schemas';
+import { useTaggableWorkspaceUsers } from '@/domains/workspaces/queries';
+
+import { useAddComment } from '@/domains/comments/mutations';
+import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 import { Send } from '@mui/icons-material';
 import { Typography } from '@mui/material';
 import { ArrowBigUp, MessageSquare } from 'lucide-react';
 import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { useTaggableWorkspaceUsers, useWorkspaceThreadComments } from '../../../domains/comments/use-workspace-thread-comments';
-import { MessageComment } from '../../../shared/models/message-comment';
 import { Skeleton } from '../../../shared/ui/shadcn/skeleton';
 import { getInitials } from '../../../shared/utils/initials';
 import { parseDateTime } from '../../../shared/utils/parse-date-time';
 
 const MAX_COMMENT_LENGTH = 350;
 
-export function SidebarRight({ threadId }: { threadId: string | undefined }) {
-  const { comments, isLoading, addComment, isAddingComment } = useWorkspaceThreadComments(threadId);
-  const { users: taggableUsers } = useTaggableWorkspaceUsers();
+export function SidebarRight() {
+  const { workspaceId, threadId } = useRouteIds();
+  const { data: comments, isLoading } = useComments(threadId);
+  const { mutate: addComment, isPending: isAddingComment } = useAddComment(threadId);
+  const { data: taggableUsers } = useTaggableWorkspaceUsers(workspaceId);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const [threadComment, setThreadComment] = useState({ plain: '', withMentions: '' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,7 +56,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
     }
 
     try {
-      await addComment(threadComment.plain, mentionList);
+      await addComment({ threadId, content: threadComment.plain, mentionedUsers: mentionList });
       setThreadComment({ plain: '', withMentions: '' });
       setSearchTerm('');
       setMentionList([]);
@@ -67,7 +73,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
   }, [comments]);
 
   const filteredUsers = useMemo(() => {
-    return taggableUsers.filter((user) =>
+    return taggableUsers?.filter((user) =>
       user.displayName.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [taggableUsers, searchTerm]);
@@ -87,7 +93,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                   <BreadcrumbPage className="line-clamp-1 flex items-center gap-2">
                     Comments
                     <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-xs font-medium">
-                      {comments.length}
+                      {comments?.length}
                     </div>
                   </BreadcrumbPage>
                 </BreadcrumbItem>
@@ -117,7 +123,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                       </div>
                     ))}
                 </div>
-              ) : comments.length === 0 ? (
+              ) : comments?.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                   <div className="rounded-full bg-primary/10 p-4 mb-4">
                     <MessageSquare className="h-8 w-8 text-primary" />
@@ -128,7 +134,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                   </p>
                 </div>
               ) : (
-                comments.map((comment: MessageComment) => (
+                comments?.map((comment: Comment) => (
                   <div
                     key={comment.id}
                     className="rounded-lg border bg-card p-3 transition-all shadow-md hover:shadow-lg"

@@ -1,9 +1,10 @@
-import { useThreadVariables, useUpdateVariable } from '@/domains/threads/use-workspace-thread';
+import { useUpdateVariable } from '@/domains/threads/mutations';
+import { useThreadVariables } from '@/domains/threads/queries';
+import { Workspace } from '@/domains/workspaces/schemas';
 import { materialCells, materialRenderers } from '@jsonforms/material-renderers';
 import { JsonForms } from '@jsonforms/react';
 import { Loader2 } from 'lucide-react';
 import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
-import { Workspace } from '../../../shared/models/workspace';
 import { BooleanRendererControl, booleanRendererTester } from './boolean-renderer';
 import { DropdownRendererControl, dropdownRendererTester } from './dropdown-renderer';
 import { JsonEditorRendererControl, jsonEditorTester } from './json-editor-renderer';

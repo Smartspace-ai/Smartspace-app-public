@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { MessageValueType } from '@/domains/messages/enums';
 import { useMessages } from '@/domains/messages/useMessages';
 
-import { useWorkspaceThread } from '@/domains/threads/use-workspace-thread';
+import { useThread } from '@/domains/threads/queries';
 import { useActiveUser } from '@/domains/users/use-active-user';
-import { useWorkspaceQuery } from '@/domains/workspaces/useWorkspaces';
+import { useWorkspace } from '@/domains/workspaces/queries';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 import ReactMarkdown from 'react-markdown';
@@ -28,13 +28,13 @@ export default function MessageList() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
 
-  const { data: activeWorkspace } = useWorkspaceQuery();
+  const { data: activeWorkspace } = useWorkspace(workspaceId);
 
 
   const activeUser = useActiveUser();
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const { data: thread, isPending: threadLoading, error: threadError } = useWorkspaceThread({ workspaceId, threadId })
+  const { data: thread, isPending: threadLoading, error: threadError } = useThread({ workspaceId, threadId })
   const { data: messages = [], isPending: messagesLoading, error: messagesError } = useMessages(threadId)
 
 
@@ -123,15 +123,9 @@ export default function MessageList() {
               >
                 <MessageItem
                   message={message}
-                  isLast={index === messages.length - 1}
-                  useMessageFile={useMessageFile}
-                  downloadFile={downloadFile}
-                  saveFile={saveFile}
-                  useQueryFiles={useQueryFiles}
-                  addValueToMessage={addValueToMessage}
                 />
 
-                {index === messages.length - 1 && (isBotResponding ) && (
+                {index === messages.length - 1 && (thread?.isFlowRunning ) && (
                   messageHasSomeResponse? 
                     <div className="p-3 min-h-3">
                       <div className="flex space-x-2 p-1">

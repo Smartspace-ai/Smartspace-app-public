@@ -6,5 +6,61 @@
   "projectType": "application",
   "tags": [],
   "// targets": "to see all targets run: nx show project smartspace --web",
-  "targets": {}
+  "targets": {
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "smartspace:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "smartspace:build:development",
+          "hmr": true
+        },
+        "production": {
+          "buildTarget": "smartspace:build:production",
+          "hmr": false
+        }
+      }
+    },
+    "build": {
+      "executor": "@nx/vite:build",
+      "defaultConfiguration": "production",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/smartspace"
+      },
+      "configurations": {
+        "development": {
+          "sourcemap": true
+        },
+        "production": {
+          "sourcemap": false
+        }
+      }
+    },
+    "preview": {
+      "executor": "@nx/vite:preview-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "smartspace:build"
+      }
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/smartspace"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["src/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  }
 }

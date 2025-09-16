@@ -1,9 +1,9 @@
+import { Notification, NotificationType } from '@/domains/notifications/schemas';
 import {
   useNotificationMutations,
   useNotificationsQuery,
 } from '@/domains/notifications/useNotifications';
 import { cn } from '@/lib/utils';
-import { Notification, NotificationType } from '@/shared/models/notification';
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/shadcn/avatar';
 import { Button } from '@/shared/ui/shadcn/button';
 import { ScrollArea } from '@/shared/ui/shadcn/scroll-area';

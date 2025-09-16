@@ -1,11 +1,11 @@
-import webApi from '@/domains/auth/axios-setup';
+import { api } from '@/platform/api/apiClient';
 import { Comment, CommentList, CommentSchema, commentSchemaList, MentionUser } from "./schemas";
 
 // Fetch all comments for a given thread
 export async function fetchComments(
   threadId: string
 ): Promise<CommentList> {
-    const response = await webApi.get(`/messageThreads/${threadId}/comments`);
+    const response = await api.get(`/messageThreads/${threadId}/comments`);
     const parsed = commentSchemaList.parse(response.data.data);
 
     // Sort comments in ascending order (oldest first)
@@ -22,7 +22,7 @@ export async function addComment(
   content: string,
   mentionedUsers: MentionUser[] = []
 ): Promise<Comment> {
-    const response = await webApi.post(`/messageThreads/${threadId}/comments`, {
+    const response = await api.post(`/messageThreads/${threadId}/comments`, {
       content,
       mentionedUsers: mentionedUsers.map((user) => user.id),
     });

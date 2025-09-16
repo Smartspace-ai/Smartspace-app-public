@@ -17,8 +17,8 @@ export const MessageThreadSchema = z.object({
 });
 
 export const ThreadsResponseSchema = z.object({
-  data: z.array(MessageThreadSchema),
-  total: z.number().int().nonnegative(),
+  threads: z.array(MessageThreadSchema),
+  totalThreads: z.number().int().nonnegative(),
 });
 
 export type ThreadsResponse = z.infer<typeof ThreadsResponseSchema>;

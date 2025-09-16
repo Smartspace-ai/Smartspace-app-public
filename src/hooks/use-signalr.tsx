@@ -1,6 +1,7 @@
 import { useTeams } from '@/contexts/teams-context';
-import { useActiveUser } from '@/hooks/use-active-user';
-import { normalizeNotificationType, NotificationType } from '@/models/notification';
+import { normalizeNotificationType, NotificationType } from '@/domains/notifications/schemas';
+import { useActiveUser } from '@/domains/users/use-active-user';
+
 import { useAuth } from '@/platform/auth/session';
 import { useIsAuthenticated } from '@azure/msal-react';
 import {
