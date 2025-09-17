@@ -4,15 +4,9 @@ import { Autocomplete, TextField } from '@mui/material';
 import { Loader2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { llmModelIcons } from '../../../assets/providers';
-<<<<<<<< HEAD:src/ui/messages/json_forms/model-id-renderer.tsx
 import { useModels } from '../../../domains/models/queries';
 import { Model } from '../../../domains/models/schemas';
 import { Dialog, DialogContent, DialogTrigger } from '../../../shared/ui/shadcn/dialog';
-========
-import { Dialog, DialogContent, DialogTrigger } from '../../../components/ui/dialog';
-import { useModels } from '../../../hooks/use-models';
-import { Model } from '../../../models/model';
->>>>>>>> develop_v2:src/ui/chat-variables/renders/model-id-renderer.tsx
 
 interface ModelIdRendererProps {
   data: any;

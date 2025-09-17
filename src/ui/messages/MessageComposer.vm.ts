@@ -10,7 +10,6 @@ import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 import { useSidebar } from '@/shared/ui/shadcn/sidebar';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ChatVariablesFormRef } from './json_forms/chat-variables-form';
 
 /** Public shape exported to the UI component */
 export type MessageComposerVm = ReturnType<typeof useMessageComposerVm>;
@@ -25,11 +24,11 @@ export function useMessageComposerVm() {
   const [isDragging, setIsDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpand, setShowExpand] = useState(false);
+  const ChatVariablesForm
 
   // Message + attachments state (owned by VM)
   const [newMessage, setNewMessage] = useState('');
   const [imagesForMessage, setImagesForMessage] = useState<FileInfo[]>([]);
-  const variablesFormRef = useRef<ChatVariablesFormRef>(null);
 
   // Local selection of raw File objects (client-only)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
