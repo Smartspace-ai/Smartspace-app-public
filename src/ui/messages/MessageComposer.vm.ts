@@ -11,6 +11,7 @@ import { useSidebar } from '@/shared/ui/shadcn/sidebar';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+
 /** Public shape exported to the UI component */
 export type MessageComposerVm = ReturnType<typeof useMessageComposerVm>;
 
@@ -24,7 +25,6 @@ export function useMessageComposerVm() {
   const [isDragging, setIsDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpand, setShowExpand] = useState(false);
-  const ChatVariablesForm
 
   // Message + attachments state (owned by VM)
   const [newMessage, setNewMessage] = useState('');
@@ -104,8 +104,7 @@ export function useMessageComposerVm() {
     const contentList = newMessage.trim()
       ? [{ text: newMessage.trim(), image: undefined }]
       : undefined;
-    const variables = variablesFormRef.current?.getCurrentVariables();
-    sendMessage.mutate({ workspaceId, threadId, contentList, files: imagesForMessage, variables });
+    sendMessage.mutate({ workspaceId, threadId, contentList, files: imagesForMessage, variables: ChatVariablesForm.getCurrentVariables() });
     setNewMessage('');
     setImagesForMessage([]);
   };
