@@ -306,20 +306,7 @@ export function useWorkspaceMessages(
     variables?: Record<string, unknown>
   ) => {
     if (!threadId) {
-      // Ensure thread list is ready before deciding what to do
-      if (threadsLoading) {
-        toast.message('Loading threads. Please wait...');
-        return;
-      }
-      if (threads && (threads.length ?? 0) > 0 && workspaceId) {
-        // Navigate to the first existing thread instead of a random id
-        navigate({
-          to: '/workspace/$workspaceId/thread/$threadId',
-          params: { workspaceId, threadId: threads[0]?.id },
-        });
-        return;
-      }
-      // No threads available yet: ask user to create/select a thread
+      // Thread selection is now handled by the chat page
       toast.error('Please create or select a thread first.');
       return;
     }
