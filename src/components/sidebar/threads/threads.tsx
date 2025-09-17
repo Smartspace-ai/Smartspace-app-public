@@ -46,6 +46,15 @@ import {
 
 
 
+
+
+
+
+
+
+
+
+
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -81,7 +90,6 @@ import { CircleInitials } from '@/components/circle-initials';
 // import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
-import { renameThread } from '../../../apis/message-threads';
 import { MessageThread } from '../../../models/message-thread';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
@@ -268,7 +276,6 @@ function ThreadItem({
   handleDeleteThread,
 }: ThreadItemProps) {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const [newThreadName, setNewThreadName] = useState(thread.name);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { setFavoriteMutation } = useThreadSetFavorite(thread.workSpaceId, thread.id)
@@ -283,20 +290,7 @@ function ThreadItem({
     onThreadClick(thread);
   };
 
-  const handleRenameSubmit = async () => {
-    if (newThreadName.trim()) {
-      try {
-        onMenuOpenChange(null);
-        await renameThread(thread, newThreadName);
-        updateThreadMetadata(thread.id, { name: newThreadName });
-        setIsRenameModalOpen(false);
-        toast.success('Thread renamed successfully');
-      } catch (error) {
-        console.error('Error renaming thread:', error);
-        toast.error('Failed to rename thread. Please try again.');
-      }
-    }
-  };
+ 
 
   const handleDeleteThreadItem = async () => {
     try {
@@ -369,16 +363,14 @@ function ThreadItem({
         isMenuOpen={openMenuId === thread.id}
         onMenuOpenChange={(open) => onMenuOpenChange(open ? thread.id : null)}
         onFavorite={() => setFavoriteMutation.mutate({ favorite: !thread.favorited })}
-        onRename={() => setIsRenameModalOpen(true)}
-        onDelete={() => setIsDeleteDialogOpen(true)}
+        onRename={() => {setIsRenameModalOpen(true); onMenuOpenChange(null)}}
+        onDelete={() => {setIsDeleteDialogOpen(true); onMenuOpenChange(null)}}
       />
 
       <ThreadRenameModal
         isOpen={isRenameModalOpen}
         onClose={() => setIsRenameModalOpen(false)}
-        threadName={newThreadName}
-        setThreadName={setNewThreadName}
-        onSubmit={handleRenameSubmit}
+        thread={thread}
       />
 
       <AlertDialog

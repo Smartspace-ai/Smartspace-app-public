@@ -2,6 +2,7 @@ import {
   createThread,
   deleteThread,
   fetchThreads,
+  renameThread,
   setFavorite
 } from '@/apis/message-threads';
 
@@ -220,5 +221,45 @@ export function useThreadSetFavorite(workSpaceId?: string, threadId?: string) {
 
   return {
     setFavoriteMutation
+  };
+}
+
+export function useRenameThread(workSpaceId?: string, threadId?: string) {
+  const queryClient = useQueryClient();
+  
+  // Rename a thread
+  const renameThreadMutation = useMutation({
+    mutationFn: ({
+      thread,
+      name
+    }: {
+      thread: MessageThread;
+      name: string;
+    }) => {
+      return renameThread(thread, name);
+    },
+    onSuccess: (updatedThread) => {
+      queryClient.invalidateQueries({ queryKey: ['threads', workSpaceId] });
+      queryClient.setQueryData(['threads', workSpaceId], (oldThreads: {pages: {threads: MessageThread[]}[]}) => {
+        return {
+          ...oldThreads,
+          pages: oldThreads.pages.map((page) => ({
+            ...page,
+            threads: page.threads.map((thread) => 
+              thread.id === updatedThread.id ? updatedThread : thread
+            )
+          }))
+        };
+      });
+      toast.success('Thread renamed successfully');
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error('Failed to rename thread');
+    },
+  });
+
+  return {
+    renameThreadMutation
   };
 }
