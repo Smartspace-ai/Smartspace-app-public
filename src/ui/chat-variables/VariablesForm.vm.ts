@@ -93,12 +93,15 @@ export function useChatVariablesFormVm({ workspace, threadId }: VmParams) {
   // Local form state + snapshot for diffs
   const [formData, setFormData] = React.useState<Record<string, any>>({});
   const [originalData, setOriginalData] = React.useState<Record<string, any>>({});
+  const [isSaving, setIsSaving] = React.useState(false);
+  const previousFormDataRef = React.useRef<Record<string, any>>({});
 
   React.useEffect(() => {
     if (!isLoading) {
       // Always update form data when initialData changes (e.g., when threadVars loads)
       setFormData(initialData);
       setOriginalData(initialData);
+      previousFormDataRef.current = initialData;
     }
   }, [isLoading, initialData]); // eslint-disable-line
 
@@ -119,16 +122,52 @@ export function useChatVariablesFormVm({ workspace, threadId }: VmParams) {
   );
 
   const save = React.useCallback(async () => {
-    const changed = changedVariables();
-    for (const [name, value] of Object.entries(changed)) {
-      const access = workspace.variables?.[name]?.access;
-      if (access === 'Write') {
-        // value is already rewrapped by getChangedVariables
-        await updateVariable.mutateAsync({ threadId, variableName: name, value });
+    if (isSaving) return; // Prevent concurrent saves
+    
+    setIsSaving(true);
+    try {
+      const changed = changedVariables();
+      for (const [name, value] of Object.entries(changed)) {
+        const access = workspace.variables?.[name]?.access;
+        if (access === 'Write') {
+          // value is already rewrapped by getChangedVariables
+          await updateVariable.mutateAsync({ threadId, variableName: name, value });
+        }
       }
+      setOriginalData({ ...formData });
+    } finally {
+      setIsSaving(false);
     }
-    setOriginalData({ ...formData });
-  }, [changedVariables, workspace.variables, updateVariable, threadId, formData]);
+  }, [changedVariables, workspace.variables, updateVariable, threadId, formData, isSaving]);
+
+  // Custom setFormData that triggers auto-save
+  const setFormDataWithAutoSave = React.useCallback((newData: Record<string, any>) => {
+    setFormData(newData);
+    
+    // Auto-save with debouncing
+    if (!isLoading && !isSaving && Object.keys(newData).length > 0) {
+      setTimeout(async () => {
+        const hasChangesNow = hasAnyChanges(workspace, originalData, newData);
+        if (hasChangesNow) {
+          setIsSaving(true);
+          try {
+            const changed = getChangedVariables(workspace, originalData, newData);
+            for (const [name, value] of Object.entries(changed)) {
+              const access = workspace.variables?.[name]?.access;
+              if (access === 'Write') {
+                await updateVariable.mutateAsync({ threadId, variableName: name, value });
+              }
+            }
+            setOriginalData({ ...newData });
+          } catch (error) {
+            console.error('Auto-save failed:', error);
+          } finally {
+            setIsSaving(false);
+          }
+        }
+      }, 500);
+    }
+  }, [isLoading, isSaving, workspace, originalData, updateVariable, threadId]);
 
   // If you ever need to rewrap everything (not just changes), use currentVariables()
   const rewrapAllForSubmit = React.useCallback(() => {
@@ -144,7 +183,7 @@ export function useChatVariablesFormVm({ workspace, threadId }: VmParams) {
     schema,
     uiSchema,
     formData,
-    setFormData,
+    setFormData: setFormDataWithAutoSave,
     isLoading,
 
     // commands

@@ -111,20 +111,4 @@ export async function updateThread(
   }
 }
 
-export async function fetchThreadVariables(threadId: string): Promise<Record<string, any>> {
-  const response = await api.get(`/flowruns/${threadId}/variables`);
-  return response.data as Record<string, any>;
-}
 
-
-// Updates a variable
-export async function updateVariable(
-  flowRunId: string,
-  variableName: string,
-  value: any
-): Promise<void> {
-  await api.put(`/flowruns/${flowRunId}/variables/${variableName}`, 
-    value,
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-}
