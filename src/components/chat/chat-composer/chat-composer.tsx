@@ -1,18 +1,17 @@
 'use client';
-
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useFileMutations } from '@/hooks/use-files';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { Workspace } from '@/models/workspace';
+import { ChatVariablesForm } from "@/ui/chat-variables";
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowBigUp, Check, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Maximize2, Minimize2, Paperclip, Presentation, X } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FileInfo } from '../../../models/file';
-import { ChatVariablesForm, ChatVariablesFormRef } from '../chat-variables-form/chat-variables-form';
 
 // Utility function to get file type icon
 const getFileIcon = (fileName: string, fileType: string) => {
@@ -75,7 +74,6 @@ type ChatComposerProps = {
   onFilesSelected?: (files: File[]) => void;
   setImagesForMessage: (files: FileInfo[]) => void;
   imagesForMessage: FileInfo[];
-  variablesFormRef?: React.RefObject<ChatVariablesFormRef>;
 };
 
 export default function ChatComposer({
@@ -96,7 +94,6 @@ export default function ChatComposer({
   supportsFiles,
   setImagesForMessage,
   imagesForMessage,
-  variablesFormRef,
 }: ChatComposerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropzoneRef = useRef<HTMLDivElement>(null);
@@ -246,7 +243,7 @@ export default function ChatComposer({
 
       {workspace && threadId && (
         <div className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${!isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''} transition-[max-width] duration-300 ease-in-out`}>
-          <ChatVariablesForm workspace={workspace} threadId={threadId} ref={variablesFormRef} />
+          <ChatVariablesForm workspace={workspace} threadId={threadId} />
         </div>
       )}
       {Object.keys(workspace?.variables ?? {}).length > 0 && <hr className="my-2" />}

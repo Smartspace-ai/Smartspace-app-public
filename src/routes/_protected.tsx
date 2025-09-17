@@ -1,15 +1,19 @@
-import { msalInstance } from '@/platform/auth/msalClient';
-import { isInTeams } from '@/platform/auth/msalConfig';
+import { createAuthAdapter } from '@/platform/auth';
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
-
-function isWebAuthed() {
-  return !!(msalInstance.getActiveAccount() || msalInstance.getAllAccounts()[0]);
-}
 
 export const Route = createFileRoute('/_protected')({
   beforeLoad: async ({ location }) => {
-    const authed = isInTeams() ? true /* optionally check Teams token */ : isWebAuthed();
-    if (!authed) {
+    try {
+      const auth = createAuthAdapter();
+      
+      // Give MSAL a moment to process any redirect tokens
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const session = await auth.getSession();
+      if (!session) {
+        throw redirect({ to: '/login', search: { redirect: location.href } });
+      }
+    } catch {
       throw redirect({ to: '/login', search: { redirect: location.href } });
     }
   },
