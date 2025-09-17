@@ -1,4 +1,4 @@
-import { isInTeams } from '@/platform/auth/msalConfig'; // reuse your helper
+import { isInTeams } from '@/platform/auth/msalConfig';
 import { createMsalWebAdapter } from './providers/msalWeb';
 import { createTeamsNaaAdapter } from './providers/teamsNaa';
 import type { AuthAdapter } from './types';

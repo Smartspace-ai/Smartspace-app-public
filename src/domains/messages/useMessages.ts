@@ -311,11 +311,11 @@ export function useWorkspaceMessages(
         toast.message('Loading threads. Please wait...');
         return;
       }
-      if (threads && threads.length > 0 && workspaceId) {
+      if (threads && (threads.length ?? 0) > 0 && workspaceId) {
         // Navigate to the first existing thread instead of a random id
         navigate({
           to: '/workspace/$workspaceId/thread/$threadId',
-          params: { workspaceId, threadId: threads[0].id },
+          params: { workspaceId, threadId: threads[0]?.id },
         });
         return;
       }

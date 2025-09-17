@@ -24,10 +24,10 @@ export default function ChatBotPage() {
   // If no workspaceId in URL, select the first workspace after list loads
   useEffect(() => {
     if (workspaceId) return
-    if (!workspacesLoading && workspaces && workspaces.length > 0) {
+    if (!workspacesLoading && workspaces && (workspaces.length ?? 0) > 0) {
       navigate({
         to: '/workspace/$workspaceId',
-        params: { workspaceId: workspaces[0].id },
+        params: { workspaceId: workspaces[0]?.id },
         replace: true,
       })
     }
@@ -38,11 +38,11 @@ export default function ChatBotPage() {
   useEffect(() => {
     if (hasAutoNavigatedRef.current) return
     // Only act after the threads query has completed at least once
-    if (!threadId && threadsFetched && !threadsLoading && threads && threads.length > 0 && workspaceId) {
+    if (!threadId && threadsFetched && !threadsLoading && threads && (threads.length ?? 0) > 0 && workspaceId) {
       hasAutoNavigatedRef.current = true
       navigate({
         to: '/workspace/$workspaceId/thread/$threadId',
-        params: { workspaceId, threadId: threads[0].id },
+        params: { workspaceId, threadId: threads[0]?.id },
         replace: true,
       })
     }
