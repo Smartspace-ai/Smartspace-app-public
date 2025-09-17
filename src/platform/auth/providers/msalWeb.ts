@@ -29,7 +29,12 @@ export function createMsalWebAdapter(): AuthAdapter {
       const a = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
       return a ? { accountId: a.homeAccountId, displayName: a.name ?? undefined } : null;
     },
-    async signIn() { await msalInstance.loginRedirect(interactiveLoginRequest); },
+    async signIn() { 
+      // Store the intended redirect URL before redirecting
+      const redirectUrl = new URLSearchParams(window.location.search).get('redirect') || '/workspace';
+      sessionStorage.setItem('msalRedirectUrl', redirectUrl);
+      await msalInstance.loginRedirect(interactiveLoginRequest); 
+    },
     async signOut() { await msalInstance.logoutPopup(); },
   };
 }

@@ -10,10 +10,10 @@ import { MessageContent } from '@/domains/messages/schemas';
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { Stack } from '@mui/material';
+import { ChatVariablesFormRef } from '../../ui/chat-variables/renders/chat-variables-form';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
-import { ChatVariablesFormRef } from './chat-variables-form/chat-variables-form';
 
 export function Chat({threadId, isVisible}: { threadId?: string, isVisible: boolean }) {
   const { data: activeWorkspace } = useActiveWorkspace();

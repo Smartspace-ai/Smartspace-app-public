@@ -85,7 +85,7 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
           borderRadius: isMobile ? '9999px' : '12px',
           border: 'none',
           cursor: isDisabled ? 'not-allowed' : 'pointer',
-          backgroundColor: isChecked ? '#6366f1' : '#e5e7eb',
+          backgroundColor: isChecked ? 'hsl(var(--primary))' : '#e5e7eb',
           transition: 'background-color 0.2s ease-in-out',
           outline: 'none',
           opacity: isDisabled ? 0.6 : 1,
@@ -97,7 +97,7 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
         }}
         onFocus={(e) => {
           if (!hasError) {
-            e.target.style.boxShadow = '0 0 0 2px #6366f1';
+            e.target.style.boxShadow = '0 0 0 2px hsl(var(--primary))';
           }
         }}
         onBlur={(e) => {

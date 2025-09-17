@@ -1,7 +1,6 @@
 // src/app/app.tsx
-import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { TeamsProvider, useTeams } from '@/contexts/teams-context';
@@ -39,18 +38,7 @@ function InnerProviders({
   children: React.ReactNode;
   queryClient: QueryClient;
 }) {
-  const { instance } = useMsal();
   const { isInTeams, isTeamsInitialized } = useTeams();
-  useIsAuthenticated(); // keep msal-react state in sync
-
-  // Ensure an MSAL active account is set
-  useEffect(() => {
-    const current = instance.getActiveAccount();
-    const all = instance.getAllAccounts();
-    if (!current && all.length > 0) {
-      instance.setActiveAccount(all[0]);
-    }
-  }, [instance]);
 
   // If running inside Teams, wait for Teams init before rendering
   if (isInTeams && !isTeamsInitialized) {
