@@ -10,15 +10,15 @@ import { Button } from '@/shared/ui/shadcn/button';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parse-date-time';
 import { cn } from '@/shared/utils/utils';
+import { renderers } from '@/ui/chat-variables/renders';
 import { JsonSchema } from '@jsonforms/core';
-import { materialCells, materialRenderers } from '@jsonforms/material-renderers';
+import { materialCells } from '@jsonforms/material-renderers';
 import { JsonForms } from '@jsonforms/react';
 import { FC, useEffect, useState } from 'react';
 import ChatMessageCopyButton from './MessageCopyButton';
 import ChatMessageFileDownload from './MessageFileDownload';
 import { ChatMessageImage } from './MessageImage';
 import { ChatMessageSources } from './MessageSources';
-import { TextInputControl, textInputTester } from './json_forms/text-renderer';
 
 export interface MessageBubbleProps {
   createdBy: string;
@@ -108,7 +108,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
             <JsonForms
               schema={userOutput.schema as JsonSchema}
               data={responseFormData}
-              renderers={[{ tester: textInputTester, renderer: TextInputControl }, ...materialRenderers]}
+              renderers={renderers}
               cells={materialCells}
               readonly={userInput !== undefined}
               onChange={({ data, errors }) => { setResponseFormData(data); setResponseFormValid(!errors?.length); }}

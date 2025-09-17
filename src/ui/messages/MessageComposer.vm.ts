@@ -104,7 +104,7 @@ export function useMessageComposerVm() {
     const contentList = newMessage.trim()
       ? [{ text: newMessage.trim(), image: undefined }]
       : undefined;
-    sendMessage.mutate({ workspaceId, threadId, contentList, files: imagesForMessage, variables: ChatVariablesForm.getCurrentVariables() });
+    sendMessage.mutate({ workspaceId, threadId, contentList, files: imagesForMessage});
     setNewMessage('');
     setImagesForMessage([]);
   };
@@ -242,9 +242,6 @@ export function useMessageComposerVm() {
     setImagesForMessage,
 
     // derived
-    sendDisabled,
-
-    // variables form
-    variablesFormRef,
+    sendDisabled
   };
 }

@@ -36,10 +36,7 @@ export default function MessageComposer() {
     sendDisabled,
 
     // helpers
-    adjustTextareaHeight,
-
-    // variables form
-    variablesFormRef,
+    adjustTextareaHeight
   } = vm;
 
   return (
@@ -50,7 +47,7 @@ export default function MessageComposer() {
             !isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''
           } transition-[max-width] duration-300 ease-in-out`}
         >
-          <ChatVariablesForm workspace={workspace} threadId={threadId} ref={variablesFormRef} />
+          <ChatVariablesForm workspace={workspace} threadId={threadId}/>
         </div>
       )}
       {Object.keys(workspace?.variables ?? {}).length > 0 && <hr className="my-2" />}
