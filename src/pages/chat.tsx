@@ -1,7 +1,7 @@
 // src/features/workspaces/Chat.tsx
 import { Stack } from '@mui/material';
 import { useMatch, useNavigate } from '@tanstack/react-router';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 
 import Chat from '@/components/chat/chat';
@@ -33,20 +33,26 @@ export default function ChatBotPage() {
     }
   }, [workspaceId, workspacesLoading, workspaces, navigate])
 
-  // After threads load, auto-select the first thread if none is selected
-  const hasAutoNavigatedRef = useRef(false)
+  // Auto-select the first thread if none is selected and threads are loaded
   useEffect(() => {
-    if (hasAutoNavigatedRef.current) return
-    // Only act after the threads query has completed at least once
-    if (!threadId && threadsFetched && !threadsLoading && threads && (threads.length ?? 0) > 0 && workspaceId) {
-      hasAutoNavigatedRef.current = true
+    console.log('ChatBotPage thread selection:', {
+      threadId,
+      workspaceId,
+      threadsLength: threads?.length ?? 0,
+      threadsFetched,
+      threadsLoading,
+      shouldNavigate: !threadId && workspaceId && threadsFetched && !threadsLoading && threads && threads.length > 0
+    })
+    
+    if (!threadId && workspaceId && threadsFetched && !threadsLoading && threads && threads.length > 0) {
+      console.log('Navigating to first thread:', threads[0].id)
       navigate({
         to: '/workspace/$workspaceId/thread/$threadId',
-        params: { workspaceId, threadId: threads[0]?.id },
+        params: { workspaceId, threadId: threads[0].id },
         replace: true,
       })
     }
-  }, [threadId, threadsFetched, threadsLoading, threads, workspaceId, navigate])
+  }, [threadId, workspaceId, threads, threadsFetched, threadsLoading, navigate])
   // No route redirects or early returns; child components handle loading/empty states
 
   // workspace page
