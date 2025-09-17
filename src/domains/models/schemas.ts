@@ -1,10 +1,22 @@
 import { z } from 'zod';
 
 export const ModelSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().optional(),
-  displayName: z.string().optional(),
-  modelDeploymentProviderType: z.string().optional(),
+  id: z.string(),
+  name: z.string(),
+  displayName: z.string(),
+  deploymentStatus: z.string(),
+  modelDeploymentProviderType: z.string(),
+  createdByUserId: z.string(),
+  createdAt: z.string(),
+  properties: z.array(z.object({
+    name: z.string(),
+    type: z.string(),
+    defaultValue: z.number(),
+    minValue: z.number(),
+    maxValue: z.number(),
+    step: z.number(),
+  })),
+  virtualMachineUrl: z.string().nullable(),
 });
 
 export const ModelPropertiesSchema = z

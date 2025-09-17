@@ -14,7 +14,10 @@ export async function fetchModels({
     params: { search, take, skip },
   });
 
-  return ModelsEnvelopeSchema.parse(response.data.data);
+  console.log('Models API response:', response.data);
+  const result = ModelsEnvelopeSchema.parse(response.data);
+  console.log('Parsed models result:', result);
+  return result;
 }
 
 export async function fetchModel(id: string): Promise<Model> {

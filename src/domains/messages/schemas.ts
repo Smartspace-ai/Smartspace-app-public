@@ -43,7 +43,7 @@ export const MessageSchema = z.object({
   files: z.array(FileInfoSchema).nullish(),
   createdAt: z.union([z.date(), z.string()]),
   createdBy: z.string().nullish(),
-  hasComments: z.boolean().nullish().default(false),
+  hasComments: z.boolean().default(false),
   response: z.any().nullish(),
   comments: z.array(z.any()).nullish(),
   createdByUserId: z.string().nullish(),
@@ -63,7 +63,7 @@ export const MessageSchema = z.object({
       })
     )
     .nullish(),
-  optimistic: z.boolean().nullish().default(false),
+  optimistic: z.boolean().default(false),
 });
 
 export const MessageItemContentSchema = z.object({

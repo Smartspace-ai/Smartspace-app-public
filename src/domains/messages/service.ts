@@ -8,7 +8,7 @@ import { Message, MessageContentItem, MessageSchema, messageSchemaList } from '.
 // Fetch all messages in a given message thread
 export async function fetchMessages(threadId: string): Promise<Message[]> {
   const response = await api.get(`messagethreads/${threadId}/messages`);
-  return messageSchemaList.parse(response.data);
+  return messageSchemaList.parse(response.data.data);
 }
 
 // Send structured input (e.g. form values) to a specific message
