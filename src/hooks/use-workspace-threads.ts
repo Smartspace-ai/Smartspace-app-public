@@ -8,6 +8,7 @@ import {
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import { MessageThread } from '../models/message-thread';
 import { useActiveWorkspace } from './use-workspaces';
 
@@ -91,6 +92,17 @@ export function useWorkspaceThreads(take = 20) {
     mutationFn: (deletedThreadId: string) => deleteThread(deletedThreadId),
     onSuccess: (_, deletedThreadId) => {
       refetch();
+      toast.success('Thread deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['threads', activeWorkspace?.id] });
+      queryClient.setQueryData(['threads', activeWorkspace?.id], (oldThreads: {pages: {threads: MessageThread[]}[]}) => {
+        return {
+          ...oldThreads,
+          pages: oldThreads.pages.map((page) => ({
+            ...page,
+            threads: page.threads.filter((thread) => thread.id !== deletedThreadId)
+          }))
+        };
+      });
       if (threadId === deletedThreadId) {
         navigate({
           to: '/workspace/$workspaceId',
@@ -99,6 +111,10 @@ export function useWorkspaceThreads(take = 20) {
           }
         });
       }
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error('Failed to delete thread');
     },
   });
 
@@ -185,9 +201,20 @@ export function useThreadSetFavorite(workSpaceId?: string, threadId?: string) {
       return setFavorite(threadId, favorite);
     },
     onSuccess: () => {
-      return queryClient.refetchQueries({
-        queryKey: ['threads', workSpaceId],
+      queryClient.invalidateQueries({ queryKey: ['threads', workSpaceId] });
+      queryClient.setQueryData(['threads', workSpaceId], (oldThreads: {pages: {threads: MessageThread[]}[]}) => {
+        return {
+          ...oldThreads,
+          pages: oldThreads.pages.map((page) => ({
+            ...page,
+            threads: page.threads.map((thread) => thread.id === threadId ? { ...thread, favorited: !thread.favorited} : thread)
+          }))
+        };
       });
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error('Failed to set favorite');
     },
   });
 
