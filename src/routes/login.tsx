@@ -12,8 +12,20 @@ export const Route = createFileRoute('/login')({
       
       const session = await auth.getSession()
       if (session) {
+        // Check for stored redirect URL first, then URL params, then default
+        const storedRedirect = auth.getStoredRedirectUrl()
         const params = new URLSearchParams(location.search ?? '')
-        const target = params.get('redirect') || '/workspace'
+        const target = storedRedirect || params.get('redirect') || '/workspace'
+        
+        // Clear stored redirect URL after use
+        if (storedRedirect) {
+          try {
+            sessionStorage.removeItem('msalRedirectUrl')
+          } catch {
+            // Ignore storage errors
+          }
+        }
+        
         throw redirect({ to: target })
       }
     } catch {

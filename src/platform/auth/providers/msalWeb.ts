@@ -26,6 +26,7 @@ export function createMsalWebAdapter(): AuthAdapter {
       }
     },
     async getSession() {
+      await ensureActive();
       const a = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
       return a ? { accountId: a.homeAccountId, displayName: a.name ?? undefined } : null;
     },
@@ -36,5 +37,12 @@ export function createMsalWebAdapter(): AuthAdapter {
       await msalInstance.loginRedirect(interactiveLoginRequest); 
     },
     async signOut() { await msalInstance.logoutPopup(); },
+    getStoredRedirectUrl() {
+      try {
+        return sessionStorage.getItem('msalRedirectUrl');
+      } catch {
+        return null;
+      }
+    },
   };
 }
