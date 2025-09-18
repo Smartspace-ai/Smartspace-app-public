@@ -224,7 +224,7 @@ export function useThreadSetFavorite(workSpaceId?: string, threadId?: string) {
   };
 }
 
-export function useRenameThread(workSpaceId?: string, threadId?: string) {
+export function useRenameThread(workSpaceId?: string) {
   const queryClient = useQueryClient();
   
   // Rename a thread

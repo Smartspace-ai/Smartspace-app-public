@@ -27,7 +27,7 @@ export function ThreadRenameModal({
 }: ThreadRenameModalProps) {
   const [threadName, setThreadName] = useState(thread.name)
 
-  const {renameThreadMutation} = useRenameThread( thread.workSpaceId, thread.id)
+  const {renameThreadMutation} = useRenameThread( thread.workSpaceId)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,7 +68,7 @@ export function ThreadRenameModal({
               className="text-xs w-24"
               type="submit"
               variant="default"
-              disabled={!threadName ||!threadName.trim()}
+              disabled={renameThreadMutation.isPending||!threadName ||!threadName.trim()}
             >
               {renameThreadMutation.isPending ? "Saving..." : 'Save Changes'}
             </Button>

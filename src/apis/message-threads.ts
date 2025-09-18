@@ -55,18 +55,15 @@ export async function renameThread(
   thread: MessageThread,
   name: string
 ): Promise<MessageThread> {
-  try {
+
     const response = await api.put(
       `/messagethreads/${thread.id}/name`,
-      name,
+      `"${name}"`,
       { headers: { 'Content-Type': 'application/json' } }
     );
 
     return new MessageThread(response.data);
-  } catch (error) {
-    console.error('Error renaming thread:', error);
-    throw new Error('Error renaming thread');
-  }
+
 }
 
 // Delete a message thread by ID
