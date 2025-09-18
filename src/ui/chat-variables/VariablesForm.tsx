@@ -6,12 +6,14 @@ import { forwardRef, useImperativeHandle } from 'react';
 import { ChatVariablesFormProps, ChatVariablesFormRef } from './types';
 import { useChatVariablesFormVm } from './VariablesForm.vm';
 
+import './VariablesForm.css'; // 👈 import the CSS overrides
+
 export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesFormProps>(
   ({ workspace, threadId }, ref) => {
     const vm = useChatVariablesFormVm({ workspace, threadId });
 
     useImperativeHandle(ref, () => ({
-      hasChanges: () => false, // minimal version: not tracking deltas here
+      hasChanges: () => false,
       getChangedVariables: () => ({}),
       getCurrentVariables: () => vm.data ?? {},
       saveChangedVariables: async () => {
@@ -21,10 +23,8 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
       },
     }));
 
-    // No variables → no form
     if (!workspace.variables || Object.keys(workspace.variables).length === 0) return null;
 
-    // Gate rendering until VM hydrated (threadVars loaded AND data set)
     if (!vm.isHydrated) {
       return (
         <div className="flex justify-center items-center w-full h-8">
@@ -33,14 +33,8 @@ export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesF
       );
     }
 
-    // Safe to log now — vm.data is hydrated
-    // console.log('vm.schema', vm.schema);
-    // console.log('vm.uiSchema', vm.uiSchema);
-    // console.log('vm.data', vm.data);
-    // console.log('vm.renderers', vm.renderers, vm.cells, vm.ajv, vm.config);
-
     return (
-      <div className="w-full">
+      <div className="w-full jsonforms-compact">
         <JsonForms
           schema={vm.schema}
           uischema={vm.uiSchema}
