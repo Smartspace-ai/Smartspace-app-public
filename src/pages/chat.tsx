@@ -36,31 +36,18 @@ export default function ChatBotPage() {
   // Handle thread selection and auto-generation in one place to prevent flicker
   const hasNavigatedRef = useRef(false)
   useEffect(() => {
-    console.log('ChatBotPage thread selection:', {
-      threadId,
-      workspaceId,
-      threadsLength: threads?.length ?? 0,
-      threadsFetched,
-      threadsLoading,
-      hasNavigated: hasNavigatedRef.current,
-      shouldNavigate: !threadId && workspaceId && threadsFetched && !threadsLoading && !hasNavigatedRef.current
-    })
     
     // Only proceed if we have a workspace and no thread selected and haven't navigated yet
     if (!threadId && workspaceId && threadsFetched && !threadsLoading && !hasNavigatedRef.current) {
       hasNavigatedRef.current = true
       
       if (threads && threads.length > 0) {
-        // Navigate to first existing thread
-        console.log('Navigating to first thread:', threads[0].id)
         navigate({
           to: '/workspace/$workspaceId/thread/$threadId',
           params: { workspaceId, threadId: threads[0].id },
           replace: true,
         })
       } else if (threads && threads.length === 0) {
-        // Auto-generate a new thread if none exist
-        console.log('Auto-generating new thread')
         const newThreadId = crypto.randomUUID();
         navigate({
           to: '/workspace/$workspaceId/thread/$threadId',
