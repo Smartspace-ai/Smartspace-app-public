@@ -69,6 +69,7 @@ export function useWorkspaceMessages(
         id: `temp-${Date.now()}`,
         values: [
           {
+            id: `temp-prompt-${Date.now()}`,
             type: MessageValueType.INPUT,
             name: 'prompt',
             value: contentList,
@@ -79,6 +80,7 @@ export function useWorkspaceMessages(
           ...(files != null
             ? [
                 {
+                  id: `temp-files-${Date.now()}`,
                   type: MessageValueType.INPUT,
                   name: 'files',
                   value: files,
@@ -91,6 +93,7 @@ export function useWorkspaceMessages(
           ...(variables && Object.keys(variables).length > 0
             ? [
                 {
+                  id: `temp-variables-${Date.now()}`,
                   type: MessageValueType.INPUT,
                   name: 'variables',
                   value: variables,

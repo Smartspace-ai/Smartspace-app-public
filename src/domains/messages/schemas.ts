@@ -36,7 +36,7 @@ export const MessageSchema = z.object({
   values: z.array(z.object({
     id: z.string(),
     name: z.string(),
-    value: z.array(z.any()),
+    value: z.union([z.string(), z.array(z.any())]), // Can be string (for Output) or array (for Input)
     type: z.nativeEnum(MessageValueType),
     channels: z.record(z.number()),
     createdAt: z.union([z.date(), z.string()]),
