@@ -5,4 +5,5 @@ export interface AuthAdapter {
   getSession(): Promise<{ accountId?: string; displayName?: string } | null>;
   signIn(): Promise<void>;
   signOut(): Promise<void>;
+  getStoredRedirectUrl(): string | null;
 }

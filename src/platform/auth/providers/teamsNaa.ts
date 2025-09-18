@@ -18,5 +18,9 @@ export function createTeamsNaaAdapter(): AuthAdapter {
     },
     async signIn() { /* Teams handles */ },
     async signOut() { /* no-op */ },
+    getStoredRedirectUrl() {
+      // Teams doesn't use redirect URLs in the same way
+      return null;
+    },
   };
 }
