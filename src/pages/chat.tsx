@@ -24,29 +24,44 @@ export default function ChatBotPage() {
   // If no workspaceId in URL, select the first workspace after list loads
   useEffect(() => {
     if (workspaceId) return
-    if (!workspacesLoading && workspaces && workspaces.length > 0) {
+    if (!workspacesLoading && workspaces && (workspaces.length ?? 0) > 0) {
       navigate({
         to: '/workspace/$workspaceId',
-        params: { workspaceId: workspaces[0].id },
+        params: { workspaceId: workspaces[0]?.id },
         replace: true,
       })
     }
   }, [workspaceId, workspacesLoading, workspaces, navigate])
 
-  // After threads load, auto-select the first thread if none is selected
-  const hasAutoNavigatedRef = useRef(false)
+  // Handle thread selection and auto-generation in one place to prevent flicker
+  const hasNavigatedRef = useRef(false)
   useEffect(() => {
-    if (hasAutoNavigatedRef.current) return
-    // Only act after the threads query has completed at least once
-    if (!threadId && threadsFetched && !threadsLoading && threads && threads.length > 0 && workspaceId) {
-      hasAutoNavigatedRef.current = true
-      navigate({
-        to: '/workspace/$workspaceId/thread/$threadId',
-        params: { workspaceId, threadId: threads[0].id },
-        replace: true,
-      })
+    
+    // Only proceed if we have a workspace and no thread selected and haven't navigated yet
+    if (!threadId && workspaceId && threadsFetched && !threadsLoading && !hasNavigatedRef.current) {
+      hasNavigatedRef.current = true
+      
+      if (threads && threads.length > 0) {
+        navigate({
+          to: '/workspace/$workspaceId/thread/$threadId',
+          params: { workspaceId, threadId: threads[0].id },
+          replace: true,
+        })
+      } else if (threads && threads.length === 0) {
+        const newThreadId = crypto.randomUUID();
+        navigate({
+          to: '/workspace/$workspaceId/thread/$threadId',
+          params: { workspaceId, threadId: newThreadId },
+          replace: true,
+        })
+      }
     }
-  }, [threadId, threadsFetched, threadsLoading, threads, workspaceId, navigate])
+    
+    // Reset navigation flag when workspace changes
+    if (hasNavigatedRef.current && !workspaceId) {
+      hasNavigatedRef.current = false
+    }
+  }, [threadId, workspaceId, threads, threadsFetched, threadsLoading, navigate])
   // No route redirects or early returns; child components handle loading/empty states
 
   // workspace page

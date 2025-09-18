@@ -1,8 +1,42 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import {
   Edit,
   Loader2 // Add Loader2 for spinner
   ,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -28,7 +62,7 @@ import {
   Trash2
 } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -56,7 +90,6 @@ import { CircleInitials } from '@/components/circle-initials';
 // import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useThreadSetFavorite, useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { Virtuoso } from 'react-virtuoso';
-import { renameThread } from '../../../apis/message-threads';
 import { MessageThread } from '../../../models/message-thread';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
 
@@ -75,6 +108,7 @@ export function Threads() {
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
   const workspaceMatch = useMatch({ from: '/_protected/workspace/$workspaceId', shouldThrow: false });
   const urlWorkspaceId = threadMatch?.params?.workspaceId ?? workspaceMatch?.params?.workspaceId;
@@ -94,14 +128,18 @@ export function Threads() {
     }
   };
 
-  const [autoCreatedThreadId, setAutoCreatedThreadId] = useState<string | null>(null);
-
   const handleNewThread = () => {
     const newThreadId = crypto.randomUUID();
 
     // might need to set isNew search param
     const targetWorkspaceId = urlWorkspaceId ?? threads?.[0]?.workSpaceId;
     if (!targetWorkspaceId) return;
+    
+    // Set the query cache to 404 for the new thread
+    queryClient.setQueryData(['workspace', targetWorkspaceId, 'thread', newThreadId], null);
+    queryClient.setQueryData(['comments', newThreadId], []);
+    queryClient.setQueryData(['thread', newThreadId, 'variables'], {});
+    
     navigate({
       to: '/workspace/$workspaceId/thread/$threadId',
       params: { workspaceId: targetWorkspaceId, threadId: newThreadId },
@@ -110,40 +148,6 @@ export function Threads() {
       setOpenMobileLeft(false);
     }
   }
-
-  useEffect(() => {
-    if (!isLoading && !threadId && threads?.length === 0) {
-      const newThreadId = crypto.randomUUID();
-      setAutoCreatedThreadId(newThreadId);
-      
-      if (urlWorkspaceId) {
-        navigate({
-          to: '/workspace/$workspaceId/thread/$threadId',
-          params: { workspaceId: urlWorkspaceId, threadId: newThreadId },
-        });
-      }
-      return;
-    }
-
-    if (threads && threads.length > 0 && (!threadId || (autoCreatedThreadId && threadId === autoCreatedThreadId))) {
-      const firstThread = threads[0];
-      const workspaceIdToUse = firstThread.workSpaceId ?? urlWorkspaceId;
-      if (workspaceIdToUse) {
-        navigate({
-          to: '/workspace/$workspaceId/thread/$threadId',
-          params: { workspaceId: workspaceIdToUse, threadId: firstThread.id },
-        });
-      }
-      return;
-    }
-  }, [
-    threads,
-    isLoading,
-    threadId,
-    autoCreatedThreadId,
-    urlWorkspaceId,
-    navigate,
-  ]);
 
   return (
     <>
@@ -159,7 +163,7 @@ export function Threads() {
         <SidebarContent className="p-0">
           {isLoading ? (
             <ThreadsLoadingSkeleton />
-          ) : threads?.length ?? 0 > 0 ? (
+          ) : (threads?.length ?? 0) > 0 ? (
             <Virtuoso
               data={threads}
               overscan={200}
@@ -272,7 +276,6 @@ function ThreadItem({
   handleDeleteThread,
 }: ThreadItemProps) {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const [newThreadName, setNewThreadName] = useState(thread.name);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { setFavoriteMutation } = useThreadSetFavorite(thread.workSpaceId, thread.id)
@@ -287,20 +290,7 @@ function ThreadItem({
     onThreadClick(thread);
   };
 
-  const handleRenameSubmit = async () => {
-    if (newThreadName.trim()) {
-      try {
-        onMenuOpenChange(null);
-        await renameThread(thread, newThreadName);
-        updateThreadMetadata(thread.id, { name: newThreadName });
-        setIsRenameModalOpen(false);
-        toast.success('Thread renamed successfully');
-      } catch (error) {
-        console.error('Error renaming thread:', error);
-        toast.error('Failed to rename thread. Please try again.');
-      }
-    }
-  };
+ 
 
   const handleDeleteThreadItem = async () => {
     try {
@@ -373,16 +363,14 @@ function ThreadItem({
         isMenuOpen={openMenuId === thread.id}
         onMenuOpenChange={(open) => onMenuOpenChange(open ? thread.id : null)}
         onFavorite={() => setFavoriteMutation.mutate({ favorite: !thread.favorited })}
-        onRename={() => setIsRenameModalOpen(true)}
-        onDelete={() => setIsDeleteDialogOpen(true)}
+        onRename={() => {setIsRenameModalOpen(true); onMenuOpenChange(null)}}
+        onDelete={() => {setIsDeleteDialogOpen(true); onMenuOpenChange(null)}}
       />
 
       <ThreadRenameModal
         isOpen={isRenameModalOpen}
         onClose={() => setIsRenameModalOpen(false)}
-        threadName={newThreadName}
-        setThreadName={setNewThreadName}
-        onSubmit={handleRenameSubmit}
+        thread={thread}
       />
 
       <AlertDialog

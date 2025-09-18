@@ -32,7 +32,10 @@ declare module '@tanstack/react-router' {
   }
 }
 
-msalInstance.initialize().then(() => {
+msalInstance.initialize().then(async () => {
+  // Handle redirect promise to process authentication responses
+  await msalInstance.handleRedirectPromise();
+  
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length > 0) {
     msalInstance.setActiveAccount(accounts[0]);
