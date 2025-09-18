@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSidebar } from '@/components/ui/sidebar';
 import { Switch } from '@/components/ui/switch';
 import {
   useNotificationMutations,
@@ -19,6 +20,7 @@ export function NotificationPanel() {
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+  const { setRightOpen } = useSidebar();
 
   const workspaceMatch = useMatch({ from: '/_protected/workspace/$workspaceId', shouldThrow: false });
   const workspaceId = workspaceMatch?.params?.workspaceId ?? '';
@@ -69,10 +71,13 @@ export function NotificationPanel() {
       navigate({
         to: '/workspace/$workspaceId/thread/$threadId',
         params: {
-          workspaceId: workspaceId,
+          workspaceId: notification.workSpaceId || '',
           threadId: notification.threadId
         }
       });
+      
+      // Open the comments drawer when navigating to a thread
+      setRightOpen(true);
     }
 
     setIsOpen(false);

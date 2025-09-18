@@ -10,7 +10,6 @@ import { MessageContent } from '@/domains/messages/schemas';
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { Stack } from '@mui/material';
-import { ChatVariablesFormRef } from '../../ui/chat-variables/renders/chat-variables-form';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
@@ -32,7 +31,6 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
   const {data:thread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const variablesFormRef = useRef<ChatVariablesFormRef>(null);
   const [newMessage, setNewMessage] = useState('');
 
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
@@ -85,15 +83,6 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     if (!newMessage.trim() && uploadedFiles.length === 0 && imagesForMessage.length === 0) return;
 
     try {
-      // Get current variables from the form (if they exist)
-      let variables: Record<string, any> | undefined;
-      if (variablesFormRef.current) {
-        const currentVariables = variablesFormRef.current.getCurrentVariables();
-        // Only include variables if there are actual values
-        if (Object.keys(currentVariables).length > 0) {
-          variables = currentVariables;
-        }
-      }
 
       // Build message content
       let contentList: MessageContent[] = [];
@@ -105,7 +94,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
       contentList = contentList.concat(imagesForMessage.map((image) => ({ image: { id: image.id, name: image.name } })));
 
       // Send message with variables included
-      sendMessage(contentList, uploadedFiles, variables);
+      sendMessage(contentList, uploadedFiles);
 
       setNewMessage('');
       setSelectedFiles([]);
@@ -252,7 +241,6 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
         supportsFiles={activeWorkspace?.supportsFiles ?? false}
         setImagesForMessage={setImagesForMessage}
         imagesForMessage={imagesForMessage}
-        variablesFormRef={variablesFormRef}
       />
     </Stack>
   );
