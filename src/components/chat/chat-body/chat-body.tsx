@@ -101,7 +101,7 @@ export default function ChatBody({
     );
   }
 
-  if (messages.length === 0) {
+  if ((messages?.length ?? 0) === 0) {
     return (
       <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
         <h3 className="text-lg font-medium mb-2">{activeWorkspace?.name ?? 'No messages yet'}</h3>
@@ -116,7 +116,7 @@ export default function ChatBody({
     );
   }
 
-  const messageHasSomeResponse = messages.length && messages[messages.length - 1].values?.some(v => v.type === MessageValueType.OUTPUT)
+  const messageHasSomeResponse = (messages?.length ?? 0) > 0 && messages[messages.length - 1]?.values?.some(v => v.type === MessageValueType.OUTPUT)
 
   return (
     <div className="ss-chat__body" style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%', width: '100%', overflow: 'hidden' }}>
@@ -147,7 +147,7 @@ export default function ChatBody({
                   userId={activeUser.id}
                   avatar={getInitials(message.createdBy ?? 'You')}
                   message={message}
-                  isLast={index === messages.length - 1}
+                  isLast={index === (messages?.length ?? 0) - 1}
                   useMessageFile={useMessageFile}
                   downloadFile={downloadFile}
                   saveFile={saveFile}
@@ -155,7 +155,7 @@ export default function ChatBody({
                   addValueToMessage={addValueToMessage}
                 />
 
-                {index === messages.length - 1 && (isBotResponding ) && (
+                {index === (messages?.length ?? 0) - 1 && (isBotResponding ) && (
                   messageHasSomeResponse? 
                     <div className="p-3 min-h-3">
                       <div className="flex space-x-2 p-1">

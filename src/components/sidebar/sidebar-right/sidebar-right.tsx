@@ -87,7 +87,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                   <BreadcrumbPage className="line-clamp-1 flex items-center gap-2">
                     Comments
                     <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-xs font-medium">
-                      {comments.length}
+                      {comments?.length ?? 0}
                     </div>
                   </BreadcrumbPage>
                 </BreadcrumbItem>
@@ -117,7 +117,7 @@ export function SidebarRight({ threadId }: { threadId: string | undefined }) {
                       </div>
                     ))}
                 </div>
-              ) : comments.length === 0 ? (
+              ) : (comments?.length ?? 0) === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                   <div className="rounded-full bg-primary/10 p-4 mb-4">
                     <MessageSquare className="h-8 w-8 text-primary" />

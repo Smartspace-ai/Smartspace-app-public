@@ -55,18 +55,15 @@ export async function renameThread(
   thread: MessageThread,
   name: string
 ): Promise<MessageThread> {
-  try {
+
     const response = await api.put(
       `/messagethreads/${thread.id}/name`,
-      name,
+      `"${name}"`,
       { headers: { 'Content-Type': 'application/json' } }
     );
 
     return new MessageThread(response.data);
-  } catch (error) {
-    console.error('Error renaming thread:', error);
-    throw new Error('Error renaming thread');
-  }
+
 }
 
 // Delete a message thread by ID
@@ -111,20 +108,4 @@ export async function updateThread(
   }
 }
 
-export async function fetchThreadVariables(threadId: string): Promise<Record<string, any>> {
-  const response = await api.get(`/flowruns/${threadId}/variables`);
-  return response.data as Record<string, any>;
-}
 
-
-// Updates a variable
-export async function updateVariable(
-  flowRunId: string,
-  variableName: string,
-  value: any
-): Promise<void> {
-  await api.put(`/flowruns/${flowRunId}/variables/${variableName}`, 
-    value,
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-}
