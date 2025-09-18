@@ -71,7 +71,7 @@ export function NotificationPanel() {
       navigate({
         to: '/workspace/$workspaceId/thread/$threadId',
         params: {
-          workspaceId: notification.workSpaceId || '',
+          workspaceId: notification.workSpaceId || workspaceId,
           threadId: notification.threadId
         }
       });
