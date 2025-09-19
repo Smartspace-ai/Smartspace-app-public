@@ -1,0 +1,10 @@
+name: Smoke test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Hello from ${{ github.repository }} on branch ${{ github.ref_name }} (sha ${{ github.sha }})"
