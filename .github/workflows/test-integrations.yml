@@ -1,10 +1,18 @@
 name: Test Smartspace and Teams integrations
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:            # still allow manual runs
+  push:
+    branches:
+      - deployments/develop     # auto-run when this branch gets a new commit
+
 
 permissions:
   contents: read
+
+concurrency:
+  group: test-integrations-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
