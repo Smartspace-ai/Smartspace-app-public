@@ -1,0 +1,94 @@
+name: Promote develop → main (open Release PR with AI notes)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  projects: read
+
+jobs:
+  open-release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub App token
+        id: app
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+
+      - name: Get latest release tag
+        id: latest
+        run: |
+          git fetch --tags --force
+          last="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
+          echo "previous_version=$last" >> $GITHUB_OUTPUT
+
+      - name: Collect Next Release issues (scoped)
+        id: collect
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app.outputs.token }}
+          script: |
+            const org='${{ vars.ORG_LOGIN }}', projNum=Number('${{ vars.PROJECT_NUMBER }}');
+            const repoFull=`${context.repo.owner}/${context.repo.repo}`;
+            const field='${{ vars.STATUS_FIELD_NAME }}', NEXT='${{ vars.STATUS_NEXT }}';
+
+            const q=`query($org:String!,$n:Int!,$first:Int!,$after:String){
+              organization(login:$org){
+                projectV2(number:$n){
+                  items(first:$first, after:$after){
+                    pageInfo{ hasNextPage endCursor }
+                    nodes{
+                      content{ __typename ... on Issue{ number title url repository{ nameWithOwner } } }
+                      fieldValues(first:20){ nodes{
+                        __typename
+                        ... on ProjectV2ItemFieldSingleSelectValue { field{ ... on ProjectV2FieldCommon{name} } name }
+                      } }
+                    }
+                  }
+                }
+              }
+            }`;
+            let items=[], after=null; do { const r=await github.graphql(q,{org, n:projNum, first:50, after}); const page=r.organization.projectV2.items; items.push(...page.nodes); after=page.pageInfo.hasNextPage?page.pageInfo.endCursor:null; } while(after);
+            const nextIssues=items.filter(it=>{
+              const c=it.content; if(!c||c.__typename!=='Issue') return false;
+              if(c.repository.nameWithOwner!==repoFull) return false;
+              const fv=it.fieldValues?.nodes||[];
+              const status=fv.find(v=>v.__typename==='ProjectV2ItemFieldSingleSelectValue' && v.field?.name===field)?.name;
+              return status===NEXT;
+            }).map(i=>({number:i.content.number,title:i.content.title,url:i.content.url}));
+            core.setOutput('issues', JSON.stringify(nextIssues));
+
+      - name: Generate AI release notes (and version)
+        id: ai
+        run: |
+          REQ=$(jq -n --arg prev "${{ steps.latest.outputs.previous_version }}" --argjson issues '${{ steps.collect.outputs.issues }}' '{previous_version:$prev, issues:$issues}')
+          RESP=$(curl -s -X POST -H "Content-Type: application/json" -d "$REQ" "${{ secrets.SMARTSPACE_RELEASE_ENDPOINT }}")
+          VERSION=$(echo "$RESP" | jq -r '.version // empty')
+          NOTES=$(echo "$RESP" | jq -r '.notes_markdown // empty')
+          if [ -z "$VERSION" ] || [ -z "$NOTES" ]; then
+            echo "AI must return JSON {version, notes_markdown}" >&2; echo "$RESP"; exit 1;
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          printf "notes<<'EOF'\n%s\nEOF\n" "$NOTES" >> $GITHUB_OUTPUT
+
+      - name: Open/Update Release PR (develop → main)
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ steps.app.outputs.token }}
+          title: "Release ${{ steps.ai.outputs.version }}"
+          body: ${{ steps.ai.outputs.notes }}
+          base: main
+          branch: release/develop-to-main
+          commit-message: "Prepare release ${{ steps.ai.outputs.version }}"
+          labels: release

@@ -1,0 +1,149 @@
+name: Promote develop → deployments/simfony
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  projects: write
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub App token
+        id: app
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Block if any issues still in Testing (scoped to this repo)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app.outputs.token }}
+          script: |
+            const org='${{ vars.ORG_LOGIN }}', projNum=Number('${{ vars.PROJECT_NUMBER }}');
+            const repoFull=`${context.repo.owner}/${context.repo.repo}`;
+            const field='${{ vars.STATUS_FIELD_NAME }}', TESTING='${{ vars.STATUS_TESTING }}';
+
+            const q=`query($org:String!,$n:Int!,$first:Int!,$after:String){
+              organization(login:$org){
+                projectV2(number:$n){
+                  items(first:$first, after:$after){
+                    pageInfo{ hasNextPage endCursor }
+                    nodes{
+                      content{ __typename ... on Issue{ number title url repository{ nameWithOwner } } }
+                      fieldValues(first:20){ nodes{
+                        __typename
+                        ... on ProjectV2ItemFieldSingleSelectValue { field{ ... on ProjectV2FieldCommon{name} } name }
+                      } }
+                    }
+                  }
+                }
+              }
+            }`;
+            let items=[], after=null;
+            do{
+              const r=await github.graphql(q,{org, n:projNum, first:50, after});
+              const page=r.organization.projectV2.items;
+              items.push(...page.nodes);
+              after=page.pageInfo.hasNextPage?page.pageInfo.endCursor:null;
+            }while(after);
+
+            const blocking = items.filter(it=>{
+              const c=it.content; if(!c||c.__typename!=='Issue') return false;
+              if(c.repository.nameWithOwner!==repoFull) return false;
+              const fv=it.fieldValues?.nodes||[];
+              const status=fv.find(v=>v.__typename==='ProjectV2ItemFieldSingleSelectValue' && v.field?.name===field)?.name;
+              return status===TESTING;
+            });
+            if(blocking.length){
+              core.setFailed("Cannot promote. Testing issues remain:\n"+blocking.map(b=>`- #${b.content.number} ${b.content.title} ${b.content.url}`).join("\n"));
+            }
+
+  promote:
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub App token
+        id: app
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+
+      - name: Configure git actor
+        run: |
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+
+      - name: Merge develop into deployments/simfony
+        run: |
+          git fetch origin deployments/simfony:deployments/simfony || git branch deployments/simfony origin/deployments/simfony
+          git checkout deployments/simfony
+          git merge --no-ff origin/develop -m "Promote develop → deployments/simfony"
+          git push https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository }}.git HEAD:deployments/simfony
+
+      - name: Move Next Release Ready → Next Release (scoped)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app.outputs.token }}
+          script: |
+            const org='${{ vars.ORG_LOGIN }}', projNum=Number('${{ vars.PROJECT_NUMBER }}');
+            const repoFull=`${context.repo.owner}/${context.repo.repo}`;
+            const field='${{ vars.STATUS_FIELD_NAME }}', READY='${{ vars.STATUS_NEXT_READY }}', NEXT='${{ vars.STATUS_NEXT }}';
+
+            const projQ=`query($org:String!,$n:Int!){
+              organization(login:$org){
+                projectV2(number:$n){
+                  id
+                  fields(first:50){
+                    nodes{
+                      ... on ProjectV2FieldCommon { id name }
+                      ... on ProjectV2SingleSelectField { id name options { id name } }
+                    }
+                  }
+                }
+              }
+            }`;
+            const proj=await github.graphql(projQ,{org, n:projNum}).then(r=>r.organization.projectV2);
+            const statusField=proj.fields.nodes.find(f=>f.name===field);
+            const nextOpt=statusField.options.find(o=>o.name===NEXT);
+
+            const q=`query($org:String!,$n:Int!,$first:Int!,$after:String){
+              organization(login:$org){
+                projectV2(number:$n){
+                  items(first:$first, after:$after){
+                    pageInfo{ hasNextPage endCursor }
+                    nodes{
+                      id
+                      content{ __typename ... on Issue{ number title url repository{ nameWithOwner } } }
+                      fieldValues(first:20){ nodes{
+                        __typename
+                        ... on ProjectV2ItemFieldSingleSelectValue { field{ ... on ProjectV2FieldCommon{name} } name }
+                      } }
+                    }
+                  }
+                }
+              }
+            }`;
+            let items=[], after=null; do { const r=await github.graphql(q,{org, n:projNum, first:50, after}); const page=r.organization.projectV2.items; items.push(...page.nodes); after=page.pageInfo.hasNextPage?page.pageInfo.endCursor:null; } while(after);
+            const setStatusM=`mutation($pid:ID!,$iid:ID!,$fid:ID!,$oid:String!){
+              updateProjectV2ItemFieldValue(input:{projectId:$pid,itemId:$iid,fieldId:$fid,value:{singleSelectOptionId:$oid}}){ projectV2Item{ id } }
+            }`;
+            const toMove=items.filter(it=>{
+              const c=it.content; if(!c||c.__typename!=='Issue') return false;
+              if(c.repository.nameWithOwner!==repoFull) return false;
+              const fv=it.fieldValues?.nodes||[];
+              const status=fv.find(v=>v.__typename==='ProjectV2ItemFieldSingleSelectValue' && v.field?.name===field)?.name;
+              return status===READY;
+            });
+            for(const it of toMove){
+              await github.graphql(setStatusM,{pid:proj.id,iid:it.id,fid:statusField.id,oid:nextOpt.id});
+            }

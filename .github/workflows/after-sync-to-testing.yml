@@ -1,0 +1,106 @@
+name: After sync → Move PR issues to Testing + Teams
+
+on:
+  workflow_run:
+    workflows: ["Sync develop → deployments/develop"]
+    types: [completed]
+
+permissions:
+  issues: write
+  pull-requests: read
+  projects: write
+
+jobs:
+  to-testing:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub App token
+        id: app
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Collect closing issues from PR(s) in this run
+        id: collect
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app.outputs.token }}
+          script: |
+            const {owner, repo} = context.repo;
+            const sha = context.payload.workflow_run.head_sha || context.payload.workflow_run.head_commit?.id;
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({owner, repo, commit_sha: sha});
+            const issues = new Map();
+
+            const q = `
+              query($owner:String!,$repo:String!,$num:Int!){
+                repository(owner:$owner,name:$repo){
+                  pullRequest(number:$num){
+                    closingIssuesReferences(first:100){
+                      nodes{ id number title state url repository{ nameWithOwner } }
+                    }
+                  }
+                }
+              }`;
+
+            for (const pr of prs.data) {
+              const r = await github.graphql(q, {owner, repo, num: pr.number});
+              (r.repository.pullRequest.closingIssuesReferences.nodes || []).forEach(n => issues.set(n.id, n));
+            }
+            core.setOutput('issues', JSON.stringify([...issues.values()]));
+
+      - name: Ensure issues are open and set Project Status = Testing
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app.outputs.token }}
+          script: |
+            const org='${{ vars.ORG_LOGIN }}', projNum=Number('${{ vars.PROJECT_NUMBER }}');
+            const fieldName='${{ vars.STATUS_FIELD_NAME }}', TESTING='${{ vars.STATUS_TESTING }}';
+            const issues = JSON.parse(core.getInput('issues') || '[]');
+            if (!issues.length) { core.info('No closing issues'); return; }
+
+            const projQ=`query($org:String!,$n:Int!){
+              organization(login:$org){
+                projectV2(number:$n){
+                  id
+                  fields(first:50){
+                    nodes{
+                      ... on ProjectV2FieldCommon { id name }
+                      ... on ProjectV2SingleSelectField { id name options { id name } }
+                    }
+                  }
+                }
+              }
+            }`;
+            const proj=await github.graphql(projQ,{org, n:projNum}).then(r=>r.organization.projectV2);
+            const statusField=proj.fields.nodes.find(f=>f.name===fieldName);
+            const testingOpt=statusField.options.find(o=>o.name===TESTING);
+            const addItemM=`mutation($pid:ID!,$cid:ID!){ addProjectV2ItemById(input:{projectId:$pid,contentId:$cid}){ item{ id } } }`;
+            const setStatusM=`mutation($pid:ID!,$iid:ID!,$fid:ID!,$oid:String!){
+              updateProjectV2ItemFieldValue(input:{projectId:$pid,itemId:$iid,fieldId:$fid,value:{singleSelectOptionId:$oid}}){ projectV2Item{ id } }
+            }`;
+
+            for (const is of issues){
+              // re-open if auto-closed
+              if (is.state === 'CLOSED'){
+                await github.rest.issues.update({ owner: context.repo.owner, repo: context.repo.repo, issue_number: is.number, state: 'open' });
+              }
+              const add=await github.graphql(addItemM,{pid:proj.id, cid:is.id});
+              const itemId=add.addProjectV2ItemById.item.id;
+              await github.graphql(setStatusM,{pid:proj.id,iid:itemId,fid:statusField.id,oid:testingOpt.id});
+            }
+
+      - name: Post Testing list to Teams
+        run: |
+          ORG='${{ vars.ORG_LOGIN }}'
+          PROJ='${{ vars.PROJECT_NUMBER }}'
+          REPO="${{ github.repository }}"
+          FIELD='${{ vars.STATUS_FIELD_NAME }}'
+          STATUS='${{ vars.STATUS_TESTING }}'
+
+          # Minimal message for now
+          MSG="Sync completed for develop → deployments/develop. Linked issues moved to **Testing**."
+          curl -s -H "Content-Type: application/json" \
+               -d "{\"text\": $(jq -Rsa <<< \"$MSG\") }" \
+               "${{ secrets.TEAMS_WEBHOOK_URL }}" > /dev/null
