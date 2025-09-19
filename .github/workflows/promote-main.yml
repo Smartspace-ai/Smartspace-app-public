@@ -6,12 +6,12 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  projects: read
 
 jobs:
   open-release-pr:
     runs-on: ubuntu-latest
     steps:
+      # 0) Get a GitHub App installation token (for checkout + PRs)
       - name: GitHub App token
         id: app
         uses: tibdex/github-app-token@v2
@@ -19,6 +19,7 @@ jobs:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
 
+      # 1) Checkout develop
       - name: Checkout develop
         uses: actions/checkout@v4
         with:
@@ -26,6 +27,7 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token }}
 
+      # 2) Previous version (latest tag on repo)
       - name: Get latest release tag
         id: latest
         run: |
@@ -33,7 +35,8 @@ jobs:
           last="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
           echo "previous_version=$last" >> $GITHUB_OUTPUT
 
-      - name: Collect Next Release issues (scoped)
+      # 3) Collect "Next Release" issues from your org Project (scoped to THIS repo), with full details
+      - name: Collect Next Release issues (full)
         id: collect
         uses: actions/github-script@v7
         with:
@@ -49,40 +52,155 @@ jobs:
                   items(first:$first, after:$after){
                     pageInfo{ hasNextPage endCursor }
                     nodes{
-                      content{ __typename ... on Issue{ number title url repository{ nameWithOwner } } }
-                      fieldValues(first:20){ nodes{
+                      content{
                         __typename
-                        ... on ProjectV2ItemFieldSingleSelectValue { field{ ... on ProjectV2FieldCommon{name} } name }
-                      } }
+                        ... on Issue {
+                          id number title url body
+                          state createdAt closedAt
+                          milestone { title dueOn }
+                          author { login url }
+                          labels(first:50){ nodes { name } }
+                          assignees(first:50){ nodes { login url } }
+                          timelineItems(first:50, itemTypes: CROSS_REFERENCED_EVENT){
+                            nodes{
+                              __typename
+                              ... on CrossReferencedEvent {
+                                source {
+                                  __typename
+                                  ... on PullRequest {
+                                    number title url merged mergedAt headRefName
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          repository { nameWithOwner }
+                        }
+                      }
+                      fieldValues(first:20){
+                        nodes{
+                          __typename
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            field { ... on ProjectV2FieldCommon { name } }
+                            name
+                          }
+                        }
+                      }
                     }
                   }
                 }
               }
             }`;
-            let items=[], after=null; do { const r=await github.graphql(q,{org, n:projNum, first:50, after}); const page=r.organization.projectV2.items; items.push(...page.nodes); after=page.pageInfo.hasNextPage?page.pageInfo.endCursor:null; } while(after);
-            const nextIssues=items.filter(it=>{
-              const c=it.content; if(!c||c.__typename!=='Issue') return false;
-              if(c.repository.nameWithOwner!==repoFull) return false;
-              const fv=it.fieldValues?.nodes||[];
-              const status=fv.find(v=>v.__typename==='ProjectV2ItemFieldSingleSelectValue' && v.field?.name===field)?.name;
-              return status===NEXT;
-            }).map(i=>({number:i.content.number,title:i.content.title,url:i.content.url}));
+
+            let items=[], after=null;
+            do{
+              const r=await github.graphql(q,{org, n:projNum, first:50, after});
+              const page=r.organization.projectV2.items;
+              items.push(...page.nodes);
+              after=page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
+            }while(after);
+
+            const nextIssues = items.filter(it=>{
+              const c=it.content; if(!c || c.__typename!=='Issue') return false;
+              if(c.repository.nameWithOwner !== repoFull) return false;
+              const status = (it.fieldValues?.nodes||[])
+                .find(v=>v.__typename==='ProjectV2ItemFieldSingleSelectValue' && v.field?.name===field)?.name;
+              return status === NEXT;
+            }).map(is=>{
+              const labels=(is.content.labels?.nodes||[]).map(l=>l.name);
+              const assignees=(is.content.assignees?.nodes||[]).map(a=>({login:a.login,url:a.url}));
+              const linkedPRs=(is.content.timelineItems?.nodes||[])
+                .map(n=>n?.source)
+                .filter(s=>s && s.__typename==='PullRequest')
+                .map(pr=>({number:pr.number,title:pr.title,url:pr.url,merged:pr.merged,mergedAt:pr.mergedAt,headRef:pr.headRefName}));
+              return {
+                number: is.content.number,
+                title: is.content.title,
+                url: is.content.url,
+                body: is.content.body || "",
+                state: is.content.state,
+                createdAt: is.content.createdAt,
+                closedAt: is.content.closedAt,
+                milestone: is.content.milestone?.title || null,
+                author: is.content.author ? {login:is.content.author.login, url:is.content.author.url} : null,
+                labels, assignees, linkedPRs
+              };
+            });
+
             core.setOutput('issues', JSON.stringify(nextIssues));
 
+      # 4) Get Smartspace bearer token (AAD client credentials)
+      - name: Get Smartspace bearer token
+        id: token
+        env:
+          TENANT: ${{ secrets.SMARTSPACE_TENANT_ID }}
+          SP_CLIENT_ID: ${{ secrets.SMARTSPACE_SP_CLIENT_ID }}
+          SP_CLIENT_SECRET: ${{ secrets.SMARTSPACE_SP_CLIENT_SECRET }}
+          SMARTSPACE_CLIENT_ID: ${{ secrets.SMARTSPACE_CLIENT_ID }}
+        run: |
+          sudo apt-get update -y >/dev/null 2>&1 || true
+          sudo apt-get install -y jq >/dev/null 2>&1 || true
+
+          TOKEN_URL="https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/token"
+          SCOPE="api://${SMARTSPACE_CLIENT_ID}/.default"
+
+          RESP=$(curl -s -X POST "$TOKEN_URL" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "client_id=${SP_CLIENT_ID}" \
+            --data-urlencode "client_secret=${SP_CLIENT_SECRET}" \
+            --data-urlencode "scope=${SCOPE}" \
+            --data-urlencode "grant_type=client_credentials")
+
+          ACCESS_TOKEN=$(echo "$RESP" | jq -r '.access_token // empty')
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "Failed to obtain access_token from AAD"; echo "$RESP"; exit 1;
+          fi
+          echo "access_token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
+
+      # 5) Call Smartspace /messages/ with required payload shape
       - name: Generate AI release notes (and version)
         id: ai
+        env:
+          API_URL: ${{ secrets.SMARTSPACE_API_URL }}   # e.g. https://...azurecontainerapps.io/messages/
+          WORKSPACE_ID: ${{ secrets.SMARTSPACE_WORKSPACE_ID }}
+          ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
         run: |
-          REQ=$(jq -n --arg prev "${{ steps.latest.outputs.previous_version }}" --argjson issues '${{ steps.collect.outputs.issues }}' '{previous_version:$prev, issues:$issues}')
-          RESP=$(curl -s -X POST -H "Content-Type: application/json" -d "$REQ" "${{ secrets.SMARTSPACE_RELEASE_ENDPOINT }}")
+          sudo apt-get install -y uuid-runtime >/dev/null 2>&1 || true
+          THREAD_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+
+          REQ=$(jq -n \
+            --arg ws   "$WORKSPACE_ID" \
+            --arg tid  "$THREAD_ID" \
+            --arg prev "${{ steps.latest.outputs.previous_version }}" \
+            --argjson issues '${{ steps.collect.outputs.issues }}' \
+            '{
+              workSpaceId: $ws,
+              messageThreadId: $tid,
+              inputs: [
+                { "name": "previous_release_number", "value": $prev },
+                { "name": "issues", "value": $issues }
+              ]
+            }')
+
+          RESP=$(curl -sS -X POST "$API_URL" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$REQ")
+
           VERSION=$(echo "$RESP" | jq -r '.version // empty')
           NOTES=$(echo "$RESP" | jq -r '.notes_markdown // empty')
+
           if [ -z "$VERSION" ] || [ -z "$NOTES" ]; then
-            echo "AI must return JSON {version, notes_markdown}" >&2; echo "$RESP"; exit 1;
+            echo "Smartspace must return JSON {version, notes_markdown}" >&2
+            echo "$RESP"
+            exit 1
           fi
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           printf "notes<<'EOF'\n%s\nEOF\n" "$NOTES" >> $GITHUB_OUTPUT
 
-      - name: Open/Update Release PR (develop → main)
+      # 6) Open or update the Release PR (develop → main) with AI notes
+      - name: Open/Update Release PR
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ steps.app.outputs.token }}
