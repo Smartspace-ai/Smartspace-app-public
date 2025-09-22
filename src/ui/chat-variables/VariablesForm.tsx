@@ -8,18 +8,18 @@ import { useChatVariablesFormVm } from './VariablesForm.vm';
 
 import './VariablesForm.css'; // 👈 import the CSS overrides
 
-export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesFormProps>(
-  ({ workspace, threadId }, ref) => {
-    const vm = useChatVariablesFormVm({ workspace, threadId });
+export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesFormProps & {setVariables: (variables: Record<string, any>) => void}>(
+  ({ workspace, threadId, setVariables }, ref) => {
+    const vm = useChatVariablesFormVm({ workspace, threadId, setVariables });
+
+
 
     useImperativeHandle(ref, () => ({
       hasChanges: () => false,
       getChangedVariables: () => ({}),
       getCurrentVariables: () => vm.data ?? {},
       saveChangedVariables: async () => {
-        // minimal placeholder
-        // eslint-disable-next-line no-console
-        console.log('saveChangedVariables');
+        return;
       },
     }));
 

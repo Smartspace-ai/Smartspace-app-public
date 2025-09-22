@@ -61,8 +61,8 @@ type ChatComposerProps = {
   threadId?: string;
   newMessage: string;
   setNewMessage: (message: string) => void;
-  handleSendMessage: () => void;
-  handleKeyDown: (e: React.KeyboardEvent) => void;
+  handleSendMessage: (variables: Record<string, any> | null) => void;
+  handleKeyDown: (e: React.KeyboardEvent, variables: Record<string, any> | null) => void;
   isSending: boolean;
   supportsFiles: boolean;
   disabled: boolean;
@@ -105,6 +105,7 @@ export default function ChatComposer({
     { url: string; isImage: boolean; name: string }[]
   >([]);
   const { uploadFilesMutation } = useFileMutations();
+  const [variables, setVariables] = useState<Record<string, any>|null>(null);
 
   const prevUrlsRef = useRef<string[]>([]);
   const {data: thread} = useWorkspaceThread({workspaceId: workspace?.id, threadId: threadId})
@@ -243,7 +244,7 @@ export default function ChatComposer({
 
       {workspace && threadId && (
         <div className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${!isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''} transition-[max-width] duration-300 ease-in-out`}>
-          <ChatVariablesForm workspace={workspace} threadId={threadId} />
+          <ChatVariablesForm workspace={workspace} threadId={threadId} setVariables={setVariables}/>
         </div>
       )}
       {Object.keys(workspace?.variables ?? {}).length > 0 && <hr className="my-2" />}
@@ -386,7 +387,7 @@ export default function ChatComposer({
                     onInput={(e) => {
                       adjustTextareaHeight(e.currentTarget);
                     }}
-                    onKeyDown={handleKeyDown}
+                    onKeyDown={(e) => handleKeyDown(e, variables)}
                     placeholder={
                       isDragging
                         ? "Drop files here..."
@@ -414,7 +415,7 @@ export default function ChatComposer({
 
                 <Button
                   onClick={() => {
-                    handleSendMessage();
+                    handleSendMessage(variables);
                     handleRemoveAllFiles();
                   }}
                   variant="default"
@@ -441,7 +442,7 @@ export default function ChatComposer({
                   onInput={(e) => {
                     adjustTextareaHeight(e.currentTarget);
                   }}
-                  onKeyDown={handleKeyDown}
+                  onKeyDown={(e) => handleKeyDown(e, variables)}
                   placeholder={
                     isDragging
                       ? "Drop files here..."
@@ -482,7 +483,7 @@ export default function ChatComposer({
                     onChange={(e) => {
                       setNewMessage(e.target.value);
                     }}
-                    onKeyDown={handleKeyDown}
+                    onKeyDown={(e) => handleKeyDown(e, variables)}
                     placeholder={disabled ? "Select a thread to start chatting..." : "Type a message..."}
                     className="w-full h-full resize-none border-0 bg-background p-4 text-sm focus-visible:outline-none focus-visible:ring-0"
                     style={{ fontSize: 16, WebkitTextSizeAdjust: '100%' }}
@@ -511,7 +512,7 @@ export default function ChatComposer({
                   <div className="flex-1" />
                   <Button
                     onClick={() => {
-                      handleSendMessage();
+                      handleSendMessage(variables);
                       handleRemoveAllFiles();
                     }}
                     variant="default"
@@ -555,7 +556,7 @@ export default function ChatComposer({
 
           <Button
             onClick={() => {
-              handleSendMessage();
+              handleSendMessage(variables);
               handleRemoveAllFiles();
               // Reset textarea height is now handled by useEffect when newMessage changes
             }}
