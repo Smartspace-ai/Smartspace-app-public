@@ -353,8 +353,8 @@ export function useWorkspaceMessages(
     isUploadingFiles: uploadFilesMutation.isPending,
     isSendingMessage: postMessageMutation.isPending,
     isBotResponding,
-    queryMessages: { data: messages, isLoading, error, refetch },
-    addInputToMessageMutation, // exposed raw mutation
-    addValueToMessage, // wrapped helper with scroll
+    queryMessages: {data: messages, isLoading, error, refetch},
+    addInputToMessageMutation, 
+    addValueToMessage, 
   };
 }

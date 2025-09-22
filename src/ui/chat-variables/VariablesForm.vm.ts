@@ -85,7 +85,7 @@ function buildSimpleSchemaAndUi(
   return { schema, uiSchema: ui as unknown as UISchemaElement, initialData };
 }
 
-export function useChatVariablesFormVm({ workspace, threadId }: VmParams): ChatVariablesFormVm {
+export function useChatVariablesFormVm({ workspace, threadId, setVariables }: VmParams & { setVariables: (variables: Record<string, any>) => void }): ChatVariablesFormVm {
   const { data: threadVars, isLoading, isError } = useThreadVariables(threadId);
   const { mutate: updateVariableMutation } = useUpdateVariable(threadId)
   const querySettled = !isLoading && (threadVars !== undefined || isError);
@@ -106,9 +106,10 @@ export function useChatVariablesFormVm({ workspace, threadId }: VmParams): ChatV
   React.useEffect(() => {
     if (querySettled) {
       setData(built.initialData);
+      setVariables(built.initialData);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [querySettled, built.initialData]);
+  }, [querySettled, built.initialData, setVariables]);
 
   const ajv = React.useMemo(() => createAjv({ useDefaults: false }) as any, []);
 
@@ -130,8 +131,9 @@ export function useChatVariablesFormVm({ workspace, threadId }: VmParams): ChatV
         }
       }
       setData(next);
+      setVariables(next);
     },
-    [workspace.variables]
+    [workspace.variables, setVariables, updateVariableMutation, threadId]
   );
 
   const config = React.useMemo(

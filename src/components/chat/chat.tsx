@@ -79,7 +79,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
   );
 
   // Send message handler
-  const handleSendMessage = useCallback(async () => {
+  const handleSendMessage = useCallback(async (variables: Record<string, any> | null) => {
     if (!newMessage.trim() && uploadedFiles.length === 0 && imagesForMessage.length === 0) return;
 
     try {
@@ -92,9 +92,11 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
       }
 
       contentList = contentList.concat(imagesForMessage.map((image) => ({ image: { id: image.id, name: image.name } })));
-
+      
+      console.log('thread?.variables', thread?.variables);
+      console.log('variables', variables);
       // Send message with variables included
-      sendMessage(contentList, uploadedFiles);
+      sendMessage(contentList, uploadedFiles, thread?.variables || variables || {});
 
       setNewMessage('');
       setSelectedFiles([]);
@@ -104,10 +106,10 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
       console.error('Failed to send message:', error);
       toast.error('Failed to send message. Please try again.');
     }
-  }, [newMessage, uploadedFiles, sendMessage, imagesForMessage]);
+  }, [newMessage, uploadedFiles, sendMessage, imagesForMessage, thread?.variables]);
 
   // Enter sends; Shift/Ctrl+Enter insert newline
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, variables: Record<string, any> | null) => {
     if (e.key !== 'Enter') return;
     // Allow newline when holding Shift or Ctrl
     if (e.shiftKey || e.ctrlKey) return;
@@ -120,7 +122,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     const blocked = isUploadingFiles || isSendingMessage || activeThread?.isFlowRunning;
 
     if (!(messageEmpty && noFilesAttached) && !blocked) {
-      handleSendMessage();
+      handleSendMessage(thread?.variables || variables || {});
     }
   }, [newMessage, uploadedFiles, imagesForMessage, isUploadingFiles, isSendingMessage, activeThread?.isFlowRunning, handleSendMessage]);
 
