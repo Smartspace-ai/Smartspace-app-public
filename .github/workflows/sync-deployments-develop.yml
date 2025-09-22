@@ -5,32 +5,57 @@ on:
     branches: [develop]
 
 permissions:
-  contents: read
+  contents: read   # only affects GITHUB_TOKEN; we use the App token for push
+
+concurrency:
+  group: sync-deployments-develop
+  cancel-in-progress: true
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: GitHub App token
+      - name: Mint GitHub App token
         id: app
         uses: tibdex/github-app-token@v2
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v4
+      - name: Checkout with App token
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token }}
 
-      - name: Configure git actor
+      - name: Merge develop into deployments/develop and push
+        env:
+          TOKEN: ${{ steps.app.outputs.token }}
         run: |
-          git config user.name "ci-bot"
-          git config user.email "ci-bot@users.noreply.github.com"
+          set -euo pipefail
+          git config user.name "smartspace-release-bot"
+          git config user.email "smartspace-release-bot@users.noreply.github.com"
 
-      - name: Merge develop into deployments/develop
-        run: |
-          git fetch origin deployments/develop:deployments/develop || git branch deployments/develop origin/deployments/develop
+          # Make sure both branches exist locally
+          git fetch origin develop:develop
+          git fetch origin deployments/develop:deployments/develop || \
+            git branch --track deployments/develop origin/deployments/develop
+
+          before=$(git rev-parse --verify deployments/develop || echo "")
           git checkout deployments/develop
-          git merge --no-ff origin/develop -m "Sync develop → deployments/develop"
-          git push https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository }}.git HEAD:deployments/develop
+
+          # Merge the latest develop
+          if git merge --no-ff develop -m "Sync develop → deployments/develop"; then
+            echo "Merge succeeded."
+          else
+            echo "Merge produced conflicts. Failing the job."
+            exit 1
+          fi
+
+          # Only push if the merge moved HEAD
+          if [ "$(git rev-parse HEAD)" != "$before" ]; then
+            git push "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git" HEAD:deployments/develop
+            echo "Pushed updates to deployments/develop."
+          else
+            echo "No changes to push (already up to date)."
+          fi
