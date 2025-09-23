@@ -387,7 +387,34 @@ export default function ChatComposer({
                     onInput={(e) => {
                       adjustTextareaHeight(e.currentTarget);
                     }}
-                    onKeyDown={(e) => handleKeyDown(e, variables)}
+                    onKeyDown={(e) => {
+                      if (
+                        isMobile &&
+                        e.key === 'Enter' &&
+                        !e.shiftKey &&
+                        !e.ctrlKey &&
+                        !e.altKey &&
+                        !e.metaKey
+                      ) {
+                        e.preventDefault();
+                        const target = e.currentTarget;
+                        const start = target.selectionStart ?? target.value.length;
+                        const end = target.selectionEnd ?? start;
+                        const newValue =
+                          target.value.slice(0, start) + '\n' + target.value.slice(end);
+                        setNewMessage(newValue);
+                        requestAnimationFrame(() => {
+                          try {
+                            target.selectionStart = target.selectionEnd = start + 1;
+                          } catch {
+                            /* ignore caret set errors */
+                          }
+                          adjustTextareaHeight(target);
+                        });
+                        return;
+                      }
+                      handleKeyDown(e, variables);
+                    }}
                     placeholder={
                       isDragging
                         ? "Drop files here..."
@@ -483,7 +510,32 @@ export default function ChatComposer({
                     onChange={(e) => {
                       setNewMessage(e.target.value);
                     }}
-                    onKeyDown={(e) => handleKeyDown(e, variables)}
+                    onKeyDown={(e) => {
+                      if (
+                        e.key === 'Enter' &&
+                        !e.shiftKey &&
+                        !e.ctrlKey &&
+                        !e.altKey &&
+                        !e.metaKey
+                      ) {
+                        e.preventDefault();
+                        const target = e.currentTarget;
+                        const start = target.selectionStart ?? target.value.length;
+                        const end = target.selectionEnd ?? start;
+                        const newValue =
+                          target.value.slice(0, start) + '\n' + target.value.slice(end);
+                        setNewMessage(newValue);
+                        requestAnimationFrame(() => {
+                          try {
+                            target.selectionStart = target.selectionEnd = start + 1;
+                          } catch {
+                            /* ignore caret set errors */
+                          }
+                        });
+                        return;
+                      }
+                      handleKeyDown(e, variables);
+                    }}
                     placeholder={disabled ? "Select a thread to start chatting..." : "Type a message..."}
                     className="w-full h-full resize-none border-0 bg-background p-4 text-sm focus-visible:outline-none focus-visible:ring-0"
                     style={{ fontSize: 16, WebkitTextSizeAdjust: '100%' }}
