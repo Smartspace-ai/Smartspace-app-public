@@ -11,6 +11,25 @@
   body {
     @apply text-foreground;
   }
+  
+  /* Android Teams viewport fixes */
+  @media screen and (max-width: 1100px) {
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    /* Fix for Android Teams viewport issues */
+    body[data-teams-android="true"] {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 100vh !important;
+      overflow: hidden;
+    }
+  }
   :root {
     --sidebar-background: 0 0% 98%;
 
@@ -57,6 +76,20 @@
         padding-left: revert-layer;
         list-style: revert-layer;
       }
+    }
+  }
+  
+  &-chat__body {
+    /* Ensure no unwanted padding/margins that could cause white space */
+    [data-radix-scroll-area-viewport] {
+      padding-bottom: 0 !important;
+      margin-bottom: 0 !important;
+    }
+    
+    /* Ensure scroll area fills available space properly */
+    [data-radix-scroll-area-root] {
+      height: 100%;
+      width: 100%;
     }
   }
 }

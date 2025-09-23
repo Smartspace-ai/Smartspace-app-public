@@ -2,7 +2,7 @@ import { useWorkspaceMessages } from '@/domains/messages/useMessages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FileInfo } from '../../models/file';
 
@@ -157,14 +157,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     }
   };
 
-  // When navigating to a specific thread, scroll messages to the bottom once loaded
-  useEffect(() => {
-    if (!threadId || isLoading) return;
-    const timeoutId = window.setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [threadId, isLoading]);
+  
 
   return (
     <Stack
