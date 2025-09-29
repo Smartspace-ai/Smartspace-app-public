@@ -10,11 +10,12 @@ export interface WorkspaceLike {
 }
 
 export interface ChatVariablesFormProps {
-  workspace: WorkspaceLike;     // you can pass your real Workspace (it’s compatible)
+  workspace: WorkspaceLike;
   threadId: string;
 }
 
 export interface ChatVariablesFormRef {
+  // kept for compatibility; not strictly needed in this minimal version
   hasChanges: () => boolean;
   getChangedVariables: () => Record<string, any>;
   getCurrentVariables: () => Record<string, any>;

@@ -34,8 +34,9 @@ export const MessageSchema = z.object({
   name: z.string().nullish(),
   errors: z.array(MessageErrorMessageSchema).nullish(),
   values: z.array(z.object({
+    id: z.string(),
     name: z.string(),
-    value: z.any(),
+    value: z.union([z.string(), z.array(z.any()), z.record(z.any())]), // Can be string (for Output), array (for Input), or object (for Variables)
     type: z.nativeEnum(MessageValueType),
     channels: z.record(z.number()),
     createdAt: z.union([z.date(), z.string()]),

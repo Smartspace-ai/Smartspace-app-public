@@ -1,157 +1,162 @@
-// src/ui/chat-variables/vm/useChatVariablesFormVm.ts
+// VM: hydrate from server on success, or from schema defaults on error OR empty server {}.
+import type { ControlElement, JsonSchema7, UISchemaElement } from '@jsonforms/core';
+import { createAjv } from '@jsonforms/core';
+import * as React from 'react';
+
 import { useUpdateVariable } from '@/domains/variables/mutations';
 import { useThreadVariables } from '@/domains/variables/queries';
-import * as React from 'react';
-import { WorkspaceLike } from './types';
-import { getChangedVariables, getCurrentVariables, hasAnyChanges } from './utils/diff';
-import { isSinglePropObjectSchema, rewrapValueIfNeeded, unwrapInitialValue } from './utils/flatten';
+import { cells, renderers } from './renders/index';
+import type { WorkspaceLike } from './types';
 
-type VmParams = {
-  workspace: WorkspaceLike;
-  threadId: string;
-};
+type VarsRecord = Record<string, { schema?: JsonSchema7; access?: 'Read' | 'Write' }>;
+type VmParams = { workspace: WorkspaceLike; threadId: string };
 
-export function useChatVariablesFormVm({ workspace, threadId }: VmParams) {
-  const { data: threadVars, isLoading } = useThreadVariables(threadId);
-  const updateVariable = useUpdateVariable(threadId);
+// Layout helper types
+type VerticalLayout = { type: 'VerticalLayout'; elements: UISchemaElement[] };
+type HorizontalLayout = { type: 'HorizontalLayout'; elements: UISchemaElement[]; options?: any };
 
-  // Build JSON schema + UI schema + initial data (memoized)
-  const { schema, uiSchema, initialData } = React.useMemo(() => {
-    const vars = workspace.variables || {};
-    const names = Object.keys(vars);
+interface ChatVariablesFormVm {
+  schema: JsonSchema7;
+  uiSchema: UISchemaElement;
+  data: Record<string, any> | null;
+  renderers: typeof renderers;
+  cells: typeof cells;
+  ajv: any;
+  onChange: (args: { data: Record<string, any> }) => void;
+  config: {
+    restrict: boolean;
+    trim: boolean;
+    showUnfocusedDescription: boolean;
+    hideRequiredAsterisk: boolean;
+  };
+  isLoading: boolean;
+  isReady: boolean;
+  isHydrated: boolean;
+}
 
-    if (!names.length) {
-      return {
-        schema: { type: 'object', properties: {} },
-        uiSchema: { type: 'VerticalLayout', elements: [] },
-        initialData: {},
-      };
+function buildSimpleSchemaAndUi(
+  vars: VarsRecord | undefined,
+  threadVars: Record<string, any> | undefined,
+  useDefaults: boolean
+): { schema: JsonSchema7; uiSchema: UISchemaElement; initialData: Record<string, any> } {
+  const names = Object.keys(vars || {});
+
+  const properties: Record<string, JsonSchema7> = {};
+  const controls: ControlElement[] = [];
+  const initialData: Record<string, any> = {};
+
+  for (const name of names) {
+    const cfg = vars![name] || {};
+    const s = (cfg.schema || {}) as JsonSchema7;
+    properties[name] = s;
+
+    const hasServerKey =
+      threadVars !== undefined && Object.prototype.hasOwnProperty.call(threadVars, name);
+
+    const val = hasServerKey
+      ? threadVars![name]
+      : useDefaults
+      ? (s as any).default
+      : undefined;
+
+    initialData[name] = val;
+
+    const control: ControlElement = { type: 'Control', scope: `#/properties/${name}` };
+    if (cfg.access === 'Read') {
+      (properties[name] as any).readOnly = true;
+      (control as any).enabled = false;
     }
+    controls.push(control);
+  }
 
-    const properties: Record<string, any> = {};
-    const uiEls: Record<string, any> = {};
-    const init: Record<string, any> = {};
+  const schema: JsonSchema7 = { type: 'object', properties };
 
-    const compact: string[] = [];
-    const full: string[] = [];
+  const innerRow: HorizontalLayout = {
+    type: 'HorizontalLayout',
+    elements: controls as unknown as UISchemaElement[],
+    options: { gap: '12px', alignItems: 'flex-start' },
+  };
 
-    for (const name of names) {
-      const cfg = vars[name];
-      let effectiveSchema = cfg.schema;
+  const ui: VerticalLayout = {
+    type: 'VerticalLayout',
+    elements: [innerRow as unknown as UISchemaElement],
+  };
 
-      if (isSinglePropObjectSchema(effectiveSchema)) {
-        const k = Object.keys(effectiveSchema.properties)[0]!;
-        const inner = effectiveSchema.properties[k];
-        effectiveSchema = { ...inner };
-        if (!effectiveSchema.title) effectiveSchema.title = name;
-      }
+  return { schema, uiSchema: ui as unknown as UISchemaElement, initialData };
+}
 
-      properties[name] = effectiveSchema;
+export function useChatVariablesFormVm({ workspace, threadId, setVariables }: VmParams & { setVariables: (variables: Record<string, any>) => void }): ChatVariablesFormVm {
+  const { data: threadVars, isLoading, isError } = useThreadVariables(threadId);
+  const { mutate: updateVariableMutation } = useUpdateVariable(threadId)
+  const querySettled = !isLoading && (threadVars !== undefined || isError);
 
-      const raw = threadVars?.[name] ?? effectiveSchema?.default;
-      init[name] = unwrapInitialValue(effectiveSchema, raw);
+  // use defaults if error OR server returned {}
+  const shouldUseDefaults = isError || (threadVars && Object.keys(threadVars).length === 0);
 
-      const ui: any = {};
-      if (cfg.access === 'Read') {
-        ui['ui:readonly'] = true;
-        ui['readOnly'] = true;
-        ui['enabled'] = false; // Explicitly disable the field for read-only access
-        ui['access'] = 'Read'; // Pass access level to uischema for renderer checks
-      }
-      if (effectiveSchema?.title === 'ModelId') ui.label = 'Model';
-      if (Object.keys(ui).length) uiEls[name] = ui;
+  const built = React.useMemo(() => {
+    return buildSimpleSchemaAndUi(
+      workspace.variables as VarsRecord,
+      threadVars,
+      shouldUseDefaults ?? false
+    );  
+  }, [workspace.variables, threadVars, shouldUseDefaults]);
 
-      const isModel = effectiveSchema?.['x-model-selector'] || effectiveSchema?.title === 'ModelId';
-      const isCompact =
-        effectiveSchema?.type === 'boolean' ||
-        !!effectiveSchema?.enum || !!effectiveSchema?.oneOf || !!effectiveSchema?.anyOf ||
-        effectiveSchema?.format === 'uuid' ||
-        (effectiveSchema?.type === 'number' && !effectiveSchema?.multipleOf) ||
-        (effectiveSchema?.type === 'string' && effectiveSchema?.maxLength && effectiveSchema.maxLength <= 50);
-
-      (isModel || isCompact ? compact : full).push(name);
-    }
-
-    const elements: any[] = [
-      ...full.map((n) => ({ type: 'Control', scope: `#/properties/${n}`, ...(uiEls[n] || {}) })),
-    ];
-    if (compact.length) {
-      elements.push({
-        type: 'HorizontalLayout',
-        elements: compact.map((n) => ({ type: 'Control', scope: `#/properties/${n}`, ...(uiEls[n] || {}) })),
-        options: { gap: '12px', alignItems: 'flex-start' },
-      });
-    }
-
-    return {
-      schema: { type: 'object', properties },
-      uiSchema: { type: 'VerticalLayout', elements },
-      initialData: init,
-    };
-  }, [workspace.variables, threadVars]);
-
-  // Local form state + snapshot for diffs
-  const [formData, setFormData] = React.useState<Record<string, any>>({});
-  const [originalData, setOriginalData] = React.useState<Record<string, any>>({});
+  const [data, setData] = React.useState<Record<string, any> | null>(null);
 
   React.useEffect(() => {
-    if (!isLoading) {
-      // Always update form data when initialData changes (e.g., when threadVars loads)
-      setFormData(initialData);
-      setOriginalData(initialData);
+    if (querySettled) {
+      setData(built.initialData);
+      setVariables(built.initialData);
     }
-  }, [isLoading, initialData]); // eslint-disable-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [querySettled, built.initialData, setVariables]);
 
-  // Public VM API
-  const hasChanges = React.useCallback(
-    () => hasAnyChanges(workspace, originalData, formData),
-    [workspace, originalData, formData]
-  );
+  const ajv = React.useMemo(() => createAjv({ useDefaults: false }) as any, []);
 
-  const currentVariables = React.useCallback(
-    () => getCurrentVariables(workspace, formData),
-    [workspace, formData]
-  );
+  const prevRef = React.useRef<Record<string, any> | null>(null);
+  React.useEffect(() => {
+    prevRef.current = data;
+  }, [data]);
 
-  const changedVariables = React.useCallback(
-    () => getChangedVariables(workspace, originalData, formData),
-    [workspace, originalData, formData]
-  );
-
-  const save = React.useCallback(async () => {
-    const changed = changedVariables();
-    for (const [name, value] of Object.entries(changed)) {
-      const access = workspace.variables?.[name]?.access;
-      if (access === 'Write') {
-        // value is already rewrapped by getChangedVariables
-        await updateVariable.mutateAsync({ threadId, variableName: name, value });
+  const onChange = React.useCallback(
+    ({ data: next }: { data: Record<string, any> }) => {
+      if (prevRef.current) {
+        const keys = Object.keys((workspace.variables as VarsRecord) || {});
+        for (const k of keys) {
+          const before = prevRef.current?.[k];
+          const after = next?.[k];
+          if (before !== after) {
+            updateVariableMutation({ threadId, variableName: k, value: after })
+          }
+        }
       }
-    }
-    setOriginalData({ ...formData });
-  }, [changedVariables, workspace.variables, updateVariable, threadId, formData]);
+      setData(next);
+      setVariables(next);
+    },
+    [workspace.variables, setVariables, updateVariableMutation, threadId]
+  );
 
-  // If you ever need to rewrap everything (not just changes), use currentVariables()
-  const rewrapAllForSubmit = React.useCallback(() => {
-    const result: Record<string, any> = {};
-    for (const [name, val] of Object.entries(formData)) {
-      result[name] = rewrapValueIfNeeded(workspace.variables?.[name]?.schema, val);
-    }
-    return result;
-  }, [formData, workspace.variables]);
+  const config = React.useMemo(
+    () => ({
+      restrict: true,
+      trim: false,
+      showUnfocusedDescription: true,
+      hideRequiredAsterisk: true,
+    }),
+    []
+  );
 
   return {
-    // data for JSONForms
-    schema,
-    uiSchema,
-    formData,
-    setFormData,
+    schema: built.schema,
+    uiSchema: built.uiSchema,
+    data,
+    renderers,
+    cells,
+    ajv,
+    onChange,
+    config,
     isLoading,
-
-    // commands
-    save,
-    hasChanges,
-    currentVariables,
-    changedVariables,
-    rewrapAllForSubmit,
+    isReady: querySettled,
+    isHydrated: data !== null,
   };
 }

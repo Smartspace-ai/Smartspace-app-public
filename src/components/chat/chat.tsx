@@ -2,7 +2,7 @@ import { useWorkspaceMessages } from '@/domains/messages/useMessages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FileInfo } from '../../models/file';
 
@@ -10,7 +10,6 @@ import { MessageContent } from '@/domains/messages/schemas';
 import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
 import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { Stack } from '@mui/material';
-import { ChatVariablesFormRef } from '../../ui/chat-variables/renders/chat-variables-form';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
@@ -32,7 +31,6 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
   const {data:thread} = useWorkspaceThread({workspaceId: activeWorkspace?.id, threadId});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const variablesFormRef = useRef<ChatVariablesFormRef>(null);
   const [newMessage, setNewMessage] = useState('');
 
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
@@ -81,19 +79,10 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
   );
 
   // Send message handler
-  const handleSendMessage = useCallback(async () => {
+  const handleSendMessage = useCallback(async (variables: Record<string, any> | null) => {
     if (!newMessage.trim() && uploadedFiles.length === 0 && imagesForMessage.length === 0) return;
 
     try {
-      // Get current variables from the form (if they exist)
-      let variables: Record<string, any> | undefined;
-      if (variablesFormRef.current) {
-        const currentVariables = variablesFormRef.current.getCurrentVariables();
-        // Only include variables if there are actual values
-        if (Object.keys(currentVariables).length > 0) {
-          variables = currentVariables;
-        }
-      }
 
       // Build message content
       let contentList: MessageContent[] = [];
@@ -103,9 +92,11 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
       }
 
       contentList = contentList.concat(imagesForMessage.map((image) => ({ image: { id: image.id, name: image.name } })));
-
+      
+      console.log('thread?.variables', thread?.variables);
+      console.log('variables', variables);
       // Send message with variables included
-      sendMessage(contentList, uploadedFiles, variables);
+      sendMessage(contentList, uploadedFiles, thread?.variables || variables || {});
 
       setNewMessage('');
       setSelectedFiles([]);
@@ -115,10 +106,10 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
       console.error('Failed to send message:', error);
       toast.error('Failed to send message. Please try again.');
     }
-  }, [newMessage, uploadedFiles, sendMessage, imagesForMessage]);
+  }, [newMessage, uploadedFiles, sendMessage, imagesForMessage, thread?.variables]);
 
   // Enter sends; Shift/Ctrl+Enter insert newline
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, variables: Record<string, any> | null) => {
     if (e.key !== 'Enter') return;
     // Allow newline when holding Shift or Ctrl
     if (e.shiftKey || e.ctrlKey) return;
@@ -131,7 +122,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     const blocked = isUploadingFiles || isSendingMessage || activeThread?.isFlowRunning;
 
     if (!(messageEmpty && noFilesAttached) && !blocked) {
-      handleSendMessage();
+      handleSendMessage(thread?.variables || variables || {});
     }
   }, [newMessage, uploadedFiles, imagesForMessage, isUploadingFiles, isSendingMessage, activeThread?.isFlowRunning, handleSendMessage]);
 
@@ -166,14 +157,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     }
   };
 
-  // When navigating to a specific thread, scroll messages to the bottom once loaded
-  useEffect(() => {
-    if (!threadId || isLoading) return;
-    const timeoutId = window.setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [threadId, isLoading]);
+  
 
   return (
     <Stack
@@ -252,7 +236,6 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
         supportsFiles={activeWorkspace?.supportsFiles ?? false}
         setImagesForMessage={setImagesForMessage}
         imagesForMessage={imagesForMessage}
-        variablesFormRef={variablesFormRef}
       />
     </Stack>
   );
