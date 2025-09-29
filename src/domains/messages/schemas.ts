@@ -50,21 +50,19 @@ export const MessageSchema = z.object({
   messageThreadId: z.string().nullish(),
   name: z.string().nullish(),
   errors: z.array(MessageErrorMessageSchema).nullish(),
-  values: z
-    .array(
-      z.object({
-        name: z.string(),
-        value: z.any(),
-        type: z.nativeEnum(MessageValueType),
-        channels: z.record(z.number()),
-        createdAt: z.union([z.date(), z.string()]),
-        createdBy: z.string(),
-        createdByUserId: z.string().nullish(),
-      })
-    )
-    .nullish(),
-  optimistic: z.boolean().default(false),
+  values: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    value: z.union([z.string(), z.array(z.any()), z.record(z.any())]), // Can be string (for Output), array (for Input), or object (for Variables)
+    type: z.nativeEnum(MessageValueType),
+    channels: z.record(z.number()),
+    createdAt: z.union([z.date(), z.string()]),
+    createdBy: z.string(),
+    createdByUserId: z.string().nullish(),
+  })).nullish(),
+  optimistic: z.boolean().nullish().default(false),
 });
+
 
 export const MessageItemContentSchema = z.object({
   text: z.string().nullish(),

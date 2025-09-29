@@ -14,10 +14,10 @@ function WorkspaceIndex() {
 
   useEffect(() => {
     if (isLoading) return
-    if (workspaces && workspaces.length > 0) {
+    if (workspaces && (workspaces.length ?? 0) > 0) {
       navigate({
         to: '/workspace/$workspaceId',
-        params: { workspaceId: workspaces[0].id },
+        params: { workspaceId: workspaces[0]?.id },
         replace: true,
       })
     }
@@ -27,7 +27,7 @@ function WorkspaceIndex() {
     return <TeamsLoader message="Loading workspaces…" />
   }
 
-  if (isFetched && workspaces && workspaces.length === 0) {
+  if (canQuery && isFetched && workspaces && (workspaces.length ?? 0) === 0) {
     return <NoWorkspacesAvailable />
   }
 

@@ -1,8 +1,10 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import {
   Edit,
   Loader2 // Add Loader2 for spinner
   ,
+
 
 
 
@@ -68,6 +70,7 @@ export function Threads() {
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
   const workspaceMatch = useMatch({ from: '/_protected/workspace/$workspaceId', shouldThrow: false });
   const urlWorkspaceId = threadMatch?.params?.workspaceId ?? workspaceMatch?.params?.workspaceId;
@@ -87,14 +90,18 @@ export function Threads() {
     }
   };
 
-  const [autoCreatedThreadId, setAutoCreatedThreadId] = useState<string | null>(null);
-
   const handleNewThread = () => {
     const newThreadId = crypto.randomUUID();
 
     // might need to set isNew search param
     const targetWorkspaceId = urlWorkspaceId ?? threads?.[0]?.workSpaceId;
     if (!targetWorkspaceId) return;
+    
+    // Set the query cache to 404 for the new thread
+    queryClient.setQueryData(['workspace', targetWorkspaceId, 'thread', newThreadId], null);
+    queryClient.setQueryData(['comments', newThreadId], []);
+    queryClient.setQueryData(['thread', newThreadId, 'variables'], {});
+    
     navigate({
       to: '/workspace/$workspaceId/thread/$threadId',
       params: { workspaceId: targetWorkspaceId, threadId: newThreadId },
@@ -258,7 +265,6 @@ function ThreadItem({
   onMenuOpenChange,
 }: ThreadItemProps) {
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const [newThreadName, setNewThreadName] = useState(thread.name);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { mutate: setFavoriteMutation, isPending: isSetFavoritePending } = useSetFavorite()
@@ -361,16 +367,14 @@ function ThreadItem({
         isMenuOpen={openMenuId === thread.id}
         onMenuOpenChange={(open) => onMenuOpenChange(open ? thread.id : null)}
         onFavorite={() => setFavoriteMutation({ threadId: thread.id, favorite: !thread.favorited })}
-        onRename={() => setIsRenameModalOpen(true)}
-        onDelete={() => setIsDeleteDialogOpen(true)}
+        onRename={() => {setIsRenameModalOpen(true); onMenuOpenChange(null)}}
+        onDelete={() => {setIsDeleteDialogOpen(true); onMenuOpenChange(null)}}
       />
 
       <ThreadRenameModal
         isOpen={isRenameModalOpen}
         onClose={() => setIsRenameModalOpen(false)}
-        threadName={newThreadName}
-        setThreadName={setNewThreadName}
-        onSubmit={handleRenameSubmit}
+        thread={thread}
       />
 
       <AlertDialog

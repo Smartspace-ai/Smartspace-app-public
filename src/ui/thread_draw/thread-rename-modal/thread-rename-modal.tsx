@@ -1,5 +1,7 @@
 import type React from 'react';
 
+import { useRenameThread } from '@/hooks/use-workspace-threads';
+import { MessageThread } from '@/models/message-thread';
 import { Button } from '@/shared/ui/shadcn/button';
 import {
   Dialog,
@@ -10,25 +12,28 @@ import {
 } from '@/shared/ui/shadcn/dialog';
 import { Input } from '@/shared/ui/shadcn/input';
 import { Label } from '@/shared/ui/shadcn/label';
+import { useState } from 'react';
 
 interface ThreadRenameModalProps {
   isOpen: boolean;
   onClose: () => void;
-  threadName: string;
-  setThreadName: (name: string) => void;
-  onSubmit: () => void;
+  thread: MessageThread;
 }
 
 export function ThreadRenameModal({
   isOpen,
   onClose,
-  threadName,
-  setThreadName,
-  onSubmit,
+  thread
 }: ThreadRenameModalProps) {
+  const [threadName, setThreadName] = useState(thread.name)
+
+  const {renameThreadMutation} = useRenameThread( thread.workSpaceId)
+
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit();
+    e.preventDefault()
+    renameThreadMutation.mutateAsync({ thread: thread, name: threadName }).then(() => {
+      onClose()
+    })
   };
 
   return (
@@ -52,7 +57,7 @@ export function ThreadRenameModal({
           </div>
           <DialogFooter className="mt-5">
             <Button
-              className="text-xs"
+              className="text-xs w-20"
               type="button"
               variant="outline"
               onClick={onClose}
@@ -60,12 +65,12 @@ export function ThreadRenameModal({
               Cancel
             </Button>
             <Button
-              className="text-xs"
+              className="text-xs w-24"
               type="submit"
               variant="default"
-              disabled={!threadName ||!threadName.trim()}
+              disabled={renameThreadMutation.isPending||!threadName ||!threadName.trim()}
             >
-              Save Changes
+              {renameThreadMutation.isPending ? "Saving..." : 'Save Changes'}
             </Button>
           </DialogFooter>
         </form>

@@ -21,11 +21,13 @@ export function createMsalWebAdapter(): AuthAdapter {
         return r.accessToken;
       } catch {
         if (opts?.silentOnly) throw new Error('Silent token failed');
-        const r = await msalInstance.acquireTokenPopup(loginRequest);
+        // Use the same interactive request as sign-in for consistency
+        const r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
         return r.accessToken;
       }
     },
     async getSession() {
+      await ensureActive();
       const a = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
       return a ? { accountId: a.localAccountId, displayName: a.name ?? undefined } : null;
     },
@@ -36,5 +38,12 @@ export function createMsalWebAdapter(): AuthAdapter {
       await msalInstance.loginRedirect(interactiveLoginRequest); 
     },
     async signOut() { await msalInstance.logoutPopup(); },
+    getStoredRedirectUrl() {
+      try {
+        return sessionStorage.getItem('msalRedirectUrl');
+      } catch {
+        return null;
+      }
+    },
   };
 }

@@ -39,25 +39,60 @@ export default function MessageList() {
   const { leftOpen, rightOpen } = useSidebar();
 
   useEffect(() => {
-    if ( viewportRef.current) {
-      viewportRef.current.scrollTo({top: scrollTopRef.current, behavior: 'instant'});
+    if (isVisible && viewportRef.current) {
+      viewportRef.current.scrollTo({top: scrollTopRef.current, behavior: 'auto'});
     }
-  }, []);
+  }, [isVisible]);
 
+
+  // Scroll to bottom when messages are loaded or updated
   useEffect(() => {
-    const content = contentRef.current;
-    if (!content) return;
-
-    const observer = new window.ResizeObserver(() => {
-      if (isAtBottom) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-
-    observer.observe(content);
-
-    return () => observer.disconnect();
-  }, [contentRef.current, messagesEndRef.current, isAtBottom]);
+    if (messages && messages.length > 0 && isVisible) {
+      // Use a small delay to ensure DOM is updated
+      const timeoutId = setTimeout(() => {
+        if (messagesEndRef.current && viewportRef.current) {
+          // Only auto-scroll if user is already at or near the bottom
+          const viewport = viewportRef.current;
+          const threshold = 100; // px from bottom to still count as 'at bottom'
+          const isNearBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold;
+          
+          if (isNearBottom || isAtBottom) {
+            // Calculate the exact bottom position
+            const scrollHeight = viewport.scrollHeight;
+            const clientHeight = viewport.clientHeight;
+            const maxScrollTop = Math.max(0, scrollHeight - clientHeight);
+            
+            // Use scrollTo for more precise control
+            viewport.scrollTo({
+              top: maxScrollTop,
+              behavior: 'smooth'
+            });
+            
+            // Fallback: try scrollIntoView if scrollTo doesn't work
+            setTimeout(() => {
+              if (viewportRef.current) {
+                const currentScrollTop = viewportRef.current.scrollTop;
+                const currentScrollHeight = viewportRef.current.scrollHeight;
+                const currentClientHeight = viewportRef.current.clientHeight;
+                const expectedScrollTop = Math.max(0, currentScrollHeight - currentClientHeight);
+                
+                // If we're not at the bottom, try scrollIntoView
+                if (Math.abs(currentScrollTop - expectedScrollTop) > 10) {
+                  messagesEndRef.current?.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'end',
+                    inline: 'nearest'
+                  });
+                }
+              }
+            }, 100);
+          }
+        }
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages?.length, isVisible, isAtBottom]);
 
   if (threadLoading) {
     return (
@@ -77,7 +112,7 @@ export default function MessageList() {
     );
   }
 
-  if (messages.length === 0) {
+  if ((messages?.length ?? 0) === 0) {
     return (
       <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
         <h3 className="text-lg font-medium mb-2">{activeWorkspace?.name ?? 'No messages yet'}</h3>
@@ -92,7 +127,7 @@ export default function MessageList() {
     );
   }
 
-  const messageHasSomeResponse = messages.length && messages[messages.length - 1].values?.some(v => v.type === MessageValueType.OUTPUT)
+  const messageHasSomeResponse = (messages?.length ?? 0) > 0 && messages[messages.length - 1]?.values?.some(v => v.type === MessageValueType.OUTPUT)
 
   return (
     <div className="ss-chat__body" style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%', width: '100%', overflow: 'hidden' }}>
@@ -107,7 +142,8 @@ export default function MessageList() {
             scrollTopRef.current = viewport.scrollTop;
 
             const threshold = 60; // px from bottom to still count as 'at bottom'
-            setIsAtBottom(viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold);
+            const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+            setIsAtBottom(distanceFromBottom < threshold);
           }}
         >
           <div
@@ -121,6 +157,12 @@ export default function MessageList() {
               >
                 <MessageItem
                   message={message}
+                  isLast={index === (messages?.length ?? 0) - 1}
+                  useMessageFile={useMessageFile}
+                  downloadFile={downloadFile}
+                  saveFile={saveFile}
+                  useQueryFiles={useQueryFiles}
+                  addValueToMessage={addValueToMessage}
                 />
 
                 {index === messages.length - 1 && (thread?.isFlowRunning ) && (
@@ -167,7 +209,7 @@ export default function MessageList() {
                     </div>
                   )}
 
-                <div ref={messagesEndRef} className="h-4" />
+                <div ref={messagesEndRef} className="h-1" />
               </div>
             ))}
           </div>

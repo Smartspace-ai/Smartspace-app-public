@@ -92,7 +92,7 @@ export function SidebarRight() {
                   <BreadcrumbPage className="line-clamp-1 flex items-center gap-2">
                     Comments
                     <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-xs font-medium">
-                      {comments?.length}
+                      {comments?.length ?? 0}
                     </div>
                   </BreadcrumbPage>
                 </BreadcrumbItem>

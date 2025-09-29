@@ -1,0 +1,24 @@
+/* existing rules (keep) */
+.jsonforms-compact .MuiGrid-container {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  column-gap: 12px;
+}
+.jsonforms-compact .MuiGrid-item {
+  width: auto !important;
+  flex: 0 0 auto !important;
+  padding-right: 0 !important;
+}
+
+/* Let ModelId field be a steady, reasonable width */
+.jsonforms-compact .compact-field {
+  width: 280px;       /* fixed comfortable width */
+  max-width: 100%;    /* don't overflow on small screens */
+}
+
+/* On very small screens, let it shrink gracefully */
+@media (max-width: 480px) {
+  .jsonforms-compact .compact-field {
+    width: 100%;   /* full width on phones */
+  }
+}
