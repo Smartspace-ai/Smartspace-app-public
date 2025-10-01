@@ -64,24 +64,59 @@ export default function ChatBody({
 
   useEffect(() => {
     if (isVisible && viewportRef.current) {
-      viewportRef.current.scrollTo({top: scrollTopRef.current, behavior: 'instant'});
+      viewportRef.current.scrollTo({top: scrollTopRef.current, behavior: 'auto'});
     }
-  }, [isVisible, viewportRef.current]);
+  }, [isVisible]);
 
+
+  // Scroll to bottom when messages are loaded or updated
   useEffect(() => {
-    const content = contentRef.current;
-    if (!content) return;
-
-    const observer = new window.ResizeObserver(() => {
-      if (isAtBottom) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-
-    observer.observe(content);
-
-    return () => observer.disconnect();
-  }, [contentRef.current, messagesEndRef.current, isAtBottom]);
+    if (messages && messages.length > 0 && isVisible) {
+      // Use a small delay to ensure DOM is updated
+      const timeoutId = setTimeout(() => {
+        if (messagesEndRef.current && viewportRef.current) {
+          // Only auto-scroll if user is already at or near the bottom
+          const viewport = viewportRef.current;
+          const threshold = 100; // px from bottom to still count as 'at bottom'
+          const isNearBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold;
+          
+          if (isNearBottom || isAtBottom) {
+            // Calculate the exact bottom position
+            const scrollHeight = viewport.scrollHeight;
+            const clientHeight = viewport.clientHeight;
+            const maxScrollTop = Math.max(0, scrollHeight - clientHeight);
+            
+            // Use scrollTo for more precise control
+            viewport.scrollTo({
+              top: maxScrollTop,
+              behavior: 'smooth'
+            });
+            
+            // Fallback: try scrollIntoView if scrollTo doesn't work
+            setTimeout(() => {
+              if (viewportRef.current) {
+                const currentScrollTop = viewportRef.current.scrollTop;
+                const currentScrollHeight = viewportRef.current.scrollHeight;
+                const currentClientHeight = viewportRef.current.clientHeight;
+                const expectedScrollTop = Math.max(0, currentScrollHeight - currentClientHeight);
+                
+                // If we're not at the bottom, try scrollIntoView
+                if (Math.abs(currentScrollTop - expectedScrollTop) > 10) {
+                  messagesEndRef.current?.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'end',
+                    inline: 'nearest'
+                  });
+                }
+              }
+            }, 100);
+          }
+        }
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages?.length, isVisible, isAtBottom]);
 
   if (threadLoading) {
     return (
@@ -131,7 +166,8 @@ export default function ChatBody({
             scrollTopRef.current = viewport.scrollTop;
 
             const threshold = 60; // px from bottom to still count as 'at bottom'
-            setIsAtBottom(viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold);
+            const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+            setIsAtBottom(distanceFromBottom < threshold);
           }}
         >
           <div
@@ -199,7 +235,7 @@ export default function ChatBody({
                     </div>
                   )}
 
-                <div ref={messagesEndRef} className="h-4" />
+                <div ref={messagesEndRef} className="h-1" />
               </div>
             ))}
           </div>

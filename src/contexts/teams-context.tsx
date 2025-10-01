@@ -42,31 +42,56 @@ export const TeamsProvider: React.FC<TeamsProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const initializeTeams = async () => {
-      try {
-        // First try initializing the SDK
-        await app.initialize();
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          // First try initializing the SDK
+          await app.initialize();
 
-        // If that worked, we're in Teams
-        setIsInTeams(true);
+          // If that worked, we're in Teams
+          setIsInTeams(true);
 
-        // Get context (includes user, theme, locale, etc.)
-        const context = await app.getContext();
-        setTeamsContext(context);
-        setTeamsUser(context.user ?? null);
-        setTeamsTheme(context.app?.theme || 'default');
+          // Get context (includes user, theme, locale, etc.)
+          const context = await app.getContext();
+          setTeamsContext(context);
+          setTeamsUser(context.user ?? null);
+          setTeamsTheme(context.app?.theme || 'default');
 
-        // Watch for theme changes
-        app.registerOnThemeChangeHandler((theme) => {
-          setTeamsTheme(theme);
-        });
-      } catch (err) {
-        // We're not in Teams, or SDK failed
-        setIsInTeams(false);
-        setTeamsContext(null);
-        setTeamsUser(null);
-      } finally {
-        setIsTeamsInitialized(true);
+          // Watch for theme changes
+          app.registerOnThemeChangeHandler((theme) => {
+            setTeamsTheme(theme);
+          });
+
+          // Add Android Teams detection to body for CSS targeting
+          const userAgent = navigator.userAgent.toLowerCase();
+          const isAndroid = userAgent.includes('android');
+          if (isAndroid) {
+            document.body.setAttribute('data-teams-android', 'true');
+          }
+          
+          console.log('Teams initialized successfully');
+          break; // Success, exit retry loop
+          
+        } catch (err) {
+          attempts++;
+          console.warn(`Teams initialization attempt ${attempts} failed:`, err);
+          
+          if (attempts < maxAttempts) {
+            // Wait before retry with increasing delay
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+          } else {
+            // Final attempt failed
+            console.log('Teams initialization failed after all attempts, assuming not in Teams');
+            setIsInTeams(false);
+            setTeamsContext(null);
+            setTeamsUser(null);
+          }
+        }
       }
+      
+      setIsTeamsInitialized(true);
     };
 
     initializeTeams();

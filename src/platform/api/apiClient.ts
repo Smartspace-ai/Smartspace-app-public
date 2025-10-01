@@ -34,7 +34,11 @@ webApi.interceptors.request.use(async (config) => {
   // Teams: use NAA to get delegated API token (no fallback)
   if (inTeamsEnvironment) {
     try {
-      const scopes = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
+      const raw = (window as any)?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
+      const scopes = String(raw)
+        .split(/[ ,]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
       const token = await acquireNaaToken(scopes);
       if (token) config.headers.Authorization = `Bearer ${token}`;
     } catch {
@@ -44,13 +48,11 @@ webApi.interceptors.request.use(async (config) => {
   }
 
   // Web (non-Teams): use MSAL
-  const scopes = (
-    (window as any)?.ssconfig?.Client_Scopes ||
-    import.meta.env.VITE_CLIENT_SCOPES ||
-    ''
-  )
-    .split(' ')
-    .filter((scope: string) => !scope.includes('smartspaceapi.config.access'));
+  const rawScopes = (window as any)?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
+  const scopes = String(rawScopes)
+    .split(/[ ,]+/)
+    .map((s) => s.trim())
+    .filter((s) => s && !s.includes('smartspaceapi.config.access'));
 
   const request = { scopes };
 

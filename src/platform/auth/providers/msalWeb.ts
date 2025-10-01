@@ -21,7 +21,8 @@ export function createMsalWebAdapter(): AuthAdapter {
         return r.accessToken;
       } catch {
         if (opts?.silentOnly) throw new Error('Silent token failed');
-        const r = await msalInstance.acquireTokenPopup(loginRequest);
+        // Use the same interactive request as sign-in for consistency
+        const r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
         return r.accessToken;
       }
     },
