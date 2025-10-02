@@ -133,7 +133,7 @@ To update the primary color of the application:
 
    ```scss
    // Primary input color
-   $primary-hex: #6443f4;
+   $primary-hex: #FF5B37;
    ```
 
 3. **Replace the `#6443f4` value with your desired hex color code.**
