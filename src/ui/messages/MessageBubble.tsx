@@ -26,7 +26,7 @@ export interface MessageBubbleProps {
   type: MessageValueType;
   content: MessageContentItem[] ;
   sources: MessageResponseSource[] ;
-  userOutput: { message: string; schema: Record<string, any> } | null;
+  userOutput: { message: string; schema: Record<string, any> |any[] | any } | null;
   userInput?: any;
   files: FileInfo[];
   onSubmitUserForm?: (name: string, value: unknown) => void;

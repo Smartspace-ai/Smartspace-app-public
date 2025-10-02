@@ -31,38 +31,24 @@ export const MessageErrorMessageSchema = z.object({
 // Message schema
 export const MessageSchema = z.object({
   id: z.string().nullish(),
-  content: z.string().nullish(),
-  contentList: z
-    .array(
-      z.object({
-        text: z.string().nullish(),
-        image: FileInfoSchema.nullish(),
-      })
-    )
-    .nullish(),
-  files: z.array(FileInfoSchema).nullish(),
   createdAt: z.union([z.date(), z.string()]),
   createdBy: z.string().nullish(),
   hasComments: z.boolean().default(false),
-  response: z.any().nullish(),
-  comments: z.array(z.any()).nullish(),
   createdByUserId: z.string().nullish(),
   messageThreadId: z.string().nullish(),
-  name: z.string().nullish(),
   errors: z.array(MessageErrorMessageSchema).nullish(),
   values: z.array(z.object({
     id: z.string(),
     name: z.string(),
-    value: z.union([z.string(), z.array(z.any()), z.record(z.any())]), // Can be string (for Output), array (for Input), or object (for Variables)
     type: z.nativeEnum(MessageValueType),
+    value: z.any(), // Can be string (for Output), array (for Input), or object (for Variables)
     channels: z.record(z.number()),
     createdAt: z.union([z.date(), z.string()]),
     createdBy: z.string(),
     createdByUserId: z.string().nullish(),
   })).nullish(),
-  optimistic: z.boolean().nullish().default(false),
+  optimistic: z.boolean().optional().default(false)
 });
-
 
 export const MessageItemContentSchema = z.object({
   text: z.string().nullish(),

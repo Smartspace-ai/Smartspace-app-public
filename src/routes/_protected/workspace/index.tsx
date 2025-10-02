@@ -27,7 +27,7 @@ function WorkspaceIndex() {
     return <TeamsLoader message="Loading workspaces…" />
   }
 
-  if (canQuery && isFetched && workspaces && (workspaces.length ?? 0) === 0) {
+  if ( isFetched && workspaces && (workspaces.length ?? 0) === 0) {
     return <NoWorkspacesAvailable />
   }
 

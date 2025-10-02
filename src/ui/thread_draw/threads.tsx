@@ -20,6 +20,10 @@ import {
 
 
 
+
+
+
+
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -51,10 +55,9 @@ import {
 import { SidebarContent, SidebarFooter, useSidebar } from '@/shared/ui/shadcn/sidebar';
 import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 
-import { useDeleteThread, useSetFavorite, useUpdateThread } from '@/domains/threads/mutations';
+import { useDeleteThread, useSetFavorite } from '@/domains/threads/mutations';
 import { useInfiniteThreads } from '@/domains/threads/queries';
 import { MessageThread } from '@/domains/threads/schemas';
-import { renameThread } from '@/domains/threads/service';
 import { CircleInitials } from '@/shared/components/circle-initials';
 import { Virtuoso } from 'react-virtuoso';
 import { ThreadRenameModal } from './thread-rename-modal/thread-rename-modal';
@@ -66,7 +69,7 @@ export function Threads() {
   const {workspaceId} = useRouteIds();
  const {data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage} = useInfiniteThreads(workspaceId);
   const threads = useMemo(() => data?.pages.flatMap(page => page.data) ?? [], [data]);
-
+  const [autoCreatedThreadId, setAutoCreatedThreadId] = useState<string | null>(null);
   const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -268,7 +271,6 @@ function ThreadItem({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { mutate: setFavoriteMutation, isPending: isSetFavoritePending } = useSetFavorite()
-  const { mutate: updateThreadMutation } = useUpdateThread()
   const { mutate: deleteThreadMutation } = useDeleteThread()
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -281,20 +283,7 @@ function ThreadItem({
     onThreadClick(thread);
   };
 
-  const handleRenameSubmit = async () => {
-    if (newThreadName.trim()) {
-      try {
-        onMenuOpenChange(null);
-        await renameThread(thread, newThreadName);
-        updateThreadMutation({ threadId: thread.id, updates: { name: newThreadName } });
-        setIsRenameModalOpen(false);
-        toast.success('Thread renamed successfully');
-      } catch (error) {
-        console.error('Error renaming thread:', error);
-        toast.error('Failed to rename thread. Please try again.');
-      }
-    }
-  };
+
 
   const handleDeleteThreadItem = async () => {
     try {

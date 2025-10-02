@@ -3,17 +3,18 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "start": "env-cmd -f .env npm run serve",
+    "start": "env-cmd -f .env concurrently -k -n TUNNEL,APP \"npm run dev:tunnel\" \"npm run serve\"",
     "serve": "nx serve --open --verbose",
     "build": "nx build",
     "test": "nx test",
-    "start:dev": "env-cmd -f .env.dev npm run serve",
-    "start:local": "env-cmd -f .env.local npm run serve",
+    "start:dev": "env-cmd -f .env.dev concurrently -k -n TUNNEL,APP \"npm run dev:tunnel\" \"npm run serve\"",
+    "start:local": "env-cmd -f .env.local concurrently -k -n TUNNEL,APP \"npm run dev:tunnel\" \"npm run serve\"",
     "build:dev": "env-cmd -f .env.dev npm run build",
     "build:local": "env-cmd -f .env.local npm run build",
     "test:dev": "env-cmd -f .env.dev npm run test",
     "test:local": "env-cmd -f .env.local npm run test",
-    "build:teams": "ts-node teams/build-manifest.ts"
+    "build:teams": "ts-node teams/build-manifest.ts",
+    "dev:tunnel": "node scripts/start-tunnel.js"
   },
   "private": true,
   "dependencies": {

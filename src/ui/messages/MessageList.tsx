@@ -39,15 +39,15 @@ export default function MessageList() {
   const { leftOpen, rightOpen } = useSidebar();
 
   useEffect(() => {
-    if (isVisible && viewportRef.current) {
+    if ( viewportRef.current) {
       viewportRef.current.scrollTo({top: scrollTopRef.current, behavior: 'auto'});
     }
-  }, [isVisible]);
+  }, []);
 
 
   // Scroll to bottom when messages are loaded or updated
   useEffect(() => {
-    if (messages && messages.length > 0 && isVisible) {
+    if (messages && messages.length > 0 ) {
       // Use a small delay to ensure DOM is updated
       const timeoutId = setTimeout(() => {
         if (messagesEndRef.current && viewportRef.current) {
@@ -92,7 +92,7 @@ export default function MessageList() {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [messages?.length, isVisible, isAtBottom]);
+  }, [messages?.length, isAtBottom]);
 
   if (threadLoading) {
     return (
@@ -157,12 +157,6 @@ export default function MessageList() {
               >
                 <MessageItem
                   message={message}
-                  isLast={index === (messages?.length ?? 0) - 1}
-                  useMessageFile={useMessageFile}
-                  downloadFile={downloadFile}
-                  saveFile={saveFile}
-                  useQueryFiles={useQueryFiles}
-                  addValueToMessage={addValueToMessage}
                 />
 
                 {index === messages.length - 1 && (thread?.isFlowRunning ) && (

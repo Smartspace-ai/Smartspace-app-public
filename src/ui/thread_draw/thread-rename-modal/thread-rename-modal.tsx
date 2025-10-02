@@ -1,7 +1,8 @@
 import type React from 'react';
 
-import { useRenameThread } from '@/hooks/use-workspace-threads';
-import { MessageThread } from '@/models/message-thread';
+
+import { useRenameThread } from '@/domains/threads/mutations';
+import { MessageThread } from '@/domains/threads/schemas';
 import { Button } from '@/shared/ui/shadcn/button';
 import {
   Dialog,
@@ -26,12 +27,11 @@ export function ThreadRenameModal({
   thread
 }: ThreadRenameModalProps) {
   const [threadName, setThreadName] = useState(thread.name)
-
-  const {renameThreadMutation} = useRenameThread( thread.workSpaceId)
+  const renameThreadMutation = useRenameThread(thread.id)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    renameThreadMutation.mutateAsync({ thread: thread, name: threadName }).then(() => {
+    renameThreadMutation.mutateAsync( threadName ).then(() => {
       onClose()
     })
   };

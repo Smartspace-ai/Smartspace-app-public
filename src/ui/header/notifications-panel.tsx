@@ -1,5 +1,4 @@
 import { useMarkAllAsRead, useMarkAsRead } from '@/domains/notifications/mutations';
-// import {useSidebar}
 import {
   useNotificationsQuery,
 } from '@/domains/notifications/queries';
@@ -20,7 +19,6 @@ export function NotificationPanel() {
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { setRightOpen } = useSidebar();
 
   const workspaceMatch = useMatch({ from: '/_protected/workspace/$workspaceId', shouldThrow: false });
   const workspaceId = workspaceMatch?.params?.workspaceId ?? '';
@@ -78,7 +76,7 @@ export function NotificationPanel() {
       });
       
       // Open the comments drawer when navigating to a thread
-      setRightOpen(true);
+      // setRightOpen(true);
     }
 
     setIsOpen(false);

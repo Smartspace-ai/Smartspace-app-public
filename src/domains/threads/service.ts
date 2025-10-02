@@ -39,10 +39,10 @@ export async function setFavorite(
 
 // Rename a message thread
 export async function renameThread(
-  thread: MessageThread,
+  threadId: string,
   name: string
 ): Promise<MessageThread> {
-  const response = await api.put(`/messagethreads/${thread.id}/name`, name, {
+  const response = await api.put(`/messagethreads/${threadId}/name`, name, {
     headers: { 'Content-Type': 'application/json' },
   });
   return MessageThreadSchema.parse(response.data);
@@ -65,14 +65,7 @@ export async function createThread(
   return MessageThreadSchema.parse(response.data);
 }
 
-// Update properties of a message thread
-export async function updateThread(
-  threadId: string,
-  updates: Partial<MessageThread>
-){
-    const response = await api.patch(`/messagethreads/${threadId}`, updates);
-    return MessageThreadSchema.parse(response.data);
-}
+
 
 export async function fetchThreadVariables(
   threadId: string

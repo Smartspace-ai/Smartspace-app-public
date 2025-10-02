@@ -2,8 +2,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { threadsKeys } from './queryKeys';
-import { MessageThread } from './schemas';
-import { deleteThread, setFavorite, updateThread, updateVariable } from './service';
+import { deleteThread, renameThread, setFavorite, updateVariable } from './service';
 
 
 export function useUpdateVariable() {
@@ -41,15 +40,15 @@ export function useSetFavorite() {
   });
 }
 
-export function useUpdateThread() {
+export function useRenameThread(threadId: string) {
   return useMutation({
-    mutationKey: threadsKeys.updateThread(''),
-    mutationFn: async ({ threadId, updates }: { threadId: string; updates: Partial<MessageThread> }) => {
-      await updateThread(threadId, updates);
+    mutationKey: threadsKeys.renameThread(''),
+    mutationFn: async ( name: string ) => {
+      await renameThread(threadId, name);
     },
     onError: (error) => {
-      console.error('Failed to update thread:', error);
-      toast.error('Failed to update thread');
+      console.error('Failed to rename thread:', error);
+      toast.error('Failed to rename thread');
     },
   });
 }

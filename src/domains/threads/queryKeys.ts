@@ -19,8 +19,8 @@ export const threadsKeys = {
     [...threadsKeys.mutations(), 'updateVariable', { flowRunId, variableName }] as const,
   setFavorite: (threadId: string) =>
     [...threadsKeys.mutations(), 'setFavorite', { threadId }] as const,
-  updateThread: (threadId: string) =>
-    [...threadsKeys.mutations(), 'updateThread', { threadId }] as const,
+  renameThread: (threadId: string) =>
+    [...threadsKeys.mutations(), 'renameThread', { threadId }] as const,
   deleteThread: (threadId: string) =>
     [...threadsKeys.mutations(), 'deleteThread', { threadId }] as const,
 };
