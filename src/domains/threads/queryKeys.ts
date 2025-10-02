@@ -11,8 +11,7 @@ export const threadsKeys = {
   detail: (workspaceId: string, threadId: string) =>
     [...threadsKeys.details(), { workspaceId, threadId }] as const,
 
-  variables: (threadId: string) =>
-    [...threadsKeys.all, 'variables', { threadId }] as const,
+  // variables key moved to flowruns domain
 
   mutations: () => [...threadsKeys.all, 'mutations'] as const,
   updateVariable: (flowRunId: string, variableName: string) =>
@@ -24,5 +23,3 @@ export const threadsKeys = {
   deleteThread: (threadId: string) =>
     [...threadsKeys.mutations(), 'deleteThread', { threadId }] as const,
 };
-
-

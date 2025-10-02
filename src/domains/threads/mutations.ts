@@ -2,30 +2,10 @@
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { threadsKeys } from './queryKeys';
-import { deleteThread, renameThread, setFavorite, updateVariable } from './service';
+import { deleteThread, renameThread, setFavorite } from './service';
 
 
-export function useUpdateVariable() {
-  return useMutation({
-    mutationKey: threadsKeys.updateVariable('', ''),
-    mutationFn: async ({
-      flowRunId,
-      variableName,
-      value
-    }: {
-      flowRunId: string;
-      variableName: string;
-      value: unknown;
-    }) => {
-      await updateVariable(flowRunId, variableName, value);
-    },
-    onError: (error) => {
-      console.error('Failed to update variable:', error);
-      toast.error('Failed to update variable');
-      throw error;
-    },
-  });
-}
+// Variable update mutation moved to flowruns domain
 
 export function useSetFavorite() {
   return useMutation({

@@ -1,27 +1,11 @@
+import { commentsKeys } from '@/domains/comments';
+import { messagesKeys } from '@/domains/messages';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import {
   Edit,
   Loader2 // Add Loader2 for spinner
   ,
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   MessageSquare,
@@ -101,8 +85,8 @@ export function Threads() {
     if (!targetWorkspaceId) return;
     
     // Set the query cache to 404 for the new thread
-    queryClient.setQueryData(['workspace', targetWorkspaceId, 'thread', newThreadId], null);
-    queryClient.setQueryData(['comments', newThreadId], []);
+    queryClient.setQueryData([...messagesKeys.lists(), { threadId: newThreadId }], null);
+    queryClient.setQueryData([...commentsKeys.lists(), { threadId: newThreadId }], []);
     queryClient.setQueryData(['thread', newThreadId, 'variables'], {});
     
     navigate({

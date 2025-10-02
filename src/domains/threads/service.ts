@@ -67,20 +67,4 @@ export async function createThread(
 
 
 
-export async function fetchThreadVariables(
-  threadId: string
-){
-  const response = await api.get(`/flowruns/${threadId}/variables`);
-  return response.data as Record<string, unknown>;
-}
-
-// Updates a variable
-export async function updateVariable(
-  flowRunId: string,
-  variableName: string,
-  value: unknown
-){
-  return await api.put(`/flowruns/${flowRunId}/variables/${variableName}`, value, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
+// Variable-related APIs moved to flowruns domain

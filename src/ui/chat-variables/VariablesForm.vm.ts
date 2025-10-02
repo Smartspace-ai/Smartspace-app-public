@@ -3,8 +3,8 @@ import type { ControlElement, JsonSchema7, UISchemaElement } from '@jsonforms/co
 import { createAjv } from '@jsonforms/core';
 import * as React from 'react';
 
-import { useUpdateVariable } from '@/domains/variables/mutations';
-import { useThreadVariables } from '@/domains/variables/queries';
+import { useUpdateFlowRunVariable } from '@/domains/flowruns/mutations';
+import { useFlowRunVariables } from '@/domains/flowruns/queries';
 import { cells, renderers } from './renders/index';
 import type { WorkspaceLike } from './types';
 
@@ -86,8 +86,8 @@ function buildSimpleSchemaAndUi(
 }
 
 export function useChatVariablesFormVm({ workspace, threadId, setVariables }: VmParams & { setVariables: (variables: Record<string, any>) => void }): ChatVariablesFormVm {
-  const { data: threadVars, isLoading, isError } = useThreadVariables(threadId);
-  const { mutate: updateVariableMutation } = useUpdateVariable(threadId)
+  const { data: threadVars, isLoading, isError } = useFlowRunVariables(threadId);
+  const { mutate: updateVariableMutation } = useUpdateFlowRunVariable()
   const querySettled = !isLoading && (threadVars !== undefined || isError);
 
   // use defaults if error OR server returned {}
@@ -126,7 +126,7 @@ export function useChatVariablesFormVm({ workspace, threadId, setVariables }: Vm
           const before = prevRef.current?.[k];
           const after = next?.[k];
           if (before !== after) {
-            updateVariableMutation({ threadId, variableName: k, value: after })
+            updateVariableMutation({ flowRunId: threadId, variableName: k, value: after })
           }
         }
       }

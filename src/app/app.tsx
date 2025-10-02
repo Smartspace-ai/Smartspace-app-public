@@ -1,5 +1,6 @@
 // src/app/app.tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useMemo } from 'react';
 
 import { TeamsProvider, useTeams } from '@/contexts/teams-context';
@@ -57,6 +58,9 @@ function InnerProviders({
           <SignalRProvider>{children}</SignalRProvider>
         </SidebarProvider>
       </AuthProvider>
+      {import.meta.env.DEV && (
+        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
+      )}
     </QueryClientProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { MentionUser } from '@/domains/workspaces/schemas';
+import { MentionUser } from '@/domains/workspaces';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Avatar,

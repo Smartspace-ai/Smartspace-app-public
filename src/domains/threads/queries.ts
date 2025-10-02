@@ -1,8 +1,10 @@
 
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { flowRunsKeys } from '../flowruns/queryKeys';
+import { fetchFlowRunVariables } from '../flowruns/service';
 import { threadsKeys } from './queryKeys';
 import { ThreadsResponse } from './schemas';
-import { fetchThread, fetchThreads, fetchThreadVariables } from './service';
+import { fetchThread, fetchThreads } from './service';
 
 export const useThread = ({workspaceId, threadId}: { workspaceId: string; threadId: string }) => {
   return useQuery({
@@ -55,10 +57,10 @@ export const useInfiniteThreads = (
 
 export function useThreadVariables({threadId}: { threadId: string }) {
   return useQuery({
-    queryKey: threadsKeys.variables(threadId),
+    queryKey: flowRunsKeys.variables(threadId),
     enabled: !!threadId,
     queryFn: async () => {
-        return await fetchThreadVariables(threadId);
+        return await fetchFlowRunVariables(threadId);
      
     },
     refetchOnWindowFocus: false,
