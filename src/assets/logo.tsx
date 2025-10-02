@@ -1,5 +1,5 @@
 import React from "react";
-import fusion5Logo from "./fusion5-logo.jpg";
+import fusion5Logo from "./fusion5-logo.png";
 
 interface LogoProps {
   className?: string;
