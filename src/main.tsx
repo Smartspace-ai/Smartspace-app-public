@@ -54,15 +54,17 @@ msalInstance.initialize().then(async () => {
   rootElement.id = 'root';
 
   const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <StrictMode>
-      <ErrorBoundary fallbackRender={fallbackRender}>
-        <MsalProvider instance={msalInstance}>
-          <AppProviders>
-            <RouterProvider router={router} />
-          </AppProviders>
-        </MsalProvider>
-      </ErrorBoundary>
-    </StrictMode>
+  const enableStrictMode = import.meta.env.VITE_ENABLE_STRICT_MODE === 'true';
+
+  const app = (
+    <ErrorBoundary fallbackRender={fallbackRender}>
+      <MsalProvider instance={msalInstance}>
+        <AppProviders>
+          <RouterProvider router={router} />
+        </AppProviders>
+      </MsalProvider>
+    </ErrorBoundary>
   );
+
+  root.render(enableStrictMode ? <StrictMode>{app}</StrictMode> : app);
 });

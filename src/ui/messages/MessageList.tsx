@@ -1,8 +1,8 @@
-import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
-import { useEffect, useRef, useState } from 'react';
-
 import { MessageValueType } from '@/domains/messages/enums';
 import { useMessages } from '@/domains/messages/queries';
+import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
+import { AlertTriangle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
@@ -92,9 +92,9 @@ export default function MessageList() {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [messages?.length, isAtBottom]);
+  }, [messages, messages?.length, isAtBottom, threadLoading, messagesLoading, threadError, messagesError]);
 
-  if (threadLoading) {
+  if (threadLoading ||messagesLoading) {
     return (
       <div className="ss-chat__body flex-shrink-10 flex-1 overflow-y-auto">
         <div className="space-y-8 p-4">
@@ -107,6 +107,26 @@ export default function MessageList() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+  if (threadError || messagesError) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-3">
+          {threadError && (
+            <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">Failed to load thread</span>
+            </div>
+          )}
+          {messagesError && (
+            <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">Failed to load messages</span>
+            </div>
+          )}
         </div>
       </div>
     );

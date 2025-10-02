@@ -1,7 +1,7 @@
 // src/app/app.tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { TeamsProvider, useTeams } from '@/contexts/teams-context';
 import { SignalRProvider } from '@/hooks/use-signalr';
@@ -40,6 +40,11 @@ function InnerProviders({
   queryClient: QueryClient;
 }) {
   const { isInTeams, isTeamsInitialized } = useTeams();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // If running inside Teams, wait for Teams init before rendering
   if (isInTeams && !isTeamsInitialized) {
@@ -58,9 +63,10 @@ function InnerProviders({
           <SignalRProvider>{children}</SignalRProvider>
         </SidebarProvider>
       </AuthProvider>
-      {import.meta.env.DEV && (
-        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
-      )}
+      {/* {import.meta.env.DEV && ( */}
+          <ReactQueryDevtools initialIsOpen={false} buttonPosition="top-left" />
+
+      {/* )} */}
     </QueryClientProvider>
   );
 }
