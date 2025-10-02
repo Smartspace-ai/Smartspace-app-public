@@ -1,5 +1,6 @@
 // src/ui/threads/ThreadItem.tsx
 import type { MessageThread } from '@/domains/threads/schemas';
+import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 import { CircleInitials } from '@/shared/components/circle-initials';
 import { Button } from '@/shared/ui/shadcn/button';
 import {
@@ -20,6 +21,8 @@ export default function ThreadItem({ thread }: Props) {
 
   const { goToThread, toggleFavorite, remove, isRunning, isSetFavoritePending } =
     useThreadItemVm({ thread });
+  const { threadId } = useRouteIds();
+  const isActive = thread.id === threadId;
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (
@@ -32,7 +35,7 @@ export default function ThreadItem({ thread }: Props) {
   return (
     <div
       id={`thread-${thread.id}`}
-      className="group relative flex items-start gap-2.5 p-2.5 hover:bg-accent cursor-pointer transition-all rounded-lg"
+      className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-accent cursor-pointer transition-all rounded-lg ${isActive ? 'bg-accent' : ''}`}
       onPointerDown={onPointerDown}
     >
       <CircleInitials

@@ -1,4 +1,5 @@
 import { api } from '@/platform/api/apiClient';
+import { safeParse } from '@/shared/utils/safeParse';
 import { MessageThread, MessageThreadSchema, ThreadsResponseSchema } from './schemas';
 
 // Fetch threads for a given workspace
@@ -10,7 +11,7 @@ export async function fetchThreads(
     `workspaces/${workspaceId}/messagethreads`,
     { params: { take, skip } }
   );
-  return ThreadsResponseSchema.parse(response.data);
+  return safeParse(ThreadsResponseSchema, response.data, 'fetchThreads');
 }
 
 export async function fetchThread(
@@ -20,7 +21,7 @@ export async function fetchThread(
   const response = await api.get(
     `workspaces/${workspaceId}/messagethreads/${id}`
   );
-  return MessageThreadSchema.parse(response.data);
+  return safeParse(MessageThreadSchema, response.data, 'fetchThread');
 }
 
 // Set favorite status of a message thread
@@ -34,7 +35,7 @@ export async function setFavorite(
     { headers: { 'Content-Type': 'application/json' } }
   );
 
-  return MessageThreadSchema.parse(response.data);
+  return safeParse(MessageThreadSchema, response.data, 'setFavorite');
 }
 
 // Rename a message thread
@@ -45,7 +46,7 @@ export async function renameThread(
   const response = await api.put(`/messagethreads/${threadId}/name`, name, {
     headers: { 'Content-Type': 'application/json' },
   });
-  return MessageThreadSchema.parse(response.data);
+  return safeParse(MessageThreadSchema, response.data, 'renameThread');
 }
 
 // Delete a message thread by ID
@@ -62,7 +63,7 @@ export async function createThread(
     `workspaces/${workspaceId}/messageThreads`,
     { name }
   );
-  return MessageThreadSchema.parse(response.data);
+  return safeParse(MessageThreadSchema, response.data, 'createThread');
 }
 
 

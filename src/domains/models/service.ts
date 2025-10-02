@@ -1,4 +1,5 @@
 import { api } from '@/platform/api/apiClient';
+import { safeParse } from '@/shared/utils/safeParse';
 import { Model, ModelSchema, ModelsEnvelopeSchema } from './schemas';
 
 // Fetch threads for a given workspace
@@ -15,12 +16,12 @@ export async function fetchModels({
   });
 
   console.log('Models API response:', response.data);
-  const result = ModelsEnvelopeSchema.parse(response.data);
+  const result = safeParse(ModelsEnvelopeSchema, response.data, 'fetchModels');
   console.log('Parsed models result:', result);
   return result;
 }
 
 export async function fetchModel(id: string): Promise<Model> {
   const response = await api.get(`models/${id}`);
-  return ModelSchema.parse(response.data);
+  return safeParse(ModelSchema, response.data, 'fetchModel');
 }

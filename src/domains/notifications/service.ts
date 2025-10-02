@@ -1,4 +1,5 @@
 import { api } from '@/platform/api/apiClient';
+import { safeParse } from '@/shared/utils/safeParse';
 import { Notification, NotificationsEnvelopeSchema } from './schemas';
 
 
@@ -21,7 +22,7 @@ export async function fetchNotifications(
     params: { unread: isUnreadOnly, skip, take: LIMIT },
   });
 
-  const parsed = NotificationsEnvelopeSchema.parse(response?.data);
+  const parsed = safeParse(NotificationsEnvelopeSchema, response?.data, 'fetchNotifications');
 
   // createdAt is already a Date (schema transform), so sorting is cheap
   const items = parsed.data.slice().sort(

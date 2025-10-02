@@ -1,16 +1,14 @@
 // src/ui/threads/useThreadsList.vm.ts
 import { useInfiniteThreads } from '@/domains/threads';
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 
 type Options = {
+  workspaceId: string;
   pageSize?: number;
   filters?: { search?: string; favorited?: boolean };
 };
 
-export function useThreadsListVm({  pageSize = 30, filters }: Options = {}) {
-
-  const { workspaceId } = useRouteIds();
+export function useThreadsListVm({workspaceId,  pageSize = 30, filters }: Options) {
 
   const { data, isLoading, isFetching, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useInfiniteThreads(workspaceId, { pageSize });
   const threads = data?.pages.flatMap(page => page.data) ?? [];

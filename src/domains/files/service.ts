@@ -1,4 +1,5 @@
 import { api } from '@/platform/api/apiClient';
+import { safeParse } from '@/shared/utils/safeParse';
 import { FileInfoSchema, type FileInfo, type FileScope } from './schemas';
 
 export const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
@@ -34,7 +35,7 @@ const uploadFileInChunks = async (
 
     // Only the last chunk returns the file info
     if (i === totalChunks - 1) {
-      return FileInfoSchema.parse(response.data[0]);
+      return safeParse(FileInfoSchema, response.data[0], 'uploadFileInChunks:lastChunk');
     }
   }
   throw new Error('Chunked upload did not complete.');
@@ -65,7 +66,7 @@ export const uploadFiles = async (
       const response = await api.post(`/files`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      fileInfo = FileInfoSchema.parse((response.data as unknown[])[0]);
+      fileInfo = safeParse(FileInfoSchema, (response.data as unknown[])[0], 'uploadFiles:smallFile');
     }
     results.push(fileInfo);
     if (onFileUploaded) onFileUploaded(file, fileInfo);
@@ -97,7 +98,7 @@ export const getFileInfo = async (
     params: scope,
   });
 
-  return FileInfoSchema.parse(response.data);
+  return safeParse(FileInfoSchema, response.data, 'getFileInfo');
 };
 
 export const getFileDownloadUrl = async (sourceUri: string) => {

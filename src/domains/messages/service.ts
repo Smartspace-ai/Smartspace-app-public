@@ -1,5 +1,6 @@
 import { FileInfo } from '@/domains/files/schemas';
 import { api } from '@/platform/api/apiClient';
+import { safeParse } from '@/shared/utils/safeParse';
 import { Subject } from 'rxjs';
 import { Message, MessageContentItem, MessageSchema, messageSchemaList } from './schemas';
 
@@ -8,7 +9,7 @@ import { Message, MessageContentItem, MessageSchema, messageSchemaList } from '.
 // Fetch all messages in a given message thread
 export async function fetchMessages(threadId: string): Promise<Message[]> {
   const response = await api.get(`messagethreads/${threadId}/messages`);
-  return messageSchemaList.parse(response.data.data);
+  return safeParse(messageSchemaList, response.data.data, 'fetchMessages');
 }
 
 // Send structured input (e.g. form values) to a specific message
@@ -39,7 +40,7 @@ export async function addInputToMessage({
         if (lastChunk.trim()) {
           try {
             const parsed = JSON.parse(lastChunk);
-            result = MessageSchema.parse(parsed);
+            result = safeParse(MessageSchema, parsed, 'addInputToMessage:stream');
           } catch (error) {
             console.warn('Stream parse error:', error);
           }
@@ -110,7 +111,7 @@ export async function postMessage({
           const messages = data.split('\n\ndata:');
           if (messages.length) {
             const message = JSON.parse(messages[messages.length - 1]);
-            const parsedMessage = MessageSchema.parse(message);
+            const parsedMessage = safeParse(MessageSchema, message, 'postMessage:stream');
             observable.next(parsedMessage);
           }
         },
