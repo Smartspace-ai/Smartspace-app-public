@@ -1,5 +1,7 @@
 import { api } from '@/platform/api/apiClient';
+
 import { safeParse } from '@/shared/utils/safeParse';
+
 import { Model, ModelSchema, ModelsEnvelopeSchema } from './schemas';
 
 // Fetch threads for a given workspace

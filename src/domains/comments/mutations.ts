@@ -1,6 +1,8 @@
-import { useUserId } from '@/platform/auth/session';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+
+import { useUserId } from '@/platform/auth/session';
+
 import { commentsKeys } from './queryKeys';
 import { Comment, CommentSchema, MentionUser } from "./schemas";
 import { addComment } from './service';

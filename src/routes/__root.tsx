@@ -1,8 +1,10 @@
 // src/routes/__root.tsx
+import { Outlet, createRootRoute } from '@tanstack/react-router'
+
+import TeamsLoader from '@/pages/teams_loader'
+
 import AppProviders from '@/app/app'
 import { useTeamsViewport } from '@/hooks/use-teams-viewport'
-import TeamsLoader from '@/pages/teams_loader'
-import { Outlet, createRootRoute } from '@tanstack/react-router'
 
 function RootContent() {
   const { viewportHeight, isAndroidTeams } = useTeamsViewport()

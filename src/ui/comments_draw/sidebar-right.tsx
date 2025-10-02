@@ -1,4 +1,19 @@
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Send } from '@mui/icons-material';
+import { Typography } from '@mui/material';
+import { ArrowBigUp, MessageSquare } from 'lucide-react';
+import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
+
+import { useAddComment } from '@/domains/comments/mutations';
+import { useComments } from '@/domains/comments/queries';
+import { Comment } from '@/domains/comments/schemas';
+import { useTaggableWorkspaceUsers } from '@/domains/workspaces/queries';
+import { MentionUser } from '@/domains/workspaces/schemas';
+
+import { MentionInput } from '@/ui/comments_draw/mention-input';
+
+import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
 import { Avatar, AvatarFallback } from '@/shared/ui/shadcn/avatar';
 import {
   Breadcrumb,
@@ -15,23 +30,16 @@ import {
   SidebarHeader,
 } from '@/shared/ui/shadcn/sidebar';
 
-import { MentionUser } from '@/domains/workspaces/schemas';
-import { MentionInput } from '@/ui/comments_draw/mention-input';
  
-import { useComments } from '@/domains/comments/queries';
-import { Comment } from '@/domains/comments/schemas';
-import { useTaggableWorkspaceUsers } from '@/domains/workspaces/queries';
 
-import { useAddComment } from '@/domains/comments/mutations';
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
-import { Send } from '@mui/icons-material';
-import { Typography } from '@mui/material';
-import { ArrowBigUp, MessageSquare } from 'lucide-react';
-import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
+
+
+import { useIsMobile } from '@/hooks/use-mobile';
+
 import { Skeleton } from '../../shared/ui/shadcn/skeleton';
 import { getInitials } from '../../shared/utils/initials';
 import { parseDateTime } from '../../shared/utils/parse-date-time';
+
 
 const MAX_COMMENT_LENGTH = 350;
 

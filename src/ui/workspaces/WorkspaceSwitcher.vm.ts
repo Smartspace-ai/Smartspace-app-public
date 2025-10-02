@@ -1,10 +1,13 @@
 // src/ui/workspaces/WorkspaceSwitcher.vm.ts
-import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
-import { useSidebar } from '@/shared/ui/shadcn/sidebar';
 import { useNavigate } from '@tanstack/react-router';
 import debounce from 'lodash/debounce';
 import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
+
+import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
+import { useSidebar } from '@/shared/ui/shadcn/sidebar';
 
 export function useWorkspaceSwitcherVm() {
   const [open, setOpen] = useState(false);

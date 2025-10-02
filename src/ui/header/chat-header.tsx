@@ -1,16 +1,21 @@
 import { MessageSquare, PanelLeft } from 'lucide-react';
 
-import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 
  
-import { useWorkspaceUpdates } from '@/hooks/use-workspace-updates';
  
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
+
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
+import { Skeleton } from '@/shared/ui/shadcn/skeleton';
+
+import { useWorkspaceUpdates } from '@/hooks/use-workspace-updates';
+
+import { NotificationPanel } from './notifications-panel';
 import { Separator } from '../../shared/ui/shadcn/separator';
 import { SidebarTrigger } from '../../shared/ui/shadcn/sidebar';
-import { NotificationPanel } from './notifications-panel';
+
 
 export function ChatHeader() {
   const { workspaceId, threadId } = useRouteIds();

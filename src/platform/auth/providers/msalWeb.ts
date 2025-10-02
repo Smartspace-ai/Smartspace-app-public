@@ -1,5 +1,6 @@
 import { msalInstance } from '@/platform/auth/msalClient';
 import { interactiveLoginRequest, loginRequest } from '@/platform/auth/msalConfig';
+
 import { AuthAdapter, GetTokenOptions } from '../types';
 
 export function createMsalWebAdapter(): AuthAdapter {

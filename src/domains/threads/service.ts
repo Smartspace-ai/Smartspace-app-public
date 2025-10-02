@@ -1,5 +1,7 @@
 import { api } from '@/platform/api/apiClient';
+
 import { safeParse } from '@/shared/utils/safeParse';
+
 import { MessageThread, MessageThreadSchema, ThreadsResponseSchema } from './schemas';
 
 // Fetch threads for a given workspace
@@ -28,14 +30,14 @@ export async function fetchThread(
 export async function setFavorite(
   threadId: string,
   favourite: boolean
-): Promise<MessageThread> {
+): Promise<void> {
   const response = await api.put(
     `/messagethreads/${threadId}/favorited`,
     favourite,
     { headers: { 'Content-Type': 'application/json' } }
   );
-
-  return safeParse(MessageThreadSchema, response.data, 'setFavorite');
+  // API returns a primitive (e.g., string). We don't need the body.
+  return;
 }
 
 // Rename a message thread

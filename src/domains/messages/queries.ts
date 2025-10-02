@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { messagesKeys } from './queryKeys';
 import type { Message } from './schemas';
 import { fetchMessages } from './service';

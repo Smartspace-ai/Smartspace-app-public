@@ -1,13 +1,15 @@
 // src/app/app.tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { useEffect, useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useMemo } from 'react';
+
+import { AuthProvider } from '@/platform/auth/session';
+
+import { SidebarProvider } from '@/shared/ui/shadcn/sidebar';
 
 import { TeamsProvider, useTeams } from '@/contexts/teams-context';
 import { SignalRProvider } from '@/hooks/use-signalr';
-import { AuthProvider } from '@/platform/auth/session';
-import { SidebarProvider } from '@/shared/ui/shadcn/sidebar';
-import { Loader2 } from 'lucide-react';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const queryClient = useMemo(
@@ -40,11 +42,6 @@ function InnerProviders({
   queryClient: QueryClient;
 }) {
   const { isInTeams, isTeamsInitialized } = useTeams();
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   // If running inside Teams, wait for Teams init before rendering
   if (isInTeams && !isTeamsInitialized) {

@@ -5,15 +5,17 @@ import { useEffect, useRef } from 'react';
 import { Toaster } from 'sonner';
 
 import { useWorkspaces } from '@/domains/workspaces/queries';
+
 import SidebarRight from '@/ui/comments_draw/sidebar-right';
 import ChatHeader from '@/ui/header/chat-header';
 import SidebarLeft from '@/ui/layout/SideBarleft';
 import MessageComposer from '@/ui/messages/MessageComposer';
 import MessageList from '@/ui/messages/MessageList';
+import { useThreadsListVm } from '@/ui/threads/ThreadsList.vm';
+
 import { useRouteIds } from './RouteIdsProvider';
 
 // ✅ the shared VM used by the sidebar ThreadsPanel
-import { useThreadsListVm } from '@/ui/threads/ThreadsList.vm';
 
 export default function ChatBotPage() {
   const { workspaceId, threadId } = useRouteIds();

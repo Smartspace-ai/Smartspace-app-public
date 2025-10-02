@@ -1,21 +1,25 @@
-import { MessageValueType } from '@/domains/messages/enums';
-import { useMessages } from '@/domains/messages/queries';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { AlertTriangle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-
-import { useThread } from '@/domains/threads/queries';
-import { useWorkspace } from '@/domains/workspaces/queries';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+import { MessageValueType } from '@/domains/messages/enums';
+import { useMessages } from '@/domains/messages/queries';
+import { useThread } from '@/domains/threads/queries';
+import { useWorkspace } from '@/domains/workspaces/queries';
+
+import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
+import { useIsMobile } from '@/hooks/use-mobile';
+
+import MessageItem from './MessageItem';
 import { Avatar, AvatarFallback } from '../../shared/ui/shadcn/avatar';
 import { useSidebar } from '../../shared/ui/shadcn/sidebar';
 import { Skeleton } from '../../shared/ui/shadcn/skeleton';
 import { getInitials } from '../../shared/utils/initials';
 import { parseDateTime } from '../../shared/utils/parse-date-time';
-import MessageItem from './MessageItem';
+
 
 
 

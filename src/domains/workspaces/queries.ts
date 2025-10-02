@@ -1,5 +1,6 @@
 // src/domain/workspaces/queries.ts
 import { useQuery } from '@tanstack/react-query';
+
 import { workspaceKeys } from './queryKeys';
 import { fetchTaggableUsers, fetchWorkspace, fetchWorkspaces } from './service';
 

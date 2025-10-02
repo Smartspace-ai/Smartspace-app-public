@@ -1,8 +1,10 @@
-import { loginRequest } from '@/platform/auth/msalConfig';
 import {
     InteractionRequiredAuthError,
     IPublicClientApplication,
 } from '@azure/msal-browser';
+
+import { loginRequest } from '@/platform/auth/msalConfig';
+
 import GraphAPI from './api-graph';
 
 export async function callMsGraph<T = any>(

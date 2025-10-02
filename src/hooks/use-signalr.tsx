@@ -1,7 +1,4 @@
-import { useTeams } from '@/contexts/teams-context';
-import { normalizeNotificationType, NotificationType } from '@/domains/notifications/schemas';
 
-import { useAuth, useUserId } from '@/platform/auth/session';
 import { useIsAuthenticated } from '@azure/msal-react';
 import {
   HubConnection,
@@ -19,6 +16,12 @@ import {
   useRef,
   useState,
 } from 'react';
+
+import { useAuth, useUserId } from '@/platform/auth/session';
+
+import { normalizeNotificationType, NotificationType } from '@/domains/notifications/schemas';
+
+import { useTeams } from '@/contexts/teams-context';
 
 const signalRUri: string =
   (window as any)?.ssconfig?.Chat_Api_Uri ||

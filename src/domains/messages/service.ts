@@ -1,7 +1,12 @@
-import { FileInfo } from '@/domains/files/schemas';
-import { api } from '@/platform/api/apiClient';
-import { safeParse } from '@/shared/utils/safeParse';
 import { Subject } from 'rxjs';
+
+import { api } from '@/platform/api/apiClient';
+
+import { FileInfo } from '@/domains/files/schemas';
+
+import { safeParse } from '@/shared/utils/safeParse';
+
+
 import { Message, MessageContentItem, MessageSchema, messageSchemaList } from './schemas';
 
 

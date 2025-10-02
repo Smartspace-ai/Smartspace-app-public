@@ -1,8 +1,11 @@
 // src/ui/threads/ThreadsList.tsx
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
-import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 import { MessageSquare } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
+
+import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
+import { Skeleton } from '@/shared/ui/shadcn/skeleton';
+
 import ThreadItem from './ThreadItem';
 import { useThreadsListVm } from './ThreadsList.vm';
 

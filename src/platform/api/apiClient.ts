@@ -1,8 +1,9 @@
+import { InteractionRequiredAuthError } from '@azure/msal-browser';
+import axios from 'axios';
+
 import { msalInstance } from '@/platform/auth/msalClient';
 import { interactiveLoginRequest, isInTeams } from '@/platform/auth/msalConfig';
 import { acquireNaaToken } from '@/platform/auth/naaClient';
-import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import axios from 'axios';
 
 function getBaseUrl() {
   const configBaseUrl =

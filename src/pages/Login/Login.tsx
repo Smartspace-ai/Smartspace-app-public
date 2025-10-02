@@ -1,11 +1,13 @@
-import { isInTeams } from '@/platform/auth/msalConfig';
-import { useAuth } from '@/platform/auth/session';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+
+import { isInTeams } from '@/platform/auth/msalConfig';
+import { useAuth } from '@/platform/auth/session';
+
+import styles from './Login.module.scss';
 import { Logo } from '../../assets/logo';
 import { useTeams } from '../../contexts/teams-context';
 import { Button } from '../../shared/ui/shadcn/button';
-import styles from './Login.module.scss';
 
 export function Login() {
   // Grab intended redirect path from URL if present

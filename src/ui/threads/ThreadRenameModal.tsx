@@ -1,6 +1,9 @@
 // src/ui/threads/ThreadRenameModal.tsx
+import { useEffect, useRef, useState } from 'react';
+
 import { useRenameThread } from '@/domains/threads/mutations';
 import type { MessageThread } from '@/domains/threads/schemas';
+
 import { Button } from '@/shared/ui/shadcn/button';
 import {
     Dialog,
@@ -11,7 +14,6 @@ import {
 } from '@/shared/ui/shadcn/dialog';
 import { Input } from '@/shared/ui/shadcn/input';
 import { Label } from '@/shared/ui/shadcn/label';
-import { useEffect, useRef, useState } from 'react';
 
 interface Props {
   isOpen: boolean;

@@ -1,5 +1,3 @@
-import { MentionUser } from '@/domains/workspaces';
-import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Avatar,
   IconButton,
@@ -15,6 +13,10 @@ import {
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+
+import { MentionUser } from '@/domains/workspaces';
+
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MentionInputProps {
   value: { plain: string; withMentions: string };

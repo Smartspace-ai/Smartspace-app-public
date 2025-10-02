@@ -1,5 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
+
 import { modelsKeys } from './queryKeys';
 import { fetchModel, fetchModels } from './service';
 

@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
+
 import { notificationsKeys } from './queryKeys';
 import {
 	fetchNotifications

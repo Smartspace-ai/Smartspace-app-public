@@ -1,10 +1,13 @@
 // src/ui/workspaces/WorkspaceSwitcher.tsx
+import { ChevronDown } from 'lucide-react';
+
 import { Workspace } from '@/domains/workspaces/schemas';
+
 import { CircleInitials } from '@/shared/components/circle-initials';
 import { Button } from '@/shared/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/shadcn/popover';
 import { Skeleton } from '@/shared/ui/shadcn/skeleton';
-import { ChevronDown } from 'lucide-react';
+
 import { useWorkspaceSwitcherVm } from './WorkspaceSwitcher.vm';
 
 export function WorkspaceSwitcher() {

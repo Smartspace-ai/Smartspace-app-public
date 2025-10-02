@@ -2,6 +2,7 @@ import * as AvatarPrimitive from '@radix-ui/react-avatar';
 import * as React from 'react';
 
 import { cn } from '@/shared/utils/utils';
+
 import { getAvatarColour } from '../../utils/avatar-colour';
 
 const Avatar = React.forwardRef<

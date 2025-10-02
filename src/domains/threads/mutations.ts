@@ -1,6 +1,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+
 import { threadsKeys } from './queryKeys';
 import { deleteThread, renameThread, setFavorite } from './service';
 

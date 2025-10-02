@@ -1,5 +1,7 @@
-import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
 import { app as teamsApp } from '@microsoft/teams-js';
+
+import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
+
 import { AuthAdapter } from '../types';
 
 export function createTeamsNaaAdapter(): AuthAdapter {

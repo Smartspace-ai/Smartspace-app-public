@@ -1,8 +1,10 @@
 // src/ui/layout/SidebarUserHeader.tsx
-import { Logo } from '@/assets/logo';
-import { useTeams } from '@/contexts/teams-context';
+import { useMsal } from '@azure/msal-react';
+import { LogOut } from 'lucide-react';
+
 import { handleTrailingSlash } from '@/platform/auth/msalConfig';
 import { useUserId } from '@/platform/auth/session';
+
 import {
     Avatar,
     AvatarFallback,
@@ -19,8 +21,10 @@ import {
 import { SidebarHeader } from '@/shared/ui/shadcn/sidebar';
 import { getAvatarColour } from '@/shared/utils/avatar-colour';
 import { getInitials } from '@/shared/utils/initials';
-import { useMsal } from '@azure/msal-react';
-import { LogOut } from 'lucide-react';
+
+import { Logo } from '@/assets/logo';
+import { useTeams } from '@/contexts/teams-context';
+
 
 export default function SidebarUserHeader() {
   const { isInTeams } = useTeams();

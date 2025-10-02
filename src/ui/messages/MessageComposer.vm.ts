@@ -1,15 +1,19 @@
 'use client';
 
+import type React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
 import { useFileMutations } from '@/domains/files/mutations';
 import { FileInfo } from '@/domains/files/schemas';
 import { useSendMessage } from '@/domains/messages/mutations';
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
 import { useSidebar } from '@/shared/ui/shadcn/sidebar';
-import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 /** Public shape exported to the UI component */

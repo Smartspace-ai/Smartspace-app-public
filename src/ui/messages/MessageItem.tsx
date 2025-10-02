@@ -9,6 +9,7 @@ import { MessageValueType } from '@/domains/messages/enums';
 import { getMessageErrorText } from '@/domains/messages/errors';
 import { useAddInputToMessage } from '@/domains/messages/mutations';
 import { Message, MessageContentItem } from '@/domains/messages/schemas';
+
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 // local UI

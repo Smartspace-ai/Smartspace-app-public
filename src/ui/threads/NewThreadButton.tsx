@@ -1,9 +1,11 @@
 // src/ui/threads/NewThreadButton.tsx
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
-import { Button } from '@/shared/ui/shadcn/button';
-import { useSidebar } from '@/shared/ui/shadcn/sidebar';
 import { useNavigate } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
+
+import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
+import { Button } from '@/shared/ui/shadcn/button';
+import { useSidebar } from '@/shared/ui/shadcn/sidebar';
 
 export default function NewThreadButton() {
   const { isMobile, setOpenMobileLeft } = useSidebar();

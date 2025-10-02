@@ -1,23 +1,25 @@
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Button } from '@/shared/ui/shadcn/button';
-import { Sheet, SheetContent } from '@/shared/ui/shadcn/sheet';
-import { TooltipProvider } from '@/shared/ui/shadcn/tooltip';
-import { cn } from '@/shared/utils/utils';
 import { Slot } from '@radix-ui/react-slot';
 import { PanelLeft } from 'lucide-react';
 import {
-  ComponentProps,
-  createContext,
-  CSSProperties,
-  ElementRef,
-  forwardRef,
-  ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
+    ComponentProps,
+    createContext,
+    CSSProperties,
+    ElementRef,
+    forwardRef,
+    ReactNode,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
 } from 'react';
+
+import { Button } from '@/shared/ui/shadcn/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/shadcn/sheet';
+import { TooltipProvider } from '@/shared/ui/shadcn/tooltip';
+import { cn } from '@/shared/utils/utils';
+
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
@@ -327,6 +329,9 @@ const Sidebar = forwardRef<
             onOpenAutoFocus={(e) => e.preventDefault()}
             className="p-0 bg-sidebar text-sidebar-foreground"
           >
+            <SheetHeader>
+              <SheetTitle className="sr-only">{side === 'left' ? 'Left sidebar' : 'Right sidebar'}</SheetTitle>
+            </SheetHeader>
             <div className="flex h-full w-full flex-col min-h-0">{children}</div>
           </SheetContent>
         </Sheet>
@@ -683,25 +688,25 @@ const SidebarFooter = forwardRef<HTMLDivElement, ComponentProps<'div'>>(
 SidebarFooter.displayName = 'SidebarFooter';
 
 export {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuAction,
-  SidebarMenuBadge,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarSeparator,
-  SidebarTrigger
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarInset,
+    SidebarMenu,
+    SidebarMenuAction,
+    SidebarMenuBadge,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
+    SidebarProvider,
+    SidebarRail,
+    SidebarSeparator,
+    SidebarTrigger
 };
 

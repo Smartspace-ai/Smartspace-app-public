@@ -1,10 +1,11 @@
 
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { flowRunsKeys } from '../flowruns/queryKeys';
-import { fetchFlowRunVariables } from '../flowruns/service';
+
 import { threadsKeys } from './queryKeys';
 import { ThreadsResponse } from './schemas';
 import { fetchThread, fetchThreads } from './service';
+import { flowRunsKeys } from '../flowruns/queryKeys';
+import { fetchFlowRunVariables } from '../flowruns/service';
 
 export const useThread = ({workspaceId, threadId}: { workspaceId: string; threadId: string }) => {
   return useQuery({

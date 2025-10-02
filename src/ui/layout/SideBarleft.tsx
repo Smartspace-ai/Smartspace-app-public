@@ -1,15 +1,18 @@
 // src/ui/layout/SidebarLeft.tsx
+import { ComponentProps } from 'react';
+
+import NewThreadButton from '@/ui/threads/NewThreadButton';
+import ThreadsList from '@/ui/threads/ThreadsList';
+import { WorkspaceSwitcher } from '@/ui/workspaces/WorkspaceSwitcher';
+
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
 } from '@/shared/ui/shadcn/sidebar';
-import NewThreadButton from '@/ui/threads/NewThreadButton';
-import ThreadsList from '@/ui/threads/ThreadsList';
-import { WorkspaceSwitcher } from '@/ui/workspaces/WorkspaceSwitcher';
+
 import SidebarUserHeader from './SidebarUserHeader';
 
-import { ComponentProps } from 'react';
 
 export default function SidebarLeft(props: ComponentProps<typeof Sidebar>) {
   return (

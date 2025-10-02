@@ -1,5 +1,7 @@
 import { api } from '@/platform/api/apiClient';
+
 import { safeParse } from '@/shared/utils/safeParse';
+
 import { FileInfoSchema, type FileInfo, type FileScope } from './schemas';
 
 export const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB

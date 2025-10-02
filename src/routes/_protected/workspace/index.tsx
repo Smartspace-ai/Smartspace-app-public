@@ -1,8 +1,10 @@
-import { useWorkspaces } from '@/domains/workspaces/queries'
-import NoWorkspacesAvailable from '@/pages/no_workspaces_available'
-import TeamsLoader from '@/pages/teams_loader'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
+
+import { useWorkspaces } from '@/domains/workspaces/queries'
+
+import NoWorkspacesAvailable from '@/pages/no_workspaces_available'
+import TeamsLoader from '@/pages/teams_loader'
 
 export const Route = createFileRoute('/_protected/workspace/')({
   component: WorkspaceIndex,

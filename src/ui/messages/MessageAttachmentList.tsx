@@ -1,6 +1,8 @@
 import { useFileMutations } from '@/domains/files/mutations';
 import { FileInfo } from '@/domains/files/schemas';
+
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
 import { Button } from '@/shared/ui/shadcn/button';
 
 

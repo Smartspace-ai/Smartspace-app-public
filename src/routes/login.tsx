@@ -1,6 +1,8 @@
-import { Login } from '@/pages/Login/Login'
-import { createAuthAdapter } from '@/platform/auth'
 import { createFileRoute, redirect } from '@tanstack/react-router'
+
+import { createAuthAdapter } from '@/platform/auth'
+
+import { Login } from '@/pages/Login/Login'
 
 export const Route = createFileRoute('/login')({
   beforeLoad: async ({ location }) => {

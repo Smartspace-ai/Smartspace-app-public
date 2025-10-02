@@ -3,10 +3,11 @@ import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Autocomplete, TextField } from '@mui/material';
 import { Loader2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { llmModelIcons } from '../../../assets/providers';
 import { useModels } from '../../../domains/models/queries';
 import { Model } from '../../../domains/models/schemas';
-import { Dialog, DialogContent, DialogTrigger } from '../../../shared/ui/shadcn/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '../../../shared/ui/shadcn/dialog';
 
 interface ModelIdRendererProps {
   data: any;
@@ -178,6 +179,7 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
             </button>
           </DialogTrigger>
           <DialogContent hideClose onOpenAutoFocus={(e) => e.preventDefault()} className="p-0 w-[90vw] max-w-sm sm:max-w-sm h-[70vh] flex flex-col gap-0 data-[state=open]:animate-none data-[state=closed]:animate-none">
+            <DialogTitle className="sr-only">Select a model</DialogTitle>
             <div className="flex flex-col h-full w-full">
               <div className="flex-1 overflow-y-auto w-full max-w-[360px] mx-auto">
                 {isLoading && listModels.length === 0 && (

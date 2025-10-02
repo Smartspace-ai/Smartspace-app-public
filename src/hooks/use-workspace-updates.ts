@@ -1,9 +1,11 @@
-import { Comment } from '@/domains/comments/schemas';
-import { messagesKeys } from '@/domains/messages/queryKeys';
-import { MessageThread } from '@/domains/threads/schemas';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
+
+import { Comment } from '@/domains/comments/schemas';
+import { messagesKeys } from '@/domains/messages/queryKeys';
+import { MessageThread } from '@/domains/threads/schemas';
+
 import { useSignalR } from './use-signalr';
 
 export function useWorkspaceUpdates() {

@@ -1,5 +1,6 @@
-import { createAuthAdapter } from '@/platform/auth';
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+
+import { createAuthAdapter } from '@/platform/auth';
 
 export const Route = createFileRoute('/_protected')({
   beforeLoad: async ({ location }) => {

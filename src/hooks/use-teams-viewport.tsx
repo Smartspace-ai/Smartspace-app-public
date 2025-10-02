@@ -1,5 +1,6 @@
-import { useTeams } from '@/contexts/teams-context';
 import { useEffect, useState } from 'react';
+
+import { useTeams } from '@/contexts/teams-context';
 
 /**
  * Custom hook to handle viewport height issues in Android Teams

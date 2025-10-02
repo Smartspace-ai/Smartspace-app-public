@@ -8,8 +8,10 @@ import remarkGfm from 'remark-gfm';
 // import rehypeSanitize from 'rehype-sanitize';
 
 import { useTeams } from '@/contexts/teams-context';
+
 import { HTMLBlock } from './html';
 import { MarkdownSmartImage } from './MarkdownSmartImage';
+
 
 type Props = { text: string };
 
