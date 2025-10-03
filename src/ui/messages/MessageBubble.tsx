@@ -19,8 +19,8 @@ import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parse-date-time';
 import { cn } from '@/shared/utils/utils';
 
-import ChatMessageCopyButton from './MessageCopyButton';
-import ChatMessageFileDownload from './MessageFileDownload';
+import { ChatMessageCopyButton } from './MessageCopyButton';
+import { ChatMessageFileDownload } from './MessageFileDownload';
 import { ChatMessageImage } from './MessageImage';
 import { ChatMessageSources } from './MessageSources';
 

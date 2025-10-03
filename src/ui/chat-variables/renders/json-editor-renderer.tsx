@@ -5,7 +5,7 @@ import 'ace-builds/src-noconflict/ext-language_tools';
 import 'ace-builds/src-noconflict/mode-json';
 import 'ace-builds/src-noconflict/theme-github';
 import debounce from 'lodash.debounce';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import AceEditor from 'react-ace';
 
 interface JsonEditorRendererProps extends ControlProps {
@@ -34,11 +34,10 @@ const JsonEditorRenderer: React.FC<JsonEditorRendererProps> = ({
 
 
   // Debounced function to display error messages
-  const debouncedSetDisplayError = useCallback(
+  const debouncedSetDisplayError = useRef(
     debounce((error: string | null) => {
       setDisplayedParseError(error);
-    }, 3000), // 300ms debounce for error display
-    []
+    }, 300)
   );
 
   // Convert data to JSON string only on initial load or when external data changes significantly
@@ -49,7 +48,7 @@ const JsonEditorRenderer: React.FC<JsonEditorRendererProps> = ({
         setJsonValue(formatted || '{}');
         setParseError(null);
         setDisplayedParseError(null);
-        debouncedSetDisplayError.cancel(); // Cancel any pending error display
+        debouncedSetDisplayError.current.cancel(); // Cancel any pending error display
         lastValidData.current = data;
         isInitializing.current = false;
       } catch (error) {
@@ -70,23 +69,24 @@ const JsonEditorRenderer: React.FC<JsonEditorRendererProps> = ({
       const parsed = JSON.parse(value);
       setParseError(null);
       setDisplayedParseError(null);
-      debouncedSetDisplayError.cancel(); // Cancel any pending error display
+      debouncedSetDisplayError.current.cancel(); // Cancel any pending error display
       lastValidData.current = parsed;
       handleChange(path, parsed);
     } catch (error) {
       const errorMsg = `Invalid JSON: ${error instanceof Error ? error.message : 'Unknown error'}`;
       setParseError(errorMsg);
       // Debounce the error display so it doesn't show immediately while typing
-      debouncedSetDisplayError(errorMsg);
+      debouncedSetDisplayError.current(errorMsg);
     }
   };
 
   // Cleanup debounced functions on unmount
   useEffect(() => {
+    const d = debouncedSetDisplayError.current;
     return () => {
-      debouncedSetDisplayError.cancel();
+      d.cancel();
     };
-  }, [debouncedSetDisplayError]);
+  }, []);
 
   if (!visible) {
     return null;

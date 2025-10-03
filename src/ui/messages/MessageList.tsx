@@ -13,7 +13,7 @@ import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useIsMobile } from '@/hooks/use-mobile';
 
-import MessageItem from './MessageItem';
+import { MessageItem } from './MessageItem';
 import { Avatar, AvatarFallback } from '../../shared/ui/shadcn/avatar';
 import { useSidebar } from '../../shared/ui/shadcn/sidebar';
 import { Skeleton } from '../../shared/ui/shadcn/skeleton';
@@ -23,7 +23,7 @@ import { parseDateTime } from '../../shared/utils/parse-date-time';
 
 
 
-export default function MessageList() {
+export function MessageList() {
     const { workspaceId, threadId } = useRouteIds();
   const contentRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -245,3 +245,4 @@ export default function MessageList() {
     </div>
   );
 }
+

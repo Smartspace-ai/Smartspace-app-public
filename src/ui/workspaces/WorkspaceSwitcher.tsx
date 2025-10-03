@@ -93,9 +93,16 @@ function WorkspaceRow({ workspace, isActive, onSelect }: RowProps) {
   return (
     <div
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       className="text-xs py-2 px-2 rounded-md hover:bg-gray-50 cursor-pointer"
       tabIndex={0}
       role="button"
+      aria-pressed={isActive}
     >
       <div className="flex items-center gap-2 w-full">
         <CircleInitials

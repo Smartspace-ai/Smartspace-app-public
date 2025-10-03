@@ -46,7 +46,7 @@ export const MentionInput = (props: MentionInputProps) => {
     minRows,
     maxRows,
     inputSx,
-    autoFocus,
+    autoFocus: _autoFocus,
     shouldFocus,
     placeholder,
     showFullscreenToggle = true,
@@ -295,7 +295,7 @@ export const MentionInput = (props: MentionInputProps) => {
             placeholder={placeholder}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            autoFocus={autoFocus}
+              // Avoid autoFocus for better accessibility; focus is controlled via shouldFocus
             sx={mergedSx}
           />
           {showFullscreenToggle && showExpand && (
@@ -358,7 +358,7 @@ export const MentionInput = (props: MentionInputProps) => {
                   placeholder={placeholder}
                   onChange={handleChange}
                   onKeyDown={handleKeyDown}
-                  autoFocus
+                  // Avoid autoFocus for better accessibility; focus is controlled via shouldFocus
                   minRows={Math.max(minRows ?? 10, 10)}
                   sx={{
                     height: '100%',

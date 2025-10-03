@@ -5,10 +5,9 @@ import { useInfiniteThreads } from '@/domains/threads';
 type Options = {
   workspaceId: string;
   pageSize?: number;
-  filters?: { search?: string; favorited?: boolean };
 };
 
-export function useThreadsListVm({workspaceId,  pageSize = 30, filters }: Options) {
+export function useThreadsListVm({workspaceId,  pageSize = 30 }: Options) {
 
   const { data, isLoading, isFetching, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useInfiniteThreads(workspaceId, { pageSize });
   const threads = data?.pages.flatMap(page => page.data) ?? [];

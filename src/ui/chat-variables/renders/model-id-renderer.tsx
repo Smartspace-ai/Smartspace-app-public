@@ -189,14 +189,19 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
                 )}
                 <ul className="divide-y w-full">
                   {listModels.map((option) => (
-                    <li key={option.id} className="px-3 py-2 hover:bg-accent cursor-pointer"
-                        onClick={() => handleModelChange(null as any, option)}>
+                    <li key={option.id} className="p-0">
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-accent cursor-pointer"
+                        onClick={() => handleModelChange(null as any, option)}
+                      >
                       <div className="flex items-center gap-2">
                         {getProviderInfo(option.modelDeploymentProviderType || '').iconSrc && (
-                          <img src={getProviderInfo(option.modelDeploymentProviderType || '').iconSrc!} className="h-4 w-4" />
+                          <img src={getProviderInfo(option.modelDeploymentProviderType || '').iconSrc!} alt="Provider" className="h-4 w-4" />
                         )}
                         <span className="text-sm">{option.displayName || option.name}</span>
                       </div>
+                      </button>
                     </li>
                   ))}
                 </ul>

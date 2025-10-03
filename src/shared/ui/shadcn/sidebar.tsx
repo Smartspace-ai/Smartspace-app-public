@@ -1,17 +1,17 @@
 import { Slot } from '@radix-ui/react-slot';
 import { PanelLeft } from 'lucide-react';
 import {
-    ComponentProps,
-    createContext,
-    CSSProperties,
-    ElementRef,
-    forwardRef,
-    ReactNode,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  ComponentProps,
+  createContext,
+  CSSProperties,
+  ElementRef,
+  forwardRef,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from 'react';
 
 import { Button } from '@/shared/ui/shadcn/button';
@@ -169,7 +169,7 @@ const SidebarProvider = forwardRef<
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
       }, 50);
-    }, []);
+    }, [defaultLeftOpen, defaultRightOpen]);
 
     // On mobile, adjust sheet height to the visible viewport to avoid pushing content
     useEffect(() => {
@@ -688,25 +688,25 @@ const SidebarFooter = forwardRef<HTMLDivElement, ComponentProps<'div'>>(
 SidebarFooter.displayName = 'SidebarFooter';
 
 export {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarHeader,
-    SidebarInset,
-    SidebarMenu,
-    SidebarMenuAction,
-    SidebarMenuBadge,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarMenuSub,
-    SidebarMenuSubButton,
-    SidebarMenuSubItem,
-    SidebarProvider,
-    SidebarRail,
-    SidebarSeparator,
-    SidebarTrigger
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger
 };
 

@@ -22,11 +22,12 @@ export const Route = createFileRoute('/_protected')({
         } catch (error) {
           console.warn(`Authentication attempt ${attempts + 1} failed:`, error);
         }
-        
+
         attempts++;
         if (attempts < maxAttempts) {
           // Wait before retry, with increasing delay
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+          const delayMs = 1000 * attempts;
+          await new Promise(resolve => setTimeout(resolve, delayMs));
         }
       }
       

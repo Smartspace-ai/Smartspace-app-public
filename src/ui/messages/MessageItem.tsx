@@ -20,7 +20,10 @@ interface MessageItemProps {
 }
 
 /** shallow-enough equality for small channel maps like { stream: 0 } */
-function channelsEqual(a: Record<string, number> = {}, b: Record<string, number> = {}) {
+function channelsEqual(
+  a: Record<string, number> = {},
+  b: Record<string, number> = {}
+) {
   const aKeys = Object.keys(a);
   const bKeys = Object.keys(b);
   if (aKeys.length !== bKeys.length) return false;
@@ -59,16 +62,24 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
   const { addInputToMessageMutation } = useAddInputToMessage();
 
   const onSubmitUserForm =
-    (messageId: string) =>
-    (name: string, value: unknown) => {
+    (messageId: string) => (name: string, value: unknown) => {
       if (!threadId || !messageId) return;
-      addInputToMessageMutation.mutate({ threadId, messageId, name, value, channels: {} });
+      addInputToMessageMutation.mutate({
+        threadId,
+        messageId,
+        name,
+        value,
+        channels: {},
+      });
     };
 
   // sort without mutating original
   const values = (message.values ?? [])
     .slice()
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    .sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
 
   const bubbles: ReactNode[] = [];
 
@@ -145,7 +156,10 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
         // try to find the matching INPUT user value in the same channel map
         if (v.type !== MessageValueType.INPUT) {
           const userInput = values.find(
-            (u) => u.name === '_user' && u.type === MessageValueType.INPUT && channelsEqual(u.channels, v.channels)
+            (u) =>
+              u.name === '_user' &&
+              u.type === MessageValueType.INPUT &&
+              channelsEqual(u.channels, v.channels)
           );
 
           bubbles.push(
@@ -168,7 +182,9 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
       }
 
       case 'files': {
-        groupFiles = Array.isArray(v.value) ? (v.value as FileInfo[]) : [v.value as FileInfo];
+        groupFiles = Array.isArray(v.value)
+          ? (v.value as FileInfo[])
+          : [v.value as FileInfo];
         groupOpen = true;
         break;
       }
@@ -226,7 +242,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
     );
   }
 
-  return <>{bubbles}</>;
+  return bubbles;
 };
 
 export default MessageItem;

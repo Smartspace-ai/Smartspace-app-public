@@ -76,7 +76,13 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
             marginBottom: 0,
             lineHeight: '24px'
           }}
-          onClick={!isDisabled ? onToggle : undefined}
+          onKeyDown={!isDisabled ? (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onToggle();
+            }
+          } : undefined}
+          tabIndex={isDisabled ? -1 : 0}
         >
           {label}
           {(schema as any)?.required && (

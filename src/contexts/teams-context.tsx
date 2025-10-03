@@ -80,7 +80,8 @@ export const TeamsProvider: React.FC<TeamsProviderProps> = ({ children }) => {
           
           if (attempts < maxAttempts) {
             // Wait before retry with increasing delay
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+            const delayMs = 1000 * attempts;
+            await new Promise(resolve => setTimeout(resolve, delayMs));
           } else {
             // Final attempt failed
             console.log('Teams initialization failed after all attempts, assuming not in Teams');

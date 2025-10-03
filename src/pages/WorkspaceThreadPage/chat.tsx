@@ -10,7 +10,7 @@ import SidebarRight from '@/ui/comments_draw/sidebar-right';
 import ChatHeader from '@/ui/header/chat-header';
 import SidebarLeft from '@/ui/layout/SideBarleft';
 import MessageComposer from '@/ui/messages/MessageComposer';
-import MessageList from '@/ui/messages/MessageList';
+import { MessageList } from '@/ui/messages/MessageList';
 import { useThreadsListVm } from '@/ui/threads/ThreadsList.vm';
 
 import { useRouteIds } from './RouteIdsProvider';

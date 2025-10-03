@@ -78,6 +78,11 @@ module.exports = {
     'jsx-a11y/alt-text': 'error',
 
     /**
+     * Allow autofocus (your request)
+     */
+    'jsx-a11y/no-autofocus': 'off',
+
+    /**
      * Keep useful-but-noisy as warnings
      */
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
