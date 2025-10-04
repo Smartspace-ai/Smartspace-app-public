@@ -8,21 +8,20 @@ import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
+import { Separator } from '@/shared/ui/shadcn/separator';
+import { SidebarTrigger } from '@/shared/ui/shadcn/sidebar';
 import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 
-import { useWorkspaceUpdates } from '@/hooks/use-workspace-updates';
-
 import { NotificationPanel } from './notifications-panel';
-import { Separator } from '../../shared/ui/shadcn/separator';
-import { SidebarTrigger } from '../../shared/ui/shadcn/sidebar';
+
+
+
 
 
 export function ChatHeader() {
   const { workspaceId, threadId } = useRouteIds();
-  const { data: activeWorkspace } = useWorkspace(workspaceId);
+  const { data: activeWorkspace, isPending: workspaceLoading, isError: workspaceError } = useWorkspace(workspaceId);
   const { data: activeThread } = useThread({ workspaceId, threadId });
-  useWorkspaceUpdates()
-
   
   return (
     <header className="ss-chat__header flex h-[54px] shrink-0 items-center gap-2 bg-background border-b ">
@@ -35,13 +34,24 @@ export function ChatHeader() {
         <Separator orientation="vertical" className="mr-2 h-4" />
         {/* Workspace and thread display */}
         <div className="flex items-center">
-          {activeWorkspace?
+          {workspaceError ? (
+            <span
+              className="font-medium text-xs text-destructive"
+              role="status"
+              aria-live="polite"
+              title="Active workspace failed to load"
+            >
+              Workspace failed to load
+            </span>
+          ) : workspaceLoading ? (
+            <Skeleton className="h-4 w-28" />
+          ) : activeWorkspace ? (
             <span className="font-medium text-xs">
               {activeWorkspace?.name}
             </span>
-            :
-            <Skeleton className="h-4 w-28" />
-          }
+          ) : (
+            <span className="font-medium text-xs text-gray-500">—</span>
+          )}
           {activeThread?.name && (
             <>
               <span className="mx-2 text-gray-400">/</span>

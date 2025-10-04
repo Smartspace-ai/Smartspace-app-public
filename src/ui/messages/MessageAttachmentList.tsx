@@ -1,5 +1,5 @@
+import { FileInfo } from '@/domains/files';
 import { useFileMutations } from '@/domains/files/mutations';
-import { FileInfo } from '@/domains/files/schemas';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 

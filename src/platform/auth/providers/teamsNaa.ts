@@ -1,57 +1,37 @@
 import { app as teamsApp } from '@microsoft/teams-js';
 
 import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
+import { parseScopes } from '@/platform/auth/utils';
 
-import { AuthAdapter } from '../types';
+import type { AuthAdapter, GetTokenOptions } from '../types';
 
 export function createTeamsNaaAdapter(): AuthAdapter {
   return {
-    async getAccessToken() {
-      try {
-        await naaInit();
-        const scopes = (import.meta.env.VITE_CLIENT_SCOPES as string | undefined)?.split(',') || [];
-        return acquireNaaToken(scopes);
-      } catch (error) {
-        console.error('Teams NAA token acquisition failed:', error);
-        throw error;
-      }
+    async getAccessToken(opts?: GetTokenOptions) {
+      await naaInit();
+      const scopes = opts?.scopes ?? parseScopes(import.meta.env.VITE_CLIENT_SCOPES);
+      return acquireNaaToken(scopes, { forceRefresh: !!opts?.forceRefresh });
     },
+
     async getSession() {
       try {
-        // Try to initialize Teams if not already done
-        try {
-          await teamsApp.initialize();
-        } catch (initError) {
-          // Teams might already be initialized, ignore this error
-          console.log('Teams already initialized or not available');
+        // Initialize if needed; ignore if already initialized
+        try { await teamsApp.initialize(); } catch {
+          // ignore – app may already be initialized by host
         }
-        
         const ctx = await teamsApp.getContext();
-        if (!ctx.user) {
-          console.warn('No user context available in Teams');
-          return null;
-        }
-        
-        return { 
-          accountId: ctx.user.id, 
-          displayName: ctx.user.displayName 
-        };
-      } catch (error) {
-        console.error('Teams session retrieval failed:', error);
+        const user = (ctx as any)?.user;
+        if (!user) return null;
+        return { accountId: user.id, displayName: user.displayName };
+      } catch {
         return null;
       }
     },
-    async signIn() { 
-      // Teams handles authentication through SSO
-      console.log('Teams sign-in requested - handled by Teams SSO');
-    },
-    async signOut() { 
-      // Teams handles sign-out
-      console.log('Teams sign-out requested - handled by Teams');
-    },
-    getStoredRedirectUrl() {
-      // Teams doesn't use redirect URLs in the same way
-      return null;
-    },
+
+    // SSO is handled by Teams; these are no-ops by design
+    async signIn() { /* no-op in Teams */ },
+    async signOut() { /* no-op in Teams */ },
+
+    getStoredRedirectUrl() { return null; },
   };
 }

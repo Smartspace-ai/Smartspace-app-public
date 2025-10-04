@@ -1,12 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from '@tanstack/react-query';
 
-import { commentsKeys } from "./queryKeys";
-import { fetchComments } from "./service";
+import { commentsKeys } from './queryKeys';
+import { fetchComments } from './service';
 
-export const useComments = (threadId: string) => useQuery({
+export const commentsListOptions = (threadId: string) =>
+  queryOptions({
     queryKey: commentsKeys.list(threadId),
-    queryFn: async () => {
-        return await fetchComments(threadId)
-    },
+    queryFn: () => fetchComments(threadId),
     refetchOnWindowFocus: false,
   });
+
+export const useComments = (threadId: string) => useQuery(commentsListOptions(threadId));

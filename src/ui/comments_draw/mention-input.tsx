@@ -6,6 +6,7 @@ import {
   ListItemButton,
   ListItemText,
   Paper,
+  Skeleton,
   SxProps,
   TextField,
   Theme,
@@ -16,7 +17,7 @@ import { createPortal } from 'react-dom';
 
 import { MentionUser } from '@/domains/workspaces';
 
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
 
 interface MentionInputProps {
   value: { plain: string; withMentions: string };
@@ -24,6 +25,8 @@ interface MentionInputProps {
   searchTerm: string;
   setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
   users: MentionUser[];
+  usersLoading?: boolean;
+  usersError?: boolean;
   mentionList: MentionUser[];
   setMentionList: React.Dispatch<React.SetStateAction<MentionUser[]>>;
   minRows?: number;
@@ -41,6 +44,8 @@ export const MentionInput = (props: MentionInputProps) => {
     onChange,
     setSearchTerm,
     users,
+    usersLoading,
+    usersError,
     mentionList,
     setMentionList,
     minRows,
@@ -81,6 +86,8 @@ export const MentionInput = (props: MentionInputProps) => {
       ? [baseSx, ...inputSx]
       : [baseSx, inputSx]
     : baseSx;
+
+  // Mention highlighting disabled for now
 
   const closePopover = () => {
     setOpenPopover(false);
@@ -260,23 +267,44 @@ export const MentionInput = (props: MentionInputProps) => {
       // Prevent blur on the textarea when clicking the menu
       onMouseDown={(e) => e.preventDefault()}
     >
-      <List>
-        {users.map((user, index) => (
-          <ListItemButton
-            key={user.id}
-            selected={index === selectIndex}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleUserSelect(user);
-            }}
-          >
-            <ListItemAvatar>
-              <Avatar alt={user.displayName}>{user.initials}</Avatar>
-            </ListItemAvatar>
-            <ListItemText primary={user.displayName} />
-          </ListItemButton>
-        ))}
-      </List>
+      {usersError ? (
+        <div className="m-2 rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-sm">
+          Failed to load users
+        </div>
+      ) : usersLoading ? (
+        <List>
+          {Array(3)
+            .fill(0)
+            .map((_, i) => (
+              <ListItemButton key={i} disabled>
+                <ListItemAvatar>
+                  <Skeleton variant="circular" width={32} height={32} />
+                </ListItemAvatar>
+                <ListItemText
+                  primary={<Skeleton variant="text" width={120} height={16} />}
+                />
+              </ListItemButton>
+            ))}
+        </List>
+      ) : (
+        <List>
+          {users.map((user, index) => (
+            <ListItemButton
+              key={user.id}
+              selected={index === selectIndex}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUserSelect(user);
+              }}
+            >
+              <ListItemAvatar>
+                <Avatar alt={user.displayName}>{user.initials}</Avatar>
+              </ListItemAvatar>
+              <ListItemText primary={user.displayName} />
+            </ListItemButton>
+          ))}
+        </List>
+      )}
     </Paper>
   );
 
@@ -285,6 +313,7 @@ export const MentionInput = (props: MentionInputProps) => {
       {!isFullscreen && (
         // Anchor wrapper — the menu is absolutely positioned inside this
         <div ref={anchorRef} style={{ position: 'relative' }}>
+          {/* Mention highlighting removed */}
           <TextField
             inputRef={inputRef}
             minRows={minRows ?? 4}
@@ -296,7 +325,21 @@ export const MentionInput = (props: MentionInputProps) => {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
               // Avoid autoFocus for better accessibility; focus is controlled via shouldFocus
-            sx={mergedSx}
+            sx={{
+              ...mergedSx,
+              '& .MuiInputBase-root': { ...((mergedSx as any)['& .MuiInputBase-root'] || {}), backgroundColor: 'transparent', position: 'relative', zIndex: 1 },
+              '& .MuiInputBase-inputMultiline': {
+                ...((mergedSx as any)['& .MuiInputBase-inputMultiline'] || {}),
+                backgroundColor: 'transparent',
+                caretColor: 'var(--foreground)',
+              },
+              '& .MuiInputBase-input': {
+                ...((mergedSx as any)['& .MuiInputBase-input'] || {}),
+                backgroundColor: 'transparent',
+                caretColor: 'var(--foreground)',
+              },
+            }}
+            inputProps={{ style: { caretColor: 'var(--foreground)' } }}
           />
           {showFullscreenToggle && showExpand && (
             <IconButton
@@ -308,7 +351,7 @@ export const MentionInput = (props: MentionInputProps) => {
               <Maximize2 size={16} />
             </IconButton>
           )}
-          {openPopover && users.length > 0 && MentionMenu}
+          {openPopover && (usersLoading || usersError || users.length > 0) && MentionMenu}
         </div>
       )}
 
@@ -350,6 +393,7 @@ export const MentionInput = (props: MentionInputProps) => {
                 <Minimize2 size={16} />
               </IconButton>
               <div style={{ width: '100%', height: '100%', padding: 8 }}>
+                {/* Mention highlighting removed */}
                 <TextField
                   inputRef={inputRef}
                   multiline
@@ -365,22 +409,27 @@ export const MentionInput = (props: MentionInputProps) => {
                     '& .MuiInputBase-root': {
                       height: '100%',
                       alignItems: 'flex-start',
-                      backgroundColor: 'var(--card, var(--background, #fff))',
+                      backgroundColor: 'transparent',
+                      position: 'relative',
+                      zIndex: 1,
                     },
                     '& .MuiInputBase-inputMultiline': {
                       height: '100%',
                       overflowY: 'auto',
                       fontSize: '16px',
                       WebkitTextSizeAdjust: '100%',
-                      backgroundColor: 'var(--card, var(--background, #fff))',
+                      backgroundColor: 'transparent',
+                      caretColor: 'var(--foreground)',
                     },
                     '& .MuiInputBase-input': {
-                      backgroundColor: 'var(--card, var(--background, #fff))',
+                      backgroundColor: 'transparent',
+                      caretColor: 'var(--foreground)',
                     },
                   }}
+                  inputProps={{ style: { caretColor: 'var(--foreground)' } }}
                 />
               </div>
-              {openPopover && users.length > 0 && MentionMenu}
+              {openPopover && (usersLoading || usersError || users.length > 0) && MentionMenu}
             </div>
           </div>,
           document.body

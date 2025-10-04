@@ -2,14 +2,14 @@
 import { Edit, Loader2, MoreHorizontal, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
-import type { MessageThread } from '@/domains/threads/schemas';
+import type { MessageThread } from '@/domains/threads';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { CircleInitials } from '@/shared/components/circle-initials';
 import { Button } from '@/shared/ui/shadcn/button';
 import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/shared/ui/shadcn/dropdown-menu';
 
 import { useThreadItemVm } from './ThreadItem.vm';

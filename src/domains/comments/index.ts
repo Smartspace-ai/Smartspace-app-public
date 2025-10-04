@@ -1,5 +1,6 @@
+export type { Comment, MentionUser } from './model';
 export * from './mutations';
-export * from './queries';
-export * from './queryKeys';
-export * from './schemas';
+export { commentsListOptions, useComments } from './queries';
+export { commentsKeys } from './queryKeys';
 export * from './service';
+

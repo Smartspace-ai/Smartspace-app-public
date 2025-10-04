@@ -4,11 +4,11 @@
 import { FC, ReactNode } from 'react';
 
 // domains
-import { FileInfo } from '@/domains/files/schemas';
+import { FileInfo } from '@/domains/files';
+import { Message, MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 import { getMessageErrorText } from '@/domains/messages/errors';
 import { useAddInputToMessage } from '@/domains/messages/mutations';
-import { Message, MessageContentItem } from '@/domains/messages/schemas';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
@@ -171,8 +171,8 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
               content={[{ text: (v.value as any)?.message }]}
               files={[]}
               sources={[]}
-              userOutput={v.value}
-              userInput={userInput?.value}
+              userOutput={v.value as any}
+              userInput={userInput?.value as any}
               onSubmitUserForm={onSubmitUserForm(message.id ?? '')}
             />
           );

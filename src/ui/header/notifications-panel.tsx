@@ -3,18 +3,19 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, MessageCircle, MessageSquare } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import type { Notification } from '@/domains/notifications';
+import { NotificationType } from '@/domains/notifications/model';
 import { useMarkAllAsRead, useMarkAsRead } from '@/domains/notifications/mutations';
 import {
   useNotificationsQuery,
 } from '@/domains/notifications/queries';
-import { Notification, NotificationType } from '@/domains/notifications/schemas';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/shadcn/avatar';
 import { Button } from '@/shared/ui/shadcn/button';
 import { ScrollArea } from '@/shared/ui/shadcn/scroll-area';
 import { Switch } from '@/shared/ui/shadcn/switch';
 import { getInitials } from '@/shared/utils/initials';
-import { parseDateTimeHuman } from '@/shared/utils/parse-date-time';
+import { parseDateTimeHuman } from '@/shared/utils/parseDateTime';
 import { cn } from '@/shared/utils/utils';
 
 export function NotificationPanel() {

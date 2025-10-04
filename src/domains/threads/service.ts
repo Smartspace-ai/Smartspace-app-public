@@ -1,29 +1,26 @@
-import { api } from '@/platform/api/apiClient';
+import { z } from 'zod';
 
-import { safeParse } from '@/shared/utils/safeParse';
+import { apiParsed } from '@/platform/apiParsed';
 
-import { MessageThread, MessageThreadSchema, ThreadsResponseSchema } from './schemas';
+import { MessageThreadDto, ThreadsResponseDto } from './dto';
+import { mapThreadDtoToModel, mapThreadsResponseDtoToModel } from './mapper';
+import { MessageThread } from './model';
 
 // Fetch threads for a given workspace
 export async function fetchThreads(
   workspaceId?: string,
   { take, skip }: { take?: number; skip?: number } = {}
 ) {
-  const response = await api.get(
-    `workspaces/${workspaceId}/messagethreads`,
-    { params: { take, skip } }
-  );
-  return safeParse(ThreadsResponseSchema, response.data, 'fetchThreads');
+  const data = await apiParsed.get(ThreadsResponseDto, `workspaces/${workspaceId}/messagethreads`, { params: { take, skip } });
+  return mapThreadsResponseDtoToModel(data);
 }
 
 export async function fetchThread(
   workspaceId: string,  
   id: string
 ): Promise<MessageThread> {
-  const response = await api.get(
-    `workspaces/${workspaceId}/messagethreads/${id}`
-  );
-  return safeParse(MessageThreadSchema, response.data, 'fetchThread');
+  const data = await apiParsed.get(MessageThreadDto, `workspaces/${workspaceId}/messagethreads/${id}`);
+  return mapThreadDtoToModel(data);
 }
 
 // Set favorite status of a message thread
@@ -31,7 +28,7 @@ export async function setFavorite(
   threadId: string,
   favourite: boolean
 ): Promise<void> {
-  const response = await api.put(
+  await apiParsed.put(z.any(),
     `/messagethreads/${threadId}/favorited`,
     favourite,
     { headers: { 'Content-Type': 'application/json' } }
@@ -45,15 +42,13 @@ export async function renameThread(
   threadId: string,
   name: string
 ): Promise<MessageThread> {
-  const response = await api.put(`/messagethreads/${threadId}/name`, name, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  return safeParse(MessageThreadSchema, response.data, 'renameThread');
+  const data = await apiParsed.put(MessageThreadDto, `/messagethreads/${threadId}/name`, name, { headers: { 'Content-Type': 'application/json' } });
+  return mapThreadDtoToModel(data);
 }
 
 // Delete a message thread by ID
 export async function deleteThread(threadId: string) {
-  return await api.delete(`/messagethreads/${threadId}`);
+  return await apiParsed.del(z.any(), `/messagethreads/${threadId}`);
 }
 
 // Create a new message thread
@@ -61,13 +56,6 @@ export async function createThread(
   name: string,
   workspaceId: string
 ){
-  const response = await api.post(
-    `workspaces/${workspaceId}/messageThreads`,
-    { name }
-  );
-  return safeParse(MessageThreadSchema, response.data, 'createThread');
+  const data = await apiParsed.post(MessageThreadDto, `workspaces/${workspaceId}/messageThreads`, { name });
+  return mapThreadDtoToModel(data);
 }
-
-
-
-// Variable-related APIs moved to flowruns domain

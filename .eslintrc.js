@@ -2,17 +2,15 @@
 module.exports = {
   root: true,
 
+  env: { browser: true, es2023: true, node: true },
+
+  // Nx + React + TS + Import + Boundaries + Hooks + A11y
   plugins: ['@nx', 'import', 'boundaries', 'react-hooks', 'jsx-a11y'],
 
   extends: [
-    // Nx defaults for React/TS
     'plugin:@nx/react',
-
-    // Import plugin presets
     'plugin:import/recommended',
     'plugin:import/typescript',
-
-    // Hooks & a11y presets
     'plugin:react-hooks/recommended',
     'plugin:jsx-a11y/recommended',
   ],
@@ -23,16 +21,18 @@ module.exports = {
       typescript: { project: './tsconfig.json' },
       node: { extensions: ['.js', '.jsx', '.ts', '.tsx'] },
     },
+    react: { version: 'detect' },
 
     // Architectural layers for boundaries
     'boundaries/elements': [
       { type: 'platform', pattern: 'src/platform/**' },
-      { type: 'domains',  pattern: 'src/domains/**'  },
-      { type: 'ui',       pattern: 'src/ui/**'       },
-      { type: 'pages',    pattern: 'src/pages/**'    },
-      { type: 'shared',   pattern: 'src/shared/**'   },
-      { type: 'mocks',    pattern: 'src/mocks/**'    },
-      { type: 'tests',    pattern: 'src/tests/**'    },
+      { type: 'app',      pattern: 'src/app/**' },
+      { type: 'domains',  pattern: 'src/domains/**' },
+      { type: 'ui',       pattern: 'src/ui/**' },
+      { type: 'pages',    pattern: 'src/pages/**' },
+      { type: 'shared',   pattern: 'src/shared/**' },
+      { type: 'mocks',    pattern: 'src/mocks/**' },
+      { type: 'tests',    pattern: 'src/tests/**' },
     ],
   },
 
@@ -43,21 +43,34 @@ module.exports = {
     'boundaries/element-types': [2, {
       default: 'allow',
       rules: [
-        { from: 'domains',   allow: ['shared', 'platform'] },
-        { from: 'ui',        allow: ['domains', 'shared', 'platform'] },
-        { from: 'pages',     allow: ['ui', 'domains', 'shared', 'platform'] },
-        { from: 'shared',    disallow: ['domains', 'ui', 'pages'] },
-        { from: 'platform',  disallow: ['ui', 'domains', 'pages'] },
+        // platform is foundational; it must not depend on higher layers
+        { from: 'platform',  disallow: ['app', 'domains', 'ui', 'pages'] },
+
+        // app composes everything
+        { from: 'app',       allow: ['platform', 'shared', 'domains', 'ui', 'pages'] },
+
+        // domains use platform + shared only
+        { from: 'domains',   allow: ['platform', 'shared'] },
+
+        // ui can use domains + platform + shared (no pages to avoid cycles)
+        { from: 'ui',        allow: ['platform', 'shared', 'domains'] },
+
+        // pages can use ui + domains + platform + shared
+        { from: 'pages',     allow: ['ui', 'domains', 'platform', 'shared'] },
+
+        // shared must stay pure
+        { from: 'shared',    disallow: ['app', 'domains', 'ui', 'pages'] },
       ],
     }],
 
     /**
-     * Import hygiene
+     * Import hygiene & ordering
      */
     'import/order': ['error', {
       groups: ['builtin', 'external', 'internal', ['parent', 'sibling', 'index']],
       pathGroups: [
         { pattern: '@/platform/**', group: 'internal', position: 'before' },
+        { pattern: '@/app/**',      group: 'internal', position: 'before' },
         { pattern: '@/domains/**',  group: 'internal', position: 'before' },
         { pattern: '@/ui/**',       group: 'internal', position: 'before' },
         { pattern: '@/pages/**',    group: 'internal', position: 'before' },
@@ -68,8 +81,22 @@ module.exports = {
       'newlines-between': 'always',
     }],
 
+    // 🚫 Outside platform: do not import axios or raw transport
+    'no-restricted-imports': ['error', {
+      paths: [
+        { name: 'axios', message: 'Use @/platform/api (or request/http helpers) instead of axios directly.' },
+        { name: '@/platform/transport', message: 'Do not import raw transport outside platform.' },
+      ],
+      patterns: [
+        {
+          group: ['@/domains/**/dto', '@/domains/**/mapper', '@/domains/**/service'],
+          message: 'Import domain models/queries/mutations, not DTO/mapper/service.',
+        },
+      ],
+    }],
+
     /**
-     * Promote these to errors (highest-signal correctness)
+     * High-signal correctness
      */
     'react-hooks/exhaustive-deps': 'error',
     '@typescript-eslint/no-explicit-any': 'error',
@@ -78,12 +105,12 @@ module.exports = {
     'jsx-a11y/alt-text': 'error',
 
     /**
-     * Allow autofocus (your request)
+     * App-specific allowances
      */
     'jsx-a11y/no-autofocus': 'off',
 
     /**
-     * Keep useful-but-noisy as warnings
+     * Useful-but-noisy as warnings
      */
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     'import/no-named-as-default': 'warn',
@@ -92,19 +119,29 @@ module.exports = {
   },
 
   overrides: [
-    // Nx TS/JS defaults on source files
+    // TypeScript source
     {
       files: ['src/**/*.{ts,tsx}'],
       extends: ['plugin:@nx/typescript'],
       rules: {},
     },
+
+    // JavaScript source
     {
       files: ['src/**/*.{js,jsx}'],
       extends: ['plugin:@nx/javascript'],
       rules: {},
     },
 
-    // Loosen rules in known noisy/legacy areas to keep velocity
+    // Allow axios/transport inside platform only
+    {
+      files: ['src/platform/**/*.{ts,tsx,js,jsx}'],
+      rules: {
+        'no-restricted-imports': 'off',
+      },
+    },
+
+    // Loosen rules in known noisy/legacy areas (example)
     {
       files: ['src/ui/chat-variables/**/*.{ts,tsx}'],
       rules: {
@@ -112,22 +149,30 @@ module.exports = {
         '@typescript-eslint/no-non-null-assertion': 'warn',
       },
     },
+
     // Tests
     {
-      files: ['src/**/*.{spec,test}.{ts,tsx}'],
+      files: ['src/**/*.{spec,test}.{ts,tsx,js,jsx}'],
       rules: {
         '@typescript-eslint/no-explicit-any': 'warn',
         '@typescript-eslint/no-non-null-assertion': 'warn',
         'no-loop-func': 'warn',
       },
     },
+
     // Mocks
     {
-      files: ['src/mocks/**/*.{ts,tsx}'],
+      files: ['src/mocks/**/*.{ts,tsx,js,jsx}'],
       rules: {
         '@typescript-eslint/no-explicit-any': 'warn',
         '@typescript-eslint/no-non-null-assertion': 'warn',
       },
     },
+  ],
+
+  ignorePatterns: [
+    'dist', 'build', 'coverage', '.turbo', '.next',
+    // generated router tree or similar
+    'src/routeTree.gen.ts',
   ],
 };

@@ -1,20 +1,19 @@
 import { Subject } from 'rxjs';
 
-import { api } from '@/platform/api/apiClient';
+import { api } from '@/platform/api';
+import { apiParsed } from '@/platform/apiParsed';
 
-import { FileInfo } from '@/domains/files/schemas';
+import { FileInfo } from '@/domains/files';
 
-import { safeParse } from '@/shared/utils/safeParse';
-
-
-import { Message, MessageContentItem, MessageSchema, messageSchemaList } from './schemas';
-
+import { MessageDto, MessagesEnvelopeDto } from './dto';
+import { mapMessageDtoToModel, mapMessagesDtoToModels } from './mapper';
+import { Message } from './model';
 
 
 // Fetch all messages in a given message thread
 export async function fetchMessages(threadId: string): Promise<Message[]> {
-  const response = await api.get(`messagethreads/${threadId}/messages`);
-  return safeParse(messageSchemaList, response.data.data, 'fetchMessages');
+  const envelope = await apiParsed.get(MessagesEnvelopeDto, `messagethreads/${threadId}/messages`);
+  return mapMessagesDtoToModels(envelope.data);
 }
 
 // Send structured input (e.g. form values) to a specific message
@@ -38,17 +37,18 @@ export async function addInputToMessage({
       headers: { Accept: 'text/event-stream' },
       responseType: 'stream',
       onDownloadProgress: (event) => {
-        const data = event.event.currentTarget.response as string;
-        const chunks = data.split('\n\ndata:');
-        const lastChunk = chunks[chunks.length - 1];
-
-        if (lastChunk.trim()) {
-          try {
-            const parsed = JSON.parse(lastChunk);
-            result = safeParse(MessageSchema, parsed, 'addInputToMessage:stream');
-          } catch (error) {
-            console.warn('Stream parse error:', error);
-          }
+        const raw = String(event.event.currentTarget.response || '');
+        // Split by server-sent event message delimiter and normalize "data:" prefix
+        const chunks = raw.split('\n\n').map((c) => c.trim()).filter(Boolean);
+        const last = chunks[chunks.length - 1] || '';
+        const dataLine = last.startsWith('data:') ? last.slice(5).trim() : last;
+        if (!dataLine) return;
+        try {
+          const parsed = JSON.parse(dataLine);
+          const dto = MessageDto.parse(parsed);
+          result = mapMessageDtoToModel(dto);
+        } catch (error) {
+          // Ignore incomplete JSON frames; wait for more data
         }
       },
     }
@@ -71,11 +71,11 @@ export async function postMessage({
 }: {
   workSpaceId: string;
   threadId: string;
-  contentList?: MessageContentItem[];
+  contentList?: any[];
   files?: FileInfo[];
   variables?: Record<string, unknown>;
 }): Promise<Subject<Message>> {
-  const inputs = [];
+  const inputs = [] as any[];
 
   if (contentList?.length) {
     inputs.push({
@@ -112,12 +112,19 @@ export async function postMessage({
         headers: { Accept: 'text/event-stream' },
         responseType: 'stream',
         onDownloadProgress: (e) => {
-          const data = e.event.currentTarget.response as string;
-          const messages = data.split('\n\ndata:');
-          if (messages.length) {
-            const message = JSON.parse(messages[messages.length - 1]);
-            const parsedMessage = safeParse(MessageSchema, message, 'postMessage:stream');
+          const raw = String(e.event.currentTarget.response || '');
+          const chunks = raw.split('\n\n').map((c) => c.trim()).filter(Boolean);
+          if (!chunks.length) return;
+          const last = chunks[chunks.length - 1];
+          const dataLine = last.startsWith('data:') ? last.slice(5).trim() : last;
+          if (!dataLine) return;
+          try {
+            const parsed = JSON.parse(dataLine);
+            const dto = MessageDto.parse(parsed);
+            const parsedMessage = mapMessageDtoToModel(dto);
             observable.next(parsedMessage);
+          } catch {
+            // likely partial frame, ignore
           }
         },
       },

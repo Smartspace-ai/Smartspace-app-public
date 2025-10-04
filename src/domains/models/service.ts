@@ -1,8 +1,8 @@
-import { api } from '@/platform/api/apiClient';
+import { apiParsed } from '@/platform/apiParsed';
 
-import { safeParse } from '@/shared/utils/safeParse';
-
-import { Model, ModelSchema, ModelsEnvelopeSchema } from './schemas';
+import { ModelDto, ModelsEnvelopeDto } from './dto';
+import { mapModelDtoToModel, mapModelsEnvelopeDtoToModels } from './mapper';
+import { Model } from './model';
 
 // Fetch threads for a given workspace
 export async function fetchModels({
@@ -13,17 +13,12 @@ export async function fetchModels({
   data: Model[];
   total: number;
 }> {
-  const response = await api.get(`models`, {
-    params: { search, take, skip },
-  });
-
-  console.log('Models API response:', response.data);
-  const result = safeParse(ModelsEnvelopeSchema, response.data, 'fetchModels');
-  console.log('Parsed models result:', result);
+  const envelope = await apiParsed.get(ModelsEnvelopeDto, `models`, { params: { search, take, skip } });
+  const result = mapModelsEnvelopeDtoToModels(envelope);
   return result;
 }
 
 export async function fetchModel(id: string): Promise<Model> {
-  const response = await api.get(`models/${id}`);
-  return safeParse(ModelSchema, response.data, 'fetchModel');
+  const dto = await apiParsed.get(ModelDto, `models/${id}`);
+  return mapModelDtoToModel(dto);
 }

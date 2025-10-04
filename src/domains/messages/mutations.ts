@@ -2,11 +2,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Subject } from 'rxjs';
 import { toast } from 'sonner';
 
-import { FileInfo } from '@/domains/files/schemas';
+import { FileInfo } from '@/domains/files';
 
 import { MessageValueType } from './enums';
+import { Message, MessageContentItem } from './model';
 import { messagesKeys } from './queryKeys';
-import { Message, MessageContentItem, MessageSchema } from './schemas';
 import { addInputToMessage, postMessage } from './service';
 
 type SendArgs = {
@@ -26,10 +26,11 @@ export function useSendMessage() {
       if (!workspaceId) throw new Error('Workspace ID is required');
 
       // Optimistic message
-      const optimistic: Message = MessageSchema.parse({
+      const optimistic: Message = {
         id: `temp-${Date.now()}`,
         values: [
           {
+            id: `temp-${Date.now()}-prompt`,
             type: MessageValueType.INPUT,
             name: 'prompt',
             value: contentList,
@@ -39,6 +40,7 @@ export function useSendMessage() {
           },
           ...(files?.length
             ? [{
+                id: `temp-${Date.now()}-files`,
                 type: MessageValueType.INPUT,
                 name: 'files',
                 value: files,
@@ -49,6 +51,7 @@ export function useSendMessage() {
             : []),
           ...(variables && Object.keys(variables).length
             ? [{
+                id: `temp-${Date.now()}-vars`,
                 type: MessageValueType.INPUT,
                 name: 'variables',
                 value: variables,
@@ -61,7 +64,7 @@ export function useSendMessage() {
         createdAt: new Date(),
         createdBy:  'me',
         optimistic: true,
-      });
+      };
 
       // add optimistic into cache
       qc.setQueryData<Message[]>(
@@ -131,11 +134,12 @@ export function useAddInputToMessage() {
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
         old.map((m) =>
           m.id === messageId
-            ? MessageSchema.parse({
+            ? {
                 ...m,
                 values: [
                   ...(m.values ?? []),
                   {
+                    id: `temp-${Date.now()}-add`,
                     type: MessageValueType.INPUT,
                     name,
                     value,
@@ -144,7 +148,7 @@ export function useAddInputToMessage() {
                     createdBy: 'me',
                   },
                 ],
-              })
+              }
             : m
         )
       );

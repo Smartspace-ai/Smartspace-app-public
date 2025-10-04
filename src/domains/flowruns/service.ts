@@ -1,8 +1,11 @@
-import { api } from '@/platform/api/apiClient';
+import { api } from '@/platform/api';
+import { apiParsed } from '@/platform/apiParsed';
+import { FlowRunVariablesDto } from './dto';
+import { mapFlowRunVariablesDtoToModel } from './mapper';
 
 export async function fetchFlowRunVariables(flowRunId: string) {
-  const response = await api.get(`/flowruns/${flowRunId}/variables`);
-  return response.data as Record<string, unknown>;
+  const dto = await apiParsed.get(FlowRunVariablesDto, `/flowruns/${flowRunId}/variables`);
+  return mapFlowRunVariablesDtoToModel(dto);
 }
 
 export async function updateFlowRunVariable(

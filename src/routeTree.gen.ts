@@ -15,7 +15,9 @@ import { Route as _rootNotFoundRouteImport } from './routes/__root.notFound'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DemoMarkdownRouteImport } from './routes/demo/markdown'
 import { Route as ProtectedWorkspaceIndexRouteImport } from './routes/_protected/workspace/index'
+import { Route as ProtectedWorkspaceNoWorkspacesRouteImport } from './routes/_protected/workspace/no-workspaces'
 import { Route as ProtectedWorkspaceWorkspaceIdIndexRouteImport } from './routes/_protected/workspace/$workspaceId/index'
 import { Route as ProtectedWorkspaceWorkspaceId_layoutRouteImport } from './routes/_protected/workspace/$workspaceId/__layout'
 import { Route as ProtectedWorkspaceWorkspaceIdThreadThreadIdRouteImport } from './routes/_protected/workspace/$workspaceId/thread/$threadId'
@@ -43,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoMarkdownRoute = DemoMarkdownRouteImport.update({
+  id: '/demo/markdown',
+  path: '/demo/markdown',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProtectedWorkspaceWorkspaceIdRoute =
   ProtectedWorkspaceWorkspaceIdRouteImport.update({
     id: '/workspace/$workspaceId',
@@ -54,6 +61,12 @@ const ProtectedWorkspaceIndexRoute = ProtectedWorkspaceIndexRouteImport.update({
   path: '/workspace/',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedWorkspaceNoWorkspacesRoute =
+  ProtectedWorkspaceNoWorkspacesRouteImport.update({
+    id: '/workspace/no-workspaces',
+    path: '/workspace/no-workspaces',
+    getParentRoute: () => ProtectedRoute,
+  } as any)
 const ProtectedWorkspaceWorkspaceIdIndexRoute =
   ProtectedWorkspaceWorkspaceIdIndexRouteImport.update({
     id: '/',
@@ -76,6 +89,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/notFound': typeof _rootNotFoundRoute
+  '/demo/markdown': typeof DemoMarkdownRoute
+  '/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
   '/workspace': typeof ProtectedWorkspaceIndexRoute
   '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceId_layoutRoute
   '/workspace/$workspaceId/': typeof ProtectedWorkspaceWorkspaceIdIndexRoute
@@ -85,6 +100,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/notFound': typeof _rootNotFoundRoute
+  '/demo/markdown': typeof DemoMarkdownRoute
+  '/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
   '/workspace': typeof ProtectedWorkspaceIndexRoute
   '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdIndexRoute
   '/workspace/$workspaceId/thread/$threadId': typeof ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute
@@ -95,6 +112,8 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/login': typeof LoginRoute
   '/__root/notFound': typeof _rootNotFoundRoute
+  '/demo/markdown': typeof DemoMarkdownRoute
+  '/_protected/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
   '/_protected/workspace/': typeof ProtectedWorkspaceIndexRoute
   '/_protected/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdRouteWithChildren
   '/_protected/workspace/$workspaceId/__layout': typeof ProtectedWorkspaceWorkspaceId_layoutRoute
@@ -107,6 +126,8 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/notFound'
+    | '/demo/markdown'
+    | '/workspace/no-workspaces'
     | '/workspace'
     | '/workspace/$workspaceId'
     | '/workspace/$workspaceId/'
@@ -116,6 +137,8 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/notFound'
+    | '/demo/markdown'
+    | '/workspace/no-workspaces'
     | '/workspace'
     | '/workspace/$workspaceId'
     | '/workspace/$workspaceId/thread/$threadId'
@@ -125,6 +148,8 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/login'
     | '/__root/notFound'
+    | '/demo/markdown'
+    | '/_protected/workspace/no-workspaces'
     | '/_protected/workspace/'
     | '/_protected/workspace/$workspaceId'
     | '/_protected/workspace/$workspaceId/__layout'
@@ -137,6 +162,7 @@ export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
   _rootNotFoundRoute: typeof _rootNotFoundRoute
+  DemoMarkdownRoute: typeof DemoMarkdownRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -169,6 +195,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/markdown': {
+      id: '/demo/markdown'
+      path: '/demo/markdown'
+      fullPath: '/demo/markdown'
+      preLoaderRoute: typeof DemoMarkdownRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_protected/workspace/$workspaceId': {
       id: '/_protected/workspace/$workspaceId'
       path: '/workspace/$workspaceId'
@@ -181,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/workspace'
       fullPath: '/workspace'
       preLoaderRoute: typeof ProtectedWorkspaceIndexRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/workspace/no-workspaces': {
+      id: '/_protected/workspace/no-workspaces'
+      path: '/workspace/no-workspaces'
+      fullPath: '/workspace/no-workspaces'
+      preLoaderRoute: typeof ProtectedWorkspaceNoWorkspacesRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/workspace/$workspaceId/': {
@@ -229,11 +269,13 @@ const ProtectedWorkspaceWorkspaceIdRouteWithChildren =
   )
 
 interface ProtectedRouteChildren {
+  ProtectedWorkspaceNoWorkspacesRoute: typeof ProtectedWorkspaceNoWorkspacesRoute
   ProtectedWorkspaceIndexRoute: typeof ProtectedWorkspaceIndexRoute
   ProtectedWorkspaceWorkspaceIdRoute: typeof ProtectedWorkspaceWorkspaceIdRouteWithChildren
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
+  ProtectedWorkspaceNoWorkspacesRoute: ProtectedWorkspaceNoWorkspacesRoute,
   ProtectedWorkspaceIndexRoute: ProtectedWorkspaceIndexRoute,
   ProtectedWorkspaceWorkspaceIdRoute:
     ProtectedWorkspaceWorkspaceIdRouteWithChildren,
@@ -248,6 +290,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
   _rootNotFoundRoute: _rootNotFoundRoute,
+  DemoMarkdownRoute: DemoMarkdownRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

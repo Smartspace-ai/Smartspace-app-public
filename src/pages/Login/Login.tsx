@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import { isInTeams } from '@/platform/auth/msalConfig';
 import { useAuth } from '@/platform/auth/session';
 
+import { useTeams } from '@/app/providers';
+
+import { Button } from '@/shared/ui/shadcn/button';
+
+import { Logo } from '@/assets/logo';
+
 import styles from './Login.module.scss';
-import { Logo } from '../../assets/logo';
-import { useTeams } from '../../contexts/teams-context';
-import { Button } from '../../shared/ui/shadcn/button';
 
 export function Login() {
   // Grab intended redirect path from URL if present

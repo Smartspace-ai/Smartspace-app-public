@@ -1,7 +1,7 @@
 // src/ui/workspaces/WorkspaceSwitcher.tsx
 import { ChevronDown } from 'lucide-react';
 
-import { Workspace } from '@/domains/workspaces/schemas';
+import { Workspace } from '@/domains/workspaces/model';
 
 import { CircleInitials } from '@/shared/components/circle-initials';
 import { Button } from '@/shared/ui/shadcn/button';
@@ -13,6 +13,18 @@ import { useWorkspaceSwitcherVm } from './WorkspaceSwitcher.vm';
 export function WorkspaceSwitcher() {
   const vm = useWorkspaceSwitcherVm();
 
+  const buttonLabel = vm.activeError
+    ? 'Failed to load workspace'
+    : vm.activeLoading
+      ? 'Loading workspace…'
+      : (vm.activeWorkspace?.name ?? '—');
+
+  const buttonClassName = [
+    'w-full justify-between text-xs h-9 border rounded-lg px-3 shadow-sm hover:shadow-md transition-shadow',
+    vm.activeError ? 'border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/10' : '',
+    vm.activeLoading ? 'opacity-90' : '',
+  ].join(' ').trim();
+
   return (
     <div className="px-4 pt-3 pb-2">
       <div className="text-xs font-medium text-gray-500 mb-1.5">Workspace</div>
@@ -20,8 +32,11 @@ export function WorkspaceSwitcher() {
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="w-full justify-between text-xs h-9 border rounded-lg px-3 shadow-sm hover:shadow-md transition-shadow"
+            className={buttonClassName}
             onClick={() => vm.setOpen(prev => !prev)}
+            aria-busy={vm.activeLoading}
+            aria-invalid={!!vm.activeError}
+            title={vm.activeError ? 'Active workspace failed to load' : undefined}
           >
             <div className="flex items-center gap-2 overflow-hidden w-full">
               {vm.open ? (
@@ -38,19 +53,30 @@ export function WorkspaceSwitcher() {
                 />
               ) : (
                 <span className="truncate font-medium">
-                  {vm.activeWorkspace?.name ?? '—'}
+                  {buttonLabel}
                 </span>
               )}
             </div>
-            <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+            <ChevronDown className={vm.activeError ? 'h-3.5 w-3.5 text-destructive' : 'h-3.5 w-3.5 text-gray-400'} />
           </Button>
         </PopoverTrigger>
 
         <PopoverContent className="rounded-lg p-0 border w-full min-w-[260px] max-h-120 overflow-auto">
-          {vm.isLoading ? (
-            <Skeleton className="h-40 w-full rounded-lg" />
+          {vm.error ? (
+            <div className="px-3 py-6 text-center text-destructive text-xs">Couldn’t load workspaces</div>
+          ) : vm.isLoading ? (
+            <div className="p-2">
+              <Skeleton className="h-8 w-full mb-2 rounded-md" />
+              <Skeleton className="h-8 w-full mb-2 rounded-md" />
+              <Skeleton className="h-8 w-full rounded-md" />
+            </div>
           ) : (
             <div className="p-1 shadow-lg">
+              {vm.activeError && (
+                <div className="mx-1 mb-2 rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-2 py-1 text-xs">
+                  Current workspace failed to load. Select another workspace.
+                </div>
+              )}
               {!vm.workspaces.length ? (
                 <div className="px-3 py-6 text-center text-gray-500 text-xs">
                   {vm.searchTerm ? (

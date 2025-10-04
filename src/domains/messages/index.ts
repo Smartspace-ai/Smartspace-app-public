@@ -1,5 +1,6 @@
+export type { Message, MessageContentItem } from './model';
 export * from './mutations';
-export * from './queries';
-export * from './queryKeys';
-export * from './schemas';
+export { messagesListOptions, useMessages } from './queries';
+export { messagesKeys, messagesMutationsKeys } from './queryKeys';
 export * from './service';
+

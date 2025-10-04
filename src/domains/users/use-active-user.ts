@@ -1,6 +1,6 @@
 import { msalInstance } from '@/platform/auth/msalClient';
 
-import { useTeams } from '@/contexts/teams-context';
+import { useTeams } from '@/app/providers';
 
 export const useActiveUser = () => {
   const account = msalInstance.getActiveAccount();

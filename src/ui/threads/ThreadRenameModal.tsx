@@ -1,16 +1,16 @@
 // src/ui/threads/ThreadRenameModal.tsx
 import { useEffect, useRef, useState } from 'react';
 
+import type { MessageThread } from '@/domains/threads';
 import { useRenameThread } from '@/domains/threads/mutations';
-import type { MessageThread } from '@/domains/threads/schemas';
 
 import { Button } from '@/shared/ui/shadcn/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/shared/ui/shadcn/dialog';
 import { Input } from '@/shared/ui/shadcn/input';
 import { Label } from '@/shared/ui/shadcn/label';
@@ -55,15 +55,15 @@ export function ThreadRenameModal({ isOpen, onClose, thread }: Props) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !pending && !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[420px] p-5">
         <DialogHeader>
-          <DialogTitle>Rename Thread</DialogTitle>
+          <DialogTitle className="font-medium">Rename Thread</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-3 py-2">
             <div className="grid gap-2">
-              <Label htmlFor="thread-name">Thread Name</Label>
+              <Label htmlFor="thread-name" className="font-medium">Thread Name</Label>
               <Input
                 id="thread-name"
                 ref={inputRef}
@@ -75,7 +75,7 @@ export function ThreadRenameModal({ isOpen, onClose, thread }: Props) {
             </div>
           </div>
 
-          <DialogFooter className="mt-5">
+          <DialogFooter className="mt-4 p-0">
             <Button
               type="button"
               variant="outline"

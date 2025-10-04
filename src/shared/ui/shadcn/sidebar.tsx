@@ -14,12 +14,12 @@ import {
   useState,
 } from 'react';
 
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { Button } from '@/shared/ui/shadcn/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/shadcn/sheet';
 import { TooltipProvider } from '@/shared/ui/shadcn/tooltip';
 import { cn } from '@/shared/utils/utils';
 
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year

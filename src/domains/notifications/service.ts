@@ -1,8 +1,8 @@
-import { api } from '@/platform/api/apiClient';
+import { apiParsed } from '@/platform/apiParsed';
 
-import { safeParse } from '@/shared/utils/safeParse';
-
-import { Notification, NotificationsEnvelopeSchema } from './schemas';
+import { NotificationsEnvelopeDto } from './dto';
+import { mapNotificationsEnvelopeDto } from './mapper';
+import type { Notification } from './model';
 
 
 
@@ -20,30 +20,27 @@ export async function fetchNotifications(
 ): Promise<NotificationList> {
   const skip = (page - 1) * LIMIT;
 
-  const response = await api.get('/notification', {
-    params: { unread: isUnreadOnly, skip, take: LIMIT },
-  });
+  const envelope = await apiParsed.get(NotificationsEnvelopeDto, '/notification', { params: { unread: isUnreadOnly, skip, take: LIMIT } });
 
-  const parsed = safeParse(NotificationsEnvelopeSchema, response?.data, 'fetchNotifications');
+  const parsed = mapNotificationsEnvelopeDto(envelope);
 
-  // createdAt is already a Date (schema transform), so sorting is cheap
-  const items = parsed.data.slice().sort(
+  const items = parsed.items.slice().sort(
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
   );
 
   return {
     items,
-    totalCount: parsed.total ?? items.length,
-    unreadCount: parsed.totalUnread ?? 0,
+    totalCount: parsed.totalCount,
+    unreadCount: parsed.unreadCount,
   };
 }
 
 /** Mark a specific notification as read. */
 export async function markNotificationAsRead(notificationId: string): Promise<void> {
-  return await api.put('/notification/update', [notificationId]);
+  await apiParsed.put(NotificationsEnvelopeDto.passthrough().optional(), '/notification/update', [notificationId]);
 }
 
 /** Mark all notifications as read. */
 export async function markAllNotificationsAsRead(): Promise<void> {
-  return await api.put('/notification/updateall');
+  await apiParsed.put(NotificationsEnvelopeDto.passthrough().optional(), '/notification/updateall');
 }

@@ -29,50 +29,16 @@ export default function ChatBotPage() {
     isInitialLoading: threadsInitialLoading,
   } = useThreadsListVm({ workspaceId, pageSize: 30 });
 
-  // If no workspaceId in URL, select the first workspace after list loads
+  // Workspace selection is handled by the /workspace index route loader
   useEffect(() => {
-    if (workspaceId) return;
-    if (!workspacesLoading && workspaces && workspaces.length > 0) {
-      navigate({
-        to: '/workspace/$workspaceId',
-        params: { workspaceId: workspaces[0].id },
-        replace: true,
-      });
-    }
+    // no-op: route-level loader will redirect appropriately
   }, [workspaceId, workspacesLoading, workspaces, navigate]);
 
   // Handle thread auto-selection / creation once first page is ready
   const hasNavigatedRef = useRef(false);
   useEffect(() => {
-    if (!workspaceId) {
-      hasNavigatedRef.current = false;
-      return;
-    }
-
-    // wait until the first page load settles to avoid race/flicker
-    if (threadsInitialLoading) return;
-
-    // only navigate once per workspace load
-    if (hasNavigatedRef.current || threadId) return;
-
-    hasNavigatedRef.current = true;
-
-    if (firstThread) {
-      // navigate to the first thread from the shared VM
-      navigate({
-        to: '/workspace/$workspaceId/thread/$threadId',
-        params: { workspaceId, threadId: firstThread.id },
-        replace: true,
-      });
-    } else {
-      // no threads yet → create a new one client-side
-      const newThreadId = crypto.randomUUID();
-      navigate({
-        to: '/workspace/$workspaceId/thread/$threadId',
-        params: { workspaceId, threadId: newThreadId },
-        replace: true,
-      });
-    }
+    // Thread redirection is handled at route loader for $workspaceId
+    hasNavigatedRef.current = false;
   }, [workspaceId, threadId, firstThread, threadsInitialLoading, navigate]);
 
   return (

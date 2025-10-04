@@ -2,8 +2,8 @@ import { useMutation } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
+import { FileInfo, FileScope } from './model';
 import { filesKeys } from './queryKeys';
-import { FileInfo, FileScope } from './schemas';
 import { downloadFile, getFileDownloadUrl, uploadFiles } from './service';
 
 
@@ -68,6 +68,7 @@ export const useFileMutations = (scope: FileScope) => {
       sourceUri: string;
     }) => {
       const uri = await getFileDownloadUrl(sourceUri);
+      if (!uri) throw new Error('No download URL');
       const response = await fetch(uri);
       const blob = await response.blob();
       saveFile(blob, name);

@@ -1,5 +1,6 @@
+export type { MessageThread, ThreadsResponse } from './model';
 export * from './mutations';
-export * from './queries';
-export * from './queryKeys';
-export * from './schemas';
+export { threadDetailOptions, threadsListOptions, useInfiniteThreads, useThread, useThreads } from './queries';
+export { threadsKeys } from './queryKeys';
 export * from './service';
+

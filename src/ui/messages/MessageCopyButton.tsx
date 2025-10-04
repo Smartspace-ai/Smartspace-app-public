@@ -1,7 +1,7 @@
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 
-import { MessageContentItem } from '@/domains/messages/schemas';
+import { MessageContentItem } from '@/domains/messages';
 
 import { Button } from '../../shared/ui/shadcn/button';
 

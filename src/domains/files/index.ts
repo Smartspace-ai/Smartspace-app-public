@@ -1,5 +1,6 @@
+export type { FileInfo, FileScope } from './model';
 export * from './mutations';
-export * from './queries';
-export * from './queryKeys';
-export * from './schemas';
+export { downloadFileBlobOptions, useDownloadFileBlobQuery } from './queries';
+export { filesKeys } from './queryKeys';
 export * from './service';
+

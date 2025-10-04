@@ -4,16 +4,17 @@ import { ArrowBigUp, MessageSquare } from 'lucide-react';
 import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import type { Comment } from '@/domains/comments';
 import { useAddComment } from '@/domains/comments/mutations';
 import { useComments } from '@/domains/comments/queries';
-import { Comment } from '@/domains/comments/schemas';
+import type { MentionUser } from '@/domains/workspaces';
 import { useTaggableWorkspaceUsers } from '@/domains/workspaces/queries';
-import { MentionUser } from '@/domains/workspaces/schemas';
 
 import { MentionInput } from '@/ui/comments_draw/mention-input';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { Avatar, AvatarFallback } from '@/shared/ui/shadcn/avatar';
 import {
   Breadcrumb,
@@ -34,20 +35,64 @@ import {
 
 
 
-import { useIsMobile } from '@/hooks/use-mobile';
 
 import { Skeleton } from '../../shared/ui/shadcn/skeleton';
 import { getInitials } from '../../shared/utils/initials';
-import { parseDateTime } from '../../shared/utils/parse-date-time';
+import { parseDateTime } from '../../shared/utils/parseDateTime';
 
 
 const MAX_COMMENT_LENGTH = 350;
 
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function renderContentWithMentions(text: string, users?: Array<{ displayName?: string | null }>) {
+  const renderWithPattern = (pattern: RegExp) => {
+    const nodes: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let key = 0;
+    while ((match = pattern.exec(text)) !== null) {
+      const start = match.index;
+      const end = start + match[0].length;
+      if (start > lastIndex) {
+        nodes.push(<span key={key++}>{text.slice(lastIndex, start)}</span>);
+      }
+      nodes.push(
+        <span key={key++} className="text-primary">
+          {match[0]}
+        </span>,
+      );
+      lastIndex = end;
+    }
+    if (lastIndex < text.length) {
+      nodes.push(<span key={key++}>{text.slice(lastIndex)}</span>);
+    }
+    return nodes;
+  };
+
+  const names = (users || [])
+    .map((u) => u.displayName)
+    .filter((n): n is string => Boolean(n))
+    .sort((a, b) => b.length - a.length);
+
+  if (names.length > 0) {
+    const union = names.map((n) => `@${escapeRegExp(n)}`).join('|');
+    const pattern = new RegExp(`(?:${union})`, 'g');
+    return renderWithPattern(pattern);
+  }
+
+  // Fallback: highlight @ followed by one or more words (supports First or First Last)
+  const fallback = /@[A-Za-z0-9._-]+(?:\s+[A-Za-z0-9._-]+)*/g;
+  return renderWithPattern(fallback);
+}
+
 export function SidebarRight() {
   const { workspaceId, threadId } = useRouteIds();
-  const { data: comments, isLoading } = useComments(threadId);
+  const { data: comments, isLoading, isError: commentsError } = useComments(threadId);
   const { mutate: addComment, isPending: isAddingComment } = useAddComment(threadId);
-  const { data: taggableUsers } = useTaggableWorkspaceUsers(workspaceId);
+  const { data: taggableUsers, isLoading: usersLoading, isError: usersError } = useTaggableWorkspaceUsers(workspaceId);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const [threadComment, setThreadComment] = useState({ plain: '', withMentions: '' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -112,7 +157,13 @@ export function SidebarRight() {
         <SidebarContent className="p-0 min-h-0">
           <ScrollArea className="flex-1 min-h-0">
             <div className="space-y-3 p-4">
-              {isLoading ? (
+              {commentsError ? (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                  <div className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-sm">
+                    Failed to load comments
+                  </div>
+                </div>
+              ) : isLoading ? (
                 <div className="flex flex-col space-y-4 p-4">
                   {Array(3)
                     .fill(0)
@@ -135,10 +186,7 @@ export function SidebarRight() {
                   <div className="rounded-full bg-primary/10 p-4 mb-4">
                     <MessageSquare className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="text-lg font-medium mb-2">No comments yet</h3>
-                  <p className="text-muted-foreground mb-6 max-w-xs">
-                    Be the first to add a comment to this thread.
-                  </p>
+                  <h3 className="text-lg font-medium mb-2">Add comments here</h3>
                 </div>
               ) : (
                 comments?.map((comment: Comment) => (
@@ -160,7 +208,7 @@ export function SidebarRight() {
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed flex flex-wrap gap-1">
-                      {comment.content}
+                      {renderContentWithMentions(comment.content, comment.mentionedUsers)}
                     </p>
                   </div>
                 ))
@@ -182,6 +230,8 @@ export function SidebarRight() {
                   searchTerm={searchTerm}
                   setSearchTerm={setSearchTerm}
                   users={filteredUsers || []}
+                  usersLoading={usersLoading}
+                  usersError={usersError}
                   mentionList={mentionList}
                   setMentionList={setMentionList}
                   minRows={3}
@@ -227,6 +277,8 @@ export function SidebarRight() {
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
                     users={filteredUsers || []}
+                    usersLoading={usersLoading}
+                    usersError={usersError}
                     mentionList={mentionList}
                     setMentionList={setMentionList}
                     minRows={5}

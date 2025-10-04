@@ -1,28 +1,26 @@
-
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 
 import { modelsKeys } from './queryKeys';
 import { fetchModel, fetchModels } from './service';
 
-export function useModel({modelId}: { modelId: string }) {
-  return useQuery({
+export const modelDetailOptions = (modelId: string) =>
+  queryOptions({
     queryKey: modelsKeys.detail(modelId),
-    enabled: !!modelId,
-    queryFn: async () => {
-      return fetchModel(modelId);
-    },
+    queryFn: async () => fetchModel(modelId),
   });
-  
+
+export function useModel({ modelId }: { modelId: string }) {
+  return useQuery({ ...modelDetailOptions(modelId), enabled: !!modelId });
 }
 
-export function useModels({ search, take, skip }: { search?: string; take?: number; skip?: number } = {}) {
-  return useQuery({
+export const modelsListOptions = ({ search, take, skip }: { search?: string; take?: number; skip?: number } = {}) =>
+  queryOptions({
     queryKey: modelsKeys.list({ search, take, skip }),
-    queryFn: async () => {
-      return fetchModels({ search, take, skip });
-    },
+    queryFn: async () => fetchModels({ search, take, skip }),
     refetchOnWindowFocus: false,
   });
 
+export function useModels({ search, take, skip }: { search?: string; take?: number; skip?: number } = {}) {
+  return useQuery(modelsListOptions({ search, take, skip }));
 }
 

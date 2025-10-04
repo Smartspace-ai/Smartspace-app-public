@@ -23,9 +23,12 @@ export function RouteIdsProvider({ children }: { children: React.ReactNode }) {
 
 export function useRouteIds(): RouteIds {
   const ctx = useContext(RouteIdsContext);
-  if (!ctx) {
-    throw new Error('useRouteIds must be used within <RouteIdsProvider>.');
-  }
-  return ctx;
+  // Fallback: derive ids from router if provider isn't mounted
+  const { workspaceId } = useParams({ from: '/_protected/workspace/$workspaceId' });
+  const threadMatch = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
+  const fallback: RouteIds | null = workspaceId ? { workspaceId, threadId: threadMatch?.params?.threadId ?? '' } : null;
+  if (ctx) return ctx;
+  if (fallback) return fallback;
+  throw new Error('useRouteIds must be used within <RouteIdsProvider>.');
 }
 

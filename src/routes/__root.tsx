@@ -1,10 +1,12 @@
 // src/routes/__root.tsx
 import { Outlet, createRootRoute } from '@tanstack/react-router'
 
+import AppProviders from '@/app/AppProviders'
+
 import TeamsLoader from '@/pages/teams_loader'
 
-import AppProviders from '@/app/app'
-import { useTeamsViewport } from '@/hooks/use-teams-viewport'
+import { RootErrorBoundary } from '@/app/ui/RouteErrorEnvelope'
+import { useTeamsViewport } from '@/hooks/useTeamsViewport'
 
 function RootContent() {
   const { viewportHeight, isAndroidTeams } = useTeamsViewport()
@@ -36,9 +38,10 @@ export default function Root() {
     </AppProviders>
   )
 }
-
+// routes/__root.tsx
 export const Route = createRootRoute({
-  pendingMs: 0,
+  pendingMs: 250,
   pendingComponent: () => <TeamsLoader message="Loading…" />,
   component: Root,
-})
+  errorComponent: RootErrorBoundary,
+});

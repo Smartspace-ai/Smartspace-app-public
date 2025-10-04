@@ -1,6 +1,6 @@
 export * from './mutations';
-export * from './queries';
-export * from './queryKeys';
+export { flowRunVariablesOptions, useFlowRunVariables } from './queries';
+export { flowRunsKeys } from './queryKeys';
 export * from './service';
 
 

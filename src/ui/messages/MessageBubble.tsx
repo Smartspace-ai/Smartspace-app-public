@@ -4,11 +4,12 @@ import { materialCells } from '@jsonforms/material-renderers';
 import { JsonForms } from '@jsonforms/react';
 import { FC, useEffect, useState } from 'react';
 
-import { FileInfo } from '@/domains/files/schemas';
+import { FileInfo } from '@/domains/files';
 import { getFileIcon } from '@/domains/files/utils';
 import { getDefaultValues } from '@/domains/json_forms/utils';
+import { MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
-import { MessageContentItem, MessageResponseSource } from '@/domains/messages/schemas';
+import type { MessageResponseSource } from './MessageSources';
 
 import { renderers } from '@/ui/chat-variables/renders';
 import { MyMarkdown } from '@/ui/markdown/MyMarkdown';
@@ -16,7 +17,7 @@ import { MyMarkdown } from '@/ui/markdown/MyMarkdown';
 import { Avatar, AvatarFallback } from '@/shared/ui/shadcn/avatar';
 import { Button } from '@/shared/ui/shadcn/button';
 import { getInitials } from '@/shared/utils/initials';
-import { parseDateTime } from '@/shared/utils/parse-date-time';
+import { parseDateTime } from '@/shared/utils/parseDateTime';
 import { cn } from '@/shared/utils/utils';
 
 import { ChatMessageCopyButton } from './MessageCopyButton';

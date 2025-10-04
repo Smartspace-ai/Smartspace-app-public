@@ -11,14 +11,14 @@ import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
 
-import { MessageItem } from './MessageItem';
 import { Avatar, AvatarFallback } from '../../shared/ui/shadcn/avatar';
 import { useSidebar } from '../../shared/ui/shadcn/sidebar';
 import { Skeleton } from '../../shared/ui/shadcn/skeleton';
 import { getInitials } from '../../shared/utils/initials';
-import { parseDateTime } from '../../shared/utils/parse-date-time';
+import { parseDateTime } from '../../shared/utils/parseDateTime';
+import { MessageItem } from './MessageItem';
 
 
 

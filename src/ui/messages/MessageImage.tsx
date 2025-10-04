@@ -1,7 +1,7 @@
 import { FC, useEffect, useMemo } from 'react';
 
+import { FileInfo } from '@/domains/files';
 import { useDownloadFileBlobQuery, } from '@/domains/files/queries';
-import { FileInfo } from '@/domains/files/schemas';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 

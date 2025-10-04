@@ -8,6 +8,7 @@ import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useSidebar } from '@/shared/ui/shadcn/sidebar';
+import { useWorkspaceSubscriptions } from './useWorkspaceSubscriptions';
 
 export function useWorkspaceSwitcherVm() {
   const [open, setOpen] = useState(false);
@@ -16,8 +17,23 @@ export function useWorkspaceSwitcherVm() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { workspaceId } = useRouteIds();
-  const { data: activeWorkspace } = useWorkspace(workspaceId);
-  const { data: workspaces, isLoading } = useWorkspaces(debounced);
+
+  useWorkspaceSubscriptions();
+
+  // ⬇ expose loading/error for the single, active workspace
+  const {
+    data: activeWorkspace,
+    isLoading: isActiveLoading,
+    isFetching: isActiveFetching,
+    error: activeError,
+  } = useWorkspace(workspaceId);
+
+  const {
+    data: workspaces,
+    isLoading,
+    isFetching,
+    error,
+  } = useWorkspaces(debounced);
 
   const navigate = useNavigate();
   const { isMobile, setOpenMobileLeft } = useSidebar();
@@ -47,14 +63,19 @@ export function useWorkspaceSwitcherVm() {
 
   return {
     // UI state
-    open, setOpen,
-    searchTerm, setSearchTerm,
+    open,
+    setOpen,
+    searchTerm,
+    setSearchTerm,
     inputRef,
 
     // data
     activeWorkspace,
+    activeLoading: isActiveLoading || isActiveFetching,
+    activeError,
     workspaces: workspaces ?? [],
-    isLoading,
+    isLoading: isLoading || isFetching,
+    error,
 
     // actions
     onSelectWorkspace,

@@ -1,37 +1,21 @@
-import { api } from '@/platform/api/apiClient';
+// src/domains/workspaces/service.ts
+import { apiParsed } from '@/platform/apiParsed';
 
-import { safeParse } from '@/shared/utils/safeParse';
+import { MentionUserListDto, WorkspaceDto, WorkspacesListResponseDto } from './dto';
+import { mapMentionUserDtoToModel, mapWorkspaceDtoToModel, mapWorkspacesDtoToModels } from './mapper';
+import type { MentionUser, Workspace } from './model';
 
-import {
-    MentionUser,
-    MentionUserListSchema,
-    Workspace,
-    WorkspaceListSchema,
-    WorkspaceSchema
-} from './schemas';
-
-// Fetches the list of workspaces from the backend API
-export async function fetchWorkspaces(
-  searchTerm?: string
-): Promise<Workspace[]> {
-  const response = await api.get('/workspaces', {
-    params: {
-      search: searchTerm,
-    },
-  });
-  return safeParse(WorkspaceListSchema, response.data.data, 'fetchWorkspaces');
+export async function fetchWorkspaces(search?: string): Promise<Workspace[]> {
+  const dto = await apiParsed.get(WorkspacesListResponseDto, '/workspaces', { params: { search } });
+  return mapWorkspacesDtoToModels(dto.data);
 }
 
-// Fetches the list of workspaces from the backend API
 export async function fetchWorkspace(id: string): Promise<Workspace> {
-  const response = await api.get(`/workspaces/${id}`);
-  return safeParse(WorkspaceSchema, response.data, 'fetchWorkspace');
+  const dto = await apiParsed.get(WorkspaceDto, `/workspaces/${id}`);
+  return mapWorkspaceDtoToModel(dto);
 }
 
-// Fetch users who have access to the workspace for @mention
-export async function fetchTaggableUsers(
-  workspaceId: string
-): Promise<MentionUser[]> {
-  const res = await api.get(`/workspaces/${workspaceId}/users`);
-  return safeParse(MentionUserListSchema, res.data, 'fetchTaggableUsers');
+export async function fetchTaggableUsers(workspaceId: string): Promise<MentionUser[]> {
+  const list = await apiParsed.get(MentionUserListDto, `/workspaces/${workspaceId}/users`);
+  return list.map(mapMentionUserDtoToModel);
 }

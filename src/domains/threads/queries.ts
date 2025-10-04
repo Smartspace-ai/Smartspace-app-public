@@ -1,30 +1,29 @@
+import { queryOptions, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-
+import { ThreadsResponse } from './model';
 import { threadsKeys } from './queryKeys';
-import { ThreadsResponse } from './schemas';
 import { fetchThread, fetchThreads } from './service';
-import { flowRunsKeys } from '../flowruns/queryKeys';
-import { fetchFlowRunVariables } from '../flowruns/service';
+
+export const threadDetailOptions = ({ workspaceId, threadId }: { workspaceId: string; threadId: string }) =>
+  queryOptions({
+    queryKey: threadsKeys.detail(workspaceId, threadId),
+    queryFn: () => fetchThread(workspaceId, threadId),
+    refetchOnWindowFocus: false,
+  });
 
 export const useThread = ({workspaceId, threadId}: { workspaceId: string; threadId: string }) => {
-  return useQuery({
-    queryKey: threadsKeys.detail(workspaceId, threadId),
-    queryFn: async () => {
-        return await fetchThread(workspaceId, threadId);
-    },
-    refetchOnWindowFocus: false,
-  });
+  return useQuery(threadDetailOptions({ workspaceId, threadId }));
 }
 
-export const useThreads = (workspaceId: string) => {
-  return useQuery({
+export const threadsListOptions = (workspaceId: string) =>
+  queryOptions({
     queryKey: threadsKeys.list(workspaceId),
-    queryFn: async () => {
-        return await fetchThreads(workspaceId);
-    },
+    queryFn: () => fetchThreads(workspaceId),
     refetchOnWindowFocus: false,
   });
+
+export const useThreads = (workspaceId: string) => {
+  return useQuery(threadsListOptions(workspaceId));
 }
 
 export const useInfiniteThreads = (
@@ -53,18 +52,4 @@ export const useInfiniteThreads = (
     refetchOnWindowFocus: false,
   });
 }
-
-
-
-export function useThreadVariables({threadId}: { threadId: string }) {
-  return useQuery({
-    queryKey: flowRunsKeys.variables(threadId),
-    enabled: !!threadId,
-    queryFn: async () => {
-        return await fetchFlowRunVariables(threadId);
-     
-    },
-    refetchOnWindowFocus: false,
-  });
-}
-
+ 

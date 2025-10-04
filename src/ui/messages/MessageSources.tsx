@@ -1,10 +1,16 @@
 
 import { useFileMutations } from '@/domains/files/mutations';
 import { MessageResponseSourceType } from '@/domains/messages/enums';
-import { MessageResponseSource } from '@/domains/messages/schemas';
+// Keeping this component generic; adjust type if needed in the future
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
+export type MessageResponseSource = {
+  index: number;
+  uri: string;
+  name?: string | null;
+  sourceType?: MessageResponseSourceType | null;
+};
 
 export function ChatMessageSources({
   source

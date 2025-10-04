@@ -1,0 +1,39 @@
+/* Base editor container */
+.md-editor .ProseMirror {
+  min-height: 220px;
+  padding: 12px 14px;
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  line-height: 1.6;
+  outline: none;
+}
+
+/* Focus ring */
+.md-editor .ProseMirror:focus {
+  border-color: #b9d6ff;
+  box-shadow: 0 0 0 3px rgba(70, 128, 255, 0.15);
+}
+
+/* Custom inline file-tag */
+.file-tag {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid #a7b7e9;
+  background: #eef2ff;
+  font-size: 0.9em;
+  color: #2b3a8a;
+  user-select: text; /* allow selection across it */
+  white-space: nowrap;
+}
+
+/* Mention (placeholder) – tweak as desired */
+span[data-type='mention'] {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 0 6px;
+  color: #0369a1;
+}
+
+

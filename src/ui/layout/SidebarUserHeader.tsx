@@ -5,25 +5,26 @@ import { LogOut } from 'lucide-react';
 import { handleTrailingSlash } from '@/platform/auth/msalConfig';
 import { useUserId } from '@/platform/auth/session';
 
+import { useTeams } from '@/app/providers';
+
 import {
-    Avatar,
-    AvatarFallback,
-    AvatarImage,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
 } from '@/shared/ui/shadcn/avatar';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/shared/ui/shadcn/dropdown-menu';
 import { SidebarHeader } from '@/shared/ui/shadcn/sidebar';
-import { getAvatarColour } from '@/shared/utils/avatar-colour';
+import { getAvatarColour } from '@/shared/utils/avatarColour';
 import { getInitials } from '@/shared/utils/initials';
 
 import { Logo } from '@/assets/logo';
-import { useTeams } from '@/contexts/teams-context';
 
 
 export default function SidebarUserHeader() {

@@ -1,30 +1,107 @@
-import * as PopoverPrimitive from "@radix-ui/react-popover"
+import MuiPopover from "@mui/material/Popover"
 import * as React from "react"
 
 import { cn } from "@/shared/utils/utils"
 
-const Popover = PopoverPrimitive.Root
+type OpenChangeHandler = (open: boolean) => void
 
-const PopoverTrigger = PopoverPrimitive.Trigger
+type PopoverContextValue = {
+  open: boolean
+  setOpen: (open: boolean) => void
+  anchorEl: HTMLElement | null
+  setAnchorEl: (el: HTMLElement | null) => void
+  onOpenChange?: OpenChangeHandler
+}
 
-const PopoverContent = React.forwardRef<
-  React.ElementRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
-    <PopoverPrimitive.Content
-      ref={ref}
-      align={align}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-        className
-      )}
-      {...props}
-    />
-  </PopoverPrimitive.Portal>
-))
-PopoverContent.displayName = PopoverPrimitive.Content.displayName
+const PopoverCtx = React.createContext<PopoverContextValue | null>(null)
+
+type PopoverProps = {
+  open?: boolean
+  onOpenChange?: OpenChangeHandler
+  children: React.ReactNode
+}
+
+const Popover = ({ open: openProp, onOpenChange, children }: PopoverProps) => {
+  const [openState, setOpenState] = React.useState<boolean>(Boolean(openProp))
+  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null)
+
+  const open = openProp !== undefined ? openProp : openState
+
+  const setOpen = React.useCallback((next: boolean) => {
+    if (openProp === undefined) setOpenState(next)
+    onOpenChange?.(next)
+  }, [openProp, onOpenChange])
+
+  const value = React.useMemo<PopoverContextValue>(
+    () => ({ open, setOpen, anchorEl, setAnchorEl, onOpenChange }),
+    [open, setOpen, anchorEl, onOpenChange]
+  )
+
+  return <PopoverCtx.Provider value={value}>{children}</PopoverCtx.Provider>
+}
+
+type TriggerProps = React.HTMLAttributes<HTMLElement> & {
+  asChild?: boolean
+  children: React.ReactElement
+}
+
+const PopoverTrigger = React.forwardRef<unknown, TriggerProps>(
+  ({ asChild = false, children, ...props }, ref) => {
+    const ctx = React.useContext(PopoverCtx)
+    if (!ctx) return children
+
+    const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+      ctx.setAnchorEl(e.currentTarget as HTMLElement)
+      ctx.setOpen(!ctx.open)
+      props.onClick?.(e)
+    }
+
+    const child = React.cloneElement(children, {
+      ref,
+      onClick: handleClick,
+      ...props,
+    })
+
+    return asChild ? child : <span>{child}</span>
+  }
+)
+
+type ContentProps = React.ComponentPropsWithoutRef<typeof MuiPopover> & {
+  className?: string
+}
+
+const PopoverContent = React.forwardRef<HTMLDivElement, ContentProps>(
+  ({ className, slotProps, open: _open, anchorOrigin, transformOrigin, ...props }, ref) => {
+    const ctx = React.useContext(PopoverCtx)
+    if (!ctx) return null
+
+    const wantsFullWidth = typeof className === 'string' && className.split(/\s+/).includes('w-full')
+    const anchorWidth = ctx.anchorEl?.getBoundingClientRect().width
+
+    return (
+      <MuiPopover
+        open={ctx.open}
+        anchorEl={ctx.anchorEl}
+        onClose={() => ctx.setOpen(false)}
+        anchorOrigin={anchorOrigin ?? { vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={transformOrigin ?? { vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            className: cn(
+              "z-50 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none",
+              className
+            ),
+            ref,
+            style: wantsFullWidth && anchorWidth ? { width: anchorWidth } : undefined,
+          },
+          ...slotProps,
+        }}
+        {...props}
+      />
+    )
+  }
+)
+PopoverContent.displayName = "PopoverContent"
 
 export { Popover, PopoverContent, PopoverTrigger }
 

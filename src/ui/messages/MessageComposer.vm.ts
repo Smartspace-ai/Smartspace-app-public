@@ -3,17 +3,17 @@
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { FileInfo } from '@/domains/files';
 import { useFileMutations } from '@/domains/files/mutations';
-import { FileInfo } from '@/domains/files/schemas';
 import { useSendMessage } from '@/domains/messages/mutations';
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { useSidebar } from '@/shared/ui/shadcn/sidebar';
 
-import { useIsMobile } from '@/hooks/use-mobile';
 
 
 /** Public shape exported to the UI component */

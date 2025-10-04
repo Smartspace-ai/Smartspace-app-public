@@ -1,8 +1,7 @@
-import { api } from '@/platform/api/apiClient';
-
-import { safeParse } from '@/shared/utils/safeParse';
-
-import { FileInfoSchema, type FileInfo, type FileScope } from './schemas';
+import { api } from '@/platform/api';
+import { FileInfoDto } from './dto';
+import { mapFileInfoDtoToModel } from './mapper';
+import type { FileInfo, FileScope } from './model';
 
 export const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -28,7 +27,7 @@ const uploadFileInChunks = async (
     if (scope.workspaceId) formData.append('workspaceId', scope.workspaceId);
     if (scope.threadId) formData.append('threadId', scope.threadId);
 
-    const response = await api.post(`/files`, formData, {
+    const response = await api.post<unknown>(`/files`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
 
@@ -37,7 +36,9 @@ const uploadFileInChunks = async (
 
     // Only the last chunk returns the file info
     if (i === totalChunks - 1) {
-      return safeParse(FileInfoSchema, response.data[0], 'uploadFileInChunks:lastChunk');
+      const data = response as unknown as unknown[];
+      const parsed = FileInfoDto.parse(data[0]);
+      return mapFileInfoDtoToModel(parsed);
     }
   }
   throw new Error('Chunked upload did not complete.');
@@ -65,10 +66,11 @@ export const uploadFiles = async (
       if (scope.workspaceId) formData.append('workspaceId', scope.workspaceId);
       if (scope.threadId) formData.append('threadId', scope.threadId);
 
-      const response = await api.post(`/files`, formData, {
+      const response = await api.post<unknown>(`/files`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      fileInfo = safeParse(FileInfoSchema, (response.data as unknown[])[0], 'uploadFiles:smallFile');
+      const data = response as unknown as unknown[];
+      fileInfo = mapFileInfoDtoToModel(FileInfoDto.parse(data[0]));
     }
     results.push(fileInfo);
     if (onFileUploaded) onFileUploaded(file, fileInfo);
@@ -80,35 +82,31 @@ export const downloadFile = async (
   id: string,
   scope?: FileScope,
 ): Promise<Blob> => {
-  // For GET requests, we need to use params for scope
-  const response = await api.get(`/files/${id}/download`, {
+  const blob = await api.get<Blob>(`/files/${id}/download`, {
     responseType: 'blob',
     params: scope,
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
   });
-
-  return response.data as Blob;
+  return blob;
 };
 
 export const getFileInfo = async (
   id: string,
   scope: FileScope,
 ): Promise<FileInfo> => {
-  const response = await api.get(`/files/${id}`, {
+  const data = await api.get<unknown>(`/files/${id}`, {
     params: scope,
   });
 
-  return safeParse(FileInfoSchema, response.data, 'getFileInfo');
+  return mapFileInfoDtoToModel(FileInfoDto.parse(data));
 };
 
-export const getFileDownloadUrl = async (sourceUri: string) => {
-  const response = await api.get(sourceUri);
-
-  return response.data?.uri;
+export const getFileDownloadUrl = async (sourceUri: string): Promise<string> => {
+  const data = await api.get<{ uri: string }>(sourceUri);
+  const uri = data?.uri;
+  if (!uri) throw new Error('Download URL is missing');
+  return uri;
 };
 
 export const downloadBlob = async (sourceUri: string) => {
-  return (await api.get(sourceUri)) as Blob;
+  return await api.get<Blob>(sourceUri);
 };

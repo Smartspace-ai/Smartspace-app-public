@@ -1,40 +1,21 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect } from 'react'
+// src/routes/_protected/workspace/index.tsx
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { useWorkspaces } from '@/domains/workspaces/queries'
+import { queryClient } from '@/platform/reactQueryClient'
 
-import NoWorkspacesAvailable from '@/pages/no_workspaces_available'
-import TeamsLoader from '@/pages/teams_loader'
+import { workspacesListOptions } from '@/domains/workspaces/queries'
 
 export const Route = createFileRoute('/_protected/workspace/')({
-  component: WorkspaceIndex,
-})
-
-function WorkspaceIndex() {
-  const navigate = useNavigate()
-  const { data: workspaces, isLoading, isFetched } = useWorkspaces()
-
-  useEffect(() => {
-    if (isLoading) return
-    if (workspaces && (workspaces.length ?? 0) > 0) {
-      navigate({
+  // No component; this route always redirects
+  loader: async () => {
+    const list = await queryClient.ensureQueryData(workspacesListOptions())
+    if (list?.length) {
+      throw redirect({
         to: '/workspace/$workspaceId',
-        params: { workspaceId: workspaces[0]?.id },
-        replace: true,
+        params: { workspaceId: list[0].id },
       })
+    } else {
+      throw redirect({ to: '/workspace/no-workspaces' })
     }
-  }, [isLoading, workspaces, navigate])
-
-  if (isLoading) {
-    return <TeamsLoader message="Loading workspaces…" />
-  }
-
-  if ( isFetched && workspaces && (workspaces.length ?? 0) === 0) {
-    return <NoWorkspacesAvailable />
-  }
-
-  // Fallback while navigating to the first workspace
-  return <TeamsLoader message="Loading workspaces…" />
-}
-
-
+  },
+})

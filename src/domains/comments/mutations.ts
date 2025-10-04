@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 
 import { useUserId } from '@/platform/auth/session';
 
+import type { Comment, MentionUser } from './model';
 import { commentsKeys } from './queryKeys';
-import { Comment, CommentSchema, MentionUser } from "./schemas";
 import { addComment } from './service';
 
 
@@ -23,15 +23,15 @@ export function useAddComment(threadId: string) {
     mutationKey: commentsKeys.mutation.add(threadId),
     mutationFn: async ({ threadId, content, mentionedUsers = [] }) => {
       const tempId = `temp-${Date.now()}`;
-      const optimisticComment = CommentSchema.parse({
+      const optimisticComment: Comment = {
         id: tempId,
         content,
         createdAt: new Date(),
         createdBy: activeUserId || 'You',
-        createdByUserId: activeUserId,
-        mentionedUsers,
+        createdByUserId: activeUserId ?? '',
+        mentionedUsers: mentionedUsers ?? [],
         messageThreadId: threadId,
-      });
+      };
   
       queryClient.setQueryData(
         commentsKeys.list(threadId),

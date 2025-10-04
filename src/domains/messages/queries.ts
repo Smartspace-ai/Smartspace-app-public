@@ -1,20 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 
+import type { Message } from './model';
 import { messagesKeys } from './queryKeys';
-import type { Message } from './schemas';
 import { fetchMessages } from './service';
 
-export function useMessages(threadId: string) {
-  return useQuery({
-    enabled: !!threadId,
+export const messagesListOptions = (threadId: string) =>
+  queryOptions<Message[]>({
     queryKey: threadId ? messagesKeys.list(threadId) : messagesKeys.lists(),
-    queryFn: async (): Promise<Message[]> => {
-      const result = await fetchMessages(threadId); 
-      return result.reverse();
-    },
+    queryFn: async () => (await fetchMessages(threadId)).reverse(),
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     staleTime: 8,
   });
+
+export function useMessages(threadId: string) {
+  return useQuery({ ...messagesListOptions(threadId), enabled: !!threadId });
 }

@@ -3,8 +3,8 @@ import { useNavigate } from '@tanstack/react-router';
 import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
+import type { MessageThread } from '@/domains/threads';
 import { useDeleteThread, useSetFavorite } from '@/domains/threads/mutations';
-import type { MessageThread } from '@/domains/threads/schemas';
 
 type UseThreadItemVmArgs = {
   thread: MessageThread;

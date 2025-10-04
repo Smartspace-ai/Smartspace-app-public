@@ -7,10 +7,12 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 // import rehypeSanitize from 'rehype-sanitize';
 
-import { useTeams } from '@/contexts/teams-context';
+
+import { useTeams } from '@/app/providers';
 
 import { HTMLBlock } from './html';
 import { MarkdownSmartImage } from './MarkdownSmartImage';
+
 
 
 type Props = { text: string };

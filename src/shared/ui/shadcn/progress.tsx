@@ -1,27 +1,33 @@
-import * as ProgressPrimitive from "@radix-ui/react-progress"
+import LinearProgress from "@mui/material/LinearProgress"
 import * as React from "react"
 
 import { cn } from "@/shared/utils/utils"
 
-const Progress = React.forwardRef<
-  React.ElementRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
->(({ className, value, ...props }, ref) => (
-  <ProgressPrimitive.Root
-    ref={ref}
-    className={cn(
-      "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
-      className
-    )}
-    {...props}
-  >
-    <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-primary transition-all"
-      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+type ProgressProps = React.ComponentPropsWithoutRef<typeof LinearProgress> & {
+  value?: number
+}
+
+const Progress = React.forwardRef<HTMLSpanElement, ProgressProps>(
+  ({ className, value = 0, ...props }, ref) => (
+    <LinearProgress
+      ref={ref}
+      variant="determinate"
+      value={value}
+      className={cn("h-4 w-full rounded-full", className)}
+      sx={{
+        borderRadius: "9999px",
+        backgroundColor: "hsl(var(--secondary))",
+        '& .MuiLinearProgress-bar': {
+          backgroundColor: 'hsl(var(--primary))',
+          borderRadius: '9999px',
+          transition: 'transform 150ms linear',
+        },
+      }}
+      {...props}
     />
-  </ProgressPrimitive.Root>
-))
-Progress.displayName = ProgressPrimitive.Root.displayName
+  )
+)
+Progress.displayName = "Progress"
 
 export { Progress }
 
