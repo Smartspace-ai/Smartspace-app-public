@@ -1,11 +1,12 @@
-import MuiTooltip from "@mui/material/Tooltip"
-import * as React from "react"
+import MuiTooltip from "@mui/material/Tooltip";
+import * as React from "react";
 
-import { cn } from "@/shared/utils/utils"
+import { cn } from "@/shared/utils/utils";
 
-const TooltipProvider = ({ children }: { children: React.ReactNode }) => (
-  <span style={{ display: 'contents' }}>{children}</span>
-)
+const TooltipProvider = ({ children, delayDuration }: { children: React.ReactNode; delayDuration?: number }) => {
+  // MUI Tooltip manages delay via `enterDelay` on each tooltip; we keep Provider for API parity
+  return <span style={{ display: 'contents' }} data-delay={delayDuration}>{children}</span>
+}
 
 type TooltipRootProps = React.ComponentPropsWithoutRef<typeof MuiTooltip>
 
@@ -38,5 +39,5 @@ const TooltipContent = React.forwardRef<HTMLDivElement, { className?: string }>(
 )
 TooltipContent.displayName = "TooltipContent"
 
-export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger }
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };
 

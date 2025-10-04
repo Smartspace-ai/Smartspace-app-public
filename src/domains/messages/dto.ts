@@ -38,6 +38,7 @@ export const MessageListDto = z.array(MessageDto);
 export type TMessageListDto = z.infer<typeof MessageListDto>;
 
 export const MessagesEnvelopeDto = z.object({ data: z.array(MessageDto) });
+export type TMessagesEnvelopeDto = z.infer<typeof MessagesEnvelopeDto>;
 
 export const MessageResponseSourceDto = z.object({
   index: z.number(),

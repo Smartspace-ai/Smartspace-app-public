@@ -1,4 +1,4 @@
-import { MessageListDto, TMessageDto, TMessageListDto } from './dto';
+import { MessageListDto, TMessageDto } from './dto';
 import { Message } from './model';
 
 export function mapMessageDtoToModel(dto: TMessageDto): Message {
@@ -25,8 +25,8 @@ export function mapMessageDtoToModel(dto: TMessageDto): Message {
   };
 }
 
-export function mapMessagesDtoToModels(dto: TMessageListDto): Message[] {
-  const list = MessageListDto.parse(dto);
+export function mapMessagesDtoToModels(dto: unknown): Message[] {
+  const list = MessageListDto.parse(dto as unknown);
   return list.map(mapMessageDtoToModel);
 }
 

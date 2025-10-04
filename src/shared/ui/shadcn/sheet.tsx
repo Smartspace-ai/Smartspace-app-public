@@ -49,10 +49,12 @@ interface SheetContentProps extends VariantProps<typeof sheetVariants> {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   className?: string;
+  style?: React.CSSProperties;
+  onOpenAutoFocus?: (e: any) => void;
 }
 
 const SheetContent = React.forwardRef<HTMLDivElement, React.PropsWithChildren<SheetContentProps>>(
-  ({ side = "right", className, children, hideClose = false, open, onOpenChange, ...props }, ref) => (
+  ({ side = "right", className, children, hideClose = false, open, onOpenChange, onOpenAutoFocus, style, ...props }, ref) => (
     <Drawer
       open={!!open}
       onClose={() => onOpenChange?.(false)}
@@ -60,7 +62,9 @@ const SheetContent = React.forwardRef<HTMLDivElement, React.PropsWithChildren<Sh
       PaperProps={{
         ref,
         className: cn(sheetVariants({ side }), className),
+        style,
       }}
+      slotProps={{ backdrop: { onAnimationStart: onOpenAutoFocus as any } }}
       {...props}
     >
       {children}

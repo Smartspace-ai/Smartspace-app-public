@@ -16,7 +16,8 @@
       "@/*": ["./src/*"],
       "@/components/*": ["./src/components/*"],
       "@/contexts/*": ["./src/contexts/*"],
-      "@/hooks/*": ["./src/hooks/*"]
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/shared/ui/mui-compat/*": ["./src/shared/ui/shadcn/*"]
     },
     "composite": true,
     "jsx": "react-jsx",

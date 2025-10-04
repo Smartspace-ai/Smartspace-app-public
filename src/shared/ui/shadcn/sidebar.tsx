@@ -1,17 +1,17 @@
 import { Slot } from '@radix-ui/react-slot';
 import { PanelLeft } from 'lucide-react';
 import {
-  ComponentProps,
-  createContext,
-  CSSProperties,
-  ElementRef,
-  forwardRef,
-  ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
+    ComponentProps,
+    createContext,
+    CSSProperties,
+    ElementRef,
+    forwardRef,
+    ReactNode,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
 } from 'react';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
@@ -326,7 +326,7 @@ const Sidebar = forwardRef<
             side={side}
             hideClose
             style={{ width: SIDEBAR_WIDTH_MOBILE }}
-            onOpenAutoFocus={(e) => e.preventDefault()}
+            onOpenAutoFocus={(e: any) => e.preventDefault()}
             className="p-0 bg-sidebar text-sidebar-foreground"
           >
             <SheetHeader>
@@ -688,25 +688,25 @@ const SidebarFooter = forwardRef<HTMLDivElement, ComponentProps<'div'>>(
 SidebarFooter.displayName = 'SidebarFooter';
 
 export {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuAction,
-  SidebarMenuBadge,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarSeparator,
-  SidebarTrigger
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarInset,
+    SidebarMenu,
+    SidebarMenuAction,
+    SidebarMenuBadge,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
+    SidebarProvider,
+    SidebarRail,
+    SidebarSeparator,
+    SidebarTrigger
 };
 

@@ -43,9 +43,14 @@ const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
 )
 TabsList.displayName = "TabsList"
 
-const TabsTrigger = ({ className, value, ...props }: React.ComponentPropsWithoutRef<typeof MuiTab>) => (
+type TabsTriggerProps = Omit<React.ComponentPropsWithoutRef<typeof MuiTab>, 'children' | 'label'> & {
+  children?: React.ReactNode
+}
+
+const TabsTrigger = ({ className, value, children, ...props }: TabsTriggerProps) => (
   <MuiTab
     value={value}
+    label={children}
     disableRipple
     className={cn(
       "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium",

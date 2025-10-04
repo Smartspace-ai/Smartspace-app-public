@@ -3,14 +3,20 @@ import * as React from "react"
 
 import { cn } from "@/shared/utils/utils"
 
-type SwitchProps = React.ComponentPropsWithoutRef<typeof MuiSwitch>
+type SwitchProps = React.ComponentPropsWithoutRef<typeof MuiSwitch> & {
+  onCheckedChange?: (checked: boolean) => void
+}
 
 const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
-  ({ className, ...props }, ref) => (
+  ({ className, onCheckedChange, onChange, ...props }, ref) => (
     <MuiSwitch
       ref={ref as unknown as React.ForwardedRef<HTMLButtonElement>}
       className={cn("inline-flex h-6 w-11", className)}
       disableRipple
+      onChange={(e, checked) => {
+        onCheckedChange?.(checked)
+        onChange?.(e as any, checked)
+      }}
       sx={{
         width: 44,
         height: 24,

@@ -66,12 +66,12 @@ const PopoverTrigger = React.forwardRef<unknown, TriggerProps>(
   }
 )
 
-type ContentProps = React.ComponentPropsWithoutRef<typeof MuiPopover> & {
+type ContentProps = Omit<React.ComponentPropsWithoutRef<typeof MuiPopover>, 'open' | 'anchorEl' | 'onClose'> & {
   className?: string
 }
 
 const PopoverContent = React.forwardRef<HTMLDivElement, ContentProps>(
-  ({ className, slotProps, open: _open, anchorOrigin, transformOrigin, ...props }, ref) => {
+  ({ className, slotProps, anchorOrigin, transformOrigin, ...props }, ref) => {
     const ctx = React.useContext(PopoverCtx)
     if (!ctx) return null
 

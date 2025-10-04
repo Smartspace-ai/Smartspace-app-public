@@ -40,8 +40,12 @@ const Dialog = ({ children, open, onOpenChange }: { children: React.ReactNode; o
   )
 }
 
-const DialogTrigger = ({ children, onClick }: { children: React.ReactElement; onClick?: React.MouseEventHandler }) =>
-  React.cloneElement(children, { onClick })
+const DialogTrigger = ({ children, onClick, asChild }: { children: React.ReactElement; onClick?: React.MouseEventHandler; asChild?: boolean }) =>
+  asChild ? React.cloneElement(children, { onClick }) : (
+    <button type="button" onClick={onClick} style={{ all: 'unset' }}>
+      {children}
+    </button>
+  )
 
 const DialogPortal = ({ children }: { children: React.ReactNode }) => <span style={{ display: 'contents' }}>{children}</span>
 
@@ -56,15 +60,17 @@ DialogOverlay.displayName = "DialogOverlay"
 
 interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof MuiDialogContent> {
   hideClose?: boolean;
+  onOpenAutoFocus?: (e: any) => void;
 }
 
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, children, hideClose = false, ...props }, ref) => {
+  ({ className, children, hideClose = false, onOpenAutoFocus, ...props }, ref) => {
     const ctx = React.useContext(DialogContext)
     return (
       <MuiDialogContent
         ref={ref}
         className={cn("grid gap-4 border bg-background p-5 shadow-lg sm:rounded-lg", className)}
+        onFocus={onOpenAutoFocus as any}
         {...props}
       >
         {children}
