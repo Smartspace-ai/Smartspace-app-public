@@ -2,10 +2,10 @@
 import { Outlet, createRootRoute } from '@tanstack/react-router'
 
 import AppProviders from '@/app/AppProviders'
+import { RootErrorBoundary } from '@/app/ui/RouteErrorEnvelope'
 
 import TeamsLoader from '@/pages/teams_loader'
 
-import { RootErrorBoundary } from '@/app/ui/RouteErrorEnvelope'
 import { useTeamsViewport } from '@/hooks/useTeamsViewport'
 
 function RootContent() {

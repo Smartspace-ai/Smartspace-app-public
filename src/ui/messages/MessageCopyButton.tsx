@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { MessageContentItem } from '@/domains/messages';
 
-import { Button } from '../../shared/ui/shadcn/button';
+import { Button } from '@/shared/ui/mui-compat/button';
 
 
 enum CopyState {

@@ -14,8 +14,11 @@ export default defineConfig({
 
   server: {
     port: 4300,
-    host: 'localhost',
-    allowedHosts: ['melanie-chaster-cheerlessly.ngrok-free.dev'],
+    strictPort: true,
+    // Listen on all interfaces for reliability across IPv4/IPv6 and when using tunnels
+    host: true,
+    // Explicitly allow localhost access in addition to the ngrok domain
+    allowedHosts: ['localhost', '127.0.0.1', 'melanie-chaster-cheerlessly.ngrok-free.dev'],
 },
 
   preview: {

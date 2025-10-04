@@ -12,12 +12,12 @@ import { useWorkspace } from '@/domains/workspaces/queries';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
+import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
+import { Skeleton } from '@/shared/ui/mui-compat/skeleton';
+import { getInitials } from '@/shared/utils/initials';
+import { parseDateTime } from '@/shared/utils/parseDateTime';
 
-import { Avatar, AvatarFallback } from '../../shared/ui/shadcn/avatar';
-import { useSidebar } from '../../shared/ui/shadcn/sidebar';
-import { Skeleton } from '../../shared/ui/shadcn/skeleton';
-import { getInitials } from '../../shared/utils/initials';
-import { parseDateTime } from '../../shared/utils/parseDateTime';
 import { MessageItem } from './MessageItem';
 
 

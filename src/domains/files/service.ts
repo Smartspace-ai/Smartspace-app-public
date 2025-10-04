@@ -1,4 +1,5 @@
 import { api } from '@/platform/api';
+
 import { FileInfoDto } from './dto';
 import { mapFileInfoDtoToModel } from './mapper';
 import type { FileInfo, FileScope } from './model';

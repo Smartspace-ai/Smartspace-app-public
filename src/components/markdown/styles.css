@@ -14,6 +14,23 @@
   box-shadow: 0 0 0 3px rgba(70, 128, 255, 0.15);
 }
 
+/* Readonly appearance: remove border and padding to blend into bubbles */
+.md-editor.md-editor--readonly .ProseMirror {
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  /* Fix height to the base min-height when not editable */
+  height: 220px;
+  overflow: auto;
+}
+
+/* Bare composer appearance (no border or padding regardless of editable) */
+.md-editor.md-editor--bare .ProseMirror {
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+
 /* Custom inline file-tag */
 .file-tag {
   display: inline-block;

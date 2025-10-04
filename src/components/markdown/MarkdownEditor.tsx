@@ -1,9 +1,10 @@
-import { defaultValueCtx, Editor, rootCtx } from '@milkdown/core'
+import { defaultValueCtx, Editor, editorViewOptionsCtx, rootCtx } from '@milkdown/core'
 import { clipboard } from '@milkdown/plugin-clipboard'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { commonmark } from '@milkdown/preset-commonmark'
-import { MilkdownProvider, useEditor } from '@milkdown/react'
-import { useMemo } from 'react'
+import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react'
+import type React from 'react'
+import { useRef } from 'react'
 
 // Note: Mention plugin is not published under @milkdown/plugin-mention on npm.
 // This setup is ready to add a mention-like plugin later if desired.
@@ -24,17 +25,29 @@ const initial = [
 function EditorInner({
   value,
   onChange: _onChange,
+  onKeyDown,
+  disabled,
+  editable,
+  className,
 }: {
   value?: string
   onChange?: (md: string) => void
+  onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>
+  disabled?: boolean
+  editable?: boolean
+  className?: string
 }) {
-  const defaultValue = useMemo(() => value ?? initial, [value])
+  const initialValueRef = useRef(value ?? initial)
+  const isEditable = (editable ?? (disabled != null ? !disabled : true)) === true
 
   useEditor((root) => {
     return Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, root)
-        ctx.set(defaultValueCtx, defaultValue)
+        ctx.set(defaultValueCtx, initialValueRef.current)
+        ctx.set(editorViewOptionsCtx, {
+          editable: () => isEditable,
+        })
         if (_onChange) {
           const lm = ctx.get(listenerCtx)
           lm.markdownUpdated((_ctx, md) => _onChange(md))
@@ -44,14 +57,30 @@ function EditorInner({
       .use(clipboard)
       .use(listener)
       .use(fileTag)
-  }, [defaultValue])
+  }, [isEditable])
 
-  return <div className="md-editor" />
+  return (
+    <div
+      className={`md-editor${!isEditable ? ' md-editor--readonly' : ''}${className ? ` ${className}` : ''}`}
+      onKeyDown={onKeyDown}
+      role="textbox"
+      aria-readonly={isEditable ? 'false' : 'true'}
+      aria-disabled={isEditable ? 'false' : 'true'}
+      aria-multiline="true"
+      tabIndex={0}
+    >
+      <Milkdown />
+    </div>
+  )
 }
 
 export function MarkdownEditor(props: {
   value?: string
   onChange?: (md: string) => void
+  onKeyDown?: (e: React.KeyboardEvent) => void
+  disabled?: boolean
+  editable?: boolean
+  className?: string
 }) {
   return (
     <MilkdownProvider>

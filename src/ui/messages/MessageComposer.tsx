@@ -1,5 +1,7 @@
 'use client';
 
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowBigUp, Check, Maximize2, Minimize2, Paperclip, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -8,7 +10,8 @@ import { getFileIcon } from '@/domains/files/utils';
 
 import { ChatVariablesForm } from '@/ui/chat-variables/VariablesForm';
 
-import { Button } from '@/shared/ui/mui-compat/button';
+import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+
 
 import { useMessageComposerVm } from './MessageComposer.vm';
 
@@ -24,7 +27,7 @@ export default function MessageComposer() {
     newMessage, setNewMessage, handleKeyDown, handleSendMessage, isSending, disabled,
 
     // refs
-    textareaRef, dropzoneRef, fileInputRef,
+    dropzoneRef, fileInputRef,
 
     // ui state
     isDragging, isFullscreen, setIsFullscreen, showExpand,
@@ -41,7 +44,6 @@ export default function MessageComposer() {
     sendDisabled,
 
     // helpers
-    adjustTextareaHeight
   } = vm;
 
   return (
@@ -90,8 +92,6 @@ export default function MessageComposer() {
                         {isUploadingFiles && ' (uploading...)'}
                       </span>
                       <Button
-                        variant="ghost"
-                        size="sm"
                         className="h-6 text-xs text-muted-foreground hover:text-destructive transition-colors"
                         onClick={removeAllFiles}
                         disabled={isUploadingFiles}
@@ -147,16 +147,15 @@ export default function MessageComposer() {
                               )}
                             </div>
                             <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                className="h-5 w-5 rounded-full"
+                      <IconButton
+                        size="small"
+                        className="h-5 w-5 rounded-full"
                                 onClick={() => removeFileAt(index)}
                                 disabled={isUploadingFiles}
                                 aria-label="Remove file"
                               >
                                 <X className="h-3 w-3" />
-                              </Button>
+                      </IconButton>
                             </div>
                           </motion.div>
                         );
@@ -170,9 +169,8 @@ export default function MessageComposer() {
             {isMobile ? (
               <div className="flex items-center gap-2 px-3 py-2">
                 {supportsFiles && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  <IconButton
+                    size="small"
                     className="h-8 w-8 text-muted-foreground hover:text-foreground self-end"
                     disabled={disabled || isUploadingFiles}
                     onClick={handlePaperclipClick}
@@ -186,74 +184,47 @@ export default function MessageComposer() {
                       multiple
                       className="hidden"
                     />
-                  </Button>
+                  </IconButton>
                 )}
 
-                <div className="relative flex-1">
-                  <textarea
-                    ref={textareaRef}
-                    rows={1}
+                <div className="relative flex-1 px-2 py-2">
+                  <MarkdownEditor
                     value={newMessage}
-                    onChange={(e) => {
-                      setNewMessage(e.target.value);
-                      adjustTextareaHeight(e.target);
-                    }}
-                    onInput={(e) => adjustTextareaHeight(e.currentTarget)}
+                    onChange={(md) => setNewMessage(md)}
                     onKeyDown={handleKeyDown}
-                    placeholder={
-                      isDragging
-                        ? 'Drop files here...'
-                        : disabled
-                        ? 'Select a thread to start chatting...'
-                        : 'Type a message...'
-                    }
-                    className="w-full resize-none border-0 rounded-none bg-transparent px-2 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors max-h-60 overflow-y-auto"
-                    style={{ fontSize: 16, WebkitTextSizeAdjust: '100%' }}
                     disabled={disabled}
+                    className="md-editor--bare text-sm"
                   />
                   {showExpand && !isFullscreen && (
-                    <Button
+                    <IconButton
                       type="button"
-                      variant="ghost"
-                      size="icon"
+                      size="small"
                       className="h-7 w-7 absolute top-1 right-1 text-muted-foreground hover:text-foreground"
                       onClick={() => setIsFullscreen(true)}
                       aria-label="Expand"
                     >
                       <Maximize2 className="h-4 w-4" />
-                    </Button>
+                    </IconButton>
                   )}
                 </div>
 
-                <Button
+                <IconButton
                   onClick={handleSendMessage}
-                  variant="default"
-                  size="icon"
                   className={`h-10 w-10 rounded-full self-end ${sendDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={sendDisabled}
                   aria-label="Send"
                 >
                   <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
-                </Button>
+                </IconButton>
               </div>
             ) : (
-              <div className="relative">
-                <textarea
-                  ref={textareaRef}
-                  rows={1}
+              <div className="relative px-5 py-2">
+                <MarkdownEditor
                   value={newMessage}
-                  onChange={(e) => {
-                    setNewMessage(e.target.value);
-                    adjustTextareaHeight(e.target);
-                  }}
-                  onInput={(e) => adjustTextareaHeight(e.currentTarget)}
+                  onChange={(md) => setNewMessage(md)}
                   onKeyDown={handleKeyDown}
-                  placeholder={
-                    isDragging ? 'Drop files here...' : disabled ? 'Select a thread to start chatting...' : 'Type a message...'
-                  }
-                  className="w-full resize-none border-0 rounded-none bg-transparent px-5 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors max-h-60 overflow-y-auto"
-                  style={{ fontSize: 16, WebkitTextSizeAdjust: '100%' }}
                   disabled={disabled}
+                  className="md-editor--bare text-sm"
                 />
               </div>
             )}
@@ -267,11 +238,10 @@ export default function MessageComposer() {
           createPortal(
             <div className="fixed inset-x-0" style={{ top: '5vh', height: '95vh', left: 0, right: 0, zIndex: 1300 }}>
               <div className="relative h-full w-full bg-background border shadow-lg">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+                    <IconButton
+                      type="button"
+                      size="small"
+                      className="h-8 w-8 absolute top-2 right-2 text-muted-foreground hover:text-foreground"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -280,25 +250,21 @@ export default function MessageComposer() {
                   aria-label="Collapse"
                 >
                   <Minimize2 className="h-4 w-4" />
-                </Button>
+                    </IconButton>
                 <div className="flex flex-col h-full">
-                  <div className="flex-1">
-                    <textarea
-                      rows={10}
+                  <div className="flex-1 p-4">
+                    <MarkdownEditor
                       value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
+                      onChange={(md) => setNewMessage(md)}
                       onKeyDown={handleKeyDown}
-                      placeholder={disabled ? 'Select a thread to start chatting...' : 'Type a message...'}
-                      className="w-full h-full resize-none border-0 bg-background p-4 text-sm focus-visible:outline-none focus-visible:ring-0"
-                      style={{ fontSize: 16, WebkitTextSizeAdjust: '100%' }}
                       disabled={disabled}
+                      className="md-editor--bare text-sm h-full"
                     />
                   </div>
                   <div className="flex items-center gap-2 px-3 py-2 border-t bg-background">
                     {supportsFiles && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
+                      <IconButton
+                        size="small"
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
                         disabled={disabled || isUploadingFiles}
                         onClick={handlePaperclipClick}
@@ -306,19 +272,17 @@ export default function MessageComposer() {
                       >
                         <Paperclip className="h-4 w-4" />
                         <input type="file" ref={fileInputRef} onChange={onFileInputChange} multiple className="hidden" />
-                      </Button>
+                      </IconButton>
                     )}
                     <div className="flex-1" />
-                    <Button
+                    <IconButton
                       onClick={handleSendMessage}
-                      variant="default"
-                      size="icon"
                       className={`h-10 w-10 rounded-full ${sendDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       disabled={sendDisabled}
                       aria-label="Send"
                     >
                       <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
-                    </Button>
+                    </IconButton>
                   </div>
                 </div>
               </div>
@@ -331,9 +295,8 @@ export default function MessageComposer() {
           <div className="flex items-center justify-between px-4 py-2 bg-background">
             <div className="flex items-center gap-3">
               {supportsFiles && (
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <IconButton
+                  size="small"
                   className="h-7 w-7 text-muted-foreground hover:text-foreground"
                   disabled={disabled || isUploadingFiles}
                   onClick={handlePaperclipClick}
@@ -341,15 +304,13 @@ export default function MessageComposer() {
                 >
                   <Paperclip className="h-4 w-4" />
                   <input type="file" ref={fileInputRef} onChange={onFileInputChange} multiple className="hidden" />
-                </Button>
+                </IconButton>
               )}
             </div>
 
-            <Button
+              <Button
               onClick={handleSendMessage}
-              variant="default"
-              size="sm"
-              className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
+                className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
                 sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
               }`}
               disabled={sendDisabled}

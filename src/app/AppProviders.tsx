@@ -1,4 +1,5 @@
 // src/app/AppProviders.tsx
+import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ReactNode } from 'react';
@@ -7,10 +8,9 @@ import { AuthProvider, useAuth } from '@/platform/auth/session';
 import { queryClient } from '@/platform/reactQueryClient';
 import { RealtimeProvider } from '@/platform/realtime/RealtimeProvider';
 
+import { muiTheme } from '@/shared/ui/mui-bridge/theme';
 import { SidebarProvider } from '@/shared/ui/mui-compat/sidebar';
 
-import { muiTheme } from '@/shared/ui/mui-bridge/theme';
-import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
 import { TeamsProvider } from './providers';
 
 function RealtimeBridge({ children }: { children: ReactNode }) {

@@ -1,5 +1,6 @@
 import { Send } from '@mui/icons-material';
 import { Typography } from '@mui/material';
+import Skeleton from '@mui/material/Skeleton';
 import { ArrowBigUp, MessageSquare } from 'lucide-react';
 import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -36,7 +37,6 @@ import {
 
 
 
-import { Skeleton } from '../../shared/ui/shadcn/skeleton';
 import { getInitials } from '../../shared/utils/initials';
 import { parseDateTime } from '../../shared/utils/parseDateTime';
 

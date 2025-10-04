@@ -16,6 +16,7 @@ import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 
 
+
 /** Public shape exported to the UI component */
 export type MessageComposerVm = ReturnType<typeof useMessageComposerVm>;
 

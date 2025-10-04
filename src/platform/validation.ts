@@ -1,5 +1,6 @@
 // src/platform/validation.ts
 import { ZodError, ZodSchema } from 'zod';
+
 import type { AppError } from './envelopes';
 
 export function parseOrThrow<T>(schema: ZodSchema<T>, data: unknown, context?: string): T {

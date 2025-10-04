@@ -1,6 +1,6 @@
-export const getTimeAgo = (date: Date | string): string => {
+export const getTimeAgo = (date: Date | string, referenceNow?: Date): string => {
   const givenTime = new Date(date);
-  const currentTime = new Date();
+  const currentTime = referenceNow ? new Date(referenceNow) : new Date();
 
   const timeDifference = currentTime.getTime() - givenTime.getTime();
 

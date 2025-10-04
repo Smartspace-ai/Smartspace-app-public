@@ -2,6 +2,7 @@
 import { JsonSchema } from '@jsonforms/core';
 import { materialCells } from '@jsonforms/material-renderers';
 import { JsonForms } from '@jsonforms/react';
+import Button from '@mui/material/Button';
 import { FC, useEffect, useState } from 'react';
 
 import { FileInfo } from '@/domains/files';
@@ -9,20 +10,22 @@ import { getFileIcon } from '@/domains/files/utils';
 import { getDefaultValues } from '@/domains/json_forms/utils';
 import { MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
-import type { MessageResponseSource } from './MessageSources';
+
 
 import { renderers } from '@/ui/chat-variables/renders';
-import { MyMarkdown } from '@/ui/markdown/MyMarkdown';
+
 
 import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
-import { Button } from '@/shared/ui/mui-compat/button';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parseDateTime';
 import { cn } from '@/shared/utils/utils';
 
+import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+
 import { ChatMessageCopyButton } from './MessageCopyButton';
 import { ChatMessageFileDownload } from './MessageFileDownload';
 import { ChatMessageImage } from './MessageImage';
+import type { MessageResponseSource } from './MessageSources';
 import { ChatMessageSources } from './MessageSources';
 
 export interface MessageBubbleProps {
@@ -79,7 +82,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
         {contentIsList && content?.map((item, i) => (
           item.text ? (
             <div key={`content-${i}`} className="prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed mb-3 last:mb-0">
-              <MyMarkdown text={item.text} />
+              <MarkdownEditor value={item.text} editable={false} />
             </div>
           ) : item.image ? (
             <div key={`image-${i}`} className="mb-3 last:mb-0">
@@ -120,8 +123,8 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
             />
             <div className="flex justify-end mt-2">
               <Button
-                variant="outline"
-                size="sm"
+                variant="outlined"
+                size="small"
                 disabled={userInput !== undefined || !responseFormValid}
                 className={cn(userInput !== undefined && 'opacity-60 cursor-not-allowed')}
                 onClick={() => onSubmitUserForm?.('_user', responseFormData)
