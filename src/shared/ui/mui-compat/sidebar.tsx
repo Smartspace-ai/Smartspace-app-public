@@ -15,9 +15,9 @@ import {
 } from 'react';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
-import { Button } from '@/shared/ui/shadcn/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/shadcn/sheet';
-import { TooltipProvider } from '@/shared/ui/shadcn/tooltip';
+import { Button } from '@/shared/ui/mui-compat/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/mui-compat/sheet';
+import { TooltipProvider } from '@/shared/ui/mui-compat/tooltip';
 import { cn } from '@/shared/utils/utils';
 
 

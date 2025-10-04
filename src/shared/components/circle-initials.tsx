@@ -1,4 +1,4 @@
-import { Avatar } from '@/shared/ui/shadcn/avatar';
+import { Avatar } from '@/shared/ui/mui-compat/avatar';
 
 import { getInitials } from '../utils/initials';
 

@@ -6,10 +6,10 @@ import ThreadsList from '@/ui/threads/ThreadsList';
 import { WorkspaceSwitcher } from '@/ui/workspaces/WorkspaceSwitcher';
 
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-} from '@/shared/ui/shadcn/sidebar';
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+} from '@/shared/ui/mui-compat/sidebar';
 
 import SidebarUserHeader from './SidebarUserHeader';
 

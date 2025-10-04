@@ -9,7 +9,7 @@ import {
     type FieldValues,
 } from "react-hook-form"
 
-import { Label } from "@/shared/ui/shadcn/label"
+import { Label } from "@/shared/ui/mui-compat/label"
 import { cn } from "@/shared/utils/utils"
 
 const Form = FormProvider

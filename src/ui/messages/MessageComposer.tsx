@@ -8,7 +8,7 @@ import { getFileIcon } from '@/domains/files/utils';
 
 import { ChatVariablesForm } from '@/ui/chat-variables/VariablesForm';
 
-import { Button } from '@/shared/ui/shadcn/button';
+import { Button } from '@/shared/ui/mui-compat/button';
 
 import { useMessageComposerVm } from './MessageComposer.vm';
 

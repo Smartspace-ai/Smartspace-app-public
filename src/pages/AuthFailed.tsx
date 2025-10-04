@@ -1,5 +1,5 @@
-import { Button } from '@/shared/ui/shadcn/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/shadcn/card'
+import { Button } from '@/shared/ui/mui-compat/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/mui-compat/card'
 
 export default function AuthFailed() {
   const retry = () => {

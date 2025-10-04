@@ -4,7 +4,7 @@ import MuiDialogContent from "@mui/material/DialogContent"
 import MuiDialogTitle from "@mui/material/DialogTitle"
 import * as React from "react"
 
-import { Button } from "@/shared/ui/shadcn/button"
+import { Button } from "@/shared/ui/mui-compat/button"
 import { cn } from "@/shared/utils/utils"
 
 const AlertDialog = ({ children, open, onOpenChange }: { children: React.ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void }) => (

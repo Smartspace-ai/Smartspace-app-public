@@ -8,19 +8,19 @@ import { useUserId } from '@/platform/auth/session';
 import { useTeams } from '@/app/providers';
 
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
 } from '@/shared/ui/mui-compat/avatar';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/shared/ui/mui-compat/dropdown-menu';
-import { SidebarHeader } from '@/shared/ui/shadcn/sidebar';
+import { SidebarHeader } from '@/shared/ui/mui-compat/sidebar';
 import { getAvatarColour } from '@/shared/utils/avatarColour';
 import { getInitials } from '@/shared/utils/initials';
 

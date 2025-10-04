@@ -5,8 +5,8 @@ import { ChevronDown } from 'lucide-react';
 import { Workspace } from '@/domains/workspaces/model';
 
 import { CircleInitials } from '@/shared/components/circle-initials';
-import { Button } from '@/shared/ui/shadcn/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/shadcn/popover';
+import { Button } from '@/shared/ui/mui-compat/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/mui-compat/popover';
 
 import { useWorkspaceSwitcherVm } from './WorkspaceSwitcher.vm';
 

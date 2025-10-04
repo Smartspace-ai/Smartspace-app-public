@@ -4,8 +4,8 @@ import { Plus } from 'lucide-react';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
-import { Button } from '@/shared/ui/shadcn/button';
-import { useSidebar } from '@/shared/ui/shadcn/sidebar';
+import { Button } from '@/shared/ui/mui-compat/button';
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 export default function NewThreadButton() {
   const { isMobile, setOpenMobileLeft } = useSidebar();

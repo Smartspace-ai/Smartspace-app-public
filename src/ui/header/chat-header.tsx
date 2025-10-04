@@ -1,4 +1,5 @@
 import Divider from '@mui/material/Divider';
+import Skeleton from '@mui/material/Skeleton';
 import { MessageSquare, PanelLeft } from 'lucide-react';
 
 
@@ -9,8 +10,7 @@ import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
-import { SidebarTrigger } from '@/shared/ui/shadcn/sidebar';
-import { Skeleton } from '@/shared/ui/shadcn/skeleton';
+import { SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
 
 import { NotificationPanel } from './notifications-panel';
 

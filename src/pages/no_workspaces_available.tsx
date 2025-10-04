@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/shadcn/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/mui-compat/card'
 
 export default function NoWorkspacesAvailable() {
 
