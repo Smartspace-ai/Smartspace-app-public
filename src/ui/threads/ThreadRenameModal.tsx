@@ -4,16 +4,16 @@ import { useEffect, useRef, useState } from 'react';
 import type { MessageThread } from '@/domains/threads';
 import { useRenameThread } from '@/domains/threads/mutations';
 
-import { Button } from '@/shared/ui/shadcn/button';
+import { Button } from '@/shared/ui/mui-compat/button';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/ui/shadcn/dialog';
-import { Input } from '@/shared/ui/shadcn/input';
-import { Label } from '@/shared/ui/shadcn/label';
+} from '@/shared/ui/mui-compat/dialog';
+import { Input } from '@/shared/ui/mui-compat/input';
+import { Label } from '@/shared/ui/mui-compat/label';
 
 interface Props {
   isOpen: boolean;

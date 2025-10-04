@@ -7,7 +7,7 @@ import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
-import { useSidebar } from '@/shared/ui/shadcn/sidebar';
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 import { useWorkspaceSubscriptions } from './useWorkspaceSubscriptions';
 
 export function useWorkspaceSwitcherVm() {

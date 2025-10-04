@@ -1,5 +1,5 @@
 // src/shared/components/envelope.tsx
-import { Button } from '@/shared/ui/shadcn/button';
+import { Button } from '@/shared/ui/mui-compat/button';
 
 export function Envelope({
   title,

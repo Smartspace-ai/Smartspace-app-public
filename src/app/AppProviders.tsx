@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from '@/platform/auth/session';
 import { queryClient } from '@/platform/reactQueryClient';
 import { RealtimeProvider } from '@/platform/realtime/RealtimeProvider';
 
-import { SidebarProvider } from '@/shared/ui/shadcn/sidebar';
+import { SidebarProvider } from '@/shared/ui/mui-compat/sidebar';
 
 import { muiTheme } from '@/shared/ui/mui-bridge/theme';
 import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';

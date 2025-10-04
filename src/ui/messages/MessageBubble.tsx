@@ -14,8 +14,8 @@ import type { MessageResponseSource } from './MessageSources';
 import { renderers } from '@/ui/chat-variables/renders';
 import { MyMarkdown } from '@/ui/markdown/MyMarkdown';
 
-import { Avatar, AvatarFallback } from '@/shared/ui/shadcn/avatar';
-import { Button } from '@/shared/ui/shadcn/button';
+import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
+import { Button } from '@/shared/ui/mui-compat/button';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parseDateTime';
 import { cn } from '@/shared/utils/utils';

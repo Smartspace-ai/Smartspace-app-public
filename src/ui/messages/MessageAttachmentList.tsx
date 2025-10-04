@@ -3,7 +3,7 @@ import { useFileMutations } from '@/domains/files/mutations';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
-import { Button } from '@/shared/ui/shadcn/button';
+import { Button } from '@/shared/ui/mui-compat/button';
 
 
 export const ChatMessageAttachmentList = ({

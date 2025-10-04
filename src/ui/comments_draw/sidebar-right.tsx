@@ -15,21 +15,21 @@ import { MentionInput } from '@/ui/comments_draw/mention-input';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
-import { Avatar, AvatarFallback } from '@/shared/ui/shadcn/avatar';
+import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
-} from '@/shared/ui/shadcn/breadcrumb';
-import { Button as UIButton } from '@/shared/ui/shadcn/button';
-import { ScrollArea } from '@/shared/ui/shadcn/scroll-area';
+} from '@/shared/ui/mui-compat/breadcrumb';
+import { Button as UIButton } from '@/shared/ui/mui-compat/button';
+import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-} from '@/shared/ui/shadcn/sidebar';
+} from '@/shared/ui/mui-compat/sidebar';
 
  
 

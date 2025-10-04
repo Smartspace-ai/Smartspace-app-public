@@ -6,7 +6,7 @@ import { useAuth } from '@/platform/auth/session';
 
 import { useTeams } from '@/app/providers';
 
-import { Button } from '@/shared/ui/shadcn/button';
+import { Button } from '@/shared/ui/mui-compat/button';
 
 import { Logo } from '@/assets/logo';
 

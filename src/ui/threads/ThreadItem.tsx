@@ -7,10 +7,10 @@ import type { MessageThread } from '@/domains/threads';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { CircleInitials } from '@/shared/components/circle-initials';
-import { Button } from '@/shared/ui/shadcn/button';
+import { Button } from '@/shared/ui/mui-compat/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/shared/ui/shadcn/dropdown-menu';
+} from '@/shared/ui/mui-compat/dropdown-menu';
 
 import { useThreadItemVm } from './ThreadItem.vm';
 import { ThreadRenameModal } from './ThreadRenameModal';

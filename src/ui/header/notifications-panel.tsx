@@ -10,10 +10,10 @@ import {
   useNotificationsQuery,
 } from '@/domains/notifications/queries';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/shadcn/avatar';
-import { Button } from '@/shared/ui/shadcn/button';
-import { ScrollArea } from '@/shared/ui/shadcn/scroll-area';
-import { Switch } from '@/shared/ui/shadcn/switch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/mui-compat/avatar';
+import { Button } from '@/shared/ui/mui-compat/button';
+import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
+import { Switch } from '@/shared/ui/mui-compat/switch';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTimeHuman } from '@/shared/utils/parseDateTime';
 import { cn } from '@/shared/utils/utils';

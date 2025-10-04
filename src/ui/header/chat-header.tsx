@@ -1,3 +1,4 @@
+import Divider from '@mui/material/Divider';
 import { MessageSquare, PanelLeft } from 'lucide-react';
 
 
@@ -8,7 +9,6 @@ import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
-import { Separator } from '@/shared/ui/shadcn/separator';
 import { SidebarTrigger } from '@/shared/ui/shadcn/sidebar';
 import { Skeleton } from '@/shared/ui/shadcn/skeleton';
 
@@ -31,7 +31,7 @@ export function ChatHeader() {
           icon={<PanelLeft className="h-4 w-4" />}
           className="text-muted-foreground hover:text-foreground h-8 w-8"
         />
-        <Separator orientation="vertical" className="mr-2 h-4" />
+        <Divider orientation="vertical" className="mr-2 h-4" />
         {/* Workspace and thread display */}
         <div className="flex items-center">
           {workspaceError ? (
@@ -68,7 +68,7 @@ export function ChatHeader() {
       </div>
       <div className="flex items-center gap-2 px-4">
         <NotificationPanel />
-        <Separator orientation="vertical" className="h-4" />
+        <Divider orientation="vertical" className="h-4" />
         <SidebarTrigger
           side="right"
           icon={<MessageSquare className="h-4 w-4" />}

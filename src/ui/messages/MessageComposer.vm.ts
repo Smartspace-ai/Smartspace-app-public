@@ -12,7 +12,7 @@ import { useWorkspace } from '@/domains/workspaces/queries';
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
-import { useSidebar } from '@/shared/ui/shadcn/sidebar';
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 
 

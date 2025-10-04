@@ -11,7 +11,7 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/shared/ui/shadcn/avatar';
+} from '@/shared/ui/mui-compat/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +19,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/shared/ui/shadcn/dropdown-menu';
+} from '@/shared/ui/mui-compat/dropdown-menu';
 import { SidebarHeader } from '@/shared/ui/shadcn/sidebar';
 import { getAvatarColour } from '@/shared/utils/avatarColour';
 import { getInitials } from '@/shared/utils/initials';
