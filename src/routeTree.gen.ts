@@ -15,7 +15,6 @@ import { Route as _rootNotFoundRouteImport } from './routes/__root.notFound'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DemoMarkdownRouteImport } from './routes/demo/markdown'
 import { Route as ProtectedWorkspaceIndexRouteImport } from './routes/_protected/workspace/index'
 import { Route as ProtectedWorkspaceNoWorkspacesRouteImport } from './routes/_protected/workspace/no-workspaces'
 import { Route as ProtectedWorkspaceWorkspaceIdIndexRouteImport } from './routes/_protected/workspace/$workspaceId/index'
@@ -43,11 +42,6 @@ const ProtectedRoute = ProtectedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoMarkdownRoute = DemoMarkdownRouteImport.update({
-  id: '/demo/markdown',
-  path: '/demo/markdown',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedWorkspaceWorkspaceIdRoute =
@@ -89,7 +83,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/notFound': typeof _rootNotFoundRoute
-  '/demo/markdown': typeof DemoMarkdownRoute
   '/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
   '/workspace': typeof ProtectedWorkspaceIndexRoute
   '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceId_layoutRoute
@@ -100,7 +93,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/notFound': typeof _rootNotFoundRoute
-  '/demo/markdown': typeof DemoMarkdownRoute
   '/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
   '/workspace': typeof ProtectedWorkspaceIndexRoute
   '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdIndexRoute
@@ -112,7 +104,6 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/login': typeof LoginRoute
   '/__root/notFound': typeof _rootNotFoundRoute
-  '/demo/markdown': typeof DemoMarkdownRoute
   '/_protected/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
   '/_protected/workspace/': typeof ProtectedWorkspaceIndexRoute
   '/_protected/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdRouteWithChildren
@@ -126,7 +117,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/notFound'
-    | '/demo/markdown'
     | '/workspace/no-workspaces'
     | '/workspace'
     | '/workspace/$workspaceId'
@@ -137,7 +127,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/notFound'
-    | '/demo/markdown'
     | '/workspace/no-workspaces'
     | '/workspace'
     | '/workspace/$workspaceId'
@@ -148,7 +137,6 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/login'
     | '/__root/notFound'
-    | '/demo/markdown'
     | '/_protected/workspace/no-workspaces'
     | '/_protected/workspace/'
     | '/_protected/workspace/$workspaceId'
@@ -162,7 +150,6 @@ export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
   LoginRoute: typeof LoginRoute
   _rootNotFoundRoute: typeof _rootNotFoundRoute
-  DemoMarkdownRoute: typeof DemoMarkdownRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -193,13 +180,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/markdown': {
-      id: '/demo/markdown'
-      path: '/demo/markdown'
-      fullPath: '/demo/markdown'
-      preLoaderRoute: typeof DemoMarkdownRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected/workspace/$workspaceId': {
@@ -290,7 +270,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
   LoginRoute: LoginRoute,
   _rootNotFoundRoute: _rootNotFoundRoute,
-  DemoMarkdownRoute: DemoMarkdownRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

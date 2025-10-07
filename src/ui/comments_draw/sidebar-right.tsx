@@ -1,17 +1,14 @@
-import { Send } from '@mui/icons-material';
-import { Typography } from '@mui/material';
+ 
+ 
 import Skeleton from '@mui/material/Skeleton';
 import { ArrowBigUp, MessageSquare } from 'lucide-react';
-import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { CSSProperties, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { Comment } from '@/domains/comments';
 import { useAddComment } from '@/domains/comments/mutations';
 import { useComments } from '@/domains/comments/queries';
-import type { MentionUser } from '@/domains/workspaces';
-import { useTaggableWorkspaceUsers } from '@/domains/workspaces/queries';
-
-import { MentionInput } from '@/ui/comments_draw/mention-input';
+ 
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
@@ -32,11 +29,12 @@ import {
   SidebarHeader,
 } from '@/shared/ui/mui-compat/sidebar';
 
+import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+
  
-
-
-
-
+ 
+ 
+ 
 import { getInitials } from '../../shared/utils/initials';
 import { parseDateTime } from '../../shared/utils/parseDateTime';
 
@@ -89,14 +87,11 @@ function renderContentWithMentions(text: string, users?: Array<{ displayName?: s
 }
 
 export function SidebarRight() {
-  const { workspaceId, threadId } = useRouteIds();
+  const { threadId, workspaceId } = useRouteIds();
   const { data: comments, isLoading, isError: commentsError } = useComments(threadId);
   const { mutate: addComment, isPending: isAddingComment } = useAddComment(threadId);
-  const { data: taggableUsers, isLoading: usersLoading, isError: usersError } = useTaggableWorkspaceUsers(workspaceId);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const [threadComment, setThreadComment] = useState({ plain: '', withMentions: '' });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [mentionList, setMentionList] = useState<MentionUser[]>([]);
   const isMobile = useIsMobile();
 
   const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -109,10 +104,8 @@ export function SidebarRight() {
     }
 
     try {
-      await addComment({ threadId, content: threadComment.plain, mentionedUsers: mentionList });
+      await addComment({ threadId, content: threadComment.plain });
       setThreadComment({ plain: '', withMentions: '' });
-      setSearchTerm('');
-      setMentionList([]);
     } catch {
       // Error handled in hook
     }
@@ -124,11 +117,7 @@ export function SidebarRight() {
     }
   }, [comments]);
 
-  const filteredUsers = useMemo(() => {
-    return taggableUsers?.filter((user) =>
-      user.displayName.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [taggableUsers, searchTerm]);
+  
 
   return (
     <Sidebar
@@ -196,7 +185,7 @@ export function SidebarRight() {
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <Avatar className="h-7 w-7">
-                        <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                        <AvatarFallback className="text-xs">
                           {getInitials(comment.createdBy)}
                         </AvatarFallback>
                       </Avatar>
@@ -222,39 +211,20 @@ export function SidebarRight() {
         <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)] shrink-0 overflow-visible">
           <form onSubmit={handleAddComment}>
             {isMobile ? (
-              // Allow the local wrapper to show the absolute dropdown
-              <div className="relative overflow-visible">
-                <MentionInput
-                  value={threadComment}
-                  onChange={setThreadComment}
-                  searchTerm={searchTerm}
-                  setSearchTerm={setSearchTerm}
-                  users={filteredUsers || []}
-                  usersLoading={usersLoading}
-                  usersError={usersError}
-                  mentionList={mentionList}
-                  setMentionList={setMentionList}
-                  minRows={3}
-                  maxRows={6}
-                  showFullscreenToggle={false}
+              // Wrapper to allow absolutely positioned controls inside the editor
+              <div className="relative overflow-visible rounded-lg border bg-card p-2">
+                <MarkdownEditor
+                  value={threadComment.plain}
+                  onChange={(md) => setThreadComment({ plain: md, withMentions: md })}
+                  enableMentions
+                  disabled={isAddingComment}
+                  workspaceId={workspaceId}
+                  threadId={threadId}
+                  className="md-editor--bare text-sm pr-12 pb-10"
+                  minHeight={90}
                   placeholder="Type a comment..."
-                  inputSx={{
-                    '& .MuiInputBase-root': {
-                      pr: 10,
-                    },
-                    '& textarea': {
-                      lineHeight: 1.4,
-                      maxHeight: 144,
-                      overflowY: 'auto',
-                    },
-                  }}
                 />
 
-                <div className="absolute bottom-1 right-11 text-xs text-muted-foreground select-none bg-background/80 px-1 rounded">
-                  {threadComment.plain.length}/{MAX_COMMENT_LENGTH}
-                </div>
-
-                {/* Primary colored circular submit button */}
                 <UIButton
                   type="submit"
                   variant="default"
@@ -269,32 +239,21 @@ export function SidebarRight() {
                 </UIButton>
               </div>
             ) : (
-              <>
-                <div className="relative overflow-visible">
-                  <MentionInput
-                    value={threadComment}
-                    onChange={setThreadComment}
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    users={filteredUsers || []}
-                    usersLoading={usersLoading}
-                    usersError={usersError}
-                    mentionList={mentionList}
-                    setMentionList={setMentionList}
-                    minRows={5}
-                    showFullscreenToggle={false}
-                    placeholder="Type a comment..."
-                  />
-                  <Typography color="textSecondary" textAlign="right" fontSize={12} marginTop={1}>
-                    {threadComment.plain.length}/{MAX_COMMENT_LENGTH}
-                  </Typography>
-                </div>
+              <div className="relative overflow-visible rounded-lg border bg-card p-2">
+                <MarkdownEditor
+                  value={threadComment.plain}
+                  onChange={(md) => setThreadComment({ plain: md, withMentions: md })}
+                  enableMentions
+                  disabled={isAddingComment}
+                  className="md-editor--bare text-sm pr-28 pb-12"
+                  minHeight={120}
+                  placeholder="Type a comment..."
+                />
 
-                {/* Proper loading button for MUI */}
                 <UIButton
                   type="submit"
                   variant="default"
-                  className="self-end"
+                  className={`absolute bottom-2 right-2 ${threadComment.plain.trim().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={threadComment.plain.trim().length === 0 || isAddingComment}
                 >
                   {isAddingComment ? (
@@ -303,13 +262,10 @@ export function SidebarRight() {
                       Posting...
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <Send className="h-4 w-4" />
-                      Post
-                    </div>
+                    'Post'
                   )}
                 </UIButton>
-              </>
+              </div>
             )}
           </form>
         </SidebarFooter>

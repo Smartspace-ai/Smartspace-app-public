@@ -67,7 +67,7 @@ export default defineConfig({
       enabled: true,
       provider: 'v8',
       reportsDirectory: './coverage/smartspace',
-      reporter: ['text', 'text-summary', 'html', 'lcov'],
+      reporter: ['text', 'text-summary', 'html', 'lcov', 'json', 'json-summary'],
       all: true,
       include: ['src/**/*.{ts,tsx}'],
       exclude: [

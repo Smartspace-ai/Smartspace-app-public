@@ -2,12 +2,12 @@ import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { MessageThread, ThreadsResponse } from '@/domains/threads';
-import * as threads from '@/domains/threads';
 import { threadDetailOptions, threadsListOptions } from '@/domains/threads/queries';
+import * as threadsService from '@/domains/threads/service';
 
 describe('threads queries options', () => {
   it('threadsListOptions uses correct key and fn', async () => {
-    const spy = vi.spyOn(threads, 'fetchThreads').mockResolvedValueOnce({ data: [], total: 0 } as ThreadsResponse);
+    const spy = vi.spyOn(threadsService, 'fetchThreads').mockResolvedValueOnce({ data: [], total: 0 } as ThreadsResponse);
     const opts = threadsListOptions('w1');
     expect(opts.queryKey).toEqual(['threads', 'list', { workspaceId: 'w1' }]);
     await opts.queryFn?.({
@@ -21,7 +21,7 @@ describe('threads queries options', () => {
   });
 
   it('threadDetailOptions uses correct key and fn', async () => {
-    const spy = vi.spyOn(threads, 'fetchThread').mockResolvedValueOnce({
+    const spy = vi.spyOn(threadsService, 'fetchThread').mockResolvedValueOnce({
       id: 't1', createdAt: '', createdBy: '', createdByUserId: '', isFlowRunning: false, lastUpdated: '', lastUpdatedAt: '', lastUpdatedByUserId: '', name: '', totalMessages: 0,
     } as MessageThread);
     const opts = threadDetailOptions({ workspaceId: 'w1', threadId: 't1' });

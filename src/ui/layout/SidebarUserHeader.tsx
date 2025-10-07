@@ -3,25 +3,25 @@ import { useMsal } from '@azure/msal-react';
 import { LogOut } from 'lucide-react';
 
 import { handleTrailingSlash } from '@/platform/auth/msalConfig';
-import { useUserId } from '@/platform/auth/session';
 
 import { useTeams } from '@/app/providers';
 
+import { useActiveUser } from '@/domains/users/use-active-user';
+
+
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
+    Avatar,
+    AvatarFallback,
 } from '@/shared/ui/mui-compat/avatar';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/shared/ui/mui-compat/dropdown-menu';
 import { SidebarHeader } from '@/shared/ui/mui-compat/sidebar';
-import { getAvatarColour } from '@/shared/utils/avatarColour';
 import { getInitials } from '@/shared/utils/initials';
 
 import { Logo } from '@/assets/logo';
@@ -29,7 +29,7 @@ import { Logo } from '@/assets/logo';
 
 export default function SidebarUserHeader() {
   const { isInTeams } = useTeams();
-  const activeUserId = useUserId();
+  const activeUser = useActiveUser();
   const { instance } = useMsal();
 
   const handleLogout = () => {
@@ -51,11 +51,8 @@ export default function SidebarUserHeader() {
           <DropdownMenuTrigger asChild>
             <div className="cursor-pointer">
               <Avatar className="h-8 w-8">
-                <AvatarImage alt={activeUserId} />
-                <AvatarFallback
-                  className={`text-xs ${getAvatarColour(activeUserId)}`}
-                >
-                  {getInitials(activeUserId)}
+                <AvatarFallback className="text-xs">
+                  {getInitials(activeUser.name)}
                 </AvatarFallback>
               </Avatar>
             </div>
@@ -64,17 +61,16 @@ export default function SidebarUserHeader() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex items-center gap-3">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage alt={activeUserId} />
                   <AvatarFallback className="text-xs">
-                    {getInitials(activeUserId)}
+                    {getInitials(activeUser.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-sm font-medium leading-none mb-1">
-                    {activeUserId}
+                    {activeUser.name}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {activeUserId}
+                    {activeUser.email}
                   </p>
                 </div>
               </div>

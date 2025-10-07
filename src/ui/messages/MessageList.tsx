@@ -201,7 +201,7 @@ export function MessageList() {
                       <div className="flex items-center justify-between p-3 border-b">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-7 w-7 mt-0.5">
-                            <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                            <AvatarFallback className="text-xs">
                               {getInitials('Chatbot')}
                             </AvatarFallback>
                           </Avatar>

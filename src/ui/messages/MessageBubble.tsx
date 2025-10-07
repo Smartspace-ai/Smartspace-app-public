@@ -64,7 +64,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
       <div className={cn(isBotResponse ? 'border-b' : '', 'flex items-center justify-between p-3')}>
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7 mt-0.5">
-            <AvatarFallback className={cn('text-xs', isBotResponse ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+            <AvatarFallback className="text-xs">
               {getInitials(isBotResponse ? 'Chatbot' : createdBy)}
             </AvatarFallback>
           </Avatar>

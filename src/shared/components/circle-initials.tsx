@@ -1,16 +1,16 @@
-import { Avatar } from '@/shared/ui/mui-compat/avatar';
+import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
 
 import { getInitials } from '../utils/initials';
 
 
-export function CircleInitials({text, className}: { text: string, className?: string }) {
+export function CircleInitials({text, className, colored = false}: { text: string, className?: string, colored?: boolean }) {
   return (
     <Avatar
-        className={`h-8 w-8 text-[12px] shadow-sm ` + (className || 'bg-gray-300')}
+        className={`h-8 w-8 text-[12px] shadow-sm ${className || ''}`}
     >
-      <div className="text-[12px] font-medium truncate flex h-full w-full items-center justify-center rounded-full">
+      <AvatarFallback className="text-[12px] font-medium truncate" colored={colored}>
         {getInitials(text)}
-      </div>
+      </AvatarFallback>
     </Avatar>
   );
 }

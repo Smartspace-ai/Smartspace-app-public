@@ -1,15 +1,14 @@
 import {
-  Avatar,
-  IconButton,
-  List,
-  ListItemAvatar,
-  ListItemButton,
-  ListItemText,
-  Paper,
-  Skeleton,
-  SxProps,
-  TextField,
-  Theme,
+    IconButton,
+    List,
+    ListItemAvatar,
+    ListItemButton,
+    ListItemText,
+    Paper,
+    Skeleton,
+    SxProps,
+    TextField,
+    Theme,
 } from '@mui/material';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -18,6 +17,8 @@ import { createPortal } from 'react-dom';
 import { MentionUser } from '@/domains/workspaces';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
+import { Avatar as SsAvatar, AvatarFallback as SsAvatarFallback } from '@/shared/ui/mui-compat/avatar';
+import { getInitials } from '@/shared/utils/initials';
 
 interface MentionInputProps {
   value: { plain: string; withMentions: string };
@@ -298,7 +299,11 @@ export const MentionInput = (props: MentionInputProps) => {
               }}
             >
               <ListItemAvatar>
-                <Avatar alt={user.displayName}>{user.initials}</Avatar>
+                <SsAvatar className="h-8 w-8">
+                  <SsAvatarFallback className="text-xs font-medium">
+                    {getInitials(user.displayName)}
+                  </SsAvatarFallback>
+                </SsAvatar>
               </ListItemAvatar>
               <ListItemText primary={user.displayName} />
             </ListItemButton>

@@ -16,7 +16,8 @@
     "test:dev": "env-cmd -f .env.dev npm run test",
     "test:local": "env-cmd -f .env.local npm run test",
     "build:teams": "ts-node teams/build-manifest.ts",
-    "dev:tunnel": "node scripts/start-tunnel.js"
+    "dev:tunnel": "node scripts/start-tunnel.js",
+    "coverage:folders": "node scripts/coverage-folders.js"
   },
   "private": true,
   "dependencies": {

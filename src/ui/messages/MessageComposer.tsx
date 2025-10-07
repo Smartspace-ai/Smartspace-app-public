@@ -2,49 +2,48 @@
 
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowBigUp, Check, Maximize2, Minimize2, Paperclip, X } from 'lucide-react';
+import { ArrowBigUp, Maximize2, Minimize2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
-import { getFileIcon } from '@/domains/files/utils';
+import { useFileMutations } from '@/domains/files/mutations';
 
 import { ChatVariablesForm } from '@/ui/chat-variables/VariablesForm';
 
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-
 
 import { useMessageComposerVm } from './MessageComposer.vm';
 
 export default function MessageComposer() {
   const vm = useMessageComposerVm();
  
-
   const {
     // context
-    workspace, threadId, isMobile, leftOpen, rightOpen,
+    workspace, workspaceId, threadId, isMobile, leftOpen, rightOpen,
 
     // text
     newMessage, setNewMessage, handleKeyDown, handleSendMessage, isSending, disabled,
 
-    // refs
-    dropzoneRef, fileInputRef,
-
     // ui state
-    isDragging, isFullscreen, setIsFullscreen, showExpand,
-
-    // files
-    supportsFiles, selectedFiles, filePreviewUrls, isUploadingFiles,
-    onFileInputChange, handlePaperclipClick, onDragEnter, onDragLeave, onDragOver, onDrop, onPaste,
-    removeFileAt, removeAllFiles,
-
-    // images (server-side)
-    imagesForMessage,
+    isFullscreen, setIsFullscreen, showExpand,
 
     // derived
     sendDisabled,
 
     // helpers
   } = vm;
+
+  const { uploadFilesMutation } = useFileMutations({ workspaceId, threadId });
+  // Provide a global downloader for ssImage node views (non-React context)
+  if (typeof window !== 'undefined') {
+    (window as any).__ssDownloadFile = async (id: string) => {
+      const blob = await fetch(`/api/files/${id}/download?workspaceId=${workspaceId ?? ''}&threadId=${threadId ?? ''}`).then(r => r.blob());
+      return URL.createObjectURL(blob);
+    };
+  }
+  const onUploadFiles = async (files: File[]) => {
+    const res = await uploadFilesMutation.mutateAsync(files);
+    return res.map(({ id, name }) => ({ id, name }));
+  };
 
   return (
     <div className="ss-chat__composer max-h-[60%] flex-shrink-0 w-full mt-auto bg-sidebar border-t px-4 py-4">
@@ -65,134 +64,18 @@ export default function MessageComposer() {
         } bg-background ${isMobile ? '' : 'rounded-md border shadow-sm'} transition-[max-width] duration-300 ease-in-out`}
       >
         <div className="w-full max-h-[400px] overflow-y-auto">
-          <div
-            ref={dropzoneRef}
-            className={`flex flex-col overflow-hidden transition-all ${
-              isDragging ? 'border-primary border-dashed ring-2 ring-primary/20' : ''
-            }`}
-            onDragEnter={onDragEnter}
-            onDragLeave={onDragLeave}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onPaste={onPaste}
-          >
-            <AnimatePresence>
-              {selectedFiles.length > 0 && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-muted/5 border-b overflow-hidden"
-                >
-                  <div className="p-3">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-xs font-medium text-foreground/80">
-                        {selectedFiles.length} {selectedFiles.length === 1 ? 'file' : 'files'} selected
-                        {isUploadingFiles && ' (uploading...)'}
-                      </span>
-                      <Button
-                        className="h-6 text-xs text-muted-foreground hover:text-destructive transition-colors"
-                        onClick={removeAllFiles}
-                        disabled={isUploadingFiles}
-                      >
-                        Remove all
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 auto-rows-min">
-                      {filePreviewUrls.map((file, index) => {
-                        const FileIcon = getFileIcon(file.name);
-                        const isImage = file.isImage;
-                        return (
-                          <motion.div
-                            key={`${file.name}-${index}`}
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ duration: 0.2, delay: index * 0.05 }}
-                            className={`relative group ${isImage ? 'row-span-2' : ''}`}
-                          >
-                            <div
-                              className={`flex items-center gap-2 p-2 rounded-md border bg-muted/20 hover:bg-muted/30 transition-colors ${
-                                isImage ? 'flex-col h-full' : ''
-                              }`}
-                            >
-                              <div className="flex-shrink-0">
-                                {isImage ? (
-                                  <img
-                                    src={file.url || '/placeholder.svg'}
-                                    alt={`Preview ${index + 1}`}
-                                    className="w-full h-20 object-cover rounded"
-                                    loading="lazy"
-                                  />
-                                ) : (
-                                  <div className="w-8 h-8 rounded bg-muted/40 flex items-center justify-center">
-                                    <FileIcon className="h-4 w-4 text-muted-foreground" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className={`flex-1 min-w-0 ${isImage ? 'w-full text-center' : ''}`}>
-                                <div className="text-xs font-medium text-foreground truncate">{file.name}</div>
-                                <div className="text-[10px] text-muted-foreground">
-                                  {file.name.split('.').pop()?.toUpperCase() || 'FILE'}
-                                </div>
-                              </div>
-                              {/* Optional: show a check for server-attached images */}
-                              {imagesForMessage.length > 0 && isImage && (
-                                <div className="flex-shrink-0">
-                                  <div className="bg-green-500 rounded-full p-0.5">
-                                    <Check className="h-2 w-2 text-white" />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <IconButton
-                        size="small"
-                        className="h-5 w-5 rounded-full"
-                                onClick={() => removeFileAt(index)}
-                                disabled={isUploadingFiles}
-                                aria-label="Remove file"
-                              >
-                                <X className="h-3 w-3" />
-                      </IconButton>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
+          <div>
             {isMobile ? (
               <div className="flex items-center gap-2 px-3 py-2">
-                {supportsFiles && (
-                  <IconButton
-                    size="small"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground self-end"
-                    disabled={disabled || isUploadingFiles}
-                    onClick={handlePaperclipClick}
-                    aria-label="Attach files"
-                  >
-                    <Paperclip className="h-4 w-4" />
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={onFileInputChange}
-                      multiple
-                      className="hidden"
-                    />
-                  </IconButton>
-                )}
-
                 <div className="relative flex-1 px-2 py-2">
                   <MarkdownEditor
                     value={newMessage}
                     onChange={(md) => setNewMessage(md)}
                     onKeyDown={handleKeyDown}
+                    onUploadFiles={onUploadFiles}
+                    workspaceId={workspaceId}
                     disabled={disabled}
+                    placeholder="Type a message..."
                     className="md-editor--bare text-sm"
                   />
                   {showExpand && !isFullscreen && (
@@ -223,7 +106,10 @@ export default function MessageComposer() {
                   value={newMessage}
                   onChange={(md) => setNewMessage(md)}
                   onKeyDown={handleKeyDown}
+                  onUploadFiles={onUploadFiles}
+                  workspaceId={workspaceId}
                   disabled={disabled}
+                  placeholder="Type a message..."
                   className="md-editor--bare text-sm"
                 />
               </div>
@@ -238,10 +124,10 @@ export default function MessageComposer() {
           createPortal(
             <div className="fixed inset-x-0" style={{ top: '5vh', height: '95vh', left: 0, right: 0, zIndex: 1300 }}>
               <div className="relative h-full w-full bg-background border shadow-lg">
-                    <IconButton
-                      type="button"
-                      size="small"
-                      className="h-8 w-8 absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+                <IconButton
+                  type="button"
+                  size="small"
+                  className="h-8 w-8 absolute top-2 right-2 text-muted-foreground hover:text-foreground"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -250,30 +136,20 @@ export default function MessageComposer() {
                   aria-label="Collapse"
                 >
                   <Minimize2 className="h-4 w-4" />
-                    </IconButton>
+                </IconButton>
                 <div className="flex flex-col h-full">
                   <div className="flex-1 p-4">
                     <MarkdownEditor
                       value={newMessage}
                       onChange={(md) => setNewMessage(md)}
                       onKeyDown={handleKeyDown}
+                      onUploadFiles={onUploadFiles}
+                      workspaceId={workspaceId}
                       disabled={disabled}
                       className="md-editor--bare text-sm h-full"
                     />
                   </div>
                   <div className="flex items-center gap-2 px-3 py-2 border-t bg-background">
-                    {supportsFiles && (
-                      <IconButton
-                        size="small"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        disabled={disabled || isUploadingFiles}
-                        onClick={handlePaperclipClick}
-                        aria-label="Attach files"
-                      >
-                        <Paperclip className="h-4 w-4" />
-                        <input type="file" ref={fileInputRef} onChange={onFileInputChange} multiple className="hidden" />
-                      </IconButton>
-                    )}
                     <div className="flex-1" />
                     <IconButton
                       onClick={handleSendMessage}
@@ -293,24 +169,11 @@ export default function MessageComposer() {
         {/* Desktop footer actions */}
         {!isMobile && (
           <div className="flex items-center justify-between px-4 py-2 bg-background">
-            <div className="flex items-center gap-3">
-              {supportsFiles && (
-                <IconButton
-                  size="small"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  disabled={disabled || isUploadingFiles}
-                  onClick={handlePaperclipClick}
-                  aria-label="Attach files"
-                >
-                  <Paperclip className="h-4 w-4" />
-                  <input type="file" ref={fileInputRef} onChange={onFileInputChange} multiple className="hidden" />
-                </IconButton>
-              )}
-            </div>
+            <div className="flex items-center gap-3" />
 
-              <Button
+            <Button
               onClick={handleSendMessage}
-                className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
+              className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
                 sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
               }`}
               disabled={sendDisabled}

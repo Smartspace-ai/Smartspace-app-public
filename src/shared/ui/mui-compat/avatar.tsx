@@ -22,12 +22,15 @@ const AvatarImage = React.forwardRef<HTMLImageElement, React.ImgHTMLAttributes<H
 );
 AvatarImage.displayName = 'AvatarImage';
 
-const AvatarFallback = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => {
-  const { backgroundColor, textColor } = getAvatarColour(props.children as string);
+type AvatarFallbackProps = React.HTMLAttributes<HTMLDivElement> & { colored?: boolean };
+
+const AvatarFallback = React.forwardRef<HTMLDivElement, AvatarFallbackProps>(({ className, colored = true, ...props }, ref) => {
+  const childText = String(props.children ?? '');
+  const colours = colored ? getAvatarColour(childText) : undefined;
   return (
     <div
       ref={ref}
-      style={{ backgroundColor, color: textColor }}
+      style={colored && colours ? { backgroundColor: colours.backgroundColor, color: colours.textColor } : undefined}
       className={cn('flex h-full w-full items-center justify-center rounded-full', className)}
       {...props}
     />

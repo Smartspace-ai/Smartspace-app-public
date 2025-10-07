@@ -1,7 +1,37 @@
 /* Base editor container */
+.md-editor {
+  position: relative;
+}
+
+.ss-attach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--muted), white 80%);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.ss-attach--image {
+  padding: 2px;
+}
+
+.ss-attach__img {
+  display: block;
+  object-fit: contain;
+}
+
 .md-editor .ProseMirror {
-  min-height: 220px;
-  padding: 12px 14px;
+  /* Height controls via CSS variables set on the root element */
+  min-height: var(--md-min-height, 1.6em);
+  max-height: var(--md-max-height, none);
+  overflow: auto; /* will only scroll when max-height is exceeded */
+  /* Expose padding as variables for consistent placeholder alignment */
+  --md-pad-v: 12px;
+  --md-pad-h: 14px;
+  padding: var(--md-pad-v) var(--md-pad-h);
   border: 1px solid #e3e3e3;
   border-radius: 10px;
   line-height: 1.6;
@@ -19,9 +49,6 @@
   border: none;
   padding: 0;
   box-shadow: none;
-  /* Fix height to the base min-height when not editable */
-  height: 220px;
-  overflow: auto;
 }
 
 /* Bare composer appearance (no border or padding regardless of editable) */
@@ -29,6 +56,9 @@
   border: none;
   padding: 0;
   box-shadow: none;
+  /* Ensure placeholder aligns to the start of content when bare */
+  --md-pad-v: 0px;
+  --md-pad-h: 0px;
 }
 
 /* Custom inline file-tag */
@@ -44,13 +74,47 @@
   white-space: nowrap;
 }
 
+/* Ghost placeholder for empty editable state */
+.md-editor__ghost {
+  position: absolute;
+  top: var(--md-pad-v); /* align with ProseMirror padding */
+  left: var(--md-pad-h); /* align with ProseMirror padding */
+  right: var(--md-pad-h);
+  color: #9aa2af;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: inherit;
+  line-height: inherit;
+}
+
+/* Normalize top margin so caret height is consistent when empty */
+.md-editor .ProseMirror > :first-child {
+  margin-top: 0;
+}
+
 /* Mention (placeholder) – tweak as desired */
-span[data-type='mention'] {
+.mention {
   background: #f0f9ff;
   border: 1px solid #bae6fd;
   border-radius: 6px;
   padding: 0 6px;
   color: #0369a1;
+}
+
+/* Mentions popup */
+.md-mention-menu {
+  background: var(--background, #fff);
+  color: var(--foreground, #111);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  min-width: 220px;
+  max-width: 320px;
+  overflow: hidden;
+  z-index: 1000;
 }
 
 

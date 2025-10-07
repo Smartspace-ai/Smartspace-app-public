@@ -9,7 +9,7 @@ import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 import { CircleInitials } from '@/shared/components/circle-initials';
 import { Button } from '@/shared/ui/mui-compat/button';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/shared/ui/mui-compat/dropdown-menu';
 
 import { useThreadItemVm } from './ThreadItem.vm';
@@ -43,8 +43,9 @@ export default function ThreadItem({ thread }: Props) {
       onPointerDown={onPointerDown}
     >
       <CircleInitials
-        className="bg-gray-200"
+        className={isActive ? 'bg-primary text-primary-foreground' : 'bg-gray-300 text-gray-700'}
         text={thread.name}
+        colored={false}
       />
 
       <div className="flex-1 min-w-0">
