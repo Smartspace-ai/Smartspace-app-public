@@ -38,7 +38,12 @@ export function ThreadRenameModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Rename Thread</DialogTitle>
         </DialogHeader>
