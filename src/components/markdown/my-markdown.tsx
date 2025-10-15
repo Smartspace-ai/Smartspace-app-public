@@ -1,17 +1,14 @@
 import { useMemo } from 'react';
 import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
 import { HTMLBlock } from './html';
-
-import { useTeams } from '@/contexts/teams-context';
 
 interface Props {
   text: string;
 }
 
 export const MyMarkdown = ({ text }: Props) => {
-  const {isInTeams} = useTeams();
   
   return useMemo(() => {
     return (
@@ -29,8 +26,8 @@ export const MyMarkdown = ({ text }: Props) => {
             <a
               {...rest}
               href={href}
-              target={isInTeams ? "_blank" : undefined}
-              rel={isInTeams ? "noreferrer noopener" : undefined}
+              target="_blank"
+              rel="noopener noreferrer"
               className={[className, 'text-blue-600 dark:text-blue-400 hover:underline'].filter(Boolean).join(' ')}
             >
               {children}
@@ -53,5 +50,5 @@ export const MyMarkdown = ({ text }: Props) => {
         {text.trim()}
       </Markdown>
     );
-  }, [text, isInTeams]);
+  }, [text]);
 };
