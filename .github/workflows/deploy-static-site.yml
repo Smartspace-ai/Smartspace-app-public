@@ -2,7 +2,7 @@ name: Deploy static site to Azure Storage
 on:
   push:
     branches:
-      - main
+      - deployments/simfony
 
 permissions:
   contents: read
@@ -10,7 +10,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: smartspace
+    environment: simfony
 
     steps:
       - name: Checkout code
