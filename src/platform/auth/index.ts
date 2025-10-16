@@ -4,7 +4,12 @@ import { createTeamsNaaAdapter } from './providers/teamsNaa';
 import type { AuthAdapter } from './types';
 
 export function createAuthAdapter(): AuthAdapter {
-  return isInTeams() ? createTeamsNaaAdapter() : createMsalWebAdapter();
+  // Check if we're in Teams with more robust detection
+  const inTeams = isInTeams() || 
+                  (typeof window !== 'undefined' && 
+                   (window as any).__teamsState?.isInTeams === true);
+  
+  return inTeams ? createTeamsNaaAdapter() : createMsalWebAdapter();
 }
 export * from './msalClient';
 export * from './naaClient';

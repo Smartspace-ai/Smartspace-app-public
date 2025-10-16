@@ -2,7 +2,7 @@ import { useWorkspaceMessages } from '@/domains/messages/useMessages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FileInfo } from '../../models/file';
 
@@ -119,8 +119,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
 
     const messageEmpty = newMessage.trim().length === 0;
     const noFilesAttached = uploadedFiles.length === 0 && imagesForMessage.length === 0;
-    const blocked = isUploadingFiles || isSendingMessage || activeThread?.isFlowRunning;
-
+    const blocked = isUploadingFiles || activeThread?.isFlowRunning;
     if (!(messageEmpty && noFilesAttached) && !blocked) {
       handleSendMessage(thread?.variables || variables || {});
     }
@@ -156,15 +155,6 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
       handleFilesSelected(filesArray);
     }
   };
-
-  // When navigating to a specific thread, scroll messages to the bottom once loaded
-  useEffect(() => {
-    if (!threadId || isLoading) return;
-    const timeoutId = window.setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [threadId, isLoading]);
 
   return (
     <Stack
@@ -217,7 +207,7 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
           copyMessageToClipboard={copyMessageToClipboard}
           isVisible={isVisible}
           isLoading={isLoading}
-          isSendingMessage={isSendingMessage}
+          isSendingMessage={activeThread?.isFlowRunning}
           isBotResponding={thread?.isFlowRunning ?? false}
           commentsDraw={{} as any}
           waitingResponse={false}
@@ -232,8 +222,8 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
         setNewMessage={setNewMessage}
         handleSendMessage={handleSendMessage}
         handleKeyDown={handleKeyDown}
-        isSending={isSendingMessage}
-        disabled={isSendingMessage}
+        isSending={ activeThread?.isFlowRunning}
+        disabled={activeThread?.isFlowRunning}
         selectedFiles={selectedFiles}
         setSelectedFiles={setSelectedFiles}
         uploadedFiles={uploadedFiles}

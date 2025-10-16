@@ -7,6 +7,7 @@ import { Toaster } from 'sonner';
 import Chat from '@/components/chat/chat';
 import SidebarLeft from '@/components/sidebar/sidebar-left/sidebar-left';
 import SidebarRight from '@/components/sidebar/sidebar-right/sidebar-right';
+import { useTeamsViewport } from '@/hooks/use-teams-viewport';
 import { useWorkspaceThreads } from '@/hooks/use-workspace-threads';
 import { useWorkspaces } from '@/hooks/use-workspaces';
 // Params: workspaceId is guaranteed (we are under that route); threadId is optional
@@ -20,6 +21,7 @@ export default function ChatBotPage() {
   const workspaceId = workspaceMatch?.params?.workspaceId
   const { threads, isLoading: threadsLoading, isFetched: threadsFetched } = useWorkspaceThreads()
   const { workspaces, isLoading: workspacesLoading } = useWorkspaces()
+  const { viewportHeight, isAndroidTeams } = useTeamsViewport()
 
   // If no workspaceId in URL, select the first workspace after list loads
   useEffect(() => {
@@ -67,7 +69,23 @@ export default function ChatBotPage() {
   // workspace page
   return (
     <>
-      <Stack direction="row" sx={{ height: '100dvh', width: '100vw', overflow: 'hidden', alignItems: 'stretch' }}>
+      <Stack 
+        direction="row" 
+        sx={{ 
+          height: viewportHeight, 
+          width: '100vw', 
+          overflow: 'hidden', 
+          alignItems: 'stretch',
+          // Additional Android Teams specific styling
+          ...(isAndroidTeams && {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          })
+        }}
+      >
         <SidebarLeft />
         {/* Middle column */}
         <Stack direction="column" sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
