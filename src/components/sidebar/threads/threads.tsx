@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import {
-  Edit,
-  Loader2 // Add Loader2 for spinner
-  ,
+    Edit,
+    Loader2 // Add Loader2 for spinner
+    ,
 
 
 
@@ -55,33 +55,35 @@ import {
 
 
 
-  MessageSquare,
-  MoreHorizontal,
-  Plus,
-  Star,
-  Trash2
+
+
+    MessageSquare,
+    MoreHorizontal,
+    Plus,
+    Star,
+    Trash2
 } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { SidebarContent, SidebarFooter, useSidebar } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -280,7 +282,7 @@ function ThreadItem({
 
   const { setFavoriteMutation } = useThreadSetFavorite(thread.workSpaceId, thread.id)
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handleItemClick = (e: React.MouseEvent) => {
     if (
       e.target instanceof Element &&
       (e.target.closest('button') || e.target.closest('[role="menuitem"]'))
@@ -310,7 +312,7 @@ function ThreadItem({
       className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-accent cursor-pointer transition-all rounded-lg ${
         isActive ? 'bg-accent shadow-sm' : ''
       }`}
-      onPointerDown={handlePointerDown}
+      onClick={handleItemClick}
       onMouseEnter={() => onHover(thread.id)}
       onMouseLeave={() => {
         if (hoveredThreadId === thread.id && openMenuId !== thread.id) {
