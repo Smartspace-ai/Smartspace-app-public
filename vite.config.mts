@@ -11,8 +11,7 @@ export default defineConfig({
 
   server: {
     port: 4300,
-    host: 'localhost',
-    allowedHosts: ['melanie-chaster-cheerlessly.ngrok-free.dev'],
+    host: 'localhost'
 },
 
   preview: {
