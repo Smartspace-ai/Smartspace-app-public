@@ -31,6 +31,7 @@ export const HTMLBlock = ({ content, raw }: HTMLBlockProps) => {
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Injected Content</title>
+          <base target="_blank" />
         </head>
         <body>
           ${content}
