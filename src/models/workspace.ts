@@ -22,6 +22,7 @@ export class Workspace {
       access: 'Read' | 'Write';
     };
   } = {};
+  tags?: { color: string, name: string}[];
 
   constructor(params?: Workspace) {
     Object.assign(this, params || {});

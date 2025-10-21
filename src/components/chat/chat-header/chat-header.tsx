@@ -7,6 +7,7 @@ import { useActiveWorkspace } from '@/hooks/use-workspaces';
 import { useActiveThread } from '@/hooks/use-workspace-thread';
 import { useWorkspaceUpdates } from '@/hooks/use-workspace-updates';
  
+import { Box, Stack, Typography } from '@mui/material';
 import { NotificationPanel } from '../../notifications/notifications-panel/notifications-panel';
 import { Separator } from '../../ui/separator';
 import { SidebarTrigger } from '../../ui/sidebar';
@@ -30,9 +31,14 @@ export function ChatHeader() {
         {/* Workspace and thread display */}
         <div className="flex items-center">
           {activeWorkspace?
-            <span className="font-medium text-xs">
-              {activeWorkspace?.name}
-            </span>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <span className="font-medium text-xs">
+                {activeWorkspace?.name}
+              </span>
+              {activeWorkspace?.tags?.map((tag) => (
+                <Tag key={tag.name} color={tag.color} name={tag.name} />
+              ))}
+            </Stack>
             :
             <Skeleton className="h-4 w-28" />
           }
@@ -65,3 +71,20 @@ export function ChatHeader() {
 }
 
 export default ChatHeader;
+
+const Tag = (tag: { color: string, name: string }) => (
+  <Box
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      backgroundColor: tag.color,
+      borderRadius: 2,
+      px: 1,
+      justifyContent: 'space-between',
+    }}
+  >
+    <Typography variant="body2" color="text.primary">
+      {tag.name}
+    </Typography>
+  </Box>
+);
