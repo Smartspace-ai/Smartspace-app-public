@@ -1,3 +1,4 @@
+import { OrderBy } from '@/enums/workspace';
 import { api } from '@/platform/api/apiClient';
 import { Workspace } from '../models/workspace';
 
@@ -5,7 +6,10 @@ import { Workspace } from '../models/workspace';
 export async function fetchWorkspaces(searchTerm?: string): Promise<Workspace[]> {
   const response = await api.get('/workspaces', {
     params: {
-      search: searchTerm
+      search: searchTerm,
+      orderBy: OrderBy.RecentActivity
+      // orderBy: OrderBy.Name
+
     }
   });
 
