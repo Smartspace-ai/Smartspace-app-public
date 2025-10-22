@@ -181,7 +181,8 @@ export default function ChatBody({
               >
                 <ChatMessage
                   userId={activeUser.id}
-                  chatbotName={activeWorkspace?.name ?? 'Chatbot'}
+                  chatbotName={'Chatbot'}
+                  // chatbotName={activeWorkspace?.name ?? 'Chatbot'}
                   avatar={getInitials(message.createdBy ?? 'You')}
                   message={message}
                   isLast={index === (messages?.length ?? 0) - 1}
