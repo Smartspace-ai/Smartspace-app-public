@@ -5,6 +5,7 @@ import { ModelConfiguration } from './model-configuration';
 export class Workspace {
   id!: string;
   name!: string;
+  backgroundColor?: 'green' | 'red';
   dataSpaces?: any[];
   createdAt?: Date | string;
   createdByUserId?: string;
