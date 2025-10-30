@@ -107,7 +107,7 @@ export default function ChatComposer({
   >([]);
   const { uploadFilesMutation } = useFileMutations();
   const [variables, setVariables] = useState<Record<string, any>|null>(null);
-  const MAX_FILES = 15;
+  const MAX_FILES = 20;
 
   const prevUrlsRef = useRef<string[]>([]);
   const {data: thread} = useWorkspaceThread({workspaceId: workspace?.id, threadId: threadId})
