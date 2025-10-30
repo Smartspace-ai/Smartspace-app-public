@@ -5,6 +5,7 @@ import { ModelConfiguration } from './model-configuration';
 export class Workspace {
   id!: string;
   name!: string;
+  tags?: string[];
   dataSpaces?: any[];
   createdAt?: Date | string;
   createdByUserId?: string;

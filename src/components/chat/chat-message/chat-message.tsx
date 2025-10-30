@@ -79,6 +79,7 @@ export interface ContentItem {
 }
 
 interface MessageValueProps {
+  chatbotName: string;
   createdBy: string;
   createdAt: Date | string;
   type: MessageValueType;
@@ -118,6 +119,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
     useQueryFiles,
     useMessageFile,
     addValueToMessage,
+    chatbotName,
   } = props;
 
   const [responseFormData, setResponseFormData] = useState<any>(userInput);
@@ -157,12 +159,12 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
                   : 'bg-muted text-muted-foreground'
               )}
             >
-              {getInitials(isBotResponse ? 'Chatbot' : createdBy)}
+              {getInitials(isBotResponse ? chatbotName : createdBy)}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
             <span className="text-xs font-medium">
-              {isBotResponse ? 'Chatbot' : createdBy}
+              {isBotResponse ? chatbotName : createdBy}
             </span>
             <span className="text-xs text-muted-foreground">
               {createdAt
@@ -305,6 +307,7 @@ interface ChatMessageProps {
   };
   downloadFile: (id: string) => Promise<Blob>;
   saveFile: (blob: Blob, fileName: string) => void;
+  chatbotName: string;
 }
 
 export const ChatMessage: FC<ChatMessageProps> = ({
@@ -315,6 +318,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
   saveFile,
   useMessageFile,
   addValueToMessage,
+  chatbotName,
 }) => {
   const values =
     message.values?.sort(
@@ -353,6 +357,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
     results.push(
       <ValueCollection
         key={`collection-${collectionKey++}`}
+        chatbotName={chatbotName}
         createdBy={createdBy}
         createdAt={createdAt}
         type={currentType}
@@ -430,6 +435,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
           results.push(
             <ValueCollection
               key={`collection-${collectionKey++}`}
+              chatbotName={chatbotName}
               createdBy={value.createdBy}
               createdAt={value.createdAt}
               type={value.type}
@@ -478,6 +484,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
     results.push(
       <ValueCollection
         key={`collection-final-${collectionKey++}`}
+        chatbotName={chatbotName}
         createdBy={createdBy}
         createdAt={createdAt}
         type={currentType}
@@ -499,7 +506,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
     results.push(
       <ValueCollection
         key={`error-${error.code}`}
-        createdBy="Chatbot"
+        createdBy={chatbotName}
         createdAt={message.createdAt}
         type={MessageValueType.OUTPUT}
         content={[{ text: getErrorMessage(error.code) }]}
