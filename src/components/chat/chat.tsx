@@ -157,16 +157,16 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
   };
 
   const gradientClasses = useMemo(() => {
-    const color = activeWorkspace?.backgroundColor?.toLowerCase();
-    if (color === 'red') return 'via-red-500/0 to-red-500/20';
-    if (color === 'green') return 'via-emerald-500/0 to-emerald-500/20';
-    return 'via-primary/0 to-primary/20';
-  }, [activeWorkspace?.backgroundColor]);
+    const tags = activeWorkspace?.tags?.map(t => t.toLowerCase()) || [];
+    if (tags.includes('unsafe')) return 'via-red-500/5 to-red-500/10';
+    if (tags.includes('safe')) return 'via-emerald-500/5 to-emerald-500/10';
+    return 'via-primary/5 to-primary/10';
+  }, [activeWorkspace?.tags]);
 
   return (
     <Stack
       direction="column"
-      className={`ss-chat border bg-card text-card-foreground shadow-sm bg-gradient-to-b from-background from-30% ${gradientClasses} via-70% to-100%`}
+      className={`ss-chat border bg-card text-card-foreground shadow-sm bg-gradient-to-b from-background from-10% ${gradientClasses} via-40% to-100%`}
       sx={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%', width: '100%', overflow: 'hidden', alignSelf: 'stretch' }}
       onDragEnter={handleDragEnterChat}
       onDragLeave={handleDragLeaveChat}

@@ -336,7 +336,7 @@ export default function ChatComposer({
                               transition={{ duration: 0.2, delay: index * 0.05 }}
                               className={`relative group ${isImage ? 'row-span-2' : ''}`}
                             >
-                              <div className={`flex items-center gap-2 p-2 rounded-md border bg-muted/20 hover:bg-muted/30 transition-colors ${isImage ? 'flex-col h-full' : ''}`}>
+                              <div className={`flex items-center gap-2 p-2 rounded-md border bg-muted/10 hover:bg-muted/20 transition-colors ${isImage ? 'flex-col h-full' : ''}`}>
                                 <div className="flex-shrink-0">
                                   {isImage ? (
                                     <img
@@ -346,7 +346,7 @@ export default function ChatComposer({
                                       loading="lazy"
                                     />
                                   ) : (
-                                    <div className="w-8 h-8 rounded bg-muted/40 flex items-center justify-center">
+                                    <div className="w-8 h-8 rounded bg-muted/30 flex items-center justify-center">
                                       <FileIcon className="h-4 w-4 text-muted-foreground" />
                                     </div>
                                   )}
