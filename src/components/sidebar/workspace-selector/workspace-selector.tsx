@@ -40,6 +40,8 @@ export function WorkspaceSelector() {
   // Close sidebar on workspace selection (mobile)
   const { isMobile, setOpenMobileLeft } = useSidebar();
 
+  
+
   return (
     <div className="px-4 pt-3 pb-2 ">
       <div className="text-xs font-medium text-gray-500 mb-1.5">Workspace</div>
@@ -64,8 +66,23 @@ export function WorkspaceSelector() {
                   onKeyDown={e => e.stopPropagation()}
                 />
               ) : (
-                <span className="truncate font-medium">
+                <span className="truncate font-medium flex items-center gap-1">
                   {activeWorkspace?.name}
+                  {/* Render tags next to active workspace name */}
+                  {(activeWorkspace?.tags || []).map((t, i) => {
+                    const v = (t || '').toString();
+                    const l = v.toLowerCase();
+                    const cls = l === 'safe'
+                      ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                      : l === 'unsafe'
+                      ? 'bg-red-100 text-red-700 border-red-200'
+                      : 'bg-gray-100 text-gray-700 border-gray-200';
+                    return (
+                      <span key={`${v}-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}>
+                        {v}
+                      </span>
+                    );
+                  })}
                 </span>
               )}
             </div>
@@ -126,16 +143,39 @@ function WorkspaceItem({ workspace, isActive, onSelect }: WorkspaceItemProps) {
   return (
     <div
       onClick={() => onSelect(workspace)}
-      className="text-xs py-2 px-2 rounded-md hover:bg-gray-50 cursor-pointer"
+      className={`text-xs py-2 px-2 rounded-md cursor-pointer transition-colors hover:bg-gray-50`}
       tabIndex={0}
       role="button"
     >
       <div className="flex items-center gap-2 w-full">
         <CircleInitials
-          className={isActive ? 'bg-primary/80 text-[hsl(var(--primary-foreground))]' : 'bg-gray-200'}
+          className={
+              isActive
+              ? 'bg-primary/80 text-[hsl(var(--primary-foreground))]'
+              : 'bg-gray-200'
+          }
           text={workspace.name || ''}
         />
-        <span className="font-medium">{workspace.name}</span>
+        <span className={'font-medium'}>
+          {workspace.name}
+        </span>
+        {/* Render all tags for option */}
+        <span className="ml-auto flex items-center gap-1">
+          {(workspace.tags || []).map((t, i) => {
+            const v = (t || '').toString();
+            const l = v.toLowerCase();
+            const cls = l === 'safe'
+              ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+              : l === 'unsafe'
+              ? 'bg-red-100 text-red-700 border-red-200'
+              : 'bg-gray-100 text-gray-700 border-gray-200';
+            return (
+              <span key={`${v}-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}>
+                {v}
+              </span>
+            );
+          })}
+        </span>
       </div>
     </div>
   );
