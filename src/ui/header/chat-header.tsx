@@ -48,6 +48,7 @@ export function ChatHeader() {
           ) : activeWorkspace ? (
             <span className="font-medium text-xs">
               {activeWorkspace?.name}
+              {tagChips}
             </span>
           ) : (
             <span className="font-medium text-xs text-gray-500">—</span>
