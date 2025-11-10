@@ -9,6 +9,7 @@ import debounce from 'lodash/debounce';
 import { ChevronDown } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Workspace } from '../../../models/workspace';
+import { getTagChipClasses } from '@/theme/tag-styles';
 
 export function WorkspaceSelector() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,12 +72,7 @@ export function WorkspaceSelector() {
                   {/* Render tags next to active workspace name */}
                   {(activeWorkspace?.tags || []).map((t, i) => {
                     const v = (t || '').toString();
-                    const l = v.toLowerCase();
-                    const cls = l === 'safe'
-                      ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                      : l === 'unsafe'
-                      ? 'bg-red-100 text-red-700 border-red-200'
-                      : 'bg-gray-100 text-gray-700 border-gray-200';
+                    const cls = getTagChipClasses(v);
                     return (
                       <span key={`${v}-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}>
                         {v}
@@ -163,12 +159,7 @@ function WorkspaceItem({ workspace, isActive, onSelect }: WorkspaceItemProps) {
         <span className="ml-auto flex items-center gap-1">
           {(workspace.tags || []).map((t, i) => {
             const v = (t || '').toString();
-            const l = v.toLowerCase();
-            const cls = l === 'safe'
-              ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-              : l === 'unsafe'
-              ? 'bg-red-100 text-red-700 border-red-200'
-              : 'bg-gray-100 text-gray-700 border-gray-200';
+            const cls = getTagChipClasses(v);
             return (
               <span key={`${v}-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}>
                 {v}
