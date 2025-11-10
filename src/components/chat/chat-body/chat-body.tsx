@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { useSidebar } from '../../ui/sidebar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
+import { getChatbotName } from '@/theme/public-config';
 
 interface ChatBodyProps {
   messages: Message[];
@@ -61,8 +62,7 @@ export default function ChatBody({
   const threadId = threadMatch?.params?.threadId;
   const { data: thread, isPending: threadLoading, error: threadError } = useWorkspaceThread({ workspaceId: activeWorkspace?.id, threadId: threadId })
   const { leftOpen, rightOpen } = useSidebar();
-  const chatbotName = activeWorkspace?.name ?? 'Chatbot';
-  // const chatbotName ='Chatbot';
+  const chatbotName = getChatbotName(activeWorkspace?.name);
 
   useEffect(() => {
     if (isVisible && viewportRef.current) {
