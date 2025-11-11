@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback } from '../../ui/avatar';
 import { useSidebar } from '../../ui/sidebar';
 import { Skeleton } from '../../ui/skeleton';
 import ChatMessage from '../chat-message/chat-message';
+import { getChatbotName } from '@/theme/public-config';
 
 interface ChatBodyProps {
   messages: Message[];
@@ -62,6 +63,7 @@ export default function ChatBody({
   const threadId = threadMatch?.params?.threadId;
   const { data: thread, isPending: threadLoading, error: threadError } = useWorkspaceThread({ workspaceId: activeWorkspace?.id, threadId: threadId })
   const { leftOpen, rightOpen } = useSidebar();
+  const chatbotName = getChatbotName(activeWorkspace?.name);
 
   useEffect(() => {
     if (isVisible && viewportRef.current) {
@@ -182,8 +184,7 @@ export default function ChatBody({
               >
                 <ChatMessage
                   userId={activeUser.id}
-                  chatbotName={'Chatbot'}
-                  // chatbotName={activeWorkspace?.name ?? 'Chatbot'}
+                  chatbotName={chatbotName}
                   avatar={getInitials(message.createdBy ?? 'You')}
                   message={message}
                   isLast={index === (messages?.length ?? 0) - 1}
@@ -213,11 +214,11 @@ export default function ChatBody({
                         <div className="flex items-center gap-2">
                           <Avatar className="h-7 w-7 mt-0.5">
                             <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                              {getInitials('Chatbot')}
+                              {getInitials(chatbotName)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col">
-                            <span className="text-xs font-medium">Chatbot</span>
+                            <span className="text-xs font-medium">{chatbotName}</span>
                             <span className="text-xs text-muted-foreground">
                               {parseDateTime(new Date(), 'Do MMMM YYYY, h:mm a')}
                             </span>

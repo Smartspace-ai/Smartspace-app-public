@@ -13,6 +13,7 @@ import { Stack } from '@mui/material';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
+import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 export function Chat({threadId, isVisible}: { threadId?: string, isVisible: boolean }) {
   const { data: activeWorkspace } = useActiveWorkspace();
@@ -157,11 +158,11 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
   };
 
   const gradientClasses = useMemo(() => {
-    const tags = activeWorkspace?.tags?.map(t => t.toLowerCase()) || [];
-    if (tags.includes('unsafe')) return 'via-red-500/5 to-red-500/10';
-    if (tags.includes('safe')) return 'via-emerald-500/5 to-emerald-500/10';
-    return 'via-primary/5 to-primary/10';
-  }, [activeWorkspace?.tags]);
+    return getBackgroundGradientClasses({
+      tags: activeWorkspace?.tags,
+      name: activeWorkspace?.name,
+    });
+  }, [activeWorkspace?.tags, activeWorkspace?.name]);
 
   return (
     <Stack
