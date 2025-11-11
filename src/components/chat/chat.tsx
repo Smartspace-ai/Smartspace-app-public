@@ -2,7 +2,7 @@ import { useWorkspaceMessages } from '@/domains/messages/useMessages';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload } from 'lucide-react';
 import type React from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FileInfo } from '../../models/file';
 
@@ -13,6 +13,7 @@ import { Stack } from '@mui/material';
 import ChatBody from './chat-body/chat-body';
 import ChatComposer from './chat-composer/chat-composer';
 import ChatHeader from './chat-header/chat-header';
+import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 export function Chat({threadId, isVisible}: { threadId?: string, isVisible: boolean }) {
   const { data: activeWorkspace } = useActiveWorkspace();
@@ -156,10 +157,17 @@ export function Chat({threadId, isVisible}: { threadId?: string, isVisible: bool
     }
   };
 
+  const gradientClasses = useMemo(() => {
+    return getBackgroundGradientClasses({
+      tags: activeWorkspace?.tags,
+      name: activeWorkspace?.name,
+    });
+  }, [activeWorkspace?.tags, activeWorkspace?.name]);
+
   return (
     <Stack
       direction="column"
-      className="ss-chat border bg-card text-card-foreground shadow-sm bg-gradient-to-b from-background from-30% via-primary/0 via-70% to-primary/20 to-100%"
+      className={`ss-chat border bg-card text-card-foreground shadow-sm bg-gradient-to-b from-background from-10% ${gradientClasses} via-40% to-100%`}
       sx={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%', width: '100%', overflow: 'hidden', alignSelf: 'stretch' }}
       onDragEnter={handleDragEnterChat}
       onDragLeave={handleDragLeaveChat}

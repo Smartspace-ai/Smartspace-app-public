@@ -1,11 +1,14 @@
 import { api } from '@/platform/api/apiClient';
 import { Workspace } from '../models/workspace';
+import { DEFAULT_WORKSPACES_ORDER } from '@/theme/public-config';
 
 // Fetches the list of workspaces from the backend API
 export async function fetchWorkspaces(searchTerm?: string): Promise<Workspace[]> {
   const response = await api.get('/workspaces', {
     params: {
-      search: searchTerm
+      search: searchTerm,
+      orderBy: DEFAULT_WORKSPACES_ORDER
+
     }
   });
 
