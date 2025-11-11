@@ -6,6 +6,7 @@ import { useActiveWorkspace } from '@/hooks/use-workspaces';
  
 import { useActiveThread } from '@/hooks/use-workspace-thread';
 import { useWorkspaceUpdates } from '@/hooks/use-workspace-updates';
+import { getTagChipClasses } from '@/theme/tag-styles';
  
 import { NotificationPanel } from '../../notifications/notifications-panel/notifications-panel';
 import { Separator } from '../../ui/separator';
@@ -25,12 +26,7 @@ export function ChatHeader() {
       <span className="ml-2 flex items-center gap-1 flex-wrap">
         {tags.map((t, i) => {
           const v = (t || '').toString();
-          const l = v.toLowerCase();
-          const cls = l === 'safe'
-            ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-            : l === 'unsafe'
-            ? 'bg-red-100 text-red-700 border-red-200'
-            : 'bg-gray-100 text-gray-700 border-gray-200';
+          const cls = getTagChipClasses(v);
           return (
             <span key={`${v}-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}>
               {v}
