@@ -269,13 +269,7 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
           </div>
         )}
 
-        {(sources || []).map((source, idx) => (
-          <ChatMessageSources
-            key={idx}
-            source={source}
-            useQueryFiles={useQueryFiles}
-          />
-        ))}
+          <ChatMessageSources sources={sources || []} />
       </div>
     </div>
   );
@@ -460,7 +454,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
         if (Array.isArray(value.value)) {
           files = value.value;
         } else {
-          files = [value.value];
+          files = [{ id: value.value.id, name: value.value.name }];
         }
         valuesSavedToCollection = false;
         break;
