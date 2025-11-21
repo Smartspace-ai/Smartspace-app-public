@@ -86,7 +86,10 @@ export function WorkspaceSelector() {
           </Button>
         </PopoverTrigger>
         
-        <PopoverContent className="rounded-lg p-0 border w-full min-w-[260px] max-h-120 overflow-auto">
+        <PopoverContent 
+          className="rounded-lg p-0 border w-full min-w-[260px] max-h-120 overflow-auto"
+          style={{ zIndex: 9999 }}
+        >
           { isLoading? <Skeleton className="h-40 w-full rounded-lg" />
           : <div className='p-1 shadow-lg'>
               {workspaces.length === 0 ? (
@@ -110,13 +113,15 @@ export function WorkspaceSelector() {
                     isActive={activeWorkspace?.id === workspace.id}
                     workspace={workspace}
                     onSelect={ws => {
-                      handleWorkspaceChange(ws);
+                      // Close popover immediately to prevent clicks from passing through
                       setOpen(false);
                       setSearchTerm('');
                       // Close left sidebar on mobile after navigating
                       if (isMobile) {
                         setOpenMobileLeft(false);
                       }
+                      // Then change workspace
+                      handleWorkspaceChange(ws);
                     }}
                   />
                 ))
@@ -136,10 +141,37 @@ type WorkspaceItemProps = {
 };
 
 function WorkspaceItem({ workspace, isActive, onSelect }: WorkspaceItemProps) {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Stop immediate propagation on native event
+    if (e.nativeEvent) {
+      e.nativeEvent.stopImmediatePropagation();
+    }
+    onSelect(workspace);
+  };
+
+  // Also handle touch events specifically for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.nativeEvent) {
+      e.nativeEvent.stopImmediatePropagation();
+    }
+    onSelect(workspace);
+  };
+
   return (
     <div
-      onClick={() => onSelect(workspace)}
-      className={`text-xs py-2 px-2 rounded-md cursor-pointer transition-colors hover:bg-gray-50`}
+      onPointerDown={handlePointerDown}
+      onTouchStart={handleTouchStart}
+      className={`text-xs py-2 px-2 rounded-md cursor-pointer transition-colors hover:bg-gray-50 select-none`}
+      style={{ 
+        touchAction: 'none',
+        WebkitTapHighlightColor: 'transparent',
+        userSelect: 'none',
+        pointerEvents: 'auto'
+      }}
       tabIndex={0}
       role="button"
     >
