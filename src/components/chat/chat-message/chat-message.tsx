@@ -183,7 +183,10 @@ export const ValueCollection: FC<MessageValueProps> = (props) => {
           content?.map((item, i) => {
             if (item.text && item.text.length > 0) {
               return (
-                <div key={`content-${i}`} className="prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed mb-3 last:mb-0">
+                <div
+                  key={`content-${i}`}
+                  className="prose prose-sm w-full max-w-full break-words overflow-x-auto dark:prose-invert text-sm leading-relaxed mb-3 last:mb-0"
+                >
                   <MyMarkdown text={item.text} />
                 </div>
               );
