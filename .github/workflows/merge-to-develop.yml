@@ -22,6 +22,7 @@ jobs:
           app-id: ${{ secrets.CI_APP_ID }}
           private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
           owner: Smartspace-ai
+          repositories: ci-workflows
 
       - name: Dispatch to ci-workflows (log-only)
         shell: bash
@@ -29,10 +30,12 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          curl -sS -X POST \
+          api="https://api.github.com/repos/Smartspace-ai/ci-workflows/dispatches"
+          echo "Dispatching repository_dispatch to: $api"
+          curl -sS --fail-with-body -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
-            https://api.github.com/repos/Smartspace-ai/ci-workflows/dispatches \
+            "$api" \
             -d @- <<'JSON'
           {
             "event_type": "public_merge_to_develop",
