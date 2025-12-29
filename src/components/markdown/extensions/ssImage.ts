@@ -1,4 +1,5 @@
 import type { Node as PMNode } from '@milkdown/prose/model'
+import { editorViewCtx } from '@milkdown/core'
 import { $node, $view } from '@milkdown/utils'
 
 function parseQuery(query: string): Record<string, string> {
@@ -106,6 +107,8 @@ export const ssImageNode = $node('ssImage', () => ({
 export const ssImageView = $view(ssImageNode, (ctx) => (node) => {
   const dom = document.createElement('span')
   dom.className = 'ss-attach ss-attach--image'
+  // allow spinner overlay
+  dom.style.position = 'relative'
   const img = document.createElement('img')
   img.alt = (node.attrs as SsImageAttrs).alt || ''
   const fileId = (node.attrs as SsImageAttrs).fileId as string
@@ -115,18 +118,62 @@ export const ssImageView = $view(ssImageNode, (ctx) => (node) => {
   if (h) img.height = Number(h)
   img.className = 'ss-attach__img'
 
-  // Show lightweight placeholder while downloading
-  img.src = ''
+  const spinner = document.createElement('span')
+  spinner.className = 'ss-attach__spinner'
+
+  // Remove (X) button (only meaningful when editor is editable)
+  const removeBtn = document.createElement('button')
+  removeBtn.type = 'button'
+  removeBtn.className = 'ss-attach__remove'
+  removeBtn.setAttribute('aria-label', 'Remove image')
+  removeBtn.textContent = '×'
+  removeBtn.addEventListener('mousedown', (e) => {
+    // prevent ProseMirror from moving selection/caret weirdly
+    e.preventDefault()
+    e.stopPropagation()
+  })
+  removeBtn.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      const view = ctx.get(editorViewCtx)
+      if (!view || (view as any).editable === false) return
+      const pos = (view as any).posAtDOM?.(dom, 0)
+      if (typeof pos !== 'number') return
+      const tr = (view as any).state.tr.delete(pos, pos + (node as any).nodeSize)
+      ;(view as any).dispatch(tr.scrollIntoView())
+    } catch {
+      // ignore remove errors
+    }
+  })
+
+  // Show lightweight placeholder while downloading (do not set img.src yet)
   img.style.background = 'rgba(0,0,0,0.04)'
+  let hasSetRealSrc = false
+
+  // Hide spinner once image loads (or errors)
+  img.addEventListener('load', () => {
+    if (!hasSetRealSrc) return
+    spinner.remove()
+    img.style.background = ''
+  })
+  img.addEventListener('error', () => {
+    if (!hasSetRealSrc) return
+    spinner.remove()
+    img.style.background = 'rgba(255,0,0,0.06)'
+  })
 
   // Fetch via app API (window hook to avoid bundling React inside NodeView)
   try {
     const anyWin = window as unknown as { __ssDownloadFile?: (id: string) => Promise<string> }
     if (anyWin.__ssDownloadFile) {
       anyWin.__ssDownloadFile(fileId).then((blobUrl) => {
+        hasSetRealSrc = true
         img.src = blobUrl
       }).catch(() => {
-        img.style.background = 'rgba(255,0,0,0.06)'
+        // trigger error styling
+        hasSetRealSrc = true
+        img.dispatchEvent(new Event('error'))
       })
     } else {
       // leave as placeholder if integration not provided
@@ -135,6 +182,8 @@ export const ssImageView = $view(ssImageNode, (ctx) => (node) => {
     // ignore download errors
   }
 
+  dom.appendChild(spinner)
   dom.appendChild(img)
+  dom.appendChild(removeBtn)
   return { dom, contentDOM: null }
 })

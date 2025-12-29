@@ -89,13 +89,14 @@ function renderContentWithMentions(text: string, users?: Array<{ displayName?: s
 export function SidebarRight() {
   const { threadId, workspaceId } = useRouteIds();
   const { data: comments, isLoading, isError: commentsError } = useComments(threadId);
-  const { mutate: addComment, isPending: isAddingComment } = useAddComment(threadId);
+  const { mutateAsync: addCommentAsync, isPending: isAddingComment } = useAddComment(threadId);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const [threadComment, setThreadComment] = useState({ plain: '', withMentions: '' });
   const isMobile = useIsMobile();
 
   const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isAddingComment) return;
     if (!threadComment.plain.trim()) return;
 
     if (threadComment.plain.length > MAX_COMMENT_LENGTH) {
@@ -104,7 +105,7 @@ export function SidebarRight() {
     }
 
     try {
-      await addComment({ threadId, content: threadComment.plain });
+      await addCommentAsync({ threadId, content: threadComment.plain });
       setThreadComment({ plain: '', withMentions: '' });
     } catch {
       // Error handled in hook
@@ -202,7 +203,8 @@ export function SidebarRight() {
                   </div>
                 ))
               )}
-              <div ref={commentsEndRef} />
+              {/* Spacer so scroll-to-bottom keeps some padding below the last comment */}
+              <div ref={commentsEndRef} className="h-4" />
             </div>
           </ScrollArea>
         </SidebarContent>

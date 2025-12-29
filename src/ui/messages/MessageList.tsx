@@ -37,9 +37,11 @@ export function MessageList() {
 
 
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [loadFullHistory, setLoadFullHistory] = useState(false);
 
   const { data: thread, isPending: threadLoading, error: threadError } = useThread({ workspaceId, threadId })
-  const { data: messages = [], isPending: messagesLoading, error: messagesError } = useMessages(threadId)
+  const messagesQuery = useMessages(threadId, loadFullHistory ? undefined : { take: 100 })
+  const { data: messages = [], isPending: messagesLoading, error: messagesError } = messagesQuery
 
 
   const { leftOpen, rightOpen } = useSidebar();
@@ -100,6 +102,13 @@ export function MessageList() {
       return () => clearTimeout(timeoutId);
     }
   }, [messages, messages?.length, isAtBottom, threadLoading, messagesLoading, threadError, messagesError]);
+
+  useEffect(() => {
+    if (!loadFullHistory) return;
+    // opts are not part of the queryKey, so refetch when user opts into full history
+    messagesQuery.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadFullHistory]);
 
   if (threadLoading ||messagesLoading) {
     return (
@@ -177,6 +186,22 @@ export function MessageList() {
             ref={contentRef}
             className={`flex flex-col w-full ${!isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''} px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
           >
+            {!loadFullHistory && (
+              <div className="sticky top-0 z-10 -mx-2 sm:-mx-3 md:-mx-4 mb-2 border-b bg-background/80 backdrop-blur px-2 sm:px-3 md:px-4 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-muted-foreground">
+                    Showing recent messages for faster loading.
+                  </span>
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-primary hover:underline"
+                    onClick={() => setLoadFullHistory(true)}
+                  >
+                    Load full history
+                  </button>
+                </div>
+              </div>
+            )}
             {messages.map((message, index) => (
               <div
                 className="ss-chat__message w-full"

@@ -86,10 +86,19 @@ export const useFileMutations = (scope: FileScope) => {
         : ('uploading' as const),
     }));
 
+  const getFileBlobUrl = useCallback(
+    async (id: string) => {
+      const blob = await downloadFile(id, scope);
+      return URL.createObjectURL(blob);
+    },
+    [scope.workspaceId, scope.threadId],
+  );
+
   return {
     uploadFilesMutation,
     downloadFileMutation,
     downloadFileByUriMutation,
+    getFileBlobUrl,
     fileProgress,
     uploadedFiles,
     clearUploadState,

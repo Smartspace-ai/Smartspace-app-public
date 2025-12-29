@@ -11,8 +11,15 @@ import { Message } from './model';
 
 
 // Fetch all messages in a given message thread
-export async function fetchMessages(threadId: string): Promise<Message[]> {
-  const envelope = await apiParsed.get(MessagesEnvelopeDto, `messagethreads/${threadId}/messages`);
+export async function fetchMessages(
+  threadId: string,
+  opts?: { take?: number; skip?: number }
+): Promise<Message[]> {
+  const envelope = await apiParsed.get(
+    MessagesEnvelopeDto,
+    `messagethreads/${threadId}/messages`,
+    { params: opts }
+  );
   return mapMessagesDtoToModels(envelope.data);
 }
 

@@ -17,7 +17,7 @@ import { taggableUsersOptions } from '@/domains/workspaces'
 // Note: Mention plugin is not published under @milkdown/plugin-mention on npm.
 // This setup is ready to add a mention-like plugin later if desired.
 import { fileTag } from './extensions/fileTag'
-import { createMentionInputRule, mention } from './extensions/mention'
+import { mention } from './extensions/mention'
 import { ssImageNode, ssImageView } from './extensions/ssImage'
 import './styles.css'
 
@@ -111,12 +111,65 @@ function EditorInner({
   const [_isDragging, setIsDragging] = useState(false)
   const viewRef = useRef<EditorView | null>(null)
 
+  function guessImageExt(mime: string) {
+    const t = (mime || '').toLowerCase()
+    if (t === 'image/jpeg') return 'jpg'
+    if (t === 'image/svg+xml') return 'svg'
+    const parts = t.split('/')
+    return parts[1] || 'png'
+  }
+
+  function ensurePastedImageHasNiceName(file: File): File {
+    if (!file.type?.startsWith('image/')) return file
+    const raw = (file.name || '').trim()
+    const looksDefault = !raw || raw === 'image' || raw === 'blob' || raw === 'image.png' || raw === 'image.jpg' || raw === 'image.jpeg'
+    if (!looksDefault) return file
+
+    const ext = guessImageExt(file.type)
+    const ts = new Date().toISOString().replace(/[:.]/g, '-')
+    const nextName = `pasted-image-${ts}.${ext}`
+    try {
+      return new File([file], nextName, { type: file.type, lastModified: Date.now() })
+    } catch {
+      return file
+    }
+  }
+
   // Mentions UI state
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const [mentionFromPos, setMentionFromPos] = useState<number | null>(null)
-  const [mentionCoords, setMentionCoords] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
+  const [mentionCoords, setMentionCoords] = useState<{ left: number; top: number; bottom: number }>({
+    left: 0,
+    top: 0,
+    bottom: 0,
+  })
   const [mentionIndex, setMentionIndex] = useState(0)
+  const [mentionPlacement, setMentionPlacement] = useState<'up' | 'down'>('down')
+
+  // Refs to prevent keyup-driven recalculation from clobbering arrow-key navigation.
+  const mentionQueryRef = useRef('')
+  const mentionFromPosRef = useRef<number | null>(null)
+  const mentionOpenRef = useRef(false)
+
+  useEffect(() => {
+    mentionQueryRef.current = mentionQuery
+  }, [mentionQuery])
+  useEffect(() => {
+    mentionFromPosRef.current = mentionFromPos
+  }, [mentionFromPos])
+  useEffect(() => {
+    mentionOpenRef.current = mentionOpen
+  }, [mentionOpen])
+
+  // If mentions are disabled, ensure the dropdown is never visible.
+  useEffect(() => {
+    if (enableMentions) return
+    setMentionOpen(false)
+    setMentionQuery('')
+    setMentionFromPos(null)
+    setMentionIndex(0)
+  }, [enableMentions])
 
   const {
     data: usersData = [],
@@ -203,7 +256,8 @@ function EditorInner({
                   const coords = view.coordsAtPos(pos)
                   // eslint-disable-next-line no-console
                   console.log('[MarkdownEditor] @ pressed at pos:', pos, 'coords:', coords)
-                  setMentionCoords({ left: coords.left, top: coords.top })
+                  setMentionCoords({ left: coords.left, top: coords.top, bottom: coords.bottom })
+                  setMentionPlacement(getMentionPlacement(coords.top))
                   setMentionFromPos(Math.max(0, pos - 1))
                   setMentionQuery('')
                   setMentionIndex(0)
@@ -227,7 +281,6 @@ function EditorInner({
       .use(ssImageNode)
       .use(ssImageView)
       .use(enableMentions ? mention : fileTag)
-      .use(enableMentions ? createMentionInputRule : listener)
   }, [isEditable])
 
   async function getImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
@@ -243,6 +296,21 @@ function EditorInner({
       return dims
     } catch {
       return null
+    }
+  }
+
+  function clampImageSize(
+    width: number,
+    height: number,
+    maxWidth = 260,
+    maxHeight = 180,
+  ): { width: number; height: number } {
+    const w = Number(width) || 1
+    const h = Number(height) || 1
+    const scale = Math.min(maxWidth / w, maxHeight / h, 1)
+    return {
+      width: Math.max(1, Math.round(w * scale)),
+      height: Math.max(1, Math.round(h * scale)),
     }
   }
 
@@ -287,8 +355,9 @@ function EditorInner({
 
       if (isImage) {
         const dims = await getImageDimensions(file)
-        const width = dims?.width ?? 500
-        const height = dims?.height ?? 500
+        const rawW = dims?.width ?? 500
+        const rawH = dims?.height ?? 500
+        const { width, height } = clampImageSize(rawW, rawH)
         try {
           const type = (view.state.schema.nodes as any)['ssImage']
           if (type) {
@@ -397,7 +466,7 @@ function EditorInner({
       }}
       onKeyUpCapture={(_e) => {
         try {
-          updateMentionFromView()
+          if (enableMentions) updateMentionFromView()
         } catch {
           /* ignore keyup errors */
         }
@@ -459,10 +528,11 @@ function EditorInner({
           }
           if (imageFiles.length > 0) {
             // show inline previews immediately and forward to host for upload
-            void handleFiles(imageFiles, { notifyHost: false })
+            const renamed = imageFiles.map(ensurePastedImageHasNiceName)
+            void handleFiles(renamed, { notifyHost: false })
             e.preventDefault()
             e.stopPropagation()
-            _onImagesPasted?.(imageFiles)
+            _onImagesPasted?.(renamed)
           }
         } catch {
           // no-op on paste errors
@@ -495,7 +565,12 @@ function EditorInner({
         ? createPortal(
             <div
               className="md-mention-menu"
-              style={{ position: 'fixed', left: mentionCoords.left, top: mentionCoords.top }}
+              style={{
+                position: 'fixed',
+                left: mentionCoords.left,
+                top: mentionPlacement === 'up' ? mentionCoords.top : mentionCoords.bottom,
+                transform: mentionPlacement === 'up' ? 'translateY(calc(-100% - 8px))' : 'translateY(8px)',
+              }}
               role="dialog" aria-label="User mentions"
             >
               <ul className="max-h-60 overflow-auto" role="listbox">
@@ -591,6 +666,10 @@ function EditorInner({
   // reserved for future file tag inline insert
 
   function updateMentionFromView() {
+    if (!enableMentions) {
+      if (mentionOpen) setMentionOpen(false)
+      return
+    }
     const view = viewRef.current
     if (!isEditable || !view) return
     const { from } = view.state.selection
@@ -602,19 +681,40 @@ function EditorInner({
       return
     }
     const after = text.slice(at + 1)
-    if (/\s/.test(after)) {
+    // Allow a single space so users can type "First Last" in the mention query.
+    // Close the dropdown once they type a second space (or any newline/tab).
+    if (/[\t\r\n]/.test(after)) {
+      if (mentionOpen) setMentionOpen(false)
+      return
+    }
+    const spaceCount = (after.match(/ /g) ?? []).length
+    if (spaceCount > 1) {
       if (mentionOpen) setMentionOpen(false)
       return
     }
     const absoluteFrom = windowStart + at
     const coords = view.coordsAtPos(from)
-    setMentionCoords({ left: coords.left, top: coords.bottom })
+    setMentionCoords({ left: coords.left, top: coords.top, bottom: coords.bottom })
+    setMentionPlacement(getMentionPlacement(coords.top))
     setMentionFromPos(absoluteFrom)
     setMentionQuery(after)
-    setMentionIndex(0)
+    // Only reset the highlighted option when the query/session changes.
+    // Otherwise, arrow key navigation will be immediately overwritten by this updater.
+    const queryChanged = after !== mentionQueryRef.current
+    const sessionChanged = absoluteFrom !== mentionFromPosRef.current || !mentionOpenRef.current
+    if (queryChanged || sessionChanged) setMentionIndex(0)
     setMentionOpen(true)
     // eslint-disable-next-line no-console
     console.log('[MarkdownEditor] updateMentionFromView:', { from, absoluteFrom, query: after, coords })
+  }
+
+  function getMentionPlacement(caretTop: number): 'up' | 'down' {
+    // Prefer opening upward; flip to downward if there isn't enough space above.
+    // Mention menu has max height 15rem (~240px), plus a small gap.
+    const maxMenuHeight = 240
+    const gap = 12
+    const minViewportPadding = 8
+    return caretTop - (maxMenuHeight + gap) < minViewportPadding ? 'down' : 'up'
   }
 }
 

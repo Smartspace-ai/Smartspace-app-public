@@ -3,6 +3,7 @@ import { queryOptions, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { ThreadsResponse } from './model';
 import { threadsKeys } from './queryKeys';
 import { fetchThread, fetchThreads } from './service';
+import { isDraftThreadId } from '@/shared/utils/threadId';
 
 export const threadDetailOptions = ({ workspaceId, threadId }: { workspaceId: string; threadId: string }) =>
   queryOptions({
@@ -11,14 +12,26 @@ export const threadDetailOptions = ({ workspaceId, threadId }: { workspaceId: st
     refetchOnWindowFocus: false,
   });
 
-export const useThread = ({workspaceId, threadId}: { workspaceId: string; threadId: string }) => {
-  return useQuery(threadDetailOptions({ workspaceId, threadId }));
+export const useThread = ({
+  workspaceId,
+  threadId,
+  enabled = true,
+}: {
+  workspaceId: string;
+  threadId: string;
+  enabled?: boolean;
+}) => {
+  const canFetch = enabled && !!workspaceId && !!threadId && !isDraftThreadId(threadId);
+  return useQuery({ ...threadDetailOptions({ workspaceId, threadId }), enabled: canFetch });
 }
 
-export const threadsListOptions = (workspaceId: string) =>
+export const threadsListOptions = (
+  workspaceId: string,
+  opts?: { take?: number; skip?: number }
+) =>
   queryOptions({
-    queryKey: threadsKeys.list(workspaceId),
-    queryFn: () => fetchThreads(workspaceId),
+    queryKey: threadsKeys.list(workspaceId, opts),
+    queryFn: () => fetchThreads(workspaceId, opts ?? {}),
     refetchOnWindowFocus: false,
   });
 

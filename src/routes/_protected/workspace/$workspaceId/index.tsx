@@ -10,9 +10,13 @@ import { RouteIdsProvider } from "@/pages/WorkspaceThreadPage/RouteIdsProvider";
 // routes/_protected/workspace/$workspaceId/index.tsx
 export const Route = createFileRoute('/_protected/workspace/$workspaceId/')({
   loader: async ({ params }) => {
-    const list = await queryClient.ensureQueryData(threadsListOptions(params.workspaceId));
+    // Only fetch the first thread to decide where to redirect.
+    // This keeps workspace switching snappy even for large workspaces.
+    const list = await queryClient.ensureQueryData(
+      threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
+    );
     const first = Array.isArray(list)
-      ? list[0] as { id?: string }
+      ? (list[0] as { id?: string })
       : (list as { data?: { id?: string }[] } | undefined)?.data?.[0];
     if (first?.id) {
       throw redirect({

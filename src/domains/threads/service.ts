@@ -56,6 +56,11 @@ export async function createThread(
   name: string,
   workspaceId: string
 ){
-  const data = await apiParsed.post(MessageThreadDto, `workspaces/${workspaceId}/messageThreads`, { name });
+  // Keep endpoint casing consistent with fetchThread/fetchThreads
+  const data = await apiParsed.post(
+    MessageThreadDto,
+    `workspaces/${workspaceId}/messagethreads`,
+    { name }
+  );
   return mapThreadDtoToModel(data);
 }

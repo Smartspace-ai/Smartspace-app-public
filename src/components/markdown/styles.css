@@ -18,9 +18,95 @@
   padding: 2px;
 }
 
+.ss-attach--image .ss-attach__img {
+  /* Safety net: keep ss images small even if older content stored large width/height attrs */
+  max-width: 260px;
+  max-height: 180px;
+  width: auto;
+  height: auto;
+}
+
+.ss-attach__spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--muted-foreground, #6b7280), transparent 60%);
+  border-top-color: color-mix(in srgb, var(--foreground, #111827), transparent 20%);
+  animation: ss-attach-spin 0.9s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes ss-attach-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .ss-attach__img {
   display: block;
   object-fit: contain;
+}
+
+/* Inline ssImage loading spinner overlay (removed by node-view on load/error) */
+.ss-attach--image .ss-attach__spinner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.55);
+  z-index: 2;
+  pointer-events: none;
+}
+.ss-attach--image .ss-attach__spinner::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,0.12);
+  border-top-color: rgba(0,0,0,0.55);
+  animation: ss-spin 800ms linear infinite;
+}
+@keyframes ss-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss-attach--image .ss-attach__spinner::before {
+    animation: none;
+  }
+}
+
+/* Remove (X) control for inline ssImage node */
+.ss-attach--image .ss-attach__remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.92);
+  color: rgba(0,0,0,0.72);
+  line-height: 16px;
+  font-size: 16px;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-in-out;
+  z-index: 3;
+}
+.ss-attach--image:hover .ss-attach__remove,
+.ss-attach--image:focus-within .ss-attach__remove {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ss-attach--image .ss-attach__remove:hover {
+  color: rgba(0,0,0,0.9);
+  border-color: rgba(0,0,0,0.18);
 }
 
 .md-editor .ProseMirror {
@@ -106,9 +192,12 @@
 
 /* Mentions popup */
 .md-mention-menu {
-  background: var(--background, #fff);
-  color: var(--foreground, #111);
-  border: 1px solid var(--border, #e5e7eb);
+  /* In this app, theme CSS vars are typically HSL triplets (e.g. "0 0% 100%"),
+     so they must be wrapped in hsl(). Using the raw var() can result in a
+     transparent/invalid color (appearing see-through). */
+  background: hsl(var(--background, 0 0% 100%));
+  color: hsl(var(--foreground, 222.2 84% 4.9%));
+  border: 1px solid hsl(var(--border, 214.3 31.8% 91.4%));
   border-radius: 8px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.12);
   min-width: 220px;

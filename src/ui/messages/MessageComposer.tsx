@@ -2,9 +2,22 @@
 
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import { ArrowBigUp, Maximize2, Minimize2, Paperclip } from 'lucide-react';
+import {
+  ArrowBigUp,
+  FileArchive,
+  FileAudio,
+  FileCode,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
+  FileVideo,
+  Maximize2,
+  Minimize2,
+  Paperclip,
+  Presentation,
+} from 'lucide-react';
 import type * as React from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { FileInfo } from '@/domains/files/model';
@@ -23,14 +36,57 @@ declare global {
   }
 }
 
+const imageExtensions = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg']);
+
+function getExtension(fileName: string) {
+  const parts = (fileName || '').split('.');
+  return (parts.length > 1 ? parts[parts.length - 1] : '').toLowerCase();
+}
+
+function isLikelyImageFile(fileName: string) {
+  return imageExtensions.has(getExtension(fileName));
+}
+
+function getFileIcon(fileName: string) {
+  const ext = getExtension(fileName);
+
+  if (imageExtensions.has(ext)) return FileImage;
+  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(ext)) return FileVideo;
+  if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma'].includes(ext)) return FileAudio;
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) return FileArchive;
+  if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'cs', 'php', 'html', 'css', 'json', 'xml', 'md'].includes(ext)) return FileCode;
+  if (['xlsx', 'xls', 'csv'].includes(ext)) return FileSpreadsheet;
+  if (['pptx', 'ppt'].includes(ext)) return Presentation;
+  return FileText;
+}
+
 export default function MessageComposer() {
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [attachedFiles, setAttachedFiles] = useState<FileInfo[]>([]);
-  const [isUploadingAttachments, setIsUploadingAttachments] = useState(false);
+
+  type AttachmentItem = {
+    key: string;
+    name: string;
+    ext: string;
+    isImage: boolean;
+    /** Local object URL for image preview (revoked on removal/clear) */
+    previewUrl?: string;
+    status: 'uploading' | 'done' | 'error';
+    fileId?: string;
+  };
+
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+  const previewUrlsRef = useRef<Record<string, string>>({});
+  const [uploadingCount, setUploadingCount] = useState(0);
+
+  const uploadedAttachments: FileInfo[] = attachments
+    .filter((a) => a.status === 'done' && a.fileId)
+    .map((a) => ({ id: a.fileId as string, name: a.name }));
+
+  const isUploadingAttachments = uploadingCount > 0;
 
   const vm = useMessageComposerVm({
-    hasAttachments: attachedFiles.length > 0,
+    hasAttachments: uploadedAttachments.length > 0,
     isUploadingFiles: isUploadingAttachments,
   });
  
@@ -51,12 +107,11 @@ export default function MessageComposer() {
     supportsFiles,
   } = vm;
 
-  const { uploadFilesMutation } = useFileMutations({ workspaceId, threadId });
+  const { uploadFilesMutation, getFileBlobUrl } = useFileMutations({ workspaceId, threadId });
   // Provide a global downloader for ssImage node views (non-React context)
   if (typeof window !== 'undefined') {
     window.__ssDownloadFile = async (id: string) => {
-      const blob = await fetch(`/api/files/${id}/download?workspaceId=${workspaceId ?? ''}&threadId=${threadId ?? ''}`).then(r => r.blob());
-      return URL.createObjectURL(blob);
+      return await getFileBlobUrl(id);
     };
   }
   const onUploadFiles = async (files: File[]) => {
@@ -70,23 +125,73 @@ export default function MessageComposer() {
 
   const addAttachments = async (files: File[]) => {
     if (!files || files.length === 0) return;
-    setIsUploadingAttachments(true);
+
+    const items: AttachmentItem[] = files.map((f) => {
+      const key = `${f.name}:${f.size}:${f.type}:${f.lastModified}`;
+      const isImage = f.type.startsWith('image/');
+      const ext = getExtension(f.name);
+      const previewUrl = isImage ? URL.createObjectURL(f) : undefined;
+      if (previewUrl) previewUrlsRef.current[key] = previewUrl;
+      return {
+        key,
+        name: f.name || 'file',
+        ext,
+        isImage,
+        previewUrl,
+        status: 'uploading',
+      };
+    });
+
+    // optimistic add (dedupe by key)
+    setAttachments((prev) => {
+      const existing = new Set(prev.map((p) => p.key));
+      const next = [...prev];
+      for (const it of items) {
+        if (existing.has(it.key)) continue;
+        existing.add(it.key);
+        next.push(it);
+      }
+      return next;
+    });
+
+    setUploadingCount((c) => c + 1);
     try {
       const uploaded = await uploadFilesMutation.mutateAsync(files);
-      setAttachedFiles((prev) => {
-        const existing = new Set(prev.map((p) => p.id));
-        const next = [...prev];
-        for (const f of uploaded) {
-          if (existing.has(f.id)) continue;
-          existing.add(f.id);
-          next.push({ id: f.id, name: f.name });
+      setAttachments((prev) => {
+        const next = prev.slice();
+        // assume upload result order matches input order
+        for (let i = 0; i < items.length; i++) {
+          const localKey = items[i]?.key;
+          const info = uploaded[i];
+          if (!localKey || !info) continue;
+          const idx = next.findIndex((x) => x.key === localKey);
+          if (idx === -1) continue; // user removed it while uploading
+          next[idx] = {
+            ...next[idx],
+            status: 'done',
+            fileId: info.id,
+            name: info.name || next[idx].name,
+            ext: getExtension(info.name || next[idx].name),
+          };
         }
         return next;
       });
+    } catch {
+      setAttachments((prev) => prev.map((a) => (items.some((it) => it.key === a.key) ? { ...a, status: 'error' } : a)));
     } finally {
-      setIsUploadingAttachments(false);
+      setUploadingCount((c) => Math.max(0, c - 1));
     }
   };
+
+  // cleanup any local object URLs when attachments change/remove
+  useEffect(() => {
+    const keys = new Set(attachments.map((a) => a.key));
+    for (const [k, url] of Object.entries(previewUrlsRef.current)) {
+      if (keys.has(k)) continue;
+      try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+      delete previewUrlsRef.current[k];
+    }
+  }, [attachments]);
 
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -97,15 +202,24 @@ export default function MessageComposer() {
   };
 
   const handleRemoveAttachment = (id: string) => {
-    setAttachedFiles((prev) => prev.filter((f) => f.id !== id));
+    setAttachments((prev) => prev.filter((a) => a.key !== id));
+    const url = previewUrlsRef.current[id];
+    if (url) {
+      try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+      delete previewUrlsRef.current[id];
+    }
   };
 
   const handleClearAttachments = () => {
-    setAttachedFiles([]);
+    setAttachments([]);
+    for (const url of Object.values(previewUrlsRef.current)) {
+      try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+    }
+    previewUrlsRef.current = {};
   };
 
   const handleSendMessageAndClear = () => {
-    handleSendMessage(attachedFiles);
+    handleSendMessage(uploadedAttachments);
     handleClearAttachments();
   };
 
@@ -137,40 +251,78 @@ export default function MessageComposer() {
           !isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''
         } bg-background ${isMobile ? '' : 'rounded-md border shadow-sm'} transition-[max-width] duration-300 ease-in-out`}
       >
-        {attachedFiles.length > 0 && (
+        {attachments.length > 0 && (
           <div className="border-b bg-muted/5 px-3 py-2">
             <div className="flex items-center justify-between gap-2">
               <div className="text-xs font-medium text-foreground/80">
-                Attachments ({attachedFiles.length})
+                Attachments ({attachments.length}){isUploadingAttachments ? ' (uploading...)' : ''}
               </div>
               <Button
                 type="button"
                 size="small"
                 variant="text"
                 onClick={handleClearAttachments}
+                disabled={isUploadingAttachments}
                 className="text-xs normal-case min-w-0 px-2 h-7 text-muted-foreground"
               >
                 Clear
               </Button>
             </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {attachedFiles.map((f) => (
-                <div
-                  key={f.id}
-                  className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs"
-                >
-                  <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="max-w-[220px] truncate">{f.name}</span>
-                  <button
-                    type="button"
-                    className="ml-1 text-muted-foreground hover:text-foreground"
-                    onClick={() => handleRemoveAttachment(f.id)}
-                    aria-label={`Remove ${f.name}`}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+            <div className="mt-2 max-h-60 overflow-y-auto pr-1">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5 auto-rows-[64px]">
+                {attachments.map((f) => {
+                  const isImage = f.isImage || isLikelyImageFile(f.name);
+                  const previewUrl = f.previewUrl;
+                  const Icon = getFileIcon(f.name);
+                  return (
+                    <div
+                      key={f.key}
+                      className={`relative group ${isImage ? 'col-span-2 row-span-1' : ''}`}
+                      title={f.name}
+                    >
+                      <div className="h-full w-full rounded-md border bg-background overflow-hidden flex items-center gap-2 p-1.5">
+                        {isImage ? (
+                          <div className="w-10 h-10 rounded bg-muted/10 overflow-hidden flex items-center justify-center flex-shrink-0">
+                            {previewUrl ? (
+                              <img
+                                src={previewUrl}
+                                alt={f.name}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground/60 animate-spin" />
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-7 h-7 rounded bg-muted/20 flex items-center justify-center flex-shrink-0">
+                            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                        )}
+
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-medium text-foreground truncate" title={f.name}>
+                            {f.name}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {getExtension(f.name).toUpperCase() || 'FILE'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-background border text-xs leading-none opacity-0 group-hover:opacity-100"
+                        onClick={() => handleRemoveAttachment(f.key)}
+                        aria-label={`Remove ${f.name}`}
+                        disabled={isUploadingAttachments}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -184,7 +336,7 @@ export default function MessageComposer() {
                     ref={editorRef}
                     value={newMessage}
                     onChange={(md) => setNewMessage(md)}
-                    onKeyDown={(e) => handleKeyDown(e, attachedFiles)}
+                    onKeyDown={(e) => handleKeyDown(e, uploadedAttachments)}
                     onFilesAdded={(files) => { void addAttachments(files); }}
                     onUploadFiles={onUploadFiles}
                     fileHandlingMode="attachments"
@@ -234,7 +386,7 @@ export default function MessageComposer() {
                   ref={editorRef}
                   value={newMessage}
                   onChange={(md) => setNewMessage(md)}
-                  onKeyDown={(e) => handleKeyDown(e, attachedFiles)}
+                  onKeyDown={(e) => handleKeyDown(e, uploadedAttachments)}
                   onFilesAdded={(files) => { void addAttachments(files); }}
                   onUploadFiles={onUploadFiles}
                   fileHandlingMode="attachments"
@@ -274,7 +426,7 @@ export default function MessageComposer() {
                       ref={editorRef}
                       value={newMessage}
                       onChange={(md) => setNewMessage(md)}
-                      onKeyDown={(e) => handleKeyDown(e, attachedFiles)}
+                      onKeyDown={(e) => handleKeyDown(e, uploadedAttachments)}
                       onFilesAdded={(files) => { void addAttachments(files); }}
                       onUploadFiles={onUploadFiles}
                       fileHandlingMode="attachments"
