@@ -2,9 +2,6 @@ import Divider from '@mui/material/Divider';
 import Skeleton from '@mui/material/Skeleton';
 import { MessageSquare, PanelLeft } from 'lucide-react';
 
-
- 
- 
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
@@ -12,17 +9,34 @@ import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
 
+import { getTagChipClasses } from '@/theme/tag-styles';
+
 import { NotificationPanel } from './notifications-panel';
-
-
-
-
 
 export function ChatHeader() {
   const { workspaceId, threadId } = useRouteIds();
   const { data: activeWorkspace, isPending: workspaceLoading, isError: workspaceError } = useWorkspace(workspaceId);
   const { data: activeThread } = useThread({ workspaceId, threadId });
   
+  // Render all tags as chips; color-code safe/unsafe (and other known tags)
+  const tagChips = (() => {
+    const tags = activeWorkspace?.tags || [];
+    if (!tags.length) return null;
+    return (
+      <span className="ml-2 flex items-center gap-1 flex-wrap">
+        {tags.map((t: string, i: number) => {
+          const v = (t || '').toString();
+          const cls = getTagChipClasses(v);
+          return (
+            <span key={`${v}-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}>
+              {v}
+            </span>
+          );
+        })}
+      </span>
+    );
+  })();
+
   return (
     <header className="ss-chat__header flex h-[54px] shrink-0 items-center gap-2 bg-background border-b ">
       <div className="flex flex-1 items-center gap-2 px-4">
@@ -46,7 +60,7 @@ export function ChatHeader() {
           ) : workspaceLoading ? (
             <Skeleton className="h-4 w-28" />
           ) : activeWorkspace ? (
-            <span className="font-medium text-xs">
+            <span className="font-medium text-xs flex items-center">
               {activeWorkspace?.name}
               {tagChips}
             </span>

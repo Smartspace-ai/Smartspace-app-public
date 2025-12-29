@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-import { MessageValueType } from '@/domains/messages/enums';
-import { useMessages } from '@/domains/messages/queries';
+import { MessageValueType, useMessages } from '@/domains/messages';
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
@@ -18,7 +17,10 @@ import { Skeleton } from '@/shared/ui/mui-compat/skeleton';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parseDateTime';
 
+import { getChatbotName } from '@/theme/public-config';
+
 import { MessageItem } from './MessageItem';
+
 
 
 

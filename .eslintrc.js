@@ -1,4 +1,6 @@
 // .eslintrc.js
+const path = require('path');
+
 module.exports = {
   root: true,
 
@@ -18,8 +20,20 @@ module.exports = {
   settings: {
     // Path alias resolution (@/...)
     'import/resolver': {
-      typescript: { project: './tsconfig.json' },
-      node: { extensions: ['.js', '.jsx', '.ts', '.tsx'] },
+      typescript: { 
+        // Use absolute paths so this works even when ESLint is executed from the repo root
+        // (common in monorepos and in editor integrations)
+        project: [
+          path.resolve(__dirname, './tsconfig.json'),
+          path.resolve(__dirname, './tsconfig.app.json'),
+          path.resolve(__dirname, './tsconfig.spec.json'),
+        ],
+        alwaysTryTypes: true,
+        extensions: ['.ts', '.tsx', '.js', '.jsx'],
+      },
+      node: { 
+        extensions: ['.js', '.jsx', '.ts', '.tsx'],
+      },
     },
     react: { version: 'detect' },
 

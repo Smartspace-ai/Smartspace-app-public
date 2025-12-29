@@ -10,6 +10,7 @@ export type MentionUser = {
 export type Workspace = {
   id: string;
   name: string;
+  tags?: string[];
 
   showSources?: boolean;
   dataSpaces?: unknown[];

@@ -43,7 +43,7 @@ export function mapWorkspaceDtoToModel(dto: TWorkspaceDto): Workspace {
   return {
     id: dto.id,
     name: dto.name,
-
+    tags: dto.tags ?? [],
     showSources: dto.showSources ?? undefined,
     dataSpaces: Array.isArray(dto.dataSpaces) ? dto.dataSpaces : undefined,
 

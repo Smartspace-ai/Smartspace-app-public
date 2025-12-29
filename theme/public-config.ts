@@ -1,4 +1,4 @@
-  import { OrderBy } from '@/domains/messages/workspace';
+import { OrderBy } from '@/enums/workspace';
 
 // Centralized public UI config for name/ordering decisions
 

@@ -34,7 +34,7 @@ export const ModelConfigurationInlineDto = z.object({
 export const WorkspaceDto = z.object({
   id: z.string(),
   name: z.string(),
-
+  tags: z.array(z.string()).optional().nullable(),
   showSources: z.boolean().optional().nullable(),
 
   dataSpaces: z.array(z.any()).optional().nullable(),
