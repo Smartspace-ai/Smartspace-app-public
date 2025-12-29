@@ -41,6 +41,7 @@ export function MessageList() {
 
 
   const { leftOpen, rightOpen } = useSidebar();
+  const chatbotName = getChatbotName(activeWorkspace?.name);
 
   useEffect(() => {
     if ( viewportRef.current) {
@@ -206,7 +207,7 @@ export function MessageList() {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col">
-                            <span className="text-xs font-medium">Chatbot</span>
+                            <span className="text-xs font-medium">{chatbotName}</span>
                             <span className="text-xs text-muted-foreground">
                               {parseDateTime(new Date(), 'Do MMMM YYYY, h:mm a')}
                             </span>

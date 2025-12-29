@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { HTMLBlock } from './html';
 
 import { useTeams } from '@/contexts/teams-context';
+import { cn } from '@/lib/utils';
 
 interface Props {
   text: string;
@@ -31,14 +32,65 @@ export const MyMarkdown = ({ text }: Props) => {
               href={href}
               target={isInTeams ? "_blank" : undefined}
               rel={isInTeams ? "noreferrer noopener" : undefined}
-              className={[className, 'text-blue-600 dark:text-blue-400 hover:underline'].filter(Boolean).join(' ')}
+              className={cn(
+                className,
+                'text-blue-600 dark:text-blue-400 hover:underline break-words'
+              )}
             >
               {children}
             </a>
           ),
+          p: ({children, className, ...rest}) => (
+            <p {...rest} className={cn(className, 'break-words')}>
+              {children}
+            </p>
+          ),
+          img: ({className, alt, ...rest}) => (
+            <img
+              {...rest}
+              alt={typeof alt === 'string' ? alt : ''}
+              className={cn(className, 'max-w-full h-auto')}
+            />
+          ),
+          pre: ({children, className, ...rest}) => (
+            <pre
+              {...rest}
+              className={cn(className, 'w-full max-w-full overflow-x-auto whitespace-pre-wrap break-words')}
+            >
+              {children}
+            </pre>
+          ),
+          table: ({children, className, ...rest}) => (
+            <div className="w-full overflow-x-auto">
+              <table
+                {...rest}
+                className={cn(className, 'w-full max-w-full table-auto')}
+              >
+                {children}
+              </table>
+            </div>
+          ),
+          th: ({children, className, ...rest}) => (
+            <th {...rest} className={cn(className, 'break-words')}>
+              {children}
+            </th>
+          ),
+          td: ({children, className, ...rest}) => (
+            <td {...rest} className={cn(className, 'break-words')}>
+              {children}
+            </td>
+          ),
+          li: ({children, className, ...rest}) => (
+            <li {...rest} className={cn(className, 'break-words')}>
+              {children}
+            </li>
+          ),
           code: ({children, className, ...rest}) => {
             const defaultView = (
-              <code {...rest} className={className}>
+              <code
+                {...rest}
+                className={cn(className, 'break-words whitespace-pre-wrap')}
+              >
                 {children}
               </code>
             );
