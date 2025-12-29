@@ -7,7 +7,7 @@ import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react'
 import { useQuery } from '@tanstack/react-query'
 //
 import type React from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import type { MentionUser } from '@/domains/workspaces'
@@ -32,6 +32,36 @@ const initial = [
   'Mention example: @alice (plugin placeholder)',
 ].join('\n')
 
+export type MarkdownEditorHandle = {
+  addFiles: (files: File[]) => void
+  focus: () => void
+}
+
+export type MarkdownEditorProps = {
+  value?: string
+  onChange?: (md: string) => void
+  onKeyDown?: (e: React.KeyboardEvent) => void
+  onImagesPasted?: (files: File[]) => void
+  onFilesAdded?: (files: File[]) => void
+  onUploadFiles?: (files: File[]) => Promise<{ id: string; name: string }[]>
+  /**
+   * Controls what happens when the user drops files onto the editor surface.
+   * - 'inline' (default): upload + insert `ssImage`/`fileTag` nodes into the editor when possible.
+   * - 'attachments': do NOT insert into the editor; instead call `onFilesAdded` so the host can manage attachments UI.
+   */
+  fileHandlingMode?: 'inline' | 'attachments'
+  disabled?: boolean
+  editable?: boolean
+  className?: string
+  minHeight?: number | string
+  maxHeight?: number | string
+  ghostMessage?: string
+  placeholder?: string
+  workspaceId?: string
+  threadId?: string
+  enableMentions?: boolean
+}
+
 function EditorInner({
   value,
   onChange: _onChange,
@@ -39,6 +69,7 @@ function EditorInner({
   onImagesPasted: _onImagesPasted,
   onFilesAdded: _onFilesAdded,
   onUploadFiles: _onUploadFiles,
+  fileHandlingMode = 'inline',
   disabled,
   editable,
   className,
@@ -48,22 +79,25 @@ function EditorInner({
   placeholder,
   workspaceId,
   enableMentions,
+  editorHandleRef,
 }: {
-  value?: string
-  onChange?: (md: string) => void
+  value?: MarkdownEditorProps['value']
+  onChange?: MarkdownEditorProps['onChange']
   onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>
-  onImagesPasted?: (files: File[]) => void
-  onFilesAdded?: (files: File[]) => void
-  onUploadFiles?: (files: File[]) => Promise<{ id: string; name: string }[]>
-  disabled?: boolean
-  editable?: boolean
-  className?: string
-  minHeight?: number | string
-  maxHeight?: number | string
-  ghostMessage?: string
-  placeholder?: string
-  workspaceId?: string
-  enableMentions?: boolean
+  onImagesPasted?: MarkdownEditorProps['onImagesPasted']
+  onFilesAdded?: MarkdownEditorProps['onFilesAdded']
+  onUploadFiles?: MarkdownEditorProps['onUploadFiles']
+  fileHandlingMode?: MarkdownEditorProps['fileHandlingMode']
+  disabled?: MarkdownEditorProps['disabled']
+  editable?: MarkdownEditorProps['editable']
+  className?: MarkdownEditorProps['className']
+  minHeight?: MarkdownEditorProps['minHeight']
+  maxHeight?: MarkdownEditorProps['maxHeight']
+  ghostMessage?: MarkdownEditorProps['ghostMessage']
+  placeholder?: MarkdownEditorProps['placeholder']
+  workspaceId?: MarkdownEditorProps['workspaceId']
+  enableMentions?: MarkdownEditorProps['enableMentions']
+  editorHandleRef?: React.ForwardedRef<MarkdownEditorHandle>
 }) {
   const initialValueRef = useRef(value ?? initial)
   const isEditable = (editable ?? (disabled != null ? !disabled : true)) === true
@@ -84,10 +118,14 @@ function EditorInner({
   const [mentionCoords, setMentionCoords] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
   const [mentionIndex, setMentionIndex] = useState(0)
 
-  const { data: usersData = [] } = useQuery({
+  const {
+    data: usersData = [],
+    isLoading: isUsersLoading,
+    isFetching: isUsersFetching,
+  } = useQuery({
     ...taggableUsersOptions(workspaceId || ''),
     enabled: !!enableMentions && !!workspaceId && (mentionOpen || (mentionQuery ?? '').length > 0),
-  }) as unknown as { data: MentionUser[] }
+  }) as unknown as { data: MentionUser[]; isLoading: boolean; isFetching: boolean }
 
   const mentionCandidates = useMemo(() => {
     if (!enableMentions) return [] as MentionUser[]
@@ -208,51 +246,95 @@ function EditorInner({
     }
   }
 
-  function handleFiles(files: File[]) {
-    if (!files || files.length === 0) return
-    const isSingleImageAndFocused = hasFocus && files.length === 1 && files[0].type.startsWith('image/')
+  async function uploadSingleFile(file: File): Promise<{ id: string; name: string } | null> {
+    if (!_onUploadFiles) return null
+    try {
+      const res = await _onUploadFiles([file])
+      if (res && res[0]) return { id: res[0].id, name: res[0].name || file.name || 'file' }
+      return null
+    } catch {
+      return null
+    }
+  }
 
-    if (isSingleImageAndFocused) {
-      ;(async () => {
-        const file = files[0]
+  function insertTextAtSelection(view: EditorView, text: string) {
+    const { from, to } = view.state.selection
+    const tr = view.state.tr.insertText(text, from, to)
+    view.dispatch(tr.scrollIntoView())
+  }
+
+  function insertNodeAtSelection(view: EditorView, node: any) {
+    const { from, to } = view.state.selection
+    const tr = view.state.tr.replaceWith(from, to, node)
+    view.dispatch(tr.scrollIntoView())
+  }
+
+  async function insertUploadedFilesIntoEditor(files: File[]) {
+    const view = viewRef.current
+    if (!isEditable || !view) return false
+
+    try {
+      view.focus()
+    } catch {
+      /* ignore focus errors */
+    }
+
+    for (const file of files) {
+      const isImage = file.type.startsWith('image/')
+      const uploaded = await uploadSingleFile(file)
+      const id = uploaded?.id ?? 'local'
+      const name = uploaded?.name ?? (file.name || (isImage ? 'image' : 'file'))
+
+      if (isImage) {
         const dims = await getImageDimensions(file)
         const width = dims?.width ?? 500
         const height = dims?.height ?? 500
-        let id = 'local'
-        let name = file.name || 'image'
         try {
-          if (_onUploadFiles) {
-            const res = await _onUploadFiles([file])
-            if (res && res[0]) {
-              id = res[0].id
-              name = res[0].name || name
-            }
+          const type = (view.state.schema.nodes as any)['ssImage']
+          if (type) {
+            const node = type.create({ fileId: id, alt: name, w: width, h: height })
+            insertNodeAtSelection(view, node)
+            insertTextAtSelection(view, ' ')
+          } else {
+            insertTextAtSelection(view, `![${name}](ss-file:${id}?w=${width}&h=${height}) `)
           }
         } catch {
-          // ignore upload errors; keep local placeholder id
+          /* ignore insert errors */
         }
+      } else {
         try {
-          const view = viewRef.current
-          if (view) {
-            const { from, to } = view.state.selection
-            const type = (view.state.schema.nodes as any)['ssImage']
-            if (type) {
-              const node = type.create({ fileId: id, alt: name, w: width, h: height })
-              const tr = view.state.tr.replaceWith(from, to, node)
-              view.dispatch(tr)
-            } else {
-              const tag = `![${name}](ss-file:${id}?w=${width}&h=${height})`
-              const tr = view.state.tr.insertText(tag, from, to)
-              view.dispatch(tr)
-            }
+          const type = (view.state.schema.nodes as any)['fileTag']
+          if (type) {
+            const node = type.create({ id, label: name })
+            insertNodeAtSelection(view, node)
+            insertTextAtSelection(view, ' ')
+          } else {
+            insertTextAtSelection(view, `[[file:${id}|${name}]] `)
           }
         } catch {
-          /* ignore inline insert errors */
+          /* ignore insert errors */
         }
-      })()
-      return
+      }
     }
 
+    return true
+  }
+
+  async function handleFiles(files: File[], opts?: { notifyHost?: boolean }) {
+    if (!files || files.length === 0) return
+    const notifyHost = opts?.notifyHost !== false
+
+    // If we can insert into the editor (focused/imperative add), prefer that over the local preview list.
+    // Note: callers (file picker) will focus the editor first via the imperative handle.
+    if (isEditable && viewRef.current && _onUploadFiles) {
+      const inserted = await insertUploadedFilesIntoEditor(files)
+      if (inserted) {
+        if (notifyHost && _onFilesAdded) _onFilesAdded(files)
+        return
+      }
+    }
+
+    // Fallback: local-only attachment previews
     const items = files.map((f) => {
       const isImage = f.type.startsWith('image/')
       const url = isImage ? URL.createObjectURL(f) : ''
@@ -262,8 +344,26 @@ function EditorInner({
     })
 
     setAttachments((prev) => [...prev, ...items])
-    if (_onFilesAdded) _onFilesAdded(files)
+    if (notifyHost && _onFilesAdded) _onFilesAdded(files)
   }
+
+  useImperativeHandle(
+    editorHandleRef ?? null,
+    () => ({
+      addFiles: (files: File[]) => {
+        void handleFiles(files)
+      },
+      focus: () => {
+        try {
+          viewRef.current?.focus()
+        } catch {
+          /* ignore focus errors */
+        }
+      },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isEditable],
+  )
 
   return (
     <div
@@ -337,7 +437,11 @@ function EditorInner({
           e.preventDefault(); e.stopPropagation();
           setIsDragging(false)
           const filesArray = Array.from(e.dataTransfer.files)
-          handleFiles(filesArray)
+          if (fileHandlingMode === 'attachments' && _onFilesAdded) {
+            _onFilesAdded(filesArray)
+            return
+          }
+          void handleFiles(filesArray)
         } catch (_err) {
           // ignore drop errors
         }
@@ -355,11 +459,10 @@ function EditorInner({
           }
           if (imageFiles.length > 0) {
             // show inline previews immediately and forward to host for upload
-            handleFiles(imageFiles)
+            void handleFiles(imageFiles, { notifyHost: false })
             e.preventDefault()
             e.stopPropagation()
-            if (_onFilesAdded) _onFilesAdded(imageFiles)
-            else _onImagesPasted?.(imageFiles)
+            _onImagesPasted?.(imageFiles)
           }
         } catch {
           // no-op on paste errors
@@ -396,7 +499,9 @@ function EditorInner({
               role="dialog" aria-label="User mentions"
             >
               <ul className="max-h-60 overflow-auto" role="listbox">
-                {mentionCandidates.length === 0 ? (
+                {mentionCandidates.length === 0 && (isUsersLoading || isUsersFetching) ? (
+                  <li className="px-3 py-2 text-sm text-muted-foreground">Loading users…</li>
+                ) : mentionCandidates.length === 0 ? (
                   <li className="px-3 py-2 text-sm text-muted-foreground">No users</li>
                 ) : (
                   mentionCandidates.map((u, i) => (
@@ -513,30 +618,14 @@ function EditorInner({
   }
 }
 
-export function MarkdownEditor(props: {
-  value?: string
-  onChange?: (md: string) => void
-  onKeyDown?: (e: React.KeyboardEvent) => void
-  onImagesPasted?: (files: File[]) => void
-  onFilesAdded?: (files: File[]) => void
-  onUploadFiles?: (files: File[]) => Promise<{ id: string; name: string }[]>
-  disabled?: boolean
-  editable?: boolean
-  className?: string
-  minHeight?: number | string
-  maxHeight?: number | string
-  ghostMessage?: string
-  placeholder?: string
-  workspaceId?: string
-  threadId?: string
-  enableMentions?: boolean
-}) {
+export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>((props, ref) => {
   return (
     <MilkdownProvider>
-      <EditorInner {...props} />
+      <EditorInner {...props} editorHandleRef={ref} />
     </MilkdownProvider>
   )
-}
+})
+MarkdownEditor.displayName = 'MarkdownEditor'
 
 export default MarkdownEditor
 

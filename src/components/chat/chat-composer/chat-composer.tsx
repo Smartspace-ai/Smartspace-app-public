@@ -1,18 +1,22 @@
 'use client';
-import { Button } from '@/components/ui/button';
-import { useSidebar } from '@/components/ui/sidebar';
-import { useFileMutations } from '@/hooks/use-files';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useWorkspaceThread } from '@/hooks/use-workspace-thread';
-import { Workspace } from '@/models/workspace';
-import { ChatVariablesForm } from "@/ui/chat-variables";
+import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowBigUp, Check, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Maximize2, Minimize2, Paperclip, Presentation, X } from 'lucide-react';
-import type React from 'react';
+import type * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { FileInfo } from '../../../models/file';
 import { toast } from 'sonner';
+
+import { FileInfo } from '@/domains/files/model';
+import { useFileMutations } from '@/domains/files/mutations';
+import { threadDetailOptions } from '@/domains/threads/queries';
+import { Workspace } from '@/domains/workspaces/model';
+
+import { ChatVariablesForm } from "@/ui/chat-variables";
+
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
+import { Button } from '@/shared/ui/mui-compat/button';
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 // Utility function to get file type icon
 const getFileIcon = (fileName: string, fileType: string) => {
@@ -105,12 +109,15 @@ export default function ChatComposer({
   const [filePreviewUrls, setFilePreviewUrls] = useState<
     { url: string; isImage: boolean; name: string }[]
   >([]);
-  const { uploadFilesMutation } = useFileMutations();
+  const { uploadFilesMutation } = useFileMutations({ workspaceId: workspace?.id, threadId });
   const [variables, setVariables] = useState<Record<string, any>|null>(null);
   const MAX_FILES = 20;
 
   const prevUrlsRef = useRef<string[]>([]);
-  const {data: thread} = useWorkspaceThread({workspaceId: workspace?.id, threadId: threadId})
+  const { data: _thread } = useQuery({
+    ...threadDetailOptions({ workspaceId: workspace?.id ?? '', threadId: threadId ?? '' }),
+    enabled: !!workspace?.id && !!threadId,
+  });
   const isMobile = useIsMobile();
   const { leftOpen, rightOpen } = useSidebar();
 
@@ -527,7 +534,7 @@ export default function ChatComposer({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 absolute top-2 right-2 text-muted-foreground hover:text-foreground"
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setIsFullscreen(false);

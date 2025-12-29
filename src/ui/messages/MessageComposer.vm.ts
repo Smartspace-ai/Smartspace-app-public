@@ -1,6 +1,5 @@
 'use client';
 
-import type React from 'react';
 import { useMemo, useState } from 'react';
 
 import { useSendMessage } from '@/domains/messages/mutations';
@@ -18,9 +17,12 @@ import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 /** Public shape exported to the UI component */
 export type MessageComposerVm = ReturnType<typeof useMessageComposerVm>;
 
-export type MessageComposerVmProps = void; // no inbound props; VM owns its state
+export type MessageComposerVmProps = {
+  hasAttachments?: boolean;
+  isUploadingFiles?: boolean;
+}; // optional inbound props for attachments-owned-by-UI
 
-export function useMessageComposerVm() {
+export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
   const { workspaceId, threadId } = useRouteIds();
   const [isDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -35,40 +37,40 @@ export function useMessageComposerVm() {
   const { data: workspace } = useWorkspace(workspaceId);
   const { data: thread } = useThread({ workspaceId, threadId });
 
-  const isUploadingFiles = false;
+  const isUploadingFiles = props.isUploadingFiles ?? false;
 
   // Expand affordance handled by editor styling; keep default false
 
   /** Derived: can we send? */
   const sendDisabled = useMemo(() => {
-    const nothingTyped = !newMessage.trim();
+    const nothingToSend = !newMessage.trim() && !props.hasAttachments;
     const flowBlocked = !!thread?.isFlowRunning;
-    return isUploadingFiles || flowBlocked || nothingTyped;
-  }, [ isUploadingFiles, thread?.isFlowRunning, newMessage]);
+    return isUploadingFiles || flowBlocked || nothingToSend;
+  }, [isUploadingFiles, thread?.isFlowRunning, newMessage, props.hasAttachments]);
 
   // Send message
   const sendMessage = useSendMessage();
 
-  const internalSend = () => {
+  const internalSend = (files?: { id: string; name: string }[]) => {
     if (!workspaceId || !threadId) return;
     const contentList = newMessage.trim()
       ? [{ text: newMessage.trim(), image: undefined }]
       : undefined;
-    sendMessage.mutate({ workspaceId, threadId, contentList, files: undefined});
+    sendMessage.mutate({ workspaceId, threadId, contentList, files });
     setNewMessage('');
   };
   /** Unified "Send" */
-  const sendNow = () => {
+  const sendNow = (files?: { id: string; name: string }[]) => {
     if (sendDisabled) return;
-    internalSend();
+    internalSend(files);
   };
 
-  const handleSendMessage = () => sendNow();
+  const handleSendMessage = (files?: { id: string; name: string }[]) => sendNow(files);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent, files?: { id: string; name: string }[]) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (!sendDisabled) sendNow();
+      if (!sendDisabled) sendNow(files);
     }
   };
 

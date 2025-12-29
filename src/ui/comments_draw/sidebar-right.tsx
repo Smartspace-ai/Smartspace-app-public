@@ -245,6 +245,8 @@ export function SidebarRight() {
                   onChange={(md) => setThreadComment({ plain: md, withMentions: md })}
                   enableMentions
                   disabled={isAddingComment}
+                  workspaceId={workspaceId}
+                  threadId={threadId}
                   className="md-editor--bare text-sm pr-28 pb-12"
                   minHeight={120}
                   placeholder="Type a comment..."
