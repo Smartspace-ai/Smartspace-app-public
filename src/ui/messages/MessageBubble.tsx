@@ -136,9 +136,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
           </div>
         )}
 
-        {sources.map((source, idx) => (
-          <ChatMessageSources key={idx} source={source}  />
-        ))}
+        <ChatMessageSources sources={sources} />
       </div>
     </div>
   );

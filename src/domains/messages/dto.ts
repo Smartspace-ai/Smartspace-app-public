@@ -42,9 +42,11 @@ export type TMessagesEnvelopeDto = z.infer<typeof MessagesEnvelopeDto>;
 
 export const MessageResponseSourceDto = z.object({
   index: z.number(),
-  uri: z.string(),
-  name: z.string().nullish(),
-  sourceType: z.nativeEnum(MessageResponseSourceType).nullish(),
+  datasetItemId: z.string().optional(),
+  containerItemId: z.string().nullish(),
+  flowRunId: z.string().optional(),
+  file: FileInfoDto.optional(),
+  sourceType: z.nativeEnum(MessageResponseSourceType),
 });
 
 

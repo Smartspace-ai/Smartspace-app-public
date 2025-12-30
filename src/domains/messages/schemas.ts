@@ -6,11 +6,13 @@ import { FileInfoSchema } from '../files/schemas';
 
 
 // MessageResponseSource schema
-export const MessageResponseSourceSchema = z.object ({
+export const MessageResponseSourceSchema = z.object({
   index: z.number(),
-  uri: z.string(),
-  name: z.string().nullish(),
-  sourceType: z.nativeEnum(MessageResponseSourceType).nullish(),
+  datasetItemId: z.string().optional(),
+  containerItemId: z.string().nullish(),
+  flowRunId: z.string().optional(),
+  file: FileInfoSchema.optional(),
+  sourceType: z.nativeEnum(MessageResponseSourceType),
 });
 
 // MessageResponse schema
