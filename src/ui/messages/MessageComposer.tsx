@@ -399,7 +399,7 @@ export default function MessageComposer() {
                     disabled={disabled}
                     aria-label="Upload files"
                   >
-                    <Paperclip className="h-5 w-5" strokeWidth={2.5} />
+                    <Paperclip className="h-5 w-5 text-muted-foreground/70" strokeWidth={2} />
                   </IconButton>
                 )}
 
@@ -478,7 +478,7 @@ export default function MessageComposer() {
                         disabled={disabled}
                         aria-label="Upload files"
                       >
-                        <Paperclip className="h-5 w-5" strokeWidth={2.5} />
+                        <Paperclip className="h-5 w-5 text-muted-foreground/70" strokeWidth={2} />
                       </IconButton>
                     )}
                     <IconButton
@@ -506,9 +506,9 @@ export default function MessageComposer() {
                   onClick={handlePickFilesClick}
                   disabled={disabled}
                   aria-label="Upload files"
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground/70 hover:text-muted-foreground"
                 >
-                  <Paperclip className="h-5 w-5" strokeWidth={2.5} />
+                  <Paperclip className="h-5 w-5" strokeWidth={2} />
                 </IconButton>
               )}
             </div>

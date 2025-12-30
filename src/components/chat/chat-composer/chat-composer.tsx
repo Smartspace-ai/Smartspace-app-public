@@ -406,11 +406,11 @@ export default function ChatComposer({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground self-end"
+                    className="h-8 w-8 text-muted-foreground/70 hover:text-muted-foreground self-end"
                     disabled={disabled || isUploadingFiles}
                     onClick={handlePaperclipClick}
                   >
-                    <Paperclip className="h-4 w-4" />
+                    <Paperclip className="h-4 w-4 opacity-80" strokeWidth={2} />
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -593,11 +593,11 @@ export default function ChatComposer({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      className="h-8 w-8 text-muted-foreground/70 hover:text-muted-foreground"
                       disabled={disabled || isUploadingFiles}
                       onClick={handlePaperclipClick}
                     >
-                      <Paperclip className="h-4 w-4" />
+                      <Paperclip className="h-4 w-4 opacity-80" strokeWidth={2} />
                       <input
                         type="file"
                         ref={fileInputRef}
@@ -636,11 +636,11 @@ export default function ChatComposer({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                className="h-7 w-7 text-muted-foreground/70 hover:text-muted-foreground"
                 disabled={disabled || isUploadingFiles}
                 onClick={handlePaperclipClick}
               >
-                <Paperclip className="h-4 w-4" />
+                <Paperclip className="h-4 w-4 opacity-80" strokeWidth={2} />
                 <input
                   type="file"
                   ref={fileInputRef}

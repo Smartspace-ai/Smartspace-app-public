@@ -135,14 +135,14 @@ module.exports = {
   overrides: [
     // TypeScript source
     {
-      files: ['src/**/*.{ts,tsx}'],
+      files: ['src/**/*.{ts,tsx}', 'theme/**/*.{ts,tsx}'],
       extends: ['plugin:@nx/typescript'],
       rules: {},
     },
 
     // JavaScript source
     {
-      files: ['src/**/*.{js,jsx}'],
+      files: ['src/**/*.{js,jsx}', 'theme/**/*.{js,jsx}'],
       extends: ['plugin:@nx/javascript'],
       rules: {},
     },
