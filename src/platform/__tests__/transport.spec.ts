@@ -12,6 +12,8 @@ vi.mock('@/platform/auth/msalClient', () => ({
   msalInstance: {
     acquireTokenSilent: vi.fn(),
     loginRedirect: vi.fn(),
+    getActiveAccount: vi.fn(() => null),
+    getAllAccounts: vi.fn(() => []),
   },
 }));
 
@@ -74,7 +76,7 @@ describe('transport request interceptor', () => {
     const cfg = await runInterceptor({ headers: {} });
     const headers = cfg.headers instanceof AxiosHeaders ? cfg.headers : new AxiosHeaders(cfg.headers);
     expect(headers.get('Authorization')).toBe('Bearer msal');
-    expect(msalInstance.acquireTokenSilent).toHaveBeenCalledWith({ scopes: ['a', 'b'] });
+    expect(msalInstance.acquireTokenSilent).toHaveBeenCalledWith(expect.objectContaining({ scopes: ['a', 'b'] }));
   });
 
   it('msal branch triggers loginRedirect on InteractionRequiredAuthError', async () => {

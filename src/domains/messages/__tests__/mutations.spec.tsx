@@ -3,6 +3,11 @@ import { renderHook } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/platform/auth/session', () => ({
+  useUserId: () => 'test-user',
+  useUserDisplayName: () => 'Test User',
+}));
+
 import { useAddInputToMessage, useSendMessage } from '@/domains/messages/mutations';
 import { messagesKeys } from '@/domains/messages/queryKeys';
 import * as service from '@/domains/messages/service';
