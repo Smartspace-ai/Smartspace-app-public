@@ -18,8 +18,18 @@ export const naaInit = () => {
         // ignore – app may already be initialized by host
       }
       const clientId = import.meta.env.VITE_CLIENT_ID as string;
-      const tenantId = import.meta.env.VITE_TENANT_ID as string;
-      const authority = `https://login.microsoftonline.com/${tenantId}`;
+      const authorityFromEnv = import.meta.env.VITE_CLIENT_AUTHORITY as string | undefined;
+      const tenantId = import.meta.env.VITE_TENANT_ID as string | undefined;
+      const authority =
+        (typeof authorityFromEnv === 'string' && authorityFromEnv.length)
+          ? authorityFromEnv
+          : (typeof tenantId === 'string' && tenantId.length)
+            ? `https://login.microsoftonline.com/${tenantId}`
+            : 'https://login.microsoftonline.com/organizations';
+
+      if (!clientId || typeof clientId !== 'string') {
+        throw new Error('VITE_CLIENT_ID is required for Teams/NAA auth');
+      }
       const config: Configuration = {
         auth: {
           clientId,

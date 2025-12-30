@@ -1,6 +1,6 @@
 {
-    "appId": 
-    "baseUrl": 
-    "appName": 
-    "version":
-  }                                                                        
+  "appId": "df2f258e-111c-4c53-99b7-5ab2610af539",
+  "baseUrl": "https://stpublicui.z8.web.core.windows.net",
+  "appName": "SmartSpace Dev",
+  "version": "1.0.0"
+}                                                                        
