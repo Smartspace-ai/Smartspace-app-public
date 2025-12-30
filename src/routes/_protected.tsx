@@ -7,6 +7,25 @@ import { isInTeams } from '@/platform/auth/utils';
 import { ProtectedErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
 import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
 
+function setTeamsAuthFailed(flag: boolean) {
+  try {
+    if (flag) sessionStorage.setItem('teamsAuthFailed', '1');
+    else sessionStorage.removeItem('teamsAuthFailed');
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function isRouterRedirectLike(e: unknown): boolean {
+  // TanStack router redirects often surface as a Response-like object with extra fields.
+  if (!e || typeof e !== 'object') return false;
+  const any = e as any;
+  return (
+    typeof any?.statusCode === 'number' &&
+    (typeof any?.to === 'string' || typeof any?.href === 'string')
+  );
+}
+
 export const Route = createFileRoute('/_protected')({
   // Runs on navigation (and on intent prefetch if enabled).
   // If you find redirects during hover annoying, disable preload on links into /_protected.
@@ -63,9 +82,11 @@ export const Route = createFileRoute('/_protected')({
           try {
             const authForToken = createAuthAdapter();
             await authForToken.getAccessToken({ silentOnly: true });
+            if (isInTeams()) setTeamsAuthFailed(false);
           } catch {
             // In Teams, redirecting to /login can cause an infinite loop when NAA/MSAL
             // fails with redirects (e.g. 307). Show a stable error screen instead.
+            if (isInTeams()) setTeamsAuthFailed(true);
             throw redirect({
               to: isInTeams() ? '/auth-failed' : '/login',
               search: { redirect: location.href },
@@ -80,6 +101,8 @@ export const Route = createFileRoute('/_protected')({
 
       await inFlightAuthCheck;
     } catch (error) {
+      // If we are already redirecting, don't log or rewrite the redirect.
+      if (isRouterRedirectLike(error)) throw error;
       lastAuthOkAt = 0;
       // eslint-disable-next-line no-console
       console.error('Authentication failed:', error);
