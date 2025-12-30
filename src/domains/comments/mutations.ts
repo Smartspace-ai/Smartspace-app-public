@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { useUserId } from '@/platform/auth/session';
+import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 
 import type { Comment, MentionUser } from './model';
 import { commentsKeys } from './queryKeys';
@@ -11,6 +11,7 @@ import { addComment } from './service';
 export function useAddComment(threadId: string) {
   const queryClient = useQueryClient();
   const activeUserId = useUserId();
+  const activeUserName = useUserDisplayName();
 
   type AddCommentVariables = {
     threadId: string;
@@ -41,7 +42,7 @@ export function useAddComment(threadId: string) {
         id: tempId,
         content,
         createdAt: new Date(),
-        createdBy: activeUserId || 'You',
+        createdBy: activeUserName || 'You',
         createdByUserId: activeUserId ?? '',
         mentionedUsers: mentionedUsers ?? [],
         messageThreadId: threadId,

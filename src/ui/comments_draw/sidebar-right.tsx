@@ -1,5 +1,3 @@
- 
- 
 import Skeleton from '@mui/material/Skeleton';
 import { ArrowBigUp, MessageSquare } from 'lucide-react';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
@@ -8,33 +6,19 @@ import { toast } from 'sonner';
 import type { Comment } from '@/domains/comments';
 import { useAddComment } from '@/domains/comments/mutations';
 import { useComments } from '@/domains/comments/queries';
- 
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from '@/shared/ui/mui-compat/breadcrumb';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from '@/shared/ui/mui-compat/breadcrumb';
 import { Button as UIButton } from '@/shared/ui/mui-compat/button';
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-} from '@/shared/ui/mui-compat/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/shared/ui/mui-compat/sidebar';
+import { isDraftThreadId } from '@/shared/utils/threadId';
 
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 
- 
- 
- 
- 
 import { getInitials } from '../../shared/utils/initials';
 import { parseDateTime } from '../../shared/utils/parseDateTime';
 
@@ -88,6 +72,7 @@ function renderContentWithMentions(text: string, users?: Array<{ displayName?: s
 
 export function SidebarRight() {
   const { threadId, workspaceId } = useRouteIds();
+  const isDraft = isDraftThreadId(threadId);
   const { data: comments, isLoading, isError: commentsError } = useComments(threadId);
   const { mutateAsync: addCommentAsync, isPending: isAddingComment } = useAddComment(threadId);
   const commentsEndRef = useRef<HTMLDivElement>(null);
@@ -97,6 +82,7 @@ export function SidebarRight() {
   const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isAddingComment) return;
+    if (isDraft) return;
     if (!threadComment.plain.trim()) return;
 
     if (threadComment.plain.length > MAX_COMMENT_LENGTH) {
@@ -219,7 +205,7 @@ export function SidebarRight() {
                   value={threadComment.plain}
                   onChange={(md) => setThreadComment({ plain: md, withMentions: md })}
                   enableMentions
-                  disabled={isAddingComment}
+                  disabled={isAddingComment || isDraft}
                   workspaceId={workspaceId}
                   threadId={threadId}
                   className="md-editor--bare text-sm pr-12 pb-10"
@@ -234,7 +220,7 @@ export function SidebarRight() {
                   className={`h-9 w-9 rounded-full absolute bottom-1.5 right-1.5 
                     bg-primary hover:bg-primary/90 text-primary-foreground 
                     ${threadComment.plain.trim().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={threadComment.plain.trim().length === 0 || isAddingComment}
+                  disabled={threadComment.plain.trim().length === 0 || isAddingComment || isDraft}
                   aria-label="Post comment"
                 >
                   <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
@@ -246,7 +232,7 @@ export function SidebarRight() {
                   value={threadComment.plain}
                   onChange={(md) => setThreadComment({ plain: md, withMentions: md })}
                   enableMentions
-                  disabled={isAddingComment}
+                  disabled={isAddingComment || isDraft}
                   workspaceId={workspaceId}
                   threadId={threadId}
                   className="md-editor--bare text-sm pr-28 pb-12"
@@ -258,7 +244,7 @@ export function SidebarRight() {
                   type="submit"
                   variant="default"
                   className={`absolute bottom-2 right-2 ${threadComment.plain.trim().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={threadComment.plain.trim().length === 0 || isAddingComment}
+                  disabled={threadComment.plain.trim().length === 0 || isAddingComment || isDraft}
                 >
                   {isAddingComment ? (
                     <div className="flex items-center gap-2">

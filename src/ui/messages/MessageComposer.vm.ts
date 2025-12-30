@@ -10,6 +10,7 @@ import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
+import { isDraftThreadId } from '@/shared/utils/threadId';
 
 
 
@@ -27,6 +28,7 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
   const [isDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpand] = useState(false);
+  const isDraftThread = isDraftThreadId(threadId);
 
   // Message + attachments state (owned by VM)
   const [newMessage, setNewMessage] = useState('');
@@ -81,8 +83,9 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     handleKeyDown,
     handleSendMessage,
     isSending: sendMessage.isPending || !!thread?.isFlowRunning,
-    supportsFiles: workspace?.supportsFiles,
-    disabled:thread?.isFlowRunning,
+    supportsFiles: !!workspace?.supportsFiles && !isDraftThread,
+    disabled: thread?.isFlowRunning,
+    isDraftThread,
 
     // Thread/workspace context
     workspace,

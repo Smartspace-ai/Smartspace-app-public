@@ -24,7 +24,7 @@ describe('threads mutations', () => {
     const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
-    const spy = vi.spyOn(service, 'renameThread').mockResolvedValueOnce({} as any);
+    const spy = vi.spyOn(service, 'renameThread').mockResolvedValueOnce(undefined as any);
     const { result } = renderHook(() => useRenameThread('t1'), { wrapper });
     await result.current.mutateAsync('New');
     expect(spy).toHaveBeenCalledWith('t1', 'New');

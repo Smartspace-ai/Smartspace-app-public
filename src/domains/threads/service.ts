@@ -41,14 +41,20 @@ export async function setFavorite(
 export async function renameThread(
   threadId: string,
   name: string
-): Promise<MessageThread> {
-  const data = await apiParsed.put(MessageThreadDto, `/messagethreads/${threadId}/name`, name, { headers: { 'Content-Type': 'application/json' } });
-  return mapThreadDtoToModel(data);
+): Promise<void> {
+  // Backend may return 204 No Content. Avoid JSON parsing and don't require a DTO.
+  await apiParsed.put(z.any(), `/messagethreads/${threadId}/name`, name, {
+    headers: { 'Content-Type': 'application/json' },
+    responseType: 'text',
+  });
+  return;
 }
 
 // Delete a message thread by ID
-export async function deleteThread(threadId: string) {
-  return await apiParsed.del(z.any(), `/messagethreads/${threadId}`);
+export async function deleteThread(threadId: string): Promise<void> {
+  // Backend may return 204 No Content. Avoid JSON parsing.
+  await apiParsed.del(z.any(), `/messagethreads/${threadId}`, { responseType: 'text' });
+  return;
 }
 
 // Create a new message thread

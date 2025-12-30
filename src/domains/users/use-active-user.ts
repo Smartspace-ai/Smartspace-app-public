@@ -1,11 +1,12 @@
-import { msalInstance } from '@/platform/auth/msalClient';
+import { useMsal } from '@azure/msal-react';
 
 import { useTeams } from '@/app/providers';
 
 export const useActiveUser = () => {
-  const account = msalInstance.getActiveAccount();
+  const { instance, accounts } = useMsal();
   const { isInTeams, teamsUser } = useTeams();
 
+  const account = instance.getActiveAccount() ?? accounts?.[0] ?? null;
   if (account) {
     return {
       name: account.name ?? 'User',

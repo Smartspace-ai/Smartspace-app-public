@@ -9,6 +9,7 @@ import * as service from '@/domains/comments/service';
 
 vi.mock('@/platform/auth/session', () => ({
   useUserId: () => 'me-id',
+  useUserDisplayName: () => 'Me',
 }));
 
 describe('comments mutations', () => {

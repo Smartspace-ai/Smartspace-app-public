@@ -1,10 +1,11 @@
 // src/ui/threads/ThreadsList.tsx
 import Skeleton from '@mui/material/Skeleton';
-import { MessageSquare } from 'lucide-react';
+import { AlertTriangle, MessageSquare } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
+import { Button } from '@/shared/ui/mui-compat/button';
 
 import ThreadItem from './ThreadItem';
 import { useThreadsListVm } from './ThreadsList.vm';
@@ -41,13 +42,37 @@ function EmptyThreadsState() {
   );
 }
 
+function ThreadsErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center h-full px-4">
+      <div className="rounded-full bg-destructive/10 p-3 mb-3">
+        <AlertTriangle className="h-6 w-6 text-destructive" />
+      </div>
+      <h3 className="text-sm font-medium text-gray-900 mb-1">Failed to load threads</h3>
+      <p className="text-xs text-gray-500 mb-4">Please check your connection and try again.</p>
+      <Button variant="outline" size="sm" onClick={onRetry}>
+        Retry
+      </Button>
+    </div>
+  );
+}
+
 // ThreadsList.tsx
 export default function ThreadsList() {
-    const { workspaceId } = useRouteIds();
-  const { threads, isInitialLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
+  const { workspaceId } = useRouteIds();
+  const {
+    threads,
+    isInitialLoading,
+    error,
+    refetch,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } =
     useThreadsListVm({ workspaceId, pageSize: 30 });
 
   if (isInitialLoading) return <ThreadsLoadingSkeleton />;
+  if (error && !threads.length) return <ThreadsErrorState onRetry={() => refetch()} />;
   if (!threads.length) return <EmptyThreadsState />;
 
   return (

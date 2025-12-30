@@ -63,6 +63,8 @@ function getFileIcon(fileName: string) {
 export default function MessageComposer() {
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Milkdown isn't fully controlled by `value`, so we force-remount the editor after sending to guarantee a visual clear.
+  const [editorKey, setEditorKey] = useState(0);
 
   type AttachmentItem = {
     key: string;
@@ -219,8 +221,22 @@ export default function MessageComposer() {
   };
 
   const handleSendMessageAndClear = () => {
+    if (sendDisabled) return;
     handleSendMessage(uploadedAttachments);
     handleClearAttachments();
+    setEditorKey((k) => k + 1);
+  };
+
+  const handleComposerKeyDown = (e: React.KeyboardEvent) => {
+    // Send on Enter (no Shift) and then clear both attachments + editor UI state.
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (sendDisabled) return;
+      handleSendMessageAndClear();
+      return;
+    }
+    // Preserve any other key handling from the VM (currently a no-op outside Enter).
+    handleKeyDown(e, uploadedAttachments);
   };
 
   return (
@@ -333,10 +349,11 @@ export default function MessageComposer() {
               <div className="flex items-center gap-2 px-3 py-2">
                 <div className="relative flex-1 px-2 py-2">
                   <MarkdownEditor
+                    key={`composer-md-${editorKey}`}
                     ref={editorRef}
                     value={newMessage}
                     onChange={(md) => setNewMessage(md)}
-                    onKeyDown={(e) => handleKeyDown(e, uploadedAttachments)}
+                    onKeyDown={handleComposerKeyDown}
                     onFilesAdded={(files) => { void addAttachments(files); }}
                     onUploadFiles={onUploadFiles}
                     fileHandlingMode="attachments"
@@ -383,10 +400,11 @@ export default function MessageComposer() {
             ) : (
               <div className="relative px-5 py-2">
                 <MarkdownEditor
+                  key={`composer-md-${editorKey}`}
                   ref={editorRef}
                   value={newMessage}
                   onChange={(md) => setNewMessage(md)}
-                  onKeyDown={(e) => handleKeyDown(e, uploadedAttachments)}
+                  onKeyDown={handleComposerKeyDown}
                   onFilesAdded={(files) => { void addAttachments(files); }}
                   onUploadFiles={onUploadFiles}
                   fileHandlingMode="attachments"
@@ -423,10 +441,11 @@ export default function MessageComposer() {
                 <div className="flex flex-col h-full">
                   <div className="flex-1 p-4">
                     <MarkdownEditor
+                      key={`composer-md-${editorKey}`}
                       ref={editorRef}
                       value={newMessage}
                       onChange={(md) => setNewMessage(md)}
-                      onKeyDown={(e) => handleKeyDown(e, uploadedAttachments)}
+                      onKeyDown={handleComposerKeyDown}
                       onFilesAdded={(files) => { void addAttachments(files); }}
                       onUploadFiles={onUploadFiles}
                       fileHandlingMode="attachments"

@@ -3,8 +3,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { Message } from './model';
 import { messagesKeys } from './queryKeys';
 import { fetchMessages } from './service';
-
-const DEFAULT_MESSAGES_TAKE = 100;
+import { isDraftThreadId } from '@/shared/utils/threadId';
 
 export const messagesListOptions = (
   threadId: string,
@@ -16,7 +15,7 @@ export const messagesListOptions = (
     // message mutations (which write to messagesKeys.list(threadId)) working.
     // If opts changes (e.g. user clicks "Load full history"), we manually refetch.
     queryFn: async () =>
-      (await fetchMessages(threadId, opts ?? { take: DEFAULT_MESSAGES_TAKE })).reverse(),
+      (await fetchMessages(threadId, opts)).reverse(),
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -28,5 +27,11 @@ export function useMessages(
   threadId: string,
   opts?: { take?: number; skip?: number }
 ) {
-  return useQuery({ ...messagesListOptions(threadId, opts), enabled: !!threadId });
+  const isDraft = isDraftThreadId(threadId);
+  return useQuery({
+    ...messagesListOptions(threadId, opts),
+    enabled: !!threadId && !isDraft,
+    // For draft threads, we want a fast, non-loading empty state (no backend fetch).
+    initialData: isDraft ? [] : undefined,
+  });
 }

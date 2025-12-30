@@ -4,6 +4,8 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
 
+import { realtimeDebugLog } from './realtimeDebug';
+
 type RealtimeCtx = {
   connection?: HubConnection;
   subscribeToGroup(name: string): Promise<void>;
@@ -62,17 +64,31 @@ export function RealtimeProvider({
     if (isConnected()) return;
     if (startPromise.current) return startPromise.current;
 
+    realtimeDebugLog('ensureConnected(): starting connection', {
+      hubUrl,
+      state: connection.state,
+    });
+
     startPromise.current = connection.start().finally(() => {
       startPromise.current = null;
     });
     return startPromise.current;
-  }, [connection, isConnected]);
+  }, [connection, isConnected, hubUrl]);
 
   const invokeWithRetry = useCallback(
     async (method: 'joinGroup' | 'leaveGroup', groupName: string, attempt = 0): Promise<void> => {
-      if (!connection || !isConnected()) return; // lifecycle will re-join
+      if (!connection || !isConnected()) {
+        realtimeDebugLog(`${method}(): skipped (not connected)`, {
+          groupName,
+          attempt,
+          state: connection?.state,
+        });
+        return; // lifecycle will re-join
+      }
       try {
+        realtimeDebugLog(`${method}(): invoking`, { groupName, attempt });
         await connection.invoke(method, groupName);
+        realtimeDebugLog(`${method}(): success`, { groupName });
       } catch (err) {
         if (attempt < 3) {
           const delay = 300 * Math.pow(2, attempt) + Math.random() * 100;
@@ -87,11 +103,13 @@ export function RealtimeProvider({
   );
 
   const subscribeToGroup = useCallback(async (name: string) => {
+    realtimeDebugLog('subscribeToGroup()', { name });
     desiredGroups.current.add(name);
     await invokeWithRetry('joinGroup', name);
   }, [invokeWithRetry]);
 
   const unsubscribeFromGroup = useCallback(async (name: string) => {
+    realtimeDebugLog('unsubscribeFromGroup()', { name });
     desiredGroups.current.delete(name);
     await invokeWithRetry('leaveGroup', name);
   }, [invokeWithRetry]);
@@ -106,6 +124,8 @@ export function RealtimeProvider({
       return;
     }
 
+    realtimeDebugLog('building connection', { hubUrl, webSocketsOnly });
+
     const builder = new HubConnectionBuilder().withUrl(hubUrl, {
       accessTokenFactory: async () => {
         try { return await getAccessToken(scopes); } catch { return ''; }
@@ -117,11 +137,39 @@ export function RealtimeProvider({
 
     const conn = builder.build();
 
+    // lifecycle logs
+    conn.onclose?.((err) => {
+      realtimeDebugLog('onclose', {
+        state: conn.state,
+        connectionId: (conn as any)?.connectionId,
+        error: err ? String(err) : undefined,
+      });
+    });
+    conn.onreconnecting?.((err) => {
+      realtimeDebugLog('onreconnecting', {
+        state: conn.state,
+        connectionId: (conn as any)?.connectionId,
+        error: err ? String(err) : undefined,
+      });
+    });
+    conn.onreconnected?.((connectionId) => {
+      realtimeDebugLog('onreconnected', {
+        state: conn.state,
+        connectionId: connectionId ?? (conn as any)?.connectionId,
+      });
+    });
+
     // rejoin desired groups after reconnect
     const rejoin = async () => {
       if (conn.state !== HubConnectionState.Connected) return;
+      realtimeDebugLog('rejoin: connected, rejoining desired groups', {
+        count: desiredGroups.current.size,
+        groups: Array.from(desiredGroups.current),
+      });
       for (const g of desiredGroups.current) {
-        try { await conn.invoke('joinGroup', g); } catch {
+        try {
+          await conn.invoke('joinGroup', g);
+        } catch {
           console.error('Error joining group', g);
         }
       }
@@ -129,13 +177,27 @@ export function RealtimeProvider({
     conn.onreconnected(rejoin);
 
     // start
-    startPromise.current = conn.start().catch(err => {
-      console.error('Error starting realtime connection', err);
-    }).finally(() => { startPromise.current = null; });
+    startPromise.current = conn.start()
+      .then(() => {
+        realtimeDebugLog('connected', {
+          hubUrl,
+          state: conn.state,
+          connectionId: (conn as any)?.connectionId,
+        });
+      })
+      .catch(err => {
+        console.error('Error starting realtime connection', err);
+      })
+      .finally(() => { startPromise.current = null; });
     setConnection(conn);
 
     return () => {
       startPromise.current = null;
+      realtimeDebugLog('stopping connection', {
+        hubUrl,
+        state: conn.state,
+        connectionId: (conn as any)?.connectionId,
+      });
       conn.stop().catch(() => {
         console.error('Error stopping connection');
       });

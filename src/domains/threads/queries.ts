@@ -31,7 +31,7 @@ export const threadsListOptions = (
 ) =>
   queryOptions({
     queryKey: threadsKeys.list(workspaceId, opts),
-    queryFn: () => fetchThreads(workspaceId, opts ?? {}),
+    queryFn: () => (opts ? fetchThreads(workspaceId, opts) : fetchThreads(workspaceId)),
     refetchOnWindowFocus: false,
   });
 

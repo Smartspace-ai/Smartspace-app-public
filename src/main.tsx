@@ -1,5 +1,5 @@
 // src/main.tsx
-import { EventMessage } from '@azure/msal-browser';
+import { EventMessage, EventType } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { StrictMode } from 'react';
@@ -36,18 +36,49 @@ declare module '@tanstack/react-router' {
 (async () => {
   try {
     await msalInstance.initialize();
-    await msalInstance.handleRedirectPromise();
+    const redirectResult = await msalInstance.handleRedirectPromise();
 
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
-      msalInstance.setActiveAccount(accounts[0]);
+    const setActive = (account: any) => {
+      msalInstance.setActiveAccount(account);
+      try {
+        // Helps pick the right account on next load when multiple accounts are cached.
+        const id = account?.homeAccountId;
+        if (typeof id === 'string' && id.length) localStorage.setItem('msalActiveHomeAccountId', id);
+      } catch {
+        // ignore storage failures
+      }
+    };
+
+    // Prefer the account returned from redirect (most accurate), otherwise fall back.
+    if (redirectResult?.account) {
+      setActive(redirectResult.account);
+    } else {
+      const accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
+        let preferred: any = null;
+        try {
+          const saved = localStorage.getItem('msalActiveHomeAccountId');
+          preferred = saved ? accounts.find(a => a.homeAccountId === saved) : null;
+        } catch {
+          preferred = null;
+        }
+        setActive(preferred ?? accounts[0]);
+      }
     }
 
-    // optional: you can keep this for account changes
     msalInstance.addEventCallback((event: EventMessage) => {
-      const accountsNow = msalInstance.getAllAccounts();
-      if (accountsNow.length > 0) {
-        msalInstance.setActiveAccount(accountsNow[0]);
+      // Only update active account on events that actually carry an account.
+      // Avoid clobbering active account to "accounts[0]" when multiple accounts are cached.
+      if (
+        event.eventType === EventType.LOGIN_SUCCESS ||
+        event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS ||
+        event.eventType === EventType.SSO_SILENT_SUCCESS
+      ) {
+        const payload = event.payload as { account?: unknown } | null;
+        const account = (payload && typeof payload === 'object' && 'account' in payload)
+          ? (payload as any).account
+          : null;
+        if (account) setActive(account);
       }
     });
   } catch (e) {

@@ -58,3 +58,8 @@ export function useUserId() {
   const { session } = useAuth();
   return session?.accountId ?? 'anonymous';
 }
+
+export function useUserDisplayName() {
+  const { session } = useAuth();
+  return session?.displayName ?? 'You';
+}

@@ -8,6 +8,8 @@ import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
 import { messagesKeys } from './queryKeys';
 import { addInputToMessage, postMessage } from './service';
+import { isDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
+import { threadsKeys } from '@/domains/threads/queryKeys';
 
 type SendArgs = {
   workspaceId: string;
@@ -77,6 +79,13 @@ export function useSendMessage() {
 
       // start server call (streaming Subject)
       const subject = await postMessage({ workSpaceId: workspaceId, threadId, contentList, files, variables });
+
+      // If the message post succeeded, this thread is no longer "draft-only" even if the stream is empty.
+      if (isDraftThreadId(threadId)) {
+        unmarkDraftThreadId(threadId);
+        qc.invalidateQueries({ queryKey: threadsKeys.lists() });
+        qc.invalidateQueries({ queryKey: threadsKeys.details() });
+      }
 
       // subscribe to server stream: replace optimistic with real items / updates
       const sub = subject.subscribe({

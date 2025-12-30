@@ -39,16 +39,10 @@ describe('threads service', () => {
     spy.mockRestore();
   });
 
-  it('renameThread returns mapped thread', async () => {
-    const dto = {
-      id: 't3', createdAt: '2024-01-01', createdBy: 'u', createdByUserId: 'u', isFlowRunning: false,
-      lastUpdated: '2024-01-02', lastUpdatedAt: '2024-01-02', lastUpdatedByUserId: 'u', name: 'New', totalMessages: 2,
-      favorited: false, avatarName: null, workSpaceId: null,
-    };
+  it('renameThread calls put and returns void (API may return 204)', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const spy = vi.spyOn(apiParsed.apiParsed, 'put').mockResolvedValueOnce(dto as any);
-    const m = await renameThread('t3', 'New');
-    expect(m.name).toBe('New');
+    const spy = vi.spyOn(apiParsed.apiParsed, 'put').mockResolvedValueOnce(undefined as any);
+    await expect(renameThread('t3', 'New')).resolves.toBeUndefined();
     spy.mockRestore();
   });
 });

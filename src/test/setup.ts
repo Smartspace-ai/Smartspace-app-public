@@ -31,10 +31,13 @@ vi.mock('@microsoft/signalr', () => ({
     withAutomaticReconnect() { return this; }
     build() {
       return {
+        connectionId: 'test-connection-id',
         state: 'Connected',
         start: vi.fn(async () => undefined),
         stop: vi.fn(async () => undefined),
         onreconnected: vi.fn(),
+        onreconnecting: vi.fn(),
+        onclose: vi.fn(),
         invoke: vi.fn(async () => undefined),
         on: vi.fn(),
         off: vi.fn(),

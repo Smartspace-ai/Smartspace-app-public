@@ -2,6 +2,7 @@ import { defaultValueCtx, Editor, editorViewCtx, editorViewOptionsCtx, rootCtx }
 import { clipboard } from '@milkdown/plugin-clipboard'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { commonmark } from '@milkdown/preset-commonmark'
+import { Slice } from '@milkdown/prose/model'
 import type { EditorView } from '@milkdown/prose/view'
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react'
 import { useQuery } from '@tanstack/react-query'
@@ -35,6 +36,8 @@ const initial = [
 export type MarkdownEditorHandle = {
   addFiles: (files: File[]) => void
   focus: () => void
+  /** Clears the editor content (useful when host clears `value`, since Milkdown isn't fully controlled here). */
+  clear: () => void
 }
 
 export type MarkdownEditorProps = {
@@ -427,6 +430,30 @@ function EditorInner({
           viewRef.current?.focus()
         } catch {
           /* ignore focus errors */
+        }
+      },
+      clear: () => {
+        const view = viewRef.current
+        if (!view) return
+        try {
+          const emptyDoc = view.state.schema.topNodeType.createAndFill()
+          if (!emptyDoc) return
+          const slice = new Slice(emptyDoc.content, 0, 0)
+
+          // Replace the entire document content with the empty doc content.
+          // Positions can be a little tricky across PM versions, so we try a safe primary path with a fallback.
+          try {
+            const tr = view.state.tr.replace(0, view.state.doc.content.size, slice)
+            view.dispatch(tr.scrollIntoView())
+          } catch {
+            // Fallback: common "inside doc" range.
+            const from = 1
+            const to = Math.max(from, view.state.doc.content.size - 1)
+            const tr = view.state.tr.replace(from, to, slice)
+            view.dispatch(tr.scrollIntoView())
+          }
+        } catch {
+          /* ignore clear errors */
         }
       },
     }),

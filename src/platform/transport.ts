@@ -34,7 +34,8 @@ transport.interceptors.request.use(async (config) => {
   try {
     const raw = (window as any)?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES;
     const scopes = parseScopes(raw).filter(s => !s.includes('smartspaceapi.config.access'));
-    const res = await msalInstance.acquireTokenSilent({ scopes });
+    const account = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
+    const res = await msalInstance.acquireTokenSilent({ scopes, account: account ?? undefined });
     const accessToken = (res && 'accessToken' in res && res.accessToken) || null;
     if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
   } catch (error) {

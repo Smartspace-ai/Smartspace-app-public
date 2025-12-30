@@ -8,7 +8,16 @@ export function createMsalWebAdapter(): AuthAdapter {
   const ensureActive = async () => {
     const current = msalInstance.getActiveAccount();
     const all = msalInstance.getAllAccounts();
-    if (!current && all.length > 0) msalInstance.setActiveAccount(all[0]);
+    if (!current && all.length > 0) {
+      let preferred = all[0];
+      try {
+        const saved = localStorage.getItem('msalActiveHomeAccountId');
+        if (saved) preferred = all.find(a => a.homeAccountId === saved) ?? preferred;
+      } catch {
+        // ignore storage failures
+      }
+      msalInstance.setActiveAccount(preferred);
+    }
   };
 
   return {

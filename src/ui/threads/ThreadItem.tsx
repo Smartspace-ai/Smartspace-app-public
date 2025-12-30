@@ -11,6 +11,7 @@ import { Button } from '@/shared/ui/mui-compat/button';
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/shared/ui/mui-compat/dropdown-menu';
+import { isDraftThreadId } from '@/shared/utils/threadId';
 
 import { useThreadItemVm } from './ThreadItem.vm';
 import { ThreadRenameModal } from './ThreadRenameModal';
@@ -22,6 +23,7 @@ type Props = {
 export default function ThreadItem({ thread }: Props) {
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const isDraft = isDraftThreadId(thread.id);
 
   const { goToThread, toggleFavorite, remove, isRunning, isSetFavoritePending } =
     useThreadItemVm({ thread });
@@ -69,42 +71,44 @@ export default function ThreadItem({ thread }: Props) {
         </div>
       </div>
 
-      <DropdownMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 absolute right-1.5 top-1.5 p-0 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">More options</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 rounded-lg p-1 shadow-lg border-gray-100">
-          <DropdownMenuItem
-            className="text-xs py-1.5 px-2 rounded-md"
-            onClick={(e) => { e.preventDefault(); toggleFavorite(); setMenuOpen(false); }}
-          >
-            <Star className="mr-2 h-3.5 w-3.5 text-amber-400" />
-            <span>{thread.favorited ? 'Remove from favorites' : 'Add to favorites'}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-xs py-1.5 px-2 rounded-md"
-            onClick={(e) => { e.preventDefault(); setIsRenameOpen(true); }}
-          >
-            <Edit className="mr-2 h-3.5 w-3.5 text-gray-500" />
-            <span>Rename</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="my-1 bg-gray-100" />
-          <DropdownMenuItem
-            className="text-xs py-1.5 px-2 rounded-md text-red-500"
-            onClick={(e) => { e.preventDefault(); remove(); }}
-          >
-            <Trash2 className="mr-2 h-3.5 w-3.5" />
-            <span>Delete</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {!isDraft && (
+        <DropdownMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 absolute right-1.5 top-1.5 p-0 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">More options</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 rounded-lg p-1 shadow-lg border-gray-100">
+            <DropdownMenuItem
+              className="text-xs py-1.5 px-2 rounded-md"
+              onClick={(e) => { e.preventDefault(); toggleFavorite(); setMenuOpen(false); }}
+            >
+              <Star className="mr-2 h-3.5 w-3.5 text-amber-400" />
+              <span>{thread.favorited ? 'Remove from favorites' : 'Add to favorites'}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-xs py-1.5 px-2 rounded-md"
+              onClick={(e) => { e.preventDefault(); setIsRenameOpen(true); }}
+            >
+              <Edit className="mr-2 h-3.5 w-3.5 text-gray-500" />
+              <span>Rename</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="my-1 bg-gray-100" />
+            <DropdownMenuItem
+              className="text-xs py-1.5 px-2 rounded-md text-red-500"
+              onClick={(e) => { e.preventDefault(); remove(); }}
+            >
+              <Trash2 className="mr-2 h-3.5 w-3.5" />
+              <span>Delete</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       <ThreadRenameModal
         isOpen={isRenameOpen}
