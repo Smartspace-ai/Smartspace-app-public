@@ -20,7 +20,7 @@ export function useWorkspaceSwitcherVm() {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [debounced, setDebounced] = useState('');
-  const [pendingWorkspace, setPendingWorkspace] = useState<Pick<Workspace, 'id' | 'name'> | null>(null);
+  const [pendingWorkspace, setPendingWorkspace] = useState<Pick<Workspace, 'id' | 'name' | 'tags'> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { workspaceId } = useRouteIds();
@@ -66,13 +66,14 @@ export function useWorkspaceSwitcherVm() {
   const isSwitchingWorkspace = !!pendingWorkspace && pendingWorkspace.id !== workspaceId;
   const selectedWorkspaceId = pendingWorkspace?.id ?? workspaceId;
   const selectedWorkspaceName = pendingWorkspace?.name ?? activeWorkspace?.name;
+  const selectedWorkspaceTags = pendingWorkspace?.tags ?? activeWorkspace?.tags;
 
   useEffect(() => {
     if (!pendingWorkspace) return;
     if (workspaceId === pendingWorkspace.id) setPendingWorkspace(null);
   }, [workspaceId, pendingWorkspace]);
 
-  const onSelectWorkspace = async (ws: Pick<Workspace, 'id' | 'name'>) => {
+  const onSelectWorkspace = async (ws: Pick<Workspace, 'id' | 'name' | 'tags'>) => {
     const id = ws?.id;
     if (!id) return;
     if (id === workspaceId) {
@@ -84,7 +85,7 @@ export function useWorkspaceSwitcherVm() {
 
     // Optimistically update the "selected" workspace in the dropdown immediately,
     // even if route navigation is still pending.
-    setPendingWorkspace({ id, name: ws.name });
+    setPendingWorkspace({ id, name: ws.name, tags: ws.tags ?? [] });
 
     // Seed the active-workspace query cache immediately from the dropdown list item,
     // so header + dropdown reflect the new workspace without waiting for a refetch.
@@ -93,6 +94,7 @@ export function useWorkspaceSwitcherVm() {
       ...(ws as any),
       id,
       name: ws.name,
+      tags: ws.tags ?? old?.tags ?? [],
     }));
 
     // Immediately clear list/detail caches so the UI shows loading states instead
@@ -128,6 +130,7 @@ export function useWorkspaceSwitcherVm() {
     activeWorkspace,
     activeWorkspaceId: selectedWorkspaceId,
     activeWorkspaceName: selectedWorkspaceName,
+    activeWorkspaceTags: selectedWorkspaceTags,
     switchingWorkspace: isSwitchingWorkspace,
     activeLoading: isActiveLoading || isActiveFetching,
     activeError,

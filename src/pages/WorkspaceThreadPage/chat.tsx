@@ -1,17 +1,19 @@
 // src/features/workspaces/Chat.tsx
 import { Stack } from '@mui/material';
 import { useNavigate } from '@tanstack/react-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Toaster } from 'sonner';
 
-import { useWorkspaces } from '@/domains/workspaces/queries';
+import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
 
-import SidebarRight from '@/ui/comments_draw/sidebar-right';
-import ChatHeader from '@/ui/header/chat-header';
+import SidebarRightPanel from '@/ui/comments_draw/sidebar-right';
+import ChatHeaderBar from '@/ui/header/chat-header';
 import SidebarLeft from '@/ui/layout/SideBarleft';
 import MessageComposer from '@/ui/messages/MessageComposer';
 import { MessageList } from '@/ui/messages/MessageList';
 import { useThreadsListVm } from '@/ui/threads/ThreadsList.vm';
+
+import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 import { useRouteIds } from './RouteIdsProvider';
 
@@ -22,6 +24,7 @@ export default function ChatBotPage() {
   const navigate = useNavigate();
   // Workspaces list for initial workspace selection
   const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces();
+  const { data: activeWorkspace } = useWorkspace(workspaceId);
 
   // ✅ Shared threads VM (same cache/pagination as sidebar)
   const {
@@ -41,17 +44,28 @@ export default function ChatBotPage() {
     hasNavigatedRef.current = false;
   }, [workspaceId, threadId, firstThread, threadsInitialLoading, navigate]);
 
+  const gradientClasses = useMemo(() => {
+    return getBackgroundGradientClasses({
+      tags: activeWorkspace?.tags,
+      name: activeWorkspace?.name,
+    });
+  }, [activeWorkspace?.tags, activeWorkspace?.name]);
+
   return (
     <>
       <Stack direction="row" sx={{ height: '100dvh', width: '100vw', overflow: 'hidden', alignItems: 'stretch' }}>
         <SidebarLeft />
         {/* Middle column */}
-        <Stack direction="column" sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
-          <ChatHeader />
+        <Stack
+          direction="column"
+          className={`bg-gradient-to-b from-background from-10% ${gradientClasses} via-40% to-100%`}
+          sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}
+        >
+          <ChatHeaderBar />
           <MessageList />
           <MessageComposer />
         </Stack>
-        <SidebarRight />
+        <SidebarRightPanel />
       </Stack>
       <Toaster />
       </>

@@ -8,7 +8,28 @@ import { CircleInitials } from '@/shared/components/circle-initials';
 import { Button } from '@/shared/ui/mui-compat/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/mui-compat/popover';
 
+import { getTagChipClasses } from '@/theme/tag-styles';
+
 import { useWorkspaceSwitcherVm } from './WorkspaceSwitcher.vm';
+
+function TagChips({ tags, className }: { tags?: string[]; className?: string }) {
+  const list = (tags ?? []).filter(Boolean);
+  if (!list.length) return null;
+
+  return (
+    <span className={className ?? 'ml-2 flex items-center gap-1 flex-wrap'}>
+      {list.map((t, i) => {
+        const v = (t || '').toString();
+        const cls = getTagChipClasses(v);
+        return (
+          <span key={`${v}-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}>
+            {v}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
 
 export function WorkspaceSwitcher() {
   const vm = useWorkspaceSwitcherVm();
@@ -54,8 +75,9 @@ export function WorkspaceSwitcher() {
                   onKeyDown={e => e.stopPropagation()}
                 />
               ) : (
-                <span className="truncate font-medium">
+                <span className="truncate font-medium flex items-center gap-1">
                   {buttonLabel}
+                  <TagChips tags={vm.activeWorkspaceTags} className="flex items-center gap-1 flex-wrap" />
                 </span>
               )}
             </div>
@@ -99,7 +121,7 @@ export function WorkspaceSwitcher() {
                     key={ws.id}
                     workspace={ws}
                     isActive={vm.activeWorkspaceId === ws.id}
-                    onSelect={() => vm.onSelectWorkspace({ id: ws.id, name: ws.name })}
+                    onSelect={() => vm.onSelectWorkspace({ id: ws.id, name: ws.name, tags: ws.tags ?? [] })}
                   />
                 ))
               )}
@@ -138,6 +160,7 @@ function WorkspaceRow({ workspace, isActive, onSelect }: RowProps) {
           text={workspace.name || ''}
         />
         <span className="font-medium">{workspace.name}</span>
+        <TagChips tags={workspace.tags} className="ml-auto flex items-center gap-1" />
       </div>
     </div>
   );
