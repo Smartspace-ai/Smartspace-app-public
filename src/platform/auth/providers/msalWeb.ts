@@ -1,49 +1,75 @@
 import { msalInstance } from '@/platform/auth/msalClient';
-import { interactiveLoginRequest, loginRequest } from '@/platform/auth/msalConfig';
-import { AuthAdapter, GetTokenOptions } from '../types';
+import { interactiveLoginRequest } from '@/platform/auth/msalConfig';
+import { parseScopes } from '@/platform/auth/utils';
+
+import type { AuthAdapter, GetTokenOptions } from '../types';
 
 export function createMsalWebAdapter(): AuthAdapter {
-  async function ensureActive() {
+  const ensureActive = async () => {
     const current = msalInstance.getActiveAccount();
     const all = msalInstance.getAllAccounts();
-    if (!current && all.length > 0) msalInstance.setActiveAccount(all[0]);
-  }
+    if (!current && all.length > 0) {
+      let preferred = all[0];
+      try {
+        const saved = localStorage.getItem('msalActiveHomeAccountId');
+        if (saved) preferred = all.find(a => a.homeAccountId === saved) ?? preferred;
+      } catch {
+        // ignore storage failures
+      }
+      msalInstance.setActiveAccount(preferred);
+    }
+  };
+
   return {
     async getAccessToken(opts?: GetTokenOptions) {
       await ensureActive();
-      const acct = msalInstance.getActiveAccount();
-      if (!acct) {
-        if (opts?.silentOnly) throw new Error('No active account');
-        await msalInstance.loginPopup(interactiveLoginRequest);
+      const scopes = opts?.scopes ?? parseScopes(import.meta.env.VITE_CLIENT_SCOPES);
+      const account = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
+
+      if (!account && opts?.silentOnly) {
+        throw new Error('No active account');
       }
+
       try {
-        const r = await msalInstance.acquireTokenSilent({ ...loginRequest, account: msalInstance.getActiveAccount()! });
-        return r.accessToken;
-      } catch {
-        if (opts?.silentOnly) throw new Error('Silent token failed');
-        // Use the same interactive request as sign-in for consistency
-        const r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
-        return r.accessToken;
+        const res = await msalInstance.acquireTokenSilent({
+          account: account ?? undefined,
+          scopes,
+          forceRefresh: !!opts?.forceRefresh,
+        });
+        return res.accessToken;
+      } catch (e) {
+        if (opts?.silentOnly) throw e;
+        // Interactive fallback
+        const res = await msalInstance.acquireTokenPopup({ scopes });
+        return res.accessToken;
       }
     },
+
     async getSession() {
       await ensureActive();
       const a = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
-      return a ? { accountId: a.homeAccountId, displayName: a.name ?? undefined } : null;
+      return a ? { accountId: a.homeAccountId, displayName: a.name ?? a.username } : null;
     },
-    async signIn() { 
-      // Store the intended redirect URL before redirecting
+
+    // Use redirect for sign-in (your current behavior)
+    async signIn() {
+      // Persist intended redirect, default to /workspace (tweak to your app)
       const redirectUrl = new URLSearchParams(window.location.search).get('redirect') || '/workspace';
-      sessionStorage.setItem('msalRedirectUrl', redirectUrl);
-      await msalInstance.loginRedirect(interactiveLoginRequest); 
-    },
-    async signOut() { await msalInstance.logoutPopup(); },
-    getStoredRedirectUrl() {
-      try {
-        return sessionStorage.getItem('msalRedirectUrl');
-      } catch {
-        return null;
+      try { sessionStorage.setItem('msalRedirectUrl', redirectUrl); } catch {
+        // no session storage; no redirect handled in the app
       }
+      await msalInstance.loginRedirect(interactiveLoginRequest);
+    },
+
+    async signOut() {
+      await msalInstance.logoutPopup();
+    },
+
+    getStoredRedirectUrl() {
+      try { return sessionStorage.getItem('msalRedirectUrl'); } catch { return null; }
+    },
+    clearStoredRedirectUrl() {
+      try { sessionStorage.removeItem('msalRedirectUrl'); } catch { /* noop */ }
     },
   };
 }

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "sourceMap": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
@@ -16,12 +16,15 @@
       "@/*": ["./src/*"],
       "@/components/*": ["./src/components/*"],
       "@/contexts/*": ["./src/contexts/*"],
-      "@/hooks/*": ["./src/hooks/*"]
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/shared/ui/mui-compat/*": ["./src/shared/ui/mui-compat/*"],
+      "@/theme/*": ["./src/theme/*"]
+      
     },
     "composite": true,
     "jsx": "react-jsx",
     "allowJs": false,
-    "esModuleInterop": false,
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "types": ["vite/client", "vitest"]

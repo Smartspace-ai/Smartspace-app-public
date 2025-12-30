@@ -3,10 +3,12 @@ import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Autocomplete, TextField } from '@mui/material';
 import { Loader2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/shared/ui/mui-compat/dialog';
+
 import { llmModelIcons } from '../../../assets/providers';
-import { Dialog, DialogContent, DialogTrigger } from '../../../components/ui/dialog';
-import { useModels } from '../../../hooks/use-models';
-import { Model } from '../../../models/model';
+import { useModels } from '../../../domains/models/queries';
+import { Model } from '../../../domains/models/schemas';
 
 interface ModelIdRendererProps {
   data: any;
@@ -178,6 +180,7 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
             </button>
           </DialogTrigger>
           <DialogContent hideClose onOpenAutoFocus={(e) => e.preventDefault()} className="p-0 w-[90vw] max-w-sm sm:max-w-sm h-[70vh] flex flex-col gap-0 data-[state=open]:animate-none data-[state=closed]:animate-none">
+            <DialogTitle className="sr-only">Select a model</DialogTitle>
             <div className="flex flex-col h-full w-full">
               <div className="flex-1 overflow-y-auto w-full max-w-[360px] mx-auto">
                 {isLoading && listModels.length === 0 && (
@@ -187,14 +190,19 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
                 )}
                 <ul className="divide-y w-full">
                   {listModels.map((option) => (
-                    <li key={option.id} className="px-3 py-2 hover:bg-accent cursor-pointer"
-                        onClick={() => handleModelChange(null as any, option)}>
+                    <li key={option.id} className="p-0">
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-accent cursor-pointer"
+                        onClick={() => handleModelChange(null as any, option)}
+                      >
                       <div className="flex items-center gap-2">
                         {getProviderInfo(option.modelDeploymentProviderType || '').iconSrc && (
-                          <img src={getProviderInfo(option.modelDeploymentProviderType || '').iconSrc!} className="h-4 w-4" />
+                          <img src={getProviderInfo(option.modelDeploymentProviderType || '').iconSrc!} alt="Provider" className="h-4 w-4" />
                         )}
                         <span className="text-sm">{option.displayName || option.name}</span>
                       </div>
+                      </button>
                     </li>
                   ))}
                 </ul>
