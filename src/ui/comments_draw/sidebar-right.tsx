@@ -113,7 +113,7 @@ export function SidebarRight() {
       style={{ '--sidebar-width-mobile': '60vw' } as CSSProperties}
     >
       <div className="bg-background flex flex-col h-full min-h-0">
-        <SidebarHeader className="h-[55px] shrink-0 flex justify-between border-b px-3">
+        <SidebarHeader className="h-[54px] shrink-0 flex items-center justify-between border-b px-3 bg-background">
           <div className="flex flex-1 items-center gap-2">
             <Breadcrumb>
               <BreadcrumbList>

@@ -44,7 +44,7 @@ export default function SidebarUserHeader() {
   if (isInTeams) return null;
 
   return (
-    <SidebarHeader className="h-[55px] flex items-center px-4 border-b bg-background">
+    <SidebarHeader className="h-[54px] flex items-center px-4 border-b bg-background">
       <div className="flex items-center justify-between w-full gap-8">
         <Logo className="h-[40px]" />
         <DropdownMenu>
