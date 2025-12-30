@@ -1,0 +1,53 @@
+name: Merge to develop
+
+on:
+  pull_request:
+    branches:
+      - develop
+    types:
+      - closed
+
+permissions:
+  contents: read
+
+jobs:
+  on_merge:
+    if: ${{ github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CI_APP_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: Smartspace-ai
+          repositories: ci-workflows
+
+      - name: Dispatch to ci-workflows (log-only)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/Smartspace-ai/ci-workflows/dispatches"
+          echo "Dispatching repository_dispatch to: $api"
+          curl -sS --fail-with-body -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "$api" \
+            -d @- <<'JSON'
+          {
+            "event_type": "public_merge_to_develop",
+            "client_payload": {
+              "repo": "Smartspace-ai/Smartspace-app-public",
+              "base_branch": "${{ github.event.pull_request.base.ref }}",
+              "pr_number": ${{ github.event.pull_request.number }},
+              "pr_title": "${{ github.event.pull_request.title }}",
+              "head_sha": "${{ github.event.pull_request.head.sha }}",
+              "merge_commit_sha": "${{ github.event.pull_request.merge_commit_sha }}"
+            }
+          }
+          JSON
+
+

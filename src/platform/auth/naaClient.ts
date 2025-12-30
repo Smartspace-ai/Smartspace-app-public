@@ -1,21 +1,25 @@
-import { createNestablePublicClientApplication, InteractionRequiredAuthError, type Configuration, type IPublicClientApplication } from '@azure/msal-browser'
-import { app as teamsApp } from '@microsoft/teams-js'
+// src/platform/auth/naaClient.ts
+import {
+  createNestablePublicClientApplication,
+  InteractionRequiredAuthError,
+  type Configuration,
+  type IPublicClientApplication,
+} from '@azure/msal-browser';
+import { app as teamsApp } from '@microsoft/teams-js';
 
-let pcaPromise: Promise<IPublicClientApplication> | null = null
+let pcaPromise: Promise<IPublicClientApplication> | null = null;
 
 export const naaInit = () => {
   if (!pcaPromise) {
     pcaPromise = (async () => {
-      try { 
-        await teamsApp.initialize() 
-        console.log('Teams SDK initialized for NAA');
-      } catch (error) {
-        console.warn('Teams SDK initialization failed for NAA:', error);
-        // Continue anyway, might work with existing initialization
+      try {
+        await teamsApp.initialize();
+      } catch {
+        // ignore – app may already be initialized by host
       }
-      const clientId = import.meta.env.VITE_CLIENT_ID as string
-      const tenantId = import.meta.env.VITE_TENANT_ID as string
-      const authority = `https://login.microsoftonline.com/${tenantId}`
+      const clientId = import.meta.env.VITE_CLIENT_ID as string;
+      const tenantId = import.meta.env.VITE_TENANT_ID as string;
+      const authority = `https://login.microsoftonline.com/${tenantId}`;
       const config: Configuration = {
         auth: {
           clientId,
@@ -23,53 +27,61 @@ export const naaInit = () => {
           navigateToLoginRequestUrl: false,
           supportsNestedAppAuth: true,
         },
-        system: { allowNativeBroker: false },
         cache: { cacheLocation: 'localStorage' },
-      }
-      return createNestablePublicClientApplication(config)
-    })()
+        system: { allowNativeBroker: false },
+      };
+      return createNestablePublicClientApplication(config);
+    })();
   }
-  return pcaPromise
-}
+  return pcaPromise;
+};
 
-const tokenCache: Record<string, { token: string; exp: number }> = {}
-const isExpired = (exp: number, skew = 60) => Math.floor(Date.now() / 1000) + skew >= exp
+type CacheEntry = { token: string; exp: number };
+const tokenCache = new Map<string, CacheEntry>();
 
-export const acquireNaaToken = async (scopes: string[]): Promise<string> => {
-  console.log('acquireNaaToken', scopes)
-  const key = scopes.sort().join(' ')
-  const cached = tokenCache[key]
-  if (cached && !isExpired(cached.exp)) return cached.token
-
-  const pca = await naaInit()
-  const accounts = pca.getAllAccounts()
-  const account = accounts[0]
-  
+const nowSec = () => Math.floor(Date.now() / 1000);
+const isExpired = (exp: number, skew = 60) => nowSec() + skew >= exp;
+const decodeExp = (jwt: string): number | undefined => {
   try {
-    if (!account) {
-      console.warn('No account found for NAA token acquisition');
-      throw new InteractionRequiredAuthError('No account available')
-    }
-    
-    console.log('Attempting silent token acquisition for account:', account.username);
-    const res = await pca.acquireTokenSilent({ account, scopes })
-    const token = res.accessToken
-    const exp = JSON.parse(atob(token.split('.')[1])).exp as number | undefined
-    tokenCache[key] = { token, exp: exp ?? Math.floor(Date.now() / 1000) + 900 }
-    console.log('Silent token acquisition successful');
-    return token
-  } catch (error) {
-    console.warn('Silent token acquisition failed, trying popup:', error);
-    try {
-      const res = await pca.acquireTokenPopup({ scopes })
-      const token = res.accessToken
-      const exp = JSON.parse(atob(token.split('.')[1])).exp as number | undefined
-      tokenCache[key] = { token, exp: exp ?? Math.floor(Date.now() / 1000) + 900 }
-      console.log('Popup token acquisition successful');
-      return token
-    } catch (popupError) {
-      console.error('Both silent and popup token acquisition failed:', popupError);
-      throw popupError;
-    }
+    const payload = JSON.parse(atob(jwt.split('.')[1] ?? ''));
+    return typeof payload?.exp === 'number' ? payload.exp : undefined;
+  } catch {
+    return undefined;
   }
-}
+};
+
+export type AcquireNaaTokenOptions = { forceRefresh?: boolean };
+
+/** Acquire a Teams/NAA delegated token for the given scopes. */
+export const acquireNaaToken = async (
+  scopes: string[],
+  opts?: AcquireNaaTokenOptions
+): Promise<string> => {
+  const pca = await naaInit();
+  const account = pca.getActiveAccount() ?? pca.getAllAccounts()[0];
+  if (!account) throw new InteractionRequiredAuthError('No account available');
+
+  const scopeKey = [...scopes].sort().join(' ');
+  const cacheKey = `${account.homeAccountId}::${scopeKey}`;
+
+  if (!opts?.forceRefresh) {
+    const cached = tokenCache.get(cacheKey);
+    if (cached && !isExpired(cached.exp)) return cached.token;
+  }
+
+  try {
+    const res = await pca.acquireTokenSilent({ account, scopes });
+    const token = res.accessToken;
+    tokenCache.set(cacheKey, { token, exp: decodeExp(token) ?? nowSec() + 900 });
+    return token;
+  } catch {
+    // Silent failed; fall back to popup
+    const res = await pca.acquireTokenPopup({ scopes });
+    const token = res.accessToken;
+    tokenCache.set(cacheKey, { token, exp: decodeExp(token) ?? nowSec() + 900 });
+    return token;
+  }
+};
+
+// Helpers (nice for tests/devtools)
+export const clearNaaTokenCache = () => tokenCache.clear();
