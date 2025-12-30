@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import {
   ArrowBigUp,
+  Check,
   FileArchive,
   FileAudio,
   FileCode,
@@ -15,6 +16,7 @@ import {
   Minimize2,
   Paperclip,
   Presentation,
+  X,
 } from 'lucide-react';
 import type * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -276,7 +278,8 @@ export default function MessageComposer() {
           <div className="border-b bg-muted/5 px-3 py-2">
             <div className="flex items-center justify-between gap-2">
               <div className="text-xs font-medium text-foreground/80">
-                Attachments ({attachments.length}){isUploadingAttachments ? ' (uploading...)' : ''}
+                {attachments.length} {attachments.length === 1 ? 'file' : 'files'} selected
+                {isUploadingAttachments ? ' (uploading...)' : ''}
               </div>
               <Button
                 type="button"
@@ -284,61 +287,68 @@ export default function MessageComposer() {
                 variant="text"
                 onClick={handleClearAttachments}
                 disabled={isUploadingAttachments}
-                className="text-xs normal-case min-w-0 px-2 h-7 text-muted-foreground"
+                className="text-xs normal-case min-w-0 px-2 h-7 text-muted-foreground hover:text-destructive"
               >
-                Clear
+                Remove all
               </Button>
             </div>
-            <div className="mt-2 max-h-60 overflow-y-auto pr-1">
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5 auto-rows-[64px]">
+
+            <div className="mt-2 overflow-x-auto">
+              <div className="flex gap-2 pb-1">
                 {attachments.map((f) => {
                   const isImage = f.isImage || isLikelyImageFile(f.name);
                   const previewUrl = f.previewUrl;
                   const Icon = getFileIcon(f.name);
+                  const ext = getExtension(f.name).toUpperCase() || 'FILE';
+                  const isDone = f.status === 'done';
+                  const isUploading = f.status === 'uploading';
+
                   return (
                     <div
                       key={f.key}
-                      className={`relative group ${isImage ? 'col-span-2 row-span-1' : ''}`}
+                      className="relative group w-[180px] min-w-[180px] rounded-md border bg-background overflow-hidden"
                       title={f.name}
                     >
-                      <div className="h-full w-full rounded-md border bg-background overflow-hidden flex items-center gap-2 p-1.5">
+                      <div className="h-[58px] w-full bg-muted/10 flex items-center justify-center overflow-hidden">
                         {isImage ? (
-                          <div className="w-10 h-10 rounded bg-muted/10 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            {previewUrl ? (
-                              <img
-                                src={previewUrl}
-                                alt={f.name}
-                                className="h-full w-full object-cover"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <span className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground/60 animate-spin" />
-                            )}
-                          </div>
+                          previewUrl ? (
+                            <img src={previewUrl} alt={f.name} className="h-full w-full object-cover" loading="lazy" />
+                          ) : (
+                            <span className="h-5 w-5 rounded-full border-2 border-muted-foreground/30 border-t-foreground/60 animate-spin" />
+                          )
                         ) : (
-                          <div className="w-7 h-7 rounded bg-muted/20 flex items-center justify-center flex-shrink-0">
-                            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                          <div className="w-9 h-9 rounded bg-muted/20 flex items-center justify-center">
+                            <Icon className="h-5 w-5 text-muted-foreground" />
                           </div>
                         )}
-
-                        <div className="min-w-0">
-                          <div className="text-[11px] font-medium text-foreground truncate" title={f.name}>
-                            {f.name}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground truncate">
-                            {getExtension(f.name).toUpperCase() || 'FILE'}
-                          </div>
-                        </div>
                       </div>
 
+                      <div className="px-2 py-1.5">
+                        <div className="text-xs font-medium text-foreground truncate" title={f.name}>
+                          {f.name}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground truncate">{ext}</div>
+                      </div>
+
+                      {/* Status: uploaded check / uploading spinner */}
+                      {isDone && (
+                        <div className="absolute bottom-1 right-1 bg-green-500 rounded-full p-0.5">
+                          <Check className="h-3 w-3 text-white" />
+                        </div>
+                      )}
+                      {isUploading && (
+                        <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground/60 animate-spin" />
+                      )}
+
+                      {/* Remove single file */}
                       <button
                         type="button"
-                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-background border text-xs leading-none opacity-0 group-hover:opacity-100"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/90 border opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                         onClick={() => handleRemoveAttachment(f.key)}
                         aria-label={`Remove ${f.name}`}
                         disabled={isUploadingAttachments}
                       >
-                        ×
+                        <X className="h-3.5 w-3.5 text-muted-foreground" />
                       </button>
                     </div>
                   );

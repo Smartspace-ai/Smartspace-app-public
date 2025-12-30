@@ -66,15 +66,15 @@ type ChatComposerProps = {
   threadId?: string;
   newMessage: string;
   setNewMessage: (message: string) => void;
-  handleSendMessage: (variables: Record<string, any> | null) => void;
-  handleKeyDown: (e: React.KeyboardEvent, variables: Record<string, any> | null) => void;
+  handleSendMessage: (variables: Record<string, unknown> | null) => void;
+  handleKeyDown: (e: React.KeyboardEvent, variables: Record<string, unknown> | null) => void;
   isSending: boolean;
   supportsFiles: boolean;
   disabled: boolean;
   selectedFiles: File[];
   setSelectedFiles: (files: File[]) => void;
-  uploadedFiles?: any[]; // Optional for backward compatibility
-  setUploadedFiles?: (files: any[]) => void;
+  uploadedFiles?: FileInfo[]; // Optional for backward compatibility
+  setUploadedFiles?: (files: FileInfo[]) => void;
   isUploadingFiles?: boolean;
   onFilesSelected?: (files: File[]) => void;
   setImagesForMessage: (files: FileInfo[]) => void;
@@ -110,7 +110,7 @@ export default function ChatComposer({
     { url: string; isImage: boolean; name: string }[]
   >([]);
   const { uploadFilesMutation } = useFileMutations({ workspaceId: workspace?.id, threadId });
-  const [variables, setVariables] = useState<Record<string, any>|null>(null);
+  const [variables, setVariables] = useState<Record<string, unknown> | null>(null);
   const MAX_FILES = 20;
 
   const prevUrlsRef = useRef<string[]>([]);
@@ -330,59 +330,64 @@ export default function ChatComposer({
                       </Button>
                     </div>
 
-                    <div className="max-h-60 overflow-y-auto pr-1">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 auto-rows-min">
+                    <div className="overflow-x-auto">
+                      <div className="flex gap-2 pb-1">
                         {filePreviewUrls.map((file, index) => {
                           const FileIcon = getFileIcon(file.name, selectedFiles[index]?.type || '');
                           const isImage = file.isImage;
+                          const ext = file.name.split('.').pop()?.toUpperCase() || 'FILE';
+                          const isDone = Boolean((uploadedFiles ?? [])[index]);
                           return (
                             <motion.div
                               key={index}
-                              initial={{ scale: 0.8, opacity: 0 }}
+                              initial={{ scale: 0.98, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
-                              transition={{ duration: 0.2, delay: index * 0.05 }}
-                              className={`relative group ${isImage ? 'row-span-2' : ''}`}
+                              transition={{ duration: 0.15, delay: index * 0.03 }}
+                              className="relative group w-[180px] min-w-[180px] rounded-md border bg-background overflow-hidden"
+                              title={file.name}
                             >
-                              <div className={`flex items-center gap-2 p-2 rounded-md border bg-muted/10 hover:bg-muted/20 transition-colors ${isImage ? 'flex-col h-full' : ''}`}>
-                                <div className="flex-shrink-0">
-                                  {isImage ? (
-                                    <img
-                                      src={file.url || '/placeholder.svg'}
-                                      alt={`Preview ${index + 1}`}
-                                      className="w-full h-20 object-cover rounded"
-                                      loading="lazy"
-                                    />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded bg-muted/30 flex items-center justify-center">
-                                      <FileIcon className="h-4 w-4 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                </div>
-                                <div className={`flex-1 min-w-0 ${isImage ? 'w-full text-center' : ''}`}>
-                                  <div className="text-xs font-medium text-foreground truncate">
-                                    {file.name}
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground">
-                                    {file.name.split('.').pop()?.toUpperCase() || 'FILE'}
-                                  </div>
-                                </div>
-                                {(uploadedFiles ?? [])[index] && (
-                                  <div className="flex-shrink-0">
-                                    <div className="bg-green-500 rounded-full p-0.5">
-                                      <Check className="h-2 w-2 text-white" />
-                                    </div>
+                              <div className="h-[58px] w-full bg-muted/10 flex items-center justify-center overflow-hidden">
+                                {isImage ? (
+                                  <img
+                                    src={file.url || '/placeholder.svg'}
+                                    alt={`Preview ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="w-9 h-9 rounded bg-muted/20 flex items-center justify-center">
+                                    <FileIcon className="h-5 w-5 text-muted-foreground" />
                                   </div>
                                 )}
                               </div>
-                              <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                              <div className="px-2 py-1.5">
+                                <div className="text-xs font-medium text-foreground truncate">
+                                  {file.name}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground truncate">
+                                  {ext}
+                                </div>
+                              </div>
+
+                              {isDone && (
+                                <div className="absolute bottom-1 right-1 bg-green-500 rounded-full p-0.5">
+                                  <Check className="h-3 w-3 text-white" />
+                                </div>
+                              )}
+                              {isUploadingFiles && !isDone && (
+                                <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground/60 animate-spin" />
+                              )}
+
+                              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button
                                   variant="destructive"
                                   size="icon"
-                                  className="h-5 w-5 rounded-full"
+                                  className="h-6 w-6 rounded-full bg-background/90 border"
                                   onClick={() => handleRemoveFile(index)}
                                   disabled={isUploadingFiles}
                                 >
-                                  <X className="h-3 w-3" />
+                                  <X className="h-3.5 w-3.5 text-muted-foreground" />
                                 </Button>
                               </div>
                             </motion.div>

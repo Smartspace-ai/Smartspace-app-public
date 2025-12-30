@@ -18,6 +18,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/shared/
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
 import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+import type { MarkdownEditorHandle } from '@/components/markdown/MarkdownEditor';
 
 import { getInitials } from '../../shared/utils/initials';
 import { parseDateTime } from '../../shared/utils/parseDateTime';
@@ -76,6 +77,7 @@ export function SidebarRight() {
   const { data: comments, isLoading, isError: commentsError } = useComments(threadId);
   const { mutateAsync: addCommentAsync, isPending: isAddingComment } = useAddComment(threadId);
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const [threadComment, setThreadComment] = useState({ plain: '', withMentions: '' });
   const isMobile = useIsMobile();
 
@@ -83,16 +85,19 @@ export function SidebarRight() {
     e.preventDefault();
     if (isAddingComment) return;
     if (isDraft) return;
-    if (!threadComment.plain.trim()) return;
+    const content = editorRef.current?.getPlainText?.() ?? threadComment.plain;
+    const mentionedUsers = editorRef.current?.getMentionedUsers?.() ?? [];
+    if (!content.trim()) return;
 
-    if (threadComment.plain.length > MAX_COMMENT_LENGTH) {
+    if (content.length > MAX_COMMENT_LENGTH) {
       toast.error(`Comments are limited to ${MAX_COMMENT_LENGTH} characters`);
       return;
     }
 
     try {
-      await addCommentAsync({ threadId, content: threadComment.plain });
+      await addCommentAsync({ threadId, content, mentionedUsers });
       setThreadComment({ plain: '', withMentions: '' });
+      editorRef.current?.clear?.();
     } catch {
       // Error handled in hook
     }
@@ -202,8 +207,12 @@ export function SidebarRight() {
               // Wrapper to allow absolutely positioned controls inside the editor
               <div className="relative overflow-visible rounded-lg border bg-card p-2">
                 <MarkdownEditor
+                  ref={editorRef}
                   value={threadComment.plain}
-                  onChange={(md) => setThreadComment({ plain: md, withMentions: md })}
+                  onChange={(md) => {
+                    const plain = editorRef.current?.getPlainText?.() ?? md;
+                    setThreadComment({ plain, withMentions: md });
+                  }}
                   enableMentions
                   disabled={isAddingComment || isDraft}
                   workspaceId={workspaceId}
@@ -229,8 +238,12 @@ export function SidebarRight() {
             ) : (
               <div className="relative overflow-visible rounded-lg border bg-card p-2">
                 <MarkdownEditor
+                  ref={editorRef}
                   value={threadComment.plain}
-                  onChange={(md) => setThreadComment({ plain: md, withMentions: md })}
+                  onChange={(md) => {
+                    const plain = editorRef.current?.getPlainText?.() ?? md;
+                    setThreadComment({ plain, withMentions: md });
+                  }}
                   enableMentions
                   disabled={isAddingComment || isDraft}
                   workspaceId={workspaceId}

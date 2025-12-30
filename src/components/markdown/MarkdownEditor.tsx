@@ -38,6 +38,16 @@ export type MarkdownEditorHandle = {
   focus: () => void
   /** Clears the editor content (useful when host clears `value`, since Milkdown isn't fully controlled here). */
   clear: () => void
+  /**
+   * Returns mention users currently present in the editor document.
+   * Useful for building API payloads (e.g. comments.mentionedUsers).
+   */
+  getMentionedUsers?: () => Array<{ id: string; displayName: string }>
+  /**
+   * Returns plain text for the current editor content, with mention nodes rendered as "@Display Name".
+   * Useful when the host renders content as plain text (not markdown).
+   */
+  getPlainText?: () => string
 }
 
 export type MarkdownEditorProps = {
@@ -431,6 +441,44 @@ function EditorInner({
         } catch {
           /* ignore focus errors */
         }
+      },
+      getMentionedUsers: () => {
+        const view = viewRef.current
+        if (!view) return []
+        const found: Array<{ id: string; displayName: string }> = []
+        view.state.doc.descendants((node) => {
+          if (node.type?.name !== 'mention') return true
+          const attrs = node.attrs as unknown as { id?: unknown; label?: unknown }
+          const id = typeof attrs?.id === 'string' ? attrs.id : String(attrs?.id ?? '')
+          const label = typeof attrs?.label === 'string' ? attrs.label : String(attrs?.label ?? '')
+          const displayName = label.replace(/^@/, '')
+          if (id) found.push({ id, displayName })
+          return true
+        })
+        const uniq = new Map<string, { id: string; displayName: string }>()
+        for (const u of found) {
+          if (!uniq.has(u.id)) uniq.set(u.id, u)
+        }
+        return [...uniq.values()]
+      },
+      getPlainText: () => {
+        const view = viewRef.current
+        if (!view) return (value ?? '') as string
+        const doc = view.state.doc
+        const leafText = (node: any) => {
+          try {
+            if (node?.type?.name === 'mention') {
+              const attrs = node.attrs as unknown as { label?: unknown }
+              const raw = typeof attrs?.label === 'string' ? attrs.label : String(attrs?.label ?? '')
+              const displayName = raw.replace(/^@/, '')
+              return `@${displayName}`
+            }
+          } catch {
+            /* ignore */
+          }
+          return ''
+        }
+        return doc.textBetween(0, doc.content.size, '\n', leafText).trimEnd()
       },
       clear: () => {
         const view = viewRef.current
