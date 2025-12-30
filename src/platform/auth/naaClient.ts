@@ -61,11 +61,12 @@ const decodeExp = (jwt: string): number | undefined => {
 };
 
 export type AcquireNaaTokenOptions = { forceRefresh?: boolean };
+type InternalAcquireOptions = AcquireNaaTokenOptions & { silentOnly?: boolean };
 
 /** Acquire a Teams/NAA delegated token for the given scopes. */
 export const acquireNaaToken = async (
   scopes: string[],
-  opts?: AcquireNaaTokenOptions
+  opts?: InternalAcquireOptions
 ): Promise<string> => {
   const pca = await naaInit();
   const account = pca.getActiveAccount() ?? pca.getAllAccounts()[0];
@@ -84,7 +85,21 @@ export const acquireNaaToken = async (
     const token = res.accessToken;
     tokenCache.set(cacheKey, { token, exp: decodeExp(token) ?? nowSec() + 900 });
     return token;
-  } catch {
+  } catch (e) {
+    // If the auth stack is throwing native fetch Responses (e.g. redirects),
+    // surface a readable error and avoid looping into interactive prompts.
+    if (typeof Response !== 'undefined' && e instanceof Response) {
+      const location = (() => {
+        try { return e.headers?.get('location') ?? ''; } catch { return ''; }
+      })();
+      throw new Error(
+        `Teams auth request was redirected (status ${e.status})${location ? ` to ${location}` : ''}`
+      );
+    }
+
+    // Respect silentOnly (used by route guard). Do not fall back to popup.
+    if (opts?.silentOnly) throw e;
+
     // Silent failed; fall back to popup
     const res = await pca.acquireTokenPopup({ scopes });
     const token = res.accessToken;

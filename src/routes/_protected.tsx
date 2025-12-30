@@ -2,6 +2,7 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
 import { createAuthAdapter } from '@/platform/auth';
+import { isInTeams } from '@/platform/auth/utils';
 
 import { ProtectedErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
 import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
@@ -63,7 +64,12 @@ export const Route = createFileRoute('/_protected')({
             const authForToken = createAuthAdapter();
             await authForToken.getAccessToken({ silentOnly: true });
           } catch {
-            throw redirect({ to: '/login', search: { redirect: location.href } });
+            // In Teams, redirecting to /login can cause an infinite loop when NAA/MSAL
+            // fails with redirects (e.g. 307). Show a stable error screen instead.
+            throw redirect({
+              to: isInTeams() ? '/auth-failed' : '/login',
+              search: { redirect: location.href },
+            });
           }
 
           lastAuthOkAt = Date.now();
@@ -77,7 +83,10 @@ export const Route = createFileRoute('/_protected')({
       lastAuthOkAt = 0;
       // eslint-disable-next-line no-console
       console.error('Authentication failed:', error);
-      throw redirect({ to: '/login', search: { redirect: location.href } });
+      throw redirect({
+        to: isInTeams() ? '/auth-failed' : '/login',
+        search: { redirect: location.href },
+      });
     }
   },
 

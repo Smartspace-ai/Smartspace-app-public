@@ -10,7 +10,7 @@ export function createTeamsNaaAdapter(): AuthAdapter {
     async getAccessToken(opts?: GetTokenOptions) {
       await naaInit();
       const scopes = opts?.scopes ?? parseScopes(import.meta.env.VITE_CLIENT_SCOPES);
-      return acquireNaaToken(scopes, { forceRefresh: !!opts?.forceRefresh });
+      return acquireNaaToken(scopes, { forceRefresh: !!opts?.forceRefresh, silentOnly: !!opts?.silentOnly });
     },
 
     async getSession() {

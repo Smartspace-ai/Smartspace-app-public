@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as _rootNotFoundRouteImport } from './routes/__root.notFound'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthFailedRouteImport } from './routes/auth-failed'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProtectedWorkspaceIndexRouteImport } from './routes/_protected/workspace/index'
@@ -33,6 +34,11 @@ const _rootNotFoundRoute = _rootNotFoundRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthFailedRoute = AuthFailedRouteImport.update({
+  id: '/auth-failed',
+  path: '/auth-failed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedRoute = ProtectedRouteImport.update({
@@ -81,6 +87,7 @@ const ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth-failed': typeof AuthFailedRoute
   '/login': typeof LoginRoute
   '/notFound': typeof _rootNotFoundRoute
   '/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth-failed': typeof AuthFailedRoute
   '/login': typeof LoginRoute
   '/notFound': typeof _rootNotFoundRoute
   '/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_protected': typeof ProtectedRouteWithChildren
+  '/auth-failed': typeof AuthFailedRoute
   '/login': typeof LoginRoute
   '/__root/notFound': typeof _rootNotFoundRoute
   '/_protected/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth-failed'
     | '/login'
     | '/notFound'
     | '/workspace/no-workspaces'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth-failed'
     | '/login'
     | '/notFound'
     | '/workspace/no-workspaces'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_protected'
+    | '/auth-failed'
     | '/login'
     | '/__root/notFound'
     | '/_protected/workspace/no-workspaces'
@@ -148,6 +160,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedRoute: typeof ProtectedRouteWithChildren
+  AuthFailedRoute: typeof AuthFailedRoute
   LoginRoute: typeof LoginRoute
   _rootNotFoundRoute: typeof _rootNotFoundRoute
 }
@@ -166,6 +179,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth-failed': {
+      id: '/auth-failed'
+      path: '/auth-failed'
+      fullPath: '/auth-failed'
+      preLoaderRoute: typeof AuthFailedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected': {
@@ -268,6 +288,7 @@ const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRoute: ProtectedRouteWithChildren,
+  AuthFailedRoute: AuthFailedRoute,
   LoginRoute: LoginRoute,
   _rootNotFoundRoute: _rootNotFoundRoute,
 }
