@@ -1,4 +1,5 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
+import { useMatch } from '@tanstack/react-router';
 import { AlertTriangle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -34,12 +35,13 @@ export function MessageList() {
   const isMobile = useIsMobile();
 
   const { data: activeWorkspace } = useWorkspace(workspaceId);
+  const workspaceIndexMatch = useMatch({ from: '/_protected/workspace/$workspaceId/', shouldThrow: false });
 
 
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const { data: thread, isPending: threadLoading, error: threadError } = useThread({ workspaceId, threadId })
-  const { data: messages = [], isPending: messagesLoading, error: messagesError } = useMessages(threadId)
+  const { data: thread, isPending: threadPending, isFetching: threadFetching, error: threadError } = useThread({ workspaceId, threadId })
+  const { data: messages = [], isPending: messagesPending, isFetching: messagesFetching, error: messagesError } = useMessages(threadId)
 
 
   const { leftOpen, rightOpen } = useSidebar();
@@ -99,9 +101,14 @@ export function MessageList() {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [messages, messages?.length, isAtBottom, threadLoading, messagesLoading, threadError, messagesError]);
+  }, [messages, messages?.length, isAtBottom, threadPending, threadFetching, messagesPending, messagesFetching, threadError, messagesError]);
 
-  if (threadLoading ||messagesLoading) {
+  // When switching workspaces, we briefly land on /workspace/$workspaceId/ (no threadId) while the route loader
+  // redirects to the first thread. During that transition we should show a loading skeleton, not "No messages yet".
+  const isChoosingThread = !!workspaceId && !threadId && !!workspaceIndexMatch;
+  const isLoading = isChoosingThread || threadPending || threadFetching || messagesPending || messagesFetching;
+
+  if (isLoading) {
     return (
       <div className="ss-chat__body flex-shrink-10 flex-1 overflow-y-auto">
         <div className="space-y-8 p-4">

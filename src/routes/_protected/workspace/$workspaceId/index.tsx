@@ -9,6 +9,12 @@ import { RouteIdsProvider } from "@/pages/WorkspaceThreadPage/RouteIdsProvider";
 
 // routes/_protected/workspace/$workspaceId/index.tsx
 export const Route = createFileRoute('/_protected/workspace/$workspaceId/')({
+  pendingMs: 0,
+  pendingComponent: () => (
+    <RouteIdsProvider>
+      <ChatBotPage />
+    </RouteIdsProvider>
+  ),
   loader: async ({ params }) => {
     // Only fetch the first thread to decide where to redirect.
     // This keeps workspace switching snappy even for large workspaces.

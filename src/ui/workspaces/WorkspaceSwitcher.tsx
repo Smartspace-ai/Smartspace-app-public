@@ -15,9 +15,11 @@ export function WorkspaceSwitcher() {
 
   const buttonLabel = vm.activeError
     ? 'Failed to load workspace'
-    : vm.activeLoading
-      ? 'Loading workspace…'
-      : (vm.activeWorkspace?.name ?? '—');
+    : (vm.activeWorkspaceName ?? vm.activeWorkspace?.name)
+      ? (vm.activeWorkspaceName ?? vm.activeWorkspace?.name ?? '—')
+      : vm.activeLoading
+        ? 'Loading workspace…'
+        : '—';
 
   const buttonClassName = [
     'w-full justify-between text-xs h-9 border rounded-lg px-3 shadow-sm hover:shadow-md transition-shadow',
@@ -96,8 +98,8 @@ export function WorkspaceSwitcher() {
                   <WorkspaceRow
                     key={ws.id}
                     workspace={ws}
-                    isActive={vm.activeWorkspace?.id === ws.id}
-                    onSelect={() => vm.onSelectWorkspace(ws.id)}
+                    isActive={vm.activeWorkspaceId === ws.id}
+                    onSelect={() => vm.onSelectWorkspace({ id: ws.id, name: ws.name })}
                   />
                 ))
               )}

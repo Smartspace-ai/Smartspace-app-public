@@ -93,7 +93,7 @@ export default function ThreadItem({ thread }: Props) {
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-xs py-1.5 px-2 rounded-md"
-              onClick={(e) => { e.preventDefault(); setIsRenameOpen(true); }}
+              onClick={(e) => { e.preventDefault(); setMenuOpen(false); setIsRenameOpen(true); }}
             >
               <Edit className="mr-2 h-3.5 w-3.5 text-gray-500" />
               <span>Rename</span>
@@ -101,7 +101,7 @@ export default function ThreadItem({ thread }: Props) {
             <DropdownMenuSeparator className="my-1 bg-gray-100" />
             <DropdownMenuItem
               className="text-xs py-1.5 px-2 rounded-md text-red-500"
-              onClick={(e) => { e.preventDefault(); remove(); }}
+              onClick={(e) => { e.preventDefault(); setMenuOpen(false); remove(); }}
             >
               <Trash2 className="mr-2 h-3.5 w-3.5" />
               <span>Delete</span>

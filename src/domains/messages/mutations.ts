@@ -3,6 +3,7 @@ import { Subject } from 'rxjs';
 import { toast } from 'sonner';
 
 import { FileInfo } from '@/domains/files';
+import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
@@ -21,6 +22,8 @@ type SendArgs = {
 
 export function useSendMessage() {
   const qc = useQueryClient();
+  const userId = useUserId();
+  const userName = useUserDisplayName();
 
   return useMutation<Subject<Message>, Error, SendArgs>({
     mutationFn: async ({ workspaceId, threadId, contentList, files, variables }) => {
@@ -38,7 +41,8 @@ export function useSendMessage() {
             value: contentList,
             channels: {},
             createdAt: new Date(),
-            createdBy: 'me',
+            createdBy: userName || 'You',
+            createdByUserId: userId ?? undefined,
           },
           ...(files?.length
             ? [{
@@ -48,7 +52,8 @@ export function useSendMessage() {
                 value: files,
                 channels: {},
                 createdAt: new Date(),
-                createdBy: 'me',
+                createdBy: userName || 'You',
+                createdByUserId: userId ?? undefined,
               }]
             : []),
           ...(variables && Object.keys(variables).length
@@ -59,12 +64,14 @@ export function useSendMessage() {
                 value: variables,
                 channels: {},
                 createdAt: new Date(),
-                createdBy:'me',
+                createdBy: userName || 'You',
+                createdByUserId: userId ?? undefined,
               }]
             : []),
         ],
         createdAt: new Date(),
-        createdBy:  'me',
+        createdBy: userName || 'You',
+        createdByUserId: userId ?? undefined,
         optimistic: true,
       };
 
@@ -134,6 +141,8 @@ type AddInputArgs = {
 
 export function useAddInputToMessage() {
   const qc = useQueryClient();
+  const userId = useUserId();
+  const userName = useUserDisplayName();
 
   const addInputToMessageMutation = useMutation<Message, Error, AddInputArgs>({
     mutationFn: async ({ threadId, messageId, name, value, channels }) => {
@@ -154,7 +163,8 @@ export function useAddInputToMessage() {
                     value,
                     channels: channels ?? {},
                     createdAt: new Date(),
-                    createdBy: 'me',
+                    createdBy: userName || 'You',
+                    createdByUserId: userId ?? undefined,
                   },
                 ],
               }

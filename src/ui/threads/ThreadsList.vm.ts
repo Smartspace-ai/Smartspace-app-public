@@ -16,7 +16,7 @@ export function useThreadsListVm({workspaceId,  pageSize = 30 }: Options) {
     data,
     error,
     isError,
-    isLoading,
+    isPending,
     isFetching,
     isFetchingNextPage,
     hasNextPage,
@@ -24,7 +24,7 @@ export function useThreadsListVm({workspaceId,  pageSize = 30 }: Options) {
     refetch,
   } = useInfiniteThreads(workspaceId, { pageSize });
   const threads = data?.pages.flatMap(page => page.data) ?? [];
-  const isInitialLoading = isLoading || (isFetching && !data);
+  const isInitialLoading = !workspaceId || isPending || (isFetching && !data);
   const firstThread = threads[0] ?? null;
 
   // If a thread exists in the server list, it's not a client-only draft anymore.

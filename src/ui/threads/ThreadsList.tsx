@@ -1,11 +1,10 @@
 // src/ui/threads/ThreadsList.tsx
-import Skeleton from '@mui/material/Skeleton';
 import { AlertTriangle, MessageSquare } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
-import { Button } from '@/shared/ui/mui-compat/button';
+import { Skeleton } from '@/shared/ui/mui-compat/skeleton';
 
 import ThreadItem from './ThreadItem';
 import { useThreadsListVm } from './ThreadsList.vm';
@@ -42,7 +41,7 @@ function EmptyThreadsState() {
   );
 }
 
-function ThreadsErrorState({ onRetry }: { onRetry: () => void }) {
+function ThreadsErrorState() {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center h-full px-4">
       <div className="rounded-full bg-destructive/10 p-3 mb-3">
@@ -50,9 +49,17 @@ function ThreadsErrorState({ onRetry }: { onRetry: () => void }) {
       </div>
       <h3 className="text-sm font-medium text-gray-900 mb-1">Failed to load threads</h3>
       <p className="text-xs text-gray-500 mb-4">Please check your connection and try again.</p>
-      <Button variant="outline" size="sm" onClick={onRetry}>
-        Retry
-      </Button>
+    </div>
+  );
+}
+
+function ThreadsInlineErrorBanner() {
+  return (
+    <div className="px-3 pt-3">
+      <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <span className="text-xs font-medium">Failed to refresh threads</span>
+      </div>
     </div>
   );
 }
@@ -63,8 +70,8 @@ export default function ThreadsList() {
   const {
     threads,
     isInitialLoading,
+    isError,
     error,
-    refetch,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
@@ -72,7 +79,8 @@ export default function ThreadsList() {
     useThreadsListVm({ workspaceId, pageSize: 30 });
 
   if (isInitialLoading) return <ThreadsLoadingSkeleton />;
-  if (error && !threads.length) return <ThreadsErrorState onRetry={() => refetch()} />;
+  const hasError = !!(isError || error);
+  if (hasError && !threads.length) return <ThreadsErrorState />;
   if (!threads.length) return <EmptyThreadsState />;
 
   return (
@@ -81,6 +89,9 @@ export default function ThreadsList() {
       overscan={200}
       endReached={() => {
         if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+      }}
+      components={{
+        Header: () => (hasError ? <ThreadsInlineErrorBanner /> : null),
       }}
       itemContent={(index, thread) => (
         <div className="px-3 pb-1">
