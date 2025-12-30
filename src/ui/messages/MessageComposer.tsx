@@ -107,9 +107,14 @@ export default function MessageComposer() {
 
     // helpers
     supportsFiles,
+    isDraftThread,
   } = vm;
 
-  const { uploadFilesMutation, getFileBlobUrl } = useFileMutations({ workspaceId, threadId });
+  // Draft threads use a placeholder thread id; omit it for uploads so files still work in draft mode.
+  const { uploadFilesMutation, getFileBlobUrl } = useFileMutations({
+    workspaceId,
+    threadId: isDraftThread ? undefined : threadId,
+  });
   // Provide a global downloader for ssImage node views (non-React context)
   if (typeof window !== 'undefined') {
     window.__ssDownloadFile = async (id: string) => {
@@ -486,16 +491,15 @@ export default function MessageComposer() {
           <div className="flex items-center justify-between px-4 py-2 bg-background">
             <div className="flex items-center gap-3">
               {supportsFiles && (
-                <Button
+                <IconButton
                   type="button"
-                  size="small"
                   onClick={handlePickFilesClick}
                   disabled={disabled}
-                  startIcon={<Paperclip className="h-4 w-4" />}
-                  className="text-xs text-muted-foreground hover:text-foreground normal-case px-2 py-1 h-7 min-w-0"
+                  aria-label="Upload files"
+                  className="text-muted-foreground hover:text-foreground"
                 >
-                  Upload files
-                </Button>
+                  <Paperclip className="h-5 w-5" strokeWidth={2.5} />
+                </IconButton>
               )}
             </div>
 

@@ -83,7 +83,7 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     handleKeyDown,
     handleSendMessage,
     isSending: sendMessage.isPending || !!thread?.isFlowRunning,
-    supportsFiles: !!workspace?.supportsFiles && !isDraftThread,
+    supportsFiles: !!workspace?.supportsFiles,
     disabled: thread?.isFlowRunning,
     isDraftThread,
 

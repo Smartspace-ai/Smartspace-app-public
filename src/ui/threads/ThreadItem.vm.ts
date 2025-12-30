@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import type { MessageThread } from '@/domains/threads';
 import { useDeleteThread, useSetFavorite } from '@/domains/threads/mutations';
+import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 type UseThreadItemVmArgs = {
   thread: MessageThread;
@@ -13,6 +14,7 @@ type UseThreadItemVmArgs = {
 
 export function useThreadItemVm({ thread, onAfterDelete }: UseThreadItemVmArgs) {
   const navigate = useNavigate();
+  const { workspaceId: routeWorkspaceId, threadId: routeThreadId } = useRouteIds();
   const { mutate: setFavorite, isPending: isSetFavoritePending } = useSetFavorite();
   const { mutateAsync: deleteThread } = useDeleteThread();
 
@@ -33,13 +35,22 @@ export function useThreadItemVm({ thread, onAfterDelete }: UseThreadItemVmArgs) 
 
   const remove = useCallback(async () => {
     try {
+      // If we're deleting the currently-selected thread, navigate away first so we don't render
+      // /thread/$threadId after its caches are removed (which can trigger the route error screen).
+      if (routeThreadId && thread.id === routeThreadId) {
+        const wsId = thread.workSpaceId || routeWorkspaceId;
+        if (wsId) {
+          navigate({ to: '/workspace/$workspaceId', params: { workspaceId: wsId }, replace: true });
+        }
+      }
+
       await deleteThread({ threadId: thread.id });
       toast.success('Thread deleted');
       onAfterDelete?.();
     } catch {
       toast.error('Failed to delete thread');
     }
-  }, [deleteThread, onAfterDelete, thread.id]);
+  }, [deleteThread, navigate, onAfterDelete, routeThreadId, routeWorkspaceId, thread.id, thread.workSpaceId]);
 
   return useMemo(
     () => ({
