@@ -83,7 +83,9 @@ export const Route = createFileRoute('/_protected')({
             const authForToken = createAuthAdapter();
             await authForToken.getAccessToken({ silentOnly: true });
             if (isInTeams()) setTeamsAuthFailed(false);
-          } catch {
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn('[Auth] Silent token acquisition failed', err);
             // In Teams, redirecting to /login can cause an infinite loop when NAA/MSAL
             // fails with redirects (e.g. 307). Show a stable error screen instead.
             if (isInTeams()) setTeamsAuthFailed(true);

@@ -1,10 +1,15 @@
 // src/platform/integrations/msgraph.ts
 import { msalInstance } from '@/platform/auth/msalClient';
+import { acquireNaaToken } from '@/platform/auth/naaClient';
+import { isInTeams } from '@/platform/auth/utils';
 
 // Reasonable defaults; override per-call if needed
 const DEFAULT_SCOPES = ['User.Read']; // add others as needed
 
 async function getGraphToken(scopes: string[] = DEFAULT_SCOPES): Promise<string> {
+  if (isInTeams()) {
+    return acquireNaaToken(scopes, { silentOnly: true });
+  }
   const account = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
   if (!account) throw new Error('No active account for Graph token');
   const res = await msalInstance.acquireTokenSilent({ scopes, account });

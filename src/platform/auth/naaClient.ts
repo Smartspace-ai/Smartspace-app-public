@@ -9,6 +9,35 @@ import { app as teamsApp } from '@microsoft/teams-js';
 
 let pcaPromise: Promise<IPublicClientApplication> | null = null;
 
+const NAA_ACTIVE_HOME_ACCOUNT_ID_KEY = 'naaActiveHomeAccountId';
+
+function pickPreferredAccount(pca: IPublicClientApplication) {
+  const current = pca.getActiveAccount();
+  if (current) return current;
+  const all = pca.getAllAccounts();
+  if (all.length === 0) return null;
+
+  let preferred = all[0];
+  try {
+    const saved = localStorage.getItem(NAA_ACTIVE_HOME_ACCOUNT_ID_KEY);
+    if (saved) preferred = all.find(a => a.homeAccountId === saved) ?? preferred;
+  } catch {
+    // ignore storage failures
+  }
+  return preferred;
+}
+
+function setActiveAccount(pca: IPublicClientApplication, account: any) {
+  if (!account) return;
+  pca.setActiveAccount(account);
+  try {
+    const id = account?.homeAccountId;
+    if (typeof id === 'string' && id.length) localStorage.setItem(NAA_ACTIVE_HOME_ACCOUNT_ID_KEY, id);
+  } catch {
+    // ignore storage failures
+  }
+}
+
 export const naaInit = () => {
   if (!pcaPromise) {
     pcaPromise = (async () => {
@@ -34,13 +63,41 @@ export const naaInit = () => {
         auth: {
           clientId,
           authority,
+          // Keep consistent with web MSAL config; important for SPA reply URLs.
+          redirectUri: window.location.origin,
           navigateToLoginRequestUrl: false,
           supportsNestedAppAuth: true,
         },
         cache: { cacheLocation: 'localStorage' },
         system: { allowNativeBroker: false },
       };
-      return createNestablePublicClientApplication(config);
+      const pca = createNestablePublicClientApplication(config);
+
+      // Ensure MSAL storage/caches are ready before reading accounts/tokens.
+      try {
+        await (pca as any).initialize?.();
+      } catch {
+        // ignore init failures; token acquisition will surface errors if any
+      }
+
+      // If any redirect-based flows happened, process them.
+      try {
+        const redirectResult = await (pca as any).handleRedirectPromise?.();
+        const account = redirectResult?.account ?? pickPreferredAccount(pca);
+        if (account) setActiveAccount(pca, account);
+      } catch {
+        // ignore redirect handling failures
+      }
+
+      // If we still have cached accounts, pick one deterministically.
+      try {
+        const account = pickPreferredAccount(pca);
+        if (account) setActiveAccount(pca, account);
+      } catch {
+        // ignore
+      }
+
+      return pca;
     })();
   }
   return pcaPromise;
@@ -69,7 +126,15 @@ export const acquireNaaToken = async (
   opts?: InternalAcquireOptions
 ): Promise<string> => {
   const pca = await naaInit();
-  const account = pca.getActiveAccount() ?? pca.getAllAccounts()[0];
+
+  // NAA accounts can appear slightly after init; retry briefly to avoid flakiness.
+  let account: any = null;
+  for (let attempt = 0; attempt < 3 && !account; attempt++) {
+    account = pickPreferredAccount(pca);
+    if (account) break;
+    await new Promise((r) => setTimeout(r, 150 + attempt * 250));
+  }
+  if (account) setActiveAccount(pca, account);
   if (!account) throw new InteractionRequiredAuthError('No account available');
 
   const scopeKey = [...scopes].sort().join(' ');
