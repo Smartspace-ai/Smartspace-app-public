@@ -71,7 +71,8 @@ export const naaInit = () => {
         cache: { cacheLocation: 'localStorage' },
         system: { allowNativeBroker: false },
       };
-      const pca = createNestablePublicClientApplication(config);
+      // Note: in msal-browser, this returns a Promise.
+      const pca = await createNestablePublicClientApplication(config);
 
       // Ensure MSAL storage/caches are ready before reading accounts/tokens.
       try {
