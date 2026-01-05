@@ -78,15 +78,6 @@ export const Route = createFileRoute('/_protected')({
         throw redirect({ to: '/login', search: { redirect: safeRedirectParam } });
       }
     } catch (error) {
-      // TanStack Router implements redirects by throwing a Response (usually 307) with a Location header.
-      // We *must not* treat those as auth errors, otherwise we log noise and can create redirect loops.
-      if (
-        typeof Response !== 'undefined' &&
-        error instanceof Response &&
-        (error.status === 301 || error.status === 302 || error.status === 303 || error.status === 307 || error.status === 308)
-      ) {
-        throw error;
-      }
       // eslint-disable-next-line no-console
       console.error('Authentication failed:', error);
       throw redirect({ to: '/login', search: { redirect: safeRedirectParam } });
