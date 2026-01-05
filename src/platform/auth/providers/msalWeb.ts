@@ -1,5 +1,5 @@
 import { msalInstance } from '@/platform/auth/msalClient';
-import { interactiveLoginRequest } from '@/platform/auth/msalConfig';
+import { interactiveLoginRequest, resolvedClientId } from '@/platform/auth/msalConfig';
 import { ensureMsalActiveAccount } from '@/platform/auth/msalActiveAccount';
 import { normalizeRedirectPath, parseScopes } from '@/platform/auth/utils';
 
@@ -10,6 +10,7 @@ export function createMsalWebAdapter(): AuthAdapter {
 
   return {
     async getAccessToken(opts?: GetTokenOptions) {
+      if (!resolvedClientId) throw new Error('MSAL is not configured: missing Client ID');
       await ensureActive();
       const scopes = opts?.scopes ?? parseScopes(import.meta.env.VITE_CLIENT_SCOPES);
       const account = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
@@ -35,12 +36,11 @@ export function createMsalWebAdapter(): AuthAdapter {
     },
 
     // Use redirect for sign-in (your current behavior)
-    async signIn() {
-      // Persist intended redirect, default to /workspace (tweak to your app)
-      const redirectUrl = normalizeRedirectPath(
-        new URLSearchParams(window.location.search).get('redirect'),
-        '/workspace'
-      );
+    async signIn(redirectTo?: string) {
+      if (!resolvedClientId) throw new Error('MSAL is not configured: missing Client ID');
+      // Persist intended redirect, default to /workspace.
+      // IMPORTANT: do not read window.location.search here; callers should pass the redirect explicitly.
+      const redirectUrl = normalizeRedirectPath(redirectTo ?? null, '/workspace');
       try { sessionStorage.setItem('msalRedirectUrl', redirectUrl); } catch {
         // no session storage; no redirect handled in the app
       }

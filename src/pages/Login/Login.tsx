@@ -85,7 +85,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
     setError(null);
     
     try {
-      await auth.adapter.signIn();
+      await auth.adapter.signIn(redirectTo);
       // For web auth (MSAL), signIn() performs a redirect, so we don't navigate here
       // For Teams auth, the redirect will be handled by the auto-login effect
     } catch (authError: unknown) {

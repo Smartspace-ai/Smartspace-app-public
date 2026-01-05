@@ -1,8 +1,18 @@
 import { Configuration, type RedirectRequest } from '@azure/msal-browser';
 
-// Environment variables (provided via Vite)
-const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
-const AUTHORITY = import.meta.env.VITE_CLIENT_AUTHORITY;
+// Environment variables (provided via Vite) or injected at runtime via window.ssconfig
+const runtime = (() => {
+  try { return (window as any)?.ssconfig ?? {}; } catch { return {}; }
+})();
+
+const CLIENT_ID = (runtime?.Client_Id ?? import.meta.env.VITE_CLIENT_ID) as string | undefined;
+const AUTHORITY = (runtime?.Client_Authority ?? import.meta.env.VITE_CLIENT_AUTHORITY) as string | undefined;
+
+const RESOLVED_CLIENT_ID = CLIENT_ID || '';
+const RESOLVED_AUTHORITY =
+  (typeof AUTHORITY === 'string' && AUTHORITY.length)
+    ? AUTHORITY
+    : 'https://login.microsoftonline.com/organizations';
 const CHAT_API_URI = import.meta.env.VITE_CHAT_API_URI;
 const CUSTOM_SCOPES = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
 const TEAMS_SSO_RESOURCE = import.meta.env.VITE_TEAMS_SSO_RESOURCE;
@@ -19,8 +29,8 @@ export const handleTrailingSlash = (url: string): string => {
 // MSAL configuration object
 const msalConfig: Configuration = {
   auth: {
-    clientId: CLIENT_ID,
-    authority: AUTHORITY,
+    clientId: RESOLVED_CLIENT_ID,
+    authority: RESOLVED_AUTHORITY,
     redirectUri: handleTrailingSlash(window.location.origin),
     postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
     // For Teams, we need to support popup flows
@@ -85,5 +95,7 @@ export const getTeamsResource = (): string => {
   }
 };
 
+export const resolvedClientId = RESOLVED_CLIENT_ID;
+export const resolvedAuthority = RESOLVED_AUTHORITY;
 export { msalConfig };
 export default msalConfig;
