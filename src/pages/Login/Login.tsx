@@ -24,7 +24,6 @@ export function Login() {
   const [showGenericError, setShowGenericError] = useState(false);
   const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
   const [session, setSession] = useState<{ accountId?: string; displayName?: string } | null>(null);
-  const [hasValidToken, setHasValidToken] = useState(false);
   // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
@@ -37,14 +36,10 @@ export function Login() {
           // where an account is cached but silent token acquisition fails.
           try {
             await auth.adapter.getAccessToken({ silentOnly: true });
-            setHasValidToken(true);
             navigate({ to: redirectParam, replace: true });
           } catch {
-            setHasValidToken(false);
             // stay on the login page; user can click "Sign in" to trigger interactive flow
           }
-        } else {
-          setHasValidToken(false);
         }
       } catch (err) {
         // No existing session, continue with login flow
@@ -71,15 +66,14 @@ export function Login() {
     }
   }, [isTeamsInitialized, isLoading, hasAttemptedAutoLogin, session, auth, navigate, redirectParam]);
 
-  // Avoid flashing the login UI only if we *know* we're able to continue (token ok) and navigation will occur.
-  // If a session exists but token acquisition fails, we must still show the login UI (otherwise it's a blank page).
-  if (session && hasValidToken) {
+  // Avoid flashing the login UI if we already have a session
+  if (session) {
     return null;
   }
 
   // Fallback manual login for browser or if Teams SSO fails
   const handleManualLogin = async () => {
-    if (session && hasValidToken) {
+    if (session) {
       navigate({ to: redirectParam, replace: true });
       return;
     }
@@ -135,16 +129,6 @@ export function Login() {
           {error}
           <div className="text-xs text-gray-600">
             Please contact your IT administrator if this issue persists.
-          </div>
-        </div>
-      );
-    }
-
-    if (session && !hasValidToken) {
-      return (
-        <div className="text-red-600 text-sm text-center max-w-sm">
-          <div className="mb-2">
-            You appear to be signed in, but we couldn’t obtain an access token silently. Please sign in again.
           </div>
         </div>
       );
