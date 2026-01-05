@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import msalConfig, { apiConfig, getTeamsResource, graphConfig, handleTrailingSlash, interactiveLoginRequest, isInTeams, loginRequest, teamsLoginRequest } from '@/platform/auth/msalConfig';
+import msalConfig, { apiConfig, getTeamsResource, graphConfig, handleTrailingSlash, interactiveLoginRequest, loginRequest, teamsLoginRequest } from '@/platform/auth/msalConfig';
+import { isInTeams } from '@/platform/auth/utils';
 
 describe('msalConfig', () => {
   it('handleTrailingSlash appends when missing', () => {

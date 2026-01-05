@@ -4,6 +4,8 @@ import {
     createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
 
+import { isInTeams as detectIsInTeams } from '@/platform/auth/utils';
+
 type TeamsTheme = 'default' | 'dark' | 'contrast';
 
 interface TeamsContextType {
@@ -25,17 +27,7 @@ const TeamsContext = createContext<TeamsContextType>({
 export const useTeams = () => useContext(TeamsContext);
 
 export function TeamsProvider({ children }: { children: ReactNode }) {
-  // quick heuristic: iframe or ?inTeams=true → likely inside Teams
-  const likelyInTeams = (() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      const inParam = new URLSearchParams(window.location.search).get('inTeams') === 'true';
-      const embedded = window.parent !== window;
-      return inParam || embedded;
-    } catch {
-      return false;
-    }
-  })();
+  const likelyInTeams = detectIsInTeams();
 
   const [isInTeams, setIsInTeams] = useState(likelyInTeams);
   const [teamsContext, setTeamsContext] = useState<app.Context | null>(null);

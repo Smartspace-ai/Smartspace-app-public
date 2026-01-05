@@ -39,18 +39,25 @@ export function createTeamsNaaAdapter(): AuthAdapter {
     },
 
     async getSession() {
-      try {
-        // Initialize if needed; ignore if already initialized
-        try { await teamsApp.initialize(); } catch {
-          // ignore – app may already be initialized by host
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          // Initialize if needed; ignore if already initialized
+          try { await teamsApp.initialize(); } catch { /* ignore */ }
+
+          const ctx = await teamsApp.getContext();
+          const user = (ctx as any)?.user;
+          if (user) {
+            return { accountId: user.id, displayName: user.displayName };
+          }
+        } catch {
+          // ignore and retry
         }
-        const ctx = await teamsApp.getContext();
-        const user = (ctx as any)?.user;
-        if (!user) return null;
-        return { accountId: user.id, displayName: user.displayName };
-      } catch {
-        return null;
+
+        if (attempt < 3) {
+          await new Promise((r) => setTimeout(r, 250 * attempt));
+        }
       }
+      return null;
     },
 
     // SSO is handled by Teams; these are no-ops by design

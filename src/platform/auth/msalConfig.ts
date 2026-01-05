@@ -1,5 +1,4 @@
 import { Configuration, PopupRequest } from '@azure/msal-browser';
-import { isInTeams } from '@/platform/auth/utils';
 
 // Environment variables (provided via Vite)
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
@@ -86,5 +85,5 @@ export const getTeamsResource = (): string => {
   }
 };
 
-export { isInTeams, msalConfig };
+export { msalConfig };
 export default msalConfig;

@@ -1,11 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-import { createMsalWebAdapter } from './providers/msalWeb';
-import { createTeamsNaaAdapter } from './providers/teamsNaa';
+import { createAuthAdapter, type AdapterMode } from './index';
 import type { AuthAdapter } from './types';
-import { isInTeams } from './utils';
-
-type AdapterMode = 'auto' | 'web' | 'teams';
 
 type AuthContextValue = {
   adapter: AuthAdapter;
@@ -15,24 +11,10 @@ type AuthContextValue = {
 
 const AuthCtx = createContext<AuthContextValue | null>(null);
 
-function pickAdapter(mode: AdapterMode): AuthAdapter {
-  const factory =
-    mode === 'teams' || (mode === 'auto' && isInTeams())
-      ? createTeamsNaaAdapter
-      : createMsalWebAdapter;
-  const adapter = factory();
-  try {
-    (window as any).__authAdapterKind = factory === createTeamsNaaAdapter ? 'teams' : 'web';
-  } catch {
-    // ignore
-  }
-  return adapter;
-}
-
 type Props = { children: ReactNode; mode?: AdapterMode };
 
 export function AuthProvider({ children, mode = 'auto' }: Props) {
-  const [adapter] = useState(() => pickAdapter(mode));
+  const [adapter] = useState(() => createAuthAdapter(mode));
   const [session, setSession] = useState<AuthContextValue['session']>(null);
   const [loading, setLoading] = useState(true);
 

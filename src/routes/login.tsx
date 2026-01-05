@@ -2,7 +2,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { createAuthAdapter } from '@/platform/auth';
-import { isInTeams } from '@/platform/auth/utils';
 
 import { Login } from '@/pages/Login/Login';
 
@@ -11,13 +10,6 @@ export const Route = createFileRoute('/login')({
     const auth = createAuthAdapter();
     const session = await auth.getSession();
     if (session) {
-      const teamsFailed = (() => {
-        try { return sessionStorage.getItem('teamsAuthFailed') === '1'; } catch { return false; }
-      })();
-      if (isInTeams() && teamsFailed) {
-        throw redirect({ to: '/auth-failed', search: { redirect: '/workspace' } });
-      }
-
       const stored = auth.getStoredRedirectUrl?.();
       const searchRedirect = new URLSearchParams(location.search ?? '').get('redirect');
       const to = stored || searchRedirect || '/workspace';

@@ -1,24 +1,12 @@
 import { msalInstance } from '@/platform/auth/msalClient';
 import { interactiveLoginRequest } from '@/platform/auth/msalConfig';
+import { ensureMsalActiveAccount } from '@/platform/auth/msalActiveAccount';
 import { parseScopes } from '@/platform/auth/utils';
 
 import type { AuthAdapter, GetTokenOptions } from '../types';
 
 export function createMsalWebAdapter(): AuthAdapter {
-  const ensureActive = async () => {
-    const current = msalInstance.getActiveAccount();
-    const all = msalInstance.getAllAccounts();
-    if (!current && all.length > 0) {
-      let preferred = all[0];
-      try {
-        const saved = localStorage.getItem('msalActiveHomeAccountId');
-        if (saved) preferred = all.find(a => a.homeAccountId === saved) ?? preferred;
-      } catch {
-        // ignore storage failures
-      }
-      msalInstance.setActiveAccount(preferred);
-    }
-  };
+  const ensureActive = async () => ensureMsalActiveAccount(msalInstance);
 
   return {
     async getAccessToken(opts?: GetTokenOptions) {

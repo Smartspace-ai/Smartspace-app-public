@@ -7,6 +7,7 @@ import * as ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { msalInstance } from '@/platform/auth/msalClient';
+import { ensureMsalActiveAccount, setMsalActiveAccount } from '@/platform/auth/msalActiveAccount';
 
 import AppProviders from '@/app/AppProviders'; // <- fix case
 
@@ -38,33 +39,9 @@ declare module '@tanstack/react-router' {
     await msalInstance.initialize();
     const redirectResult = await msalInstance.handleRedirectPromise();
 
-    const setActive = (account: any) => {
-      msalInstance.setActiveAccount(account);
-      try {
-        // Helps pick the right account on next load when multiple accounts are cached.
-        const id = account?.homeAccountId;
-        if (typeof id === 'string' && id.length) localStorage.setItem('msalActiveHomeAccountId', id);
-      } catch {
-        // ignore storage failures
-      }
-    };
-
     // Prefer the account returned from redirect (most accurate), otherwise fall back.
-    if (redirectResult?.account) {
-      setActive(redirectResult.account);
-    } else {
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
-        let preferred: any = null;
-        try {
-          const saved = localStorage.getItem('msalActiveHomeAccountId');
-          preferred = saved ? accounts.find(a => a.homeAccountId === saved) : null;
-        } catch {
-          preferred = null;
-        }
-        setActive(preferred ?? accounts[0]);
-      }
-    }
+    if (redirectResult?.account) setMsalActiveAccount(msalInstance, redirectResult.account);
+    else await ensureMsalActiveAccount(msalInstance);
 
     msalInstance.addEventCallback((event: EventMessage) => {
       // Only update active account on events that actually carry an account.
@@ -78,7 +55,7 @@ declare module '@tanstack/react-router' {
         const account = (payload && typeof payload === 'object' && 'account' in payload)
           ? (payload as any).account
           : null;
-        if (account) setActive(account);
+        if (account) setMsalActiveAccount(msalInstance, account);
       }
     });
   } catch (e) {

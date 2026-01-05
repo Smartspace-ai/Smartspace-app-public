@@ -1,7 +1,5 @@
 // src/routes/__root.tsx
 import { Outlet, createRootRoute } from '@tanstack/react-router'
-
-import AppProviders from '@/app/AppProviders'
 import { RootErrorBoundary } from '@/app/ui/RouteErrorEnvelope'
 
 import TeamsLoaderPage from '@/pages/teams_loader'
@@ -32,11 +30,7 @@ function RootContent() {
 }
 
 export default function Root() {
-  return (
-    <AppProviders>
-      <RootContent />
-    </AppProviders>
-  )
+  return <RootContent />
 }
 // routes/__root.tsx
 export const Route = createRootRoute({

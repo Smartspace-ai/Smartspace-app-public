@@ -1,8 +1,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
-import { isInTeams } from '@/platform/auth/msalConfig';
 import { useAuth } from '@/platform/auth/session';
+import { isInTeams } from '@/platform/auth/utils';
 
 import { useTeams } from '@/app/providers';
 
