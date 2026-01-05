@@ -11,5 +11,11 @@ export function createAuthAdapter(mode: AdapterMode = 'auto'): AuthAdapter {
     mode === 'teams' || (mode === 'auto' && isInTeams())
       ? createTeamsNaaAdapter
       : createMsalWebAdapter;
-  return pick();
+  const adapter = pick();
+  try {
+    (window as any).__authAdapterKind = pick === createTeamsNaaAdapter ? 'teams' : 'web';
+  } catch {
+    // ignore
+  }
+  return adapter;
 }

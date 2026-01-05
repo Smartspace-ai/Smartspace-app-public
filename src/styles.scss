@@ -93,3 +93,8 @@
     }
   }
 }
+
+/* Teams background is now handled by the MessageList wrapper itself (tag-driven gradient),
+   so we don't force a flat overlay here. */
+
+/* (debug overlays removed) */

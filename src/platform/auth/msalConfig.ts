@@ -1,4 +1,5 @@
 import { Configuration, PopupRequest } from '@azure/msal-browser';
+import { isInTeams } from '@/platform/auth/utils';
 
 // Environment variables (provided via Vite)
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
@@ -14,15 +15,6 @@ const GRAPH_PHOTO_ENDPOINT = 'https://graph.microsoft.com/v1.0/me/photo/$value';
 
 export const handleTrailingSlash = (url: string): string => {
   return url.endsWith('/') ? url : `${url}/`;
-};
-
-// Check if we're running in Teams
-const isInTeams = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const inTeamsParam = urlParams.get('inTeams') === 'true';
-  const parentCheck = window.parent !== window;
-  
-  return inTeamsParam || parentCheck;
 };
 
 // MSAL configuration object

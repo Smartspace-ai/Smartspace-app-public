@@ -49,11 +49,54 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
   // Optional: expose minimal global for your axios interceptor
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).__teamsState = {
-        isInTeams, isInitialized: isTeamsInitialized, teamsContext, teamsUser,
+      (window as unknown as { __teamsState?: unknown }).__teamsState = {
+        isInTeams, isInitialized: isTeamsInitialized, teamsContext, teamsUser, teamsTheme,
       };
     }
-  }, [isInTeams, isTeamsInitialized, teamsContext, teamsUser]);
+  }, [isInTeams, isTeamsInitialized, teamsContext, teamsUser, teamsTheme]);
+
+  // Apply Teams theme to our document so Tailwind/shadcn CSS variables switch correctly.
+  // Tailwind "dark" mode is class-based in this app.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (!likelyInTeams) return;
+
+    const root = document.documentElement;
+    try {
+      const applyLight = () => {
+        // TEMP: force light theme in Teams regardless of host theme.
+        // This keeps the UI consistent with the (light) web UI.
+        root.classList.remove('dark');
+        document.body?.classList?.remove?.('dark');
+        document.getElementById('root')?.classList?.remove?.('dark');
+
+        // Force the critical CSS vars used by bg-background / from-background so Teams web
+        // can't make the page look "dark" via host-injected styling.
+        // (HSL tokens; matches the light theme defaults in src/_theme.scss)
+        root.style.setProperty('--background', '0 0% 100%');
+        root.style.setProperty('--popover', '0 0% 100%');
+
+        // Prefer light form control rendering too.
+        (root.style as unknown as CSSStyleDeclaration & { colorScheme?: string }).colorScheme = 'light';
+      };
+
+      applyLight();
+
+      // Also stamp a theme marker for any future CSS overrides.
+      root.setAttribute('data-teams-theme', 'default');
+
+      // Teams web can re-apply classes/styles after load; keep light pinned.
+      const obs = new MutationObserver(() => applyLight());
+      obs.observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
+      try {
+        if (document.body) obs.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
+      } catch { /* ignore */ }
+      return () => obs.disconnect();
+
+    } catch {
+      // ignore DOM failures
+    }
+  }, [teamsTheme, likelyInTeams]);
 
   useEffect(() => {
     if (!likelyInTeams) {
@@ -76,7 +119,7 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
 
           setTeamsContext(ctx);
           setTeamsUser(ctx.user ?? null);
-          setTeamsTheme(((ctx as any).app?.theme ?? 'default') as TeamsTheme);
+          setTeamsTheme(((ctx as unknown as { app?: { theme?: unknown } }).app?.theme ?? 'default') as TeamsTheme);
 
           // theme changes (no unregister API, guard with mounted ref)
           app.registerOnThemeChangeHandler((theme) => {

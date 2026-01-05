@@ -6,15 +6,12 @@ import path from 'path';
 import { createRequire } from 'module';
 import { defineConfig } from 'vite';
 
-// Silence verbose logging from Nx Vite ts-paths plugin to avoid noisy "Unable to resolve" messages
-process.env.NX_VERBOSE_LOGGING = 'false';
-
 const publicOriginHost = (() => {
   const origin = process.env.PUBLIC_ORIGIN;
   if (!origin) return undefined;
   try {
     return new URL(origin).hostname;
-  } catch {
+  } catch (_err) {
     return undefined;
   }
 })();

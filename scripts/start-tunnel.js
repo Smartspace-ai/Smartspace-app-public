@@ -4,6 +4,7 @@ const { spawn } = require("child_process");
 // Make tunneling optional for local dev. If PUBLIC_ORIGIN is not defined,
 // simply skip starting a tunnel instead of exiting with an error.
 const origin = process.env.PUBLIC_ORIGIN;
+const tunnelId = String(process.env.TUNNEL_ID || "").trim();
 if (!origin) {
   console.log("PUBLIC_ORIGIN not set. Skipping dev tunnel.");
   process.exit(0);
@@ -22,9 +23,16 @@ try {
 
   // VS Code / Microsoft Dev Tunnels CLI (installed by the "Dev Tunnels" tooling).
   // Typical usage: devtunnel host -p 4300 --allow-anonymous
+  // To reuse a stable URL, provide an existing tunnel id as the first argument: devtunnel host <tunnel-id> --allow-anonymous
+  // Note: when using an existing tunnel id, passing "-p/--port-numbers" can cause the service to reject a "batch update of ports".
+  // In that case, create/update ports separately (devtunnel port create/update) and host without "-p".
   // If this fails, set TUNNEL_REQUIRED=true to fail fast, otherwise we continue without a tunnel.
-  const args = ["host", "-p", String(port), "--allow-anonymous"];
+  const args = ["host"];
+  if (tunnelId) args.push(tunnelId);
+  if (!tunnelId) args.push("-p", String(port));
+  args.push("--allow-anonymous");
   console.log(`Starting dev tunnel for :${port} (expected public origin host: ${host})`);
+  if (tunnelId) console.log(`Reusing dev tunnel id: ${tunnelId}`);
 
   const p = spawn("devtunnel", args, { stdio: "inherit", shell: true });
   p.on("exit", (code) => {
@@ -40,3 +48,5 @@ try {
   console.warn(`Invalid PUBLIC_ORIGIN ("${origin}"). Skipping dev tunnel.`, err?.message ?? err);
   process.exit(0);
 }
+
+
