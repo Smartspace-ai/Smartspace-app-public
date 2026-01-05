@@ -26,7 +26,6 @@ export function Login() {
   const [session, setSession] = useState<{ accountId?: string; displayName?: string } | null>(null);
   const [hasValidToken, setHasValidToken] = useState(false);
   const [silentTokenError, setSilentTokenError] = useState<string | null>(null);
-  const showTokenErrorPanel = !!session && !hasValidToken;
   // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
@@ -223,8 +222,8 @@ export function Login() {
             </Button>
           )}
 
-          {/* Show error message even while loading to surface Teams/MSAL details */}
-          {(showTokenErrorPanel || showGenericError || error) && (
+          {/* Show error message even while loading to surface Teams/MSAL details on mobile */}
+          {(showGenericError || error) && (
             getErrorMessage()
           )}
 
