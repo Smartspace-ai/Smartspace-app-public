@@ -1,4 +1,4 @@
-import { Configuration, PopupRequest } from '@azure/msal-browser';
+import { Configuration, type RedirectRequest } from '@azure/msal-browser';
 
 // Environment variables (provided via Vite)
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
@@ -40,7 +40,7 @@ const msalConfig: Configuration = {
 };
 
 // Token request configurations
-export const loginRequest: PopupRequest = {
+export const loginRequest: RedirectRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
   prompt: 'none',
   extraQueryParameters: {
@@ -49,7 +49,7 @@ export const loginRequest: PopupRequest = {
 };
 
 // Fallback login request when silent auth fails
-export const interactiveLoginRequest: PopupRequest = {
+export const interactiveLoginRequest: RedirectRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
   prompt: 'select_account',
   extraQueryParameters: {
@@ -58,7 +58,7 @@ export const interactiveLoginRequest: PopupRequest = {
 };
 
 // Teams-specific login request for SSO scenarios
-export const teamsLoginRequest: PopupRequest = {
+export const teamsLoginRequest: RedirectRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
 };
 

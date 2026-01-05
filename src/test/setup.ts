@@ -10,6 +10,10 @@ vi.mock('@/platform/auth/msalClient', () => ({
   msalInstance: {
     acquireTokenSilent: vi.fn(async () => ({ accessToken: 'test-token' })),
     loginRedirect: vi.fn(async () => undefined),
+    logoutRedirect: vi.fn(async () => undefined),
+    getActiveAccount: vi.fn(() => null),
+    getAllAccounts: vi.fn(() => []),
+    setActiveAccount: vi.fn(() => undefined),
   },
 }));
 

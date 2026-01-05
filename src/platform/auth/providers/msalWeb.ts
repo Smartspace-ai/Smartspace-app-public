@@ -18,19 +18,14 @@ export function createMsalWebAdapter(): AuthAdapter {
         throw new Error('No active account');
       }
 
-      try {
-        const res = await msalInstance.acquireTokenSilent({
-          account: account ?? undefined,
-          scopes,
-          forceRefresh: !!opts?.forceRefresh,
-        });
-        return res.accessToken;
-      } catch (e) {
-        if (opts?.silentOnly) throw e;
-        // Interactive fallback
-        const res = await msalInstance.acquireTokenPopup({ scopes });
-        return res.accessToken;
-      }
+      // Best practice: token acquisition should be side-effect free (no popup/redirect) unless
+      // explicitly initiated by the user via signIn(). Route guards handle interactive sign-in.
+      const res = await msalInstance.acquireTokenSilent({
+        account: account ?? undefined,
+        scopes,
+        forceRefresh: !!opts?.forceRefresh,
+      });
+      return res.accessToken;
     },
 
     async getSession() {
@@ -53,7 +48,7 @@ export function createMsalWebAdapter(): AuthAdapter {
     },
 
     async signOut() {
-      await msalInstance.logoutPopup();
+      await msalInstance.logoutRedirect();
     },
 
     getStoredRedirectUrl() {
