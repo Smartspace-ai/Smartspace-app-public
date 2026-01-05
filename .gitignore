@@ -34,9 +34,6 @@ yarn-error.log
 testem.log
 /typings
 
-# Vite/Node may emit a compiled timestamped config next to vite.config.mts on some platforms
-vite.config.mts.timestamp-*.mjs
-
 # System Files
 .DS_Store
 Thumbs.db
