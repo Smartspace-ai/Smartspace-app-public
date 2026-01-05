@@ -11,6 +11,28 @@ export const Route = createFileRoute('/_protected')({
   // If you find redirects during hover annoying, disable preload on links into /_protected.
   errorComponent: ProtectedErrorBoundary,
   beforeLoad: async ({ location }) => {
+    const safeRedirectParam = (() => {
+      // TanStack Router's `location.href` can be absolute; we only want an in-app path.
+      const href = (location as any)?.href;
+      if (typeof href === 'string' && href.length) {
+        try {
+          if (/^https?:\/\//i.test(href)) {
+            const u = new URL(href);
+            return `${u.pathname}${u.search}${u.hash}`;
+          }
+          // already relative
+          return href.startsWith('/') ? href : `/${href}`;
+        } catch {
+          // fall through
+        }
+      }
+      try {
+        return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      } catch {
+        return '/workspace';
+      }
+    })();
+
     try {
       // Wait a short time to allow auth contexts to settle
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -42,7 +64,7 @@ export const Route = createFileRoute('/_protected')({
       if (!session) {
         // eslint-disable-next-line no-console
         console.log('No valid session found after retries, redirecting to login');
-        throw redirect({ to: '/login', search: { redirect: location.href } });
+        throw redirect({ to: '/login', search: { redirect: safeRedirectParam } });
       }
 
       // eslint-disable-next-line no-console
@@ -53,12 +75,12 @@ export const Route = createFileRoute('/_protected')({
         const authForToken = createAuthAdapter();
         await authForToken.getAccessToken({ silentOnly: true });
       } catch {
-        throw redirect({ to: '/login', search: { redirect: location.href } });
+        throw redirect({ to: '/login', search: { redirect: safeRedirectParam } });
       }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Authentication failed:', error);
-      throw redirect({ to: '/login', search: { redirect: location.href } });
+      throw redirect({ to: '/login', search: { redirect: safeRedirectParam } });
     }
   },
 
