@@ -1,9 +1,11 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { useMatch } from '@tanstack/react-router';
 import { AlertTriangle } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+import { isInTeams } from '@/platform/auth/utils';
 
 import { MessageValueType, useMessages } from '@/domains/messages';
 import { useThread } from '@/domains/threads/queries';
@@ -19,6 +21,7 @@ import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parseDateTime';
 
 import { getChatbotName } from '@/theme/public-config';
+import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 import { MessageItem } from './MessageItem';
 
@@ -46,6 +49,18 @@ export function MessageList() {
 
   const { leftOpen, rightOpen } = useSidebar();
   const chatbotName = getChatbotName(activeWorkspace?.name);
+  const inTeams = isInTeams();
+
+  // In Teams web, the host can cause the underlying page/background to look dark.
+  // To make it match the web UI, we render our own background on the message list area:
+  // default primary gradient, or tag-driven gradient when a workspace has tags.
+  const teamsBg = useMemo(() => {
+    if (!inTeams) return '';
+    const grad = getBackgroundGradientClasses({ tags: activeWorkspace?.tags, name: activeWorkspace?.name });
+    // In Teams web, set an explicit solid base color first, then layer the gradient on top.
+    // This prevents any dark host/iframe background from influencing the perceived color.
+    return `bg-white bg-gradient-to-b from-white from-10% ${grad} via-40% to-100%`;
+  }, [inTeams, activeWorkspace?.tags, activeWorkspace?.name]);
 
   useEffect(() => {
     if ( viewportRef.current) {
@@ -110,7 +125,7 @@ export function MessageList() {
 
   if (isLoading) {
     return (
-      <div className="ss-chat__body flex-shrink-10 flex-1 overflow-y-auto">
+      <div className={`ss-chat__body flex-shrink-10 flex-1 overflow-y-auto ${teamsBg}`} data-ss-layer="message-list">
         <div className="space-y-8 p-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex gap-3">
@@ -164,10 +179,11 @@ export function MessageList() {
   const messageHasSomeResponse = (messages?.length ?? 0) > 0 && messages[messages.length - 1]?.values?.some(v => v.type === MessageValueType.OUTPUT)
 
   return (
-    <div className="ss-chat__body" style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%', width: '100%', overflow: 'hidden' }}>
-      <ScrollAreaPrimitive.Root className="relative overflow-hidden h-full w-full">
+    <div className={`ss-chat__body ${teamsBg}`} data-ss-layer="message-list" style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%', width: '100%', overflow: 'hidden' }}>
+      <ScrollAreaPrimitive.Root data-ss-layer="scroll-root" className="relative overflow-hidden h-full w-full">
         <ScrollAreaPrimitive.Viewport
           ref={viewportRef}
+          data-ss-layer="scroll-viewport"
           className="h-full w-full rounded-[inherit] overflow-y-auto"
           onScroll={() => {
             if (!viewportRef.current) return;

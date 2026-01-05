@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 export default function AuthFailed() {
   const retry = () => {
     try {
+      try { sessionStorage.removeItem('teamsAuthFailed') } catch { /* ignore */ }
       const search = new URLSearchParams(window.location.search)
       const redirect = search.get('redirect') || '/'
       window.location.href = `/login?redirect=${encodeURIComponent(redirect)}`

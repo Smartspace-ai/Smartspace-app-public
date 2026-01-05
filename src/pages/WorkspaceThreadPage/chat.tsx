@@ -58,6 +58,7 @@ export default function ChatBotPage() {
         {/* Middle column */}
         <Stack
           direction="column"
+          data-ss-layer="chat-column"
           className={`bg-gradient-to-b from-background from-10% ${gradientClasses} via-40% to-100%`}
           sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}
         >

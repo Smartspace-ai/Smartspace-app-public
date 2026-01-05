@@ -6,8 +6,15 @@ import path from 'path';
 import { createRequire } from 'module';
 import { defineConfig } from 'vite';
 
-// Silence verbose logging from Nx Vite ts-paths plugin to avoid noisy "Unable to resolve" messages
-process.env.NX_VERBOSE_LOGGING = 'false';
+const publicOriginHost = (() => {
+  const origin = process.env.PUBLIC_ORIGIN;
+  if (!origin) return undefined;
+  try {
+    return new URL(origin).hostname;
+  } catch (_err) {
+    return undefined;
+  }
+})();
 
 export default defineConfig({
   root: __dirname,
@@ -18,9 +25,9 @@ export default defineConfig({
     strictPort: true,
     // Listen on all interfaces for reliability across IPv4/IPv6 and when using tunnels
     host: true,
-    // Explicitly allow localhost access in addition to the ngrok domain
-    allowedHosts: ['localhost', '127.0.0.1', 'melanie-chaster-cheerlessly.ngrok-free.dev'],
-},
+    // Allow localhost plus the hostname from PUBLIC_ORIGIN (used for dev tunnels / external access)
+    allowedHosts: ['localhost', '127.0.0.1', ...(publicOriginHost ? [publicOriginHost] : [])],
+  },
 
   preview: {
     port: 4400,

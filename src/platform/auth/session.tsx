@@ -20,7 +20,13 @@ function pickAdapter(mode: AdapterMode): AuthAdapter {
     mode === 'teams' || (mode === 'auto' && isInTeams())
       ? createTeamsNaaAdapter
       : createMsalWebAdapter;
-  return factory();
+  const adapter = factory();
+  try {
+    (window as any).__authAdapterKind = factory === createTeamsNaaAdapter ? 'teams' : 'web';
+  } catch {
+    // ignore
+  }
+  return adapter;
 }
 
 type Props = { children: ReactNode; mode?: AdapterMode };

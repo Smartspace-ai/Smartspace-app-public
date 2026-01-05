@@ -4,7 +4,7 @@ import { Outlet, createRootRoute } from '@tanstack/react-router'
 import AppProviders from '@/app/AppProviders'
 import { RootErrorBoundary } from '@/app/ui/RouteErrorEnvelope'
 
-import TeamsLoader from '@/pages/teams_loader'
+import TeamsLoaderPage from '@/pages/teams_loader'
 
 import { useTeamsViewport } from '@/hooks/useTeamsViewport'
 
@@ -41,7 +41,7 @@ export default function Root() {
 // routes/__root.tsx
 export const Route = createRootRoute({
   pendingMs: 250,
-  pendingComponent: () => <TeamsLoader message="Loading…" />,
+  pendingComponent: () => <TeamsLoaderPage message="Loading…" />,
   component: Root,
   errorComponent: RootErrorBoundary,
 });
