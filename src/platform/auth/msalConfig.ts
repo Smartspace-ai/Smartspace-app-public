@@ -2,10 +2,29 @@ import { Configuration, PopupRequest } from '@azure/msal-browser';
 import { isInTeams } from '@/platform/auth/utils';
 
 // Environment variables (provided via Vite)
-const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
-const AUTHORITY = import.meta.env.VITE_CLIENT_AUTHORITY;
-const CHAT_API_URI = import.meta.env.VITE_CHAT_API_URI;
-const CUSTOM_SCOPES = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
+// In production static hosting, we also support runtime configuration via `window.ssconfig`
+// (see `Smartspace-app/docker/static-site-upload.sh` which emits Client_Id/Client_Authority/etc).
+const runtimeCfg = (() => {
+  try { return (window as any)?.ssconfig as Record<string, unknown> | undefined; } catch { return undefined; }
+})();
+
+const CLIENT_ID =
+  (runtimeCfg?.Client_Id as string | undefined) ??
+  (import.meta.env.VITE_CLIENT_ID as string | undefined);
+
+const AUTHORITY =
+  (runtimeCfg?.Client_Authority as string | undefined) ??
+  (import.meta.env.VITE_CLIENT_AUTHORITY as string | undefined);
+
+const CHAT_API_URI =
+  (runtimeCfg?.Chat_Api_Uri as string | undefined) ??
+  (import.meta.env.VITE_CHAT_API_URI as string | undefined);
+
+const scopesRaw =
+  (runtimeCfg?.Client_Scopes as string | undefined) ??
+  (import.meta.env.VITE_CLIENT_SCOPES as string | undefined);
+
+const CUSTOM_SCOPES = String(scopesRaw ?? '').split(/[ ,]+/).map(s => s.trim()).filter(Boolean);
 const TEAMS_SSO_RESOURCE = import.meta.env.VITE_TEAMS_SSO_RESOURCE;
 
 // Microsoft Graph scopes and endpoints
@@ -20,8 +39,13 @@ export const handleTrailingSlash = (url: string): string => {
 // MSAL configuration object
 const msalConfig: Configuration = {
   auth: {
-    clientId: CLIENT_ID,
-    authority: AUTHORITY,
+    // Provide safe defaults so MSAL doesn't crash with `endsWith` on undefined.
+    // If these are wrong, interactive login will still fail with a readable MSAL error.
+    clientId: (typeof CLIENT_ID === 'string' && CLIENT_ID.length) ? CLIENT_ID : '',
+    authority:
+      (typeof AUTHORITY === 'string' && AUTHORITY.length)
+        ? AUTHORITY
+        : 'https://login.microsoftonline.com/organizations',
     // IMPORTANT: For Entra ID SPA redirect URIs, an extra trailing slash often causes
     // `AADSTS50011: The reply URL specified in the request does not match...` in prod.
     // Use the exact origin (no forced slash) and register that origin in the app registration.
