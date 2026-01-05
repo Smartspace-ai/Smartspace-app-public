@@ -37,10 +37,20 @@ export function Login() {
           setError(null);
         }
         const currentSession = await auth.adapter.getSession();
-        setSession(currentSession);
+        // Only auto-navigate when we can also acquire a token silently.
+        // Otherwise we can end up in a /login <-> /_protected redirect loop.
         if (currentSession) {
-          navigate({ to: redirectParam, replace: true });
-          return;
+          try {
+            await auth.adapter.getAccessToken({ silentOnly: true });
+            setSession(currentSession);
+            navigate({ to: redirectParam, replace: true });
+            return;
+          } catch {
+            // Treat as not signed in; user needs interactive sign-in.
+            setSession(null);
+          }
+        } else {
+          setSession(null);
         }
         if (isInTeams()) {
           setShowGenericError(true);

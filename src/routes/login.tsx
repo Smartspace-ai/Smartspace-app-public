@@ -11,6 +11,15 @@ export const Route = createFileRoute('/login')({
     const auth = createAuthAdapter();
     const session = await auth.getSession();
     if (session) {
+      // Important: having a cached account/session does NOT mean we have a usable token.
+      // If silent token acquisition fails, stay on /login to allow interactive sign-in,
+      // otherwise we can get stuck in a redirect loop with /_protected.
+      try {
+        await auth.getAccessToken({ silentOnly: true });
+      } catch {
+        return;
+      }
+
       const stored = auth.getStoredRedirectUrl?.();
       const searchRedirect = new URLSearchParams(location.search ?? '').get('redirect');
       const to = normalizeRedirectPath(stored || searchRedirect, '/workspace');
