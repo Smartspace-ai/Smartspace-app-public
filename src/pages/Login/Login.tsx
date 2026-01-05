@@ -25,6 +25,7 @@ export function Login() {
   const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
   const [session, setSession] = useState<{ accountId?: string; displayName?: string } | null>(null);
   const [hasValidToken, setHasValidToken] = useState(false);
+  const [silentTokenError, setSilentTokenError] = useState<string | null>(null);
   // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
@@ -38,13 +39,28 @@ export function Login() {
           try {
             await auth.adapter.getAccessToken({ silentOnly: true });
             setHasValidToken(true);
+            setSilentTokenError(null);
             navigate({ to: redirectParam, replace: true });
-          } catch {
+          } catch (e: unknown) {
             setHasValidToken(false);
+            // Capture a readable error for diagnosis (prod-only failures are common here).
+            try {
+              // MSAL errors usually have { errorCode, subError, message }.
+              // Keep it short but actionable.
+              const err = e as unknown as { errorCode?: unknown; subError?: unknown; message?: unknown };
+              const code = typeof err?.errorCode === 'string' ? err.errorCode : '';
+              const sub = typeof err?.subError === 'string' ? err.subError : '';
+              const msg = typeof err?.message === 'string' ? err.message : String(e ?? '');
+              const parts = [code && `code=${code}`, sub && `sub=${sub}`, msg && `msg=${msg}`].filter(Boolean);
+              setSilentTokenError(parts.length ? parts.join(' | ') : 'Silent token acquisition failed');
+            } catch {
+              setSilentTokenError('Silent token acquisition failed');
+            }
             // stay on the login page; user can click "Sign in" to trigger interactive flow
           }
         } else {
           setHasValidToken(false);
+          setSilentTokenError(null);
         }
       } catch (err) {
         // No existing session, continue with login flow
@@ -117,6 +133,8 @@ export function Login() {
       }
       return 'Signing in...';
     }
+
+    if (session && !hasValidToken) return 'Sign in again';
     
     if (showGenericError || error) {
       return 'Try Again';
@@ -146,6 +164,11 @@ export function Login() {
           <div className="mb-2">
             You appear to be signed in, but we couldn’t obtain an access token silently. Please sign in again.
           </div>
+          {silentTokenError ? (
+            <div className="mt-2 text-xs text-gray-700 break-words">
+              <span className="font-semibold">Details:</span> {silentTokenError}
+            </div>
+          ) : null}
         </div>
       );
     }
