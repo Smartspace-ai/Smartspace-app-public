@@ -31,7 +31,15 @@ export function Login() {
         const currentSession = await auth.adapter.getSession();
         setSession(currentSession);
         if (currentSession) {
-          navigate({ to: redirectParam, replace: true });
+          // Same as route guard: only auto-navigate if we can also silently acquire a token.
+          // Otherwise we'd bounce /login -> /_protected -> /login forever in environments
+          // where an account is cached but silent token acquisition fails.
+          try {
+            await auth.adapter.getAccessToken({ silentOnly: true });
+            navigate({ to: redirectParam, replace: true });
+          } catch {
+            // stay on the login page; user can click "Sign in" to trigger interactive flow
+          }
         }
       } catch (err) {
         // No existing session, continue with login flow

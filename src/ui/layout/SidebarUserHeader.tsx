@@ -2,8 +2,6 @@
 import { useMsal } from '@azure/msal-react';
 import { LogOut } from 'lucide-react';
 
-import { handleTrailingSlash } from '@/platform/auth/msalConfig';
-
 import { useTeams } from '@/app/providers';
 
 import { useActiveUser } from '@/domains/users/use-active-user';
@@ -37,7 +35,8 @@ export default function SidebarUserHeader() {
     if (!account) return;
     instance.logoutRedirect({
       account,
-      postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
+      // Must match an allowed post-logout redirect URI in Entra ID; do not force trailing slash.
+      postLogoutRedirectUri: window.location.origin,
     });
   };
 

@@ -22,8 +22,11 @@ const msalConfig: Configuration = {
   auth: {
     clientId: CLIENT_ID,
     authority: AUTHORITY,
-    redirectUri: handleTrailingSlash(window.location.origin),
-    postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
+    // IMPORTANT: For Entra ID SPA redirect URIs, an extra trailing slash often causes
+    // `AADSTS50011: The reply URL specified in the request does not match...` in prod.
+    // Use the exact origin (no forced slash) and register that origin in the app registration.
+    redirectUri: window.location.origin,
+    postLogoutRedirectUri: window.location.origin,
     // For Teams, we need to support popup flows
     navigateToLoginRequestUrl: false,
   },

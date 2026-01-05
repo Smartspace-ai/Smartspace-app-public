@@ -18,6 +18,15 @@ export const Route = createFileRoute('/login')({
         throw redirect({ to: '/auth-failed', search: { redirect: '/workspace' } });
       }
 
+      // IMPORTANT: Having an account cached does not guarantee we can silently acquire a token.
+      // If silent token acquisition fails (InteractionRequired, bad scopes/consent, etc.),
+      // do NOT auto-redirect away from /login, otherwise we can ping-pong between /login and /_protected.
+      try {
+        await auth.getAccessToken({ silentOnly: true });
+      } catch {
+        return;
+      }
+
       const stored = auth.getStoredRedirectUrl?.();
       const searchRedirect = new URLSearchParams(location.search ?? '').get('redirect');
       const to = stored || searchRedirect || '/workspace';
