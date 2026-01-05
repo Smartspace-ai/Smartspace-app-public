@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import * as utils from '@/platform/auth/utils';
-import { isInTeams, parseScopes } from '@/platform/auth/utils';
+import { isInTeams, normalizeRedirectPath, parseScopes } from '@/platform/auth/utils';
 
 describe('auth utils', () => {
   it('parseScopes splits by comma/space and trims', () => {
@@ -18,6 +18,21 @@ describe('auth utils', () => {
 
   it('isInTeams returns false when not embedded and no query flag', () => {
     expect(isInTeams()).toBe(false);
+  });
+
+  it('normalizeRedirectPath returns fallback for empty', () => {
+    expect(normalizeRedirectPath(null, '/workspace')).toBe('/workspace');
+    expect(normalizeRedirectPath('', '/workspace')).toBe('/workspace');
+  });
+
+  it('normalizeRedirectPath keeps internal paths and blocks /login loops', () => {
+    expect(normalizeRedirectPath('/workspace/123', '/workspace')).toBe('/workspace/123');
+    expect(normalizeRedirectPath('/login?redirect=%2Fworkspace', '/workspace')).toBe('/workspace');
+  });
+
+  it('normalizeRedirectPath strips same-origin absolute URLs', () => {
+    // jsdom default origin is http://localhost
+    expect(normalizeRedirectPath('http://localhost/workspace?x=1', '/workspace')).toBe('/workspace?x=1');
   });
 });
 

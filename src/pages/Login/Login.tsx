@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/platform/auth/session';
-import { isInTeams } from '@/platform/auth/utils';
+import { isInTeams, normalizeRedirectPath } from '@/platform/auth/utils';
 
 import { useTeams } from '@/app/providers';
 
@@ -14,7 +14,10 @@ import styles from './Login.module.scss';
 
 export function Login() {
   // Grab intended redirect path from URL if present
-  const redirectParam = new URLSearchParams(window.location.search).get('redirect') ?? '/workspace';
+  const redirectParam = normalizeRedirectPath(
+    new URLSearchParams(window.location.search).get('redirect'),
+    '/workspace'
+  );
 
   const auth = useAuth();
   const navigate = useNavigate();
@@ -22,41 +25,39 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGenericError, setShowGenericError] = useState(false);
-  const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
   const [session, setSession] = useState<{ accountId?: string; displayName?: string } | null>(null);
   // Check for existing session on mount
   useEffect(() => {
+    if (isInTeams() && !isTeamsInitialized) return;
     const checkSession = async () => {
       try {
+        if (isInTeams()) {
+          setIsLoading(true);
+          setShowGenericError(false);
+          setError(null);
+        }
         const currentSession = await auth.adapter.getSession();
         setSession(currentSession);
         if (currentSession) {
           navigate({ to: redirectParam, replace: true });
+          return;
+        }
+        if (isInTeams()) {
+          setShowGenericError(true);
+          setError('Unable to sign in with your Teams account.');
+          setIsLoading(false);
         }
       } catch (err) {
         // No existing session, continue with login flow
+        if (isInTeams()) {
+          setShowGenericError(true);
+          setError(err instanceof Error ? err.message : 'Unable to sign in with your Teams account.');
+          setIsLoading(false);
+        }
       }
     };
     checkSession();
-  }, [auth, redirectParam, navigate]);
-
-  // Auto-attempt Teams authentication (desktop and mobile)
-  useEffect(() => {
-    if (isInTeams() && isTeamsInitialized && !isLoading && !hasAttemptedAutoLogin && !session) {
-      setHasAttemptedAutoLogin(true);
-      setIsLoading(true);
-      setError(null);
-      
-      auth.adapter.signIn().then(() => {
-        // After successful Teams sign in, navigate to the redirect URL
-        navigate({ to: redirectParam, replace: true });
-      }).catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Authentication failed');
-        setShowGenericError(true);
-        setIsLoading(false);
-      });
-    }
-  }, [isTeamsInitialized, isLoading, hasAttemptedAutoLogin, session, auth, navigate, redirectParam]);
+  }, [auth, redirectParam, navigate, isTeamsInitialized]);
 
   // Avoid flashing the login UI if we already have a session
   if (session) {

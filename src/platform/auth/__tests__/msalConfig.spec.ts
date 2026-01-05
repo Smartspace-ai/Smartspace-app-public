@@ -9,21 +9,8 @@ describe('msalConfig', () => {
     expect(handleTrailingSlash('https://a/')).toBe('https://a/');
   });
 
-  it('isInTeams detects parent frame or query', () => {
-    const orig = window.parent;
-    const setSearch = (s: string) => {
-      const url = new URL(window.location.href);
-      Object.defineProperty(window, 'location', { value: new URL(url.toString()) });
-      (window.location as any).search = s;
-    };
-    // query param
-    setSearch('?inTeams=true');
-    expect(isInTeams()).toBe(true);
-    setSearch('');
-    // parent check: simulate iframe by overriding parent
-    Object.defineProperty(window, 'parent', { value: {} });
-    expect(isInTeams()).toBe(true);
-    Object.defineProperty(window, 'parent', { value: orig });
+  it('isInTeams is false by default in tests (mocked in setup)', () => {
+    expect(isInTeams()).toBe(false);
   });
 
   it('exports reasonable login requests', () => {

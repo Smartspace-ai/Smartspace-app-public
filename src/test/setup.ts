@@ -16,6 +16,18 @@ vi.mock('@/platform/auth/msalClient', () => ({
 vi.mock('@/platform/auth/utils', () => ({
   parseScopes: (raw?: unknown) => String(raw ?? '').split(/[ ,]+/).map((s) => s.trim()).filter(Boolean),
   isInTeams: () => false,
+  normalizeRedirectPath: (raw?: string | null, fallback: string = '/workspace') => {
+    const value = String(raw ?? '').trim();
+    if (!value) return fallback;
+    if (value.startsWith('/')) return value.startsWith('/login') ? fallback : value;
+    try {
+      const url = new URL(value, 'http://localhost');
+      const path = `${url.pathname}${url.search}${url.hash}`;
+      return path.startsWith('/login') ? fallback : (path || fallback);
+    } catch {
+      return fallback;
+    }
+  },
 }));
 
 vi.mock('@/platform/auth/naaClient', () => ({

@@ -1,7 +1,7 @@
 import { msalInstance } from '@/platform/auth/msalClient';
 import { interactiveLoginRequest } from '@/platform/auth/msalConfig';
 import { ensureMsalActiveAccount } from '@/platform/auth/msalActiveAccount';
-import { parseScopes } from '@/platform/auth/utils';
+import { normalizeRedirectPath, parseScopes } from '@/platform/auth/utils';
 
 import type { AuthAdapter, GetTokenOptions } from '../types';
 
@@ -42,7 +42,10 @@ export function createMsalWebAdapter(): AuthAdapter {
     // Use redirect for sign-in (your current behavior)
     async signIn() {
       // Persist intended redirect, default to /workspace (tweak to your app)
-      const redirectUrl = new URLSearchParams(window.location.search).get('redirect') || '/workspace';
+      const redirectUrl = normalizeRedirectPath(
+        new URLSearchParams(window.location.search).get('redirect'),
+        '/workspace'
+      );
       try { sessionStorage.setItem('msalRedirectUrl', redirectUrl); } catch {
         // no session storage; no redirect handled in the app
       }

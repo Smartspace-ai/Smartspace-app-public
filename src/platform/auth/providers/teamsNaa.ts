@@ -39,7 +39,7 @@ export function createTeamsNaaAdapter(): AuthAdapter {
     },
 
     async getSession() {
-      for (let attempt = 1; attempt <= 3; attempt++) {
+      for (let attempt = 1; attempt <= 5; attempt++) {
         try {
           // Initialize if needed; ignore if already initialized
           try { await teamsApp.initialize(); } catch { /* ignore */ }
@@ -53,8 +53,8 @@ export function createTeamsNaaAdapter(): AuthAdapter {
           // ignore and retry
         }
 
-        if (attempt < 3) {
-          await new Promise((r) => setTimeout(r, 250 * attempt));
+        if (attempt < 5) {
+          await new Promise((r) => setTimeout(r, 400 * attempt));
         }
       }
       return null;
