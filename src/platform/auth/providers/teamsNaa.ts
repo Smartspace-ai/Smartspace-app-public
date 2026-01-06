@@ -1,7 +1,7 @@
 import { app as teamsApp } from '@microsoft/teams-js';
 
 import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
-import { parseScopes } from '@/platform/auth/utils';
+import { getApiScopes } from '@/platform/auth/config';
 
 import type { AuthAdapter, GetTokenOptions } from '../types';
 
@@ -23,7 +23,7 @@ async function getTeamsSsoToken(): Promise<string> {
 export function createTeamsNaaAdapter(): AuthAdapter {
   return {
     async getAccessToken(opts?: GetTokenOptions) {
-      const scopes = opts?.scopes ?? parseScopes(import.meta.env.VITE_CLIENT_SCOPES);
+      const scopes = opts?.scopes ?? getApiScopes();
       try {
         await naaInit();
         return await acquireNaaToken(scopes, { forceRefresh: !!opts?.forceRefresh, silentOnly: !!opts?.silentOnly });

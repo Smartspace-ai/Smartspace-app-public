@@ -7,6 +7,8 @@ import {
 } from '@azure/msal-browser';
 import { app as teamsApp } from '@microsoft/teams-js';
 
+import { getAuthority, getClientId, getRedirectUri } from '@/platform/auth/config';
+
 let pcaPromise: Promise<IPublicClientApplication> | null = null;
 
 const NAA_ACTIVE_HOME_ACCOUNT_ID_KEY = 'naaActiveHomeAccountId';
@@ -46,15 +48,9 @@ export const naaInit = () => {
       } catch {
         // ignore – app may already be initialized by host
       }
-      const clientId = import.meta.env.VITE_CLIENT_ID as string;
-      const authorityFromEnv = import.meta.env.VITE_CLIENT_AUTHORITY as string | undefined;
-      const tenantId = import.meta.env.VITE_TENANT_ID as string | undefined;
-      const authority =
-        (typeof authorityFromEnv === 'string' && authorityFromEnv.length)
-          ? authorityFromEnv
-          : (typeof tenantId === 'string' && tenantId.length)
-            ? `https://login.microsoftonline.com/${tenantId}`
-            : 'https://login.microsoftonline.com/organizations';
+      const clientId = getClientId();
+      const authority = getAuthority();
+      const redirectUri = getRedirectUri();
 
       if (!clientId || typeof clientId !== 'string') {
         throw new Error('VITE_CLIENT_ID is required for Teams/NAA auth');
@@ -64,7 +60,7 @@ export const naaInit = () => {
           clientId,
           authority,
           // Keep consistent with web MSAL config; important for SPA reply URLs.
-          redirectUri: window.location.origin,
+          redirectUri,
           navigateToLoginRequestUrl: false,
           supportsNestedAppAuth: true,
         },

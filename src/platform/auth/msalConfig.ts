@@ -1,21 +1,11 @@
 import { Configuration, type RedirectRequest } from '@azure/msal-browser';
 
-// Environment variables (provided via Vite) or injected at runtime via window.ssconfig
-const runtime = (() => {
-  try { return (window as any)?.ssconfig ?? {}; } catch { return {}; }
-})();
+import { getApiScopes, getAuthority, getClientId, getRedirectUri, getTeamsSsoResource } from '@/platform/auth/config';
 
-const CLIENT_ID = (runtime?.Client_Id ?? import.meta.env.VITE_CLIENT_ID) as string | undefined;
-const AUTHORITY = (runtime?.Client_Authority ?? import.meta.env.VITE_CLIENT_AUTHORITY) as string | undefined;
-
-const RESOLVED_CLIENT_ID = CLIENT_ID || '';
-const RESOLVED_AUTHORITY =
-  (typeof AUTHORITY === 'string' && AUTHORITY.length)
-    ? AUTHORITY
-    : 'https://login.microsoftonline.com/organizations';
-const CHAT_API_URI = import.meta.env.VITE_CHAT_API_URI;
-const CUSTOM_SCOPES = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
-const TEAMS_SSO_RESOURCE = import.meta.env.VITE_TEAMS_SSO_RESOURCE;
+const RESOLVED_CLIENT_ID = getClientId();
+const RESOLVED_AUTHORITY = getAuthority();
+const REDIRECT_URI = getRedirectUri();
+const CUSTOM_SCOPES = getApiScopes();
 
 // Microsoft Graph scopes and endpoints
 const GRAPH_SCOPES = ['profile', 'openid'];
@@ -31,8 +21,10 @@ const msalConfig: Configuration = {
   auth: {
     clientId: RESOLVED_CLIENT_ID,
     authority: RESOLVED_AUTHORITY,
-    redirectUri: handleTrailingSlash(window.location.origin),
-    postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
+    // Keep trailing slash for backwards compatibility with existing app registrations.
+    // If you change this, ensure every environment's Redirect URI matches EXACTLY in AAD.
+    redirectUri: handleTrailingSlash(REDIRECT_URI),
+    postLogoutRedirectUri: handleTrailingSlash(REDIRECT_URI),
     // For Teams, we need to support popup flows
     navigateToLoginRequestUrl: false,
   },
@@ -74,7 +66,8 @@ export const teamsLoginRequest: RedirectRequest = {
 
 // API endpoints used across the app
 export const apiConfig = {
-  chatApiUri: CHAT_API_URI,
+  // Note: API base URL is read directly in transport (supports runtime ssconfig).
+  chatApiUri: (import.meta as any)?.env?.VITE_CHAT_API_URI,
 };
 
 export const graphConfig = {
@@ -83,15 +76,14 @@ export const graphConfig = {
 };
 
 export const getTeamsResource = (): string => {
-  if (TEAMS_SSO_RESOURCE && typeof TEAMS_SSO_RESOURCE === 'string') {
-    return TEAMS_SSO_RESOURCE;
-  }
+  const resourceOverride = getTeamsSsoResource();
+  if (resourceOverride) return resourceOverride;
   // Reasonable default when Application ID URI is not explicitly provided
   try {
     const host = window.location.host;
-    return `api://${host}/${CLIENT_ID}`;
+    return `api://${host}/${RESOLVED_CLIENT_ID}`;
   } catch {
-    return `api://${CLIENT_ID}`;
+    return `api://${RESOLVED_CLIENT_ID}`;
   }
 };
 

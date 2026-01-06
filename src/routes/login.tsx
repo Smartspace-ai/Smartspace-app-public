@@ -2,6 +2,7 @@
 import { createFileRoute, redirect, useSearch } from '@tanstack/react-router';
 
 import { createAuthAdapter } from '@/platform/auth';
+import { getApiScopes } from '@/platform/auth/config';
 import { normalizeRedirectPath } from '@/platform/auth/utils';
 
 import { Login } from '@/pages/Login/Login';
@@ -15,7 +16,7 @@ export const Route = createFileRoute('/login')({
       // If silent token acquisition fails, stay on /login to allow interactive sign-in,
       // otherwise we can get stuck in a redirect loop with /_protected.
       try {
-        await auth.getAccessToken({ silentOnly: true });
+        await auth.getAccessToken({ scopes: getApiScopes(), silentOnly: true });
       } catch {
         return;
       }

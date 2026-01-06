@@ -2,7 +2,7 @@
 import axios, { AxiosHeaders } from 'axios';
 
 import { createAuthAdapter } from '@/platform/auth';
-import { parseScopes } from '@/platform/auth/utils';
+import { getApiScopes } from '@/platform/auth/config';
 
 export const transport = axios.create({ baseURL: (() => {
   const cfg = (window as any)?.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
@@ -19,8 +19,7 @@ transport.interceptors.request.use(async (config) => {
   // If we can't get a token silently, let the request proceed; the API can 401 and
   // TanStack route guards drive interactive sign-in at navigation boundaries.
   try {
-    const raw = (window as any)?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES;
-    const scopes = parseScopes(raw).filter((s) => !s.includes('smartspaceapi.config.access'));
+    const scopes = getApiScopes();
     const auth = createAuthAdapter();
     const token = await auth.getAccessToken({ scopes, silentOnly: true });
     if (token) headers.set('Authorization', `Bearer ${token}`);

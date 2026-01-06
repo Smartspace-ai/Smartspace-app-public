@@ -1,7 +1,8 @@
 import { msalInstance } from '@/platform/auth/msalClient';
+import { getApiScopes } from '@/platform/auth/config';
 import { interactiveLoginRequest, resolvedClientId } from '@/platform/auth/msalConfig';
 import { ensureMsalActiveAccount } from '@/platform/auth/msalActiveAccount';
-import { normalizeRedirectPath, parseScopes } from '@/platform/auth/utils';
+import { normalizeRedirectPath } from '@/platform/auth/utils';
 
 import type { AuthAdapter, GetTokenOptions } from '../types';
 
@@ -12,7 +13,7 @@ export function createMsalWebAdapter(): AuthAdapter {
     async getAccessToken(opts?: GetTokenOptions) {
       if (!resolvedClientId) throw new Error('MSAL is not configured: missing Client ID');
       await ensureActive();
-      const scopes = opts?.scopes ?? parseScopes(import.meta.env.VITE_CLIENT_SCOPES);
+      const scopes = opts?.scopes ?? getApiScopes();
       const account = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
 
       if (!account && opts?.silentOnly) {
