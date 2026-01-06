@@ -21,9 +21,6 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [showGenericError, setShowGenericError] = useState(false);
   const [session, setSession] = useState<{ accountId?: string; displayName?: string } | null>(null);
-  const authDebug = (() => {
-    try { return new URLSearchParams(window.location.search).get('authDebug') === '1'; } catch { return false; }
-  })();
   // Check for existing session on mount
   useEffect(() => {
     if (isInTeams() && !isTeamsInitialized) return;
@@ -182,8 +179,8 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
                 <div className="mt-2 p-3 rounded border border-red-200 bg-red-50 text-red-800 text-sm">
                   <div className="font-semibold mb-1">Teams sign-in error</div>
                   {getErrorMessage()}
-                  {authDebug ? (
-                    <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-red-900/90">
+                  {/* Always show diagnostics in Teams error state to make deployment issues debuggable. */}
+                  <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-red-900/90">
 {JSON.stringify({
   href: (() => { try { return window.location.href; } catch { return null; } })(),
   origin: (() => { try { return window.location.origin; } catch { return null; } })(),
@@ -195,8 +192,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
   lastTeamsAuthError: (() => { try { return (window as any).__teamsAuthLastError ?? null; } catch { return null; } })(),
   ssconfig: (() => { try { return (window as any)?.ssconfig ?? null; } catch { return null; } })(),
 }, null, 2)}
-                    </pre>
-                  ) : null}
+                  </pre>
                 </div>
               )}
             </div>
