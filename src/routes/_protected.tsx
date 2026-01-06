@@ -2,8 +2,7 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
 import { createAuthAdapter } from '@/platform/auth';
-import { getApiScopes } from '@/platform/auth/config';
-import { normalizeRedirectPath } from '@/platform/auth/utils';
+import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
 import { ProtectedErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
 import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
@@ -24,7 +23,7 @@ export const Route = createFileRoute('/_protected')({
     if (!session) throw redirect({ to: '/login', search: { redirect: redirectTo } });
     try {
       // Ensure we can acquire an access token silently; otherwise redirect to login
-      await auth.getAccessToken({ scopes: getApiScopes(), silentOnly: true });
+      await auth.getAccessToken({ silentOnly: true });
     } catch {
       throw redirect({ to: '/login', search: { redirect: redirectTo } });
     }

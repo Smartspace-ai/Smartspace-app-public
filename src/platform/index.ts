@@ -1,5 +1,5 @@
 // Auth
-export { createAuthAdapter, type AdapterMode } from './auth';
+export { createAuthAdapter } from './auth';
 export { AuthProvider, useAuth, useUserId } from './auth/session';
 
 // Network

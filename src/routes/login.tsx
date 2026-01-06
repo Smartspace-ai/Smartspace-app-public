@@ -2,8 +2,7 @@
 import { createFileRoute, redirect, useSearch } from '@tanstack/react-router';
 
 import { createAuthAdapter } from '@/platform/auth';
-import { getApiScopes } from '@/platform/auth/config';
-import { normalizeRedirectPath } from '@/platform/auth/utils';
+import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
 import { Login } from '@/pages/Login/Login';
 
@@ -16,7 +15,7 @@ export const Route = createFileRoute('/login')({
       // If silent token acquisition fails, stay on /login to allow interactive sign-in,
       // otherwise we can get stuck in a redirect loop with /_protected.
       try {
-        await auth.getAccessToken({ scopes: getApiScopes(), silentOnly: true });
+        await auth.getAccessToken({ silentOnly: true });
       } catch {
         return;
       }
@@ -24,7 +23,8 @@ export const Route = createFileRoute('/login')({
       const stored = auth.getStoredRedirectUrl?.();
       const searchRedirect = new URLSearchParams(location.search ?? '').get('redirect');
       const to = normalizeRedirectPath(stored || searchRedirect, '/workspace');
-      auth.clearStoredRedirectUrl?.();
+      // Main auth adapter doesn't expose a clear helper; clear here to avoid sticky redirects.
+      try { sessionStorage.removeItem('msalRedirectUrl'); } catch { /* ignore */ }
       throw redirect({ to });
     }
   },

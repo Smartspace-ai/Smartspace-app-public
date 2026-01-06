@@ -4,7 +4,7 @@ import {
     createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
 
-import { isInTeams as detectIsInTeams } from '@/platform/auth/utils';
+import { isInTeams as detectIsInTeams } from '@/platform/auth/msalConfig';
 
 type TeamsTheme = 'default' | 'dark' | 'contrast';
 
