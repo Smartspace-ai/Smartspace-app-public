@@ -1,11 +1,11 @@
-import { Configuration, type RedirectRequest } from '@azure/msal-browser';
+import { Configuration, PopupRequest } from '@azure/msal-browser';
 
-import { getApiScopes, getAuthority, getClientId, getRedirectUri, getTeamsSsoResource } from '@/platform/auth/config';
-
-const RESOLVED_CLIENT_ID = getClientId();
-const RESOLVED_AUTHORITY = getAuthority();
-const REDIRECT_URI = getRedirectUri();
-const CUSTOM_SCOPES = getApiScopes();
+// Environment variables (provided via Vite)
+const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
+const AUTHORITY = import.meta.env.VITE_CLIENT_AUTHORITY;
+const CHAT_API_URI = import.meta.env.VITE_CHAT_API_URI;
+const CUSTOM_SCOPES = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
+const TEAMS_SSO_RESOURCE = import.meta.env.VITE_TEAMS_SSO_RESOURCE;
 
 // Microsoft Graph scopes and endpoints
 const GRAPH_SCOPES = ['profile', 'openid'];
@@ -16,15 +16,22 @@ export const handleTrailingSlash = (url: string): string => {
   return url.endsWith('/') ? url : `${url}/`;
 };
 
+// Check if we're running in Teams
+const isInTeams = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const inTeamsParam = urlParams.get('inTeams') === 'true';
+  const parentCheck = window.parent !== window;
+  
+  return inTeamsParam || parentCheck;
+};
+
 // MSAL configuration object
 const msalConfig: Configuration = {
   auth: {
-    clientId: RESOLVED_CLIENT_ID,
-    authority: RESOLVED_AUTHORITY,
-    // Keep trailing slash for backwards compatibility with existing app registrations.
-    // If you change this, ensure every environment's Redirect URI matches EXACTLY in AAD.
-    redirectUri: handleTrailingSlash(REDIRECT_URI),
-    postLogoutRedirectUri: handleTrailingSlash(REDIRECT_URI),
+    clientId: CLIENT_ID,
+    authority: AUTHORITY,
+    redirectUri: handleTrailingSlash(window.location.origin),
+    postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
     // For Teams, we need to support popup flows
     navigateToLoginRequestUrl: false,
   },
@@ -42,7 +49,7 @@ const msalConfig: Configuration = {
 };
 
 // Token request configurations
-export const loginRequest: RedirectRequest = {
+export const loginRequest: PopupRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
   prompt: 'none',
   extraQueryParameters: {
@@ -51,7 +58,7 @@ export const loginRequest: RedirectRequest = {
 };
 
 // Fallback login request when silent auth fails
-export const interactiveLoginRequest: RedirectRequest = {
+export const interactiveLoginRequest: PopupRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
   prompt: 'select_account',
   extraQueryParameters: {
@@ -60,14 +67,13 @@ export const interactiveLoginRequest: RedirectRequest = {
 };
 
 // Teams-specific login request for SSO scenarios
-export const teamsLoginRequest: RedirectRequest = {
+export const teamsLoginRequest: PopupRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
 };
 
 // API endpoints used across the app
 export const apiConfig = {
-  // Note: API base URL is read directly in transport (supports runtime ssconfig).
-  chatApiUri: (import.meta as any)?.env?.VITE_CHAT_API_URI,
+  chatApiUri: CHAT_API_URI,
 };
 
 export const graphConfig = {
@@ -76,18 +82,17 @@ export const graphConfig = {
 };
 
 export const getTeamsResource = (): string => {
-  const resourceOverride = getTeamsSsoResource();
-  if (resourceOverride) return resourceOverride;
+  if (TEAMS_SSO_RESOURCE && typeof TEAMS_SSO_RESOURCE === 'string') {
+    return TEAMS_SSO_RESOURCE;
+  }
   // Reasonable default when Application ID URI is not explicitly provided
   try {
     const host = window.location.host;
-    return `api://${host}/${RESOLVED_CLIENT_ID}`;
+    return `api://${host}/${CLIENT_ID}`;
   } catch {
-    return `api://${RESOLVED_CLIENT_ID}`;
+    return `api://${CLIENT_ID}`;
   }
 };
 
-export const resolvedClientId = RESOLVED_CLIENT_ID;
-export const resolvedAuthority = RESOLVED_AUTHORITY;
-export { msalConfig };
+export { isInTeams, msalConfig };
 export default msalConfig;

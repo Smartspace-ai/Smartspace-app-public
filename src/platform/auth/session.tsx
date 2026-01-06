@@ -1,39 +1,13 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-
-import { createAuthAdapter, type AdapterMode } from './index';
+'use client';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createAuthAdapter } from './index';
 import type { AuthAdapter } from './types';
 
-type AuthContextValue = {
-  adapter: AuthAdapter;
-  session: { accountId?: string; displayName?: string } | null;
-  loading: boolean;
-};
+const AuthCtx = createContext<AuthAdapter | null>(null);
 
-const AuthCtx = createContext<AuthContextValue | null>(null);
-
-type Props = { children: ReactNode; mode?: AdapterMode };
-
-export function AuthProvider({ children, mode = 'auto' }: Props) {
-  const [adapter] = useState(() => createAuthAdapter(mode));
-  const [session, setSession] = useState<AuthContextValue['session']>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    adapter.getSession().then((s) => {
-      if (mounted) {
-        setSession(s);
-        setLoading(false);
-      }
-    });
-    return () => { mounted = false; };
-  }, [adapter]);
-
-  return (
-    <AuthCtx.Provider value={{ adapter, session, loading }}>
-      {children}
-    </AuthCtx.Provider>
-  );
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const adapter = useMemo(() => createAuthAdapter(), []);
+  return <AuthCtx.Provider value={adapter}>{children}</AuthCtx.Provider>;
 }
 
 export function useAuth() {
@@ -42,12 +16,35 @@ export function useAuth() {
   return ctx;
 }
 
+/**
+ * Lightweight session helper on top of the main-branch auth adapter.
+ * This keeps the auth implementation aligned with `main` while preserving
+ * existing app code that needs a cached session/user display name.
+ */
+export function useAuthSession() {
+  const adapter = useAuth();
+  const [session, setSession] = useState<{ accountId?: string; displayName?: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    adapter.getSession()
+      .then((s) => { if (mounted) setSession(s); })
+      .catch(() => { if (mounted) setSession(null); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, [adapter]);
+
+  return { adapter, session, loading };
+}
+
 export function useUserId() {
-  const { session } = useAuth();
+  const { session } = useAuthSession();
   return session?.accountId ?? 'anonymous';
 }
 
 export function useUserDisplayName() {
-  const { session } = useAuth();
+  const { session } = useAuthSession();
   return session?.displayName ?? 'You';
 }

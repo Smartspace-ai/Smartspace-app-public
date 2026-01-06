@@ -1,21 +1,20 @@
+import { isInTeams } from '@/platform/auth/msalConfig';
 import { createMsalWebAdapter } from './providers/msalWeb';
 import { createTeamsNaaAdapter } from './providers/teamsNaa';
 import type { AuthAdapter } from './types';
-import { isInTeams } from './utils';
 
-export type AdapterMode = 'auto' | 'web' | 'teams';
-
-/** Factory for non-React usage; provider uses its own picker. */
-export function createAuthAdapter(mode: AdapterMode = 'auto'): AuthAdapter {
-  const pick =
-    mode === 'teams' || (mode === 'auto' && isInTeams())
-      ? createTeamsNaaAdapter
-      : createMsalWebAdapter;
-  const adapter = pick();
-  try {
-    (window as any).__authAdapterKind = pick === createTeamsNaaAdapter ? 'teams' : 'web';
-  } catch {
-    // ignore
-  }
-  return adapter;
+export function createAuthAdapter(): AuthAdapter {
+  // Check if we're in Teams with more robust detection
+  const inTeams = isInTeams() || 
+                  (typeof window !== 'undefined' && 
+                   (window as any).__teamsState?.isInTeams === true);
+  
+  return inTeams ? createTeamsNaaAdapter() : createMsalWebAdapter();
 }
+export * from './msalClient';
+export * from './naaClient';
+export * from './providers/msalWeb';
+export * from './providers/teamsNaa';
+export * from './session';
+export * from './types';
+

@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/platform/auth/session';
-import { isInTeams } from '@/platform/auth/utils';
+import { isInTeams } from '@/platform/auth/msalConfig';
 
 import { useTeams } from '@/app/providers';
 
@@ -31,12 +31,12 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
           setShowGenericError(false);
           setError(null);
         }
-        const currentSession = await auth.adapter.getSession();
+        const currentSession = await auth.getSession();
         // Only auto-navigate when we can also acquire a token silently.
         // Otherwise we can end up in a /login <-> /_protected redirect loop.
         if (currentSession) {
           try {
-            await auth.adapter.getAccessToken({ silentOnly: true });
+            await auth.getAccessToken({ silentOnly: true });
             setSession(currentSession);
             navigate({ to: redirectTo, replace: true });
             return;
@@ -85,7 +85,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
     setError(null);
     
     try {
-      await auth.adapter.signIn(redirectTo);
+      await auth.signIn();
       // For web auth (MSAL), signIn() performs a redirect, so we don't navigate here
       // For Teams auth, the redirect will be handled by the auto-login effect
     } catch (authError: unknown) {
@@ -97,8 +97,6 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
       console.error('[Login] Manual login failed:', authError);
     }
   };
-
-  // Teams auto-login; no manual handlers needed
 
   const getButtonText = () => {
     if (isLoading) {

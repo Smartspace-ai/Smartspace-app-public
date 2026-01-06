@@ -3,9 +3,7 @@ export type GetTokenOptions = { silentOnly?: boolean; forceRefresh?: boolean; sc
 export interface AuthAdapter {
   getAccessToken(opts?: GetTokenOptions): Promise<string>;
   getSession(): Promise<{ accountId?: string; displayName?: string } | null>;
-  /** Start an interactive sign-in. For web, this redirects. */
-  signIn(redirectTo?: string): Promise<void>;
+  signIn(): Promise<void>;
   signOut(): Promise<void>;
   getStoredRedirectUrl(): string | null;
-  clearStoredRedirectUrl?(): void;
 }

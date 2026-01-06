@@ -2,11 +2,11 @@
 import type { AxiosRequestConfig } from 'axios';
 
 import { Result, toAppError } from './envelopes';
-import { transport } from './transport';
+import { api } from './api/apiClient';
 
 export async function request<T = unknown>(config: AxiosRequestConfig): Promise<Result<T>> {
   try {
-    const res = await transport.request<T>(config);
+    const res = await api.request<T>(config);
     return { ok: true, data: res.data as T };
   } catch (err: any) {
     const status = err?.response?.status as number | undefined;
