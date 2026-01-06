@@ -48,6 +48,40 @@ jobs:
           npm install
           npm run build
 
+      - name: Write deployed build config (non-secret)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Load .env into the process env so we can serialize what the build used.
+          set -a
+          source .env
+          set +a
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const outDir = path.join(process.cwd(), 'dist', 'smartspace');
+          const cfg = {
+            builtAt: new Date().toISOString(),
+            git: {
+              sha: process.env.GITHUB_SHA ?? null,
+              ref: process.env.GITHUB_REF ?? null,
+              runId: process.env.GITHUB_RUN_ID ?? null,
+            },
+            vite: {
+              VITE_CLIENT_ID: process.env.VITE_CLIENT_ID ?? null,
+              VITE_CLIENT_AUTHORITY: process.env.VITE_CLIENT_AUTHORITY ?? null,
+              VITE_CLIENT_SCOPES: process.env.VITE_CLIENT_SCOPES ?? null,
+              VITE_CHAT_API_URI: process.env.VITE_CHAT_API_URI ?? null,
+            },
+          };
+
+          fs.mkdirSync(outDir, { recursive: true });
+          fs.writeFileSync(path.join(outDir, 'config.json'), JSON.stringify(cfg, null, 2));
+          console.log(`Wrote ${path.join(outDir, 'config.json')}`);
+          NODE
+
       - name: Deploy to Azure Storage
         uses: azure/CLI@v1
         with:
