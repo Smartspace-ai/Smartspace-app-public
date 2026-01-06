@@ -1,16 +1,28 @@
 import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
 import { app as teamsApp } from '@microsoft/teams-js';
-import { AuthAdapter } from '../types';
+import { AuthAdapter, type GetTokenOptions } from '../types';
+
+function parseScopes(raw: unknown): string[] {
+  return String(raw ?? '')
+    .split(/[ ,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 export function createTeamsNaaAdapter(): AuthAdapter {
   return {
-    async getAccessToken() {
+    async getAccessToken(opts?: GetTokenOptions) {
       try {
         await naaInit();
-        const scopes = (import.meta.env.VITE_CLIENT_SCOPES as string | undefined)?.split(',') || [];
+        const raw =
+          (window as any)?.ssconfig?.Client_Scopes ??
+          import.meta.env.VITE_CLIENT_SCOPES ??
+          '';
+        const scopes = opts?.scopes?.length ? opts.scopes : parseScopes(raw);
         return acquireNaaToken(scopes);
       } catch (error) {
         console.error('Teams NAA token acquisition failed:', error);
+        try { (window as any).__teamsAuthLastError = String((error as any)?.message ?? error); } catch { /* ignore */ }
         throw error;
       }
     },
@@ -27,6 +39,7 @@ export function createTeamsNaaAdapter(): AuthAdapter {
         const ctx = await teamsApp.getContext();
         if (!ctx.user) {
           console.warn('No user context available in Teams');
+          try { (window as any).__teamsAuthLastError = 'Teams context missing user (ctx.user is empty)'; } catch { /* ignore */ }
           return null;
         }
         
@@ -36,6 +49,7 @@ export function createTeamsNaaAdapter(): AuthAdapter {
         };
       } catch (error) {
         console.error('Teams session retrieval failed:', error);
+        try { (window as any).__teamsAuthLastError = String((error as any)?.message ?? error); } catch { /* ignore */ }
         return null;
       }
     },

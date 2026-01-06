@@ -16,11 +16,14 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
 
   const auth = useAuth();
   const navigate = useNavigate();
-  const { isTeamsInitialized, teamsUser } = useTeams();
+  const { isTeamsInitialized, teamsUser, teamsContext, isInTeams: isInTeamsFromProvider } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGenericError, setShowGenericError] = useState(false);
   const [session, setSession] = useState<{ accountId?: string; displayName?: string } | null>(null);
+  const authDebug = (() => {
+    try { return new URLSearchParams(window.location.search).get('authDebug') === '1'; } catch { return false; }
+  })();
   // Check for existing session on mount
   useEffect(() => {
     if (isInTeams() && !isTeamsInitialized) return;
@@ -40,16 +43,29 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
             setSession(currentSession);
             navigate({ to: redirectTo, replace: true });
             return;
-          } catch {
+          } catch (e) {
             // Treat as not signed in; user needs interactive sign-in.
             setSession(null);
+            if (isInTeams()) {
+              const msg = e instanceof Error ? e.message : String(e);
+              setError(`Teams token acquisition failed: ${msg}`);
+            }
           }
         } else {
           setSession(null);
+          // If we got no session, try to acquire a token anyway so we can surface the real failure.
+          if (isInTeams()) {
+            try {
+              await auth.getAccessToken({ silentOnly: true });
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : String(e);
+              setError(`Teams session missing; token acquisition failed: ${msg}`);
+            }
+          }
         }
         if (isInTeams()) {
           setShowGenericError(true);
-          setError('Unable to sign in with your Teams account.');
+          setError((prev) => prev ?? 'Unable to sign in with your Teams account.');
           setIsLoading(false);
         }
       } catch (err) {
@@ -166,6 +182,21 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
                 <div className="mt-2 p-3 rounded border border-red-200 bg-red-50 text-red-800 text-sm">
                   <div className="font-semibold mb-1">Teams sign-in error</div>
                   {getErrorMessage()}
+                  {authDebug ? (
+                    <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-red-900/90">
+{JSON.stringify({
+  href: (() => { try { return window.location.href; } catch { return null; } })(),
+  origin: (() => { try { return window.location.origin; } catch { return null; } })(),
+  isInTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
+  isInTeams_provider: isInTeamsFromProvider,
+  isTeamsInitialized,
+  teamsUser: teamsUser ?? null,
+  teamsContextHasUser: !!(teamsContext as any)?.user,
+  lastTeamsAuthError: (() => { try { return (window as any).__teamsAuthLastError ?? null; } catch { return null; } })(),
+  ssconfig: (() => { try { return (window as any)?.ssconfig ?? null; } catch { return null; } })(),
+}, null, 2)}
+                    </pre>
+                  ) : null}
                 </div>
               )}
             </div>
