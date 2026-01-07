@@ -3,6 +3,7 @@ import { interactiveLoginRequest, isInTeams } from '@/platform/auth/msalConfig';
 import { acquireNaaToken } from '@/platform/auth/naaClient';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import axios from 'axios';
+import { ssInfo, ssWarn } from '@/platform/log';
 
 function getBaseUrl() {
   const configBaseUrl =
@@ -31,6 +32,12 @@ webApi.interceptors.request.use(async (config) => {
   const inTeamsEnvironment =
     ((window as any)?.__teamsState?.isInTeams === true) || isInTeams();
 
+  ssInfo('api', `request -> ${inTeamsEnvironment ? 'teams' : 'web'}`, {
+    method: (config.method ?? 'get').toUpperCase(),
+    url: config.url ?? null,
+    baseURL: config.baseURL ?? null,
+  });
+
   // Teams: use NAA to get delegated API token (no fallback)
   if (inTeamsEnvironment) {
     try {
@@ -39,9 +46,11 @@ webApi.interceptors.request.use(async (config) => {
         .split(/[ ,]+/)
         .map((s) => s.trim())
         .filter(Boolean);
+      ssInfo('api', 'Teams token via NAA (no token logged)', { scopesCount: scopes.length, scopes });
       const token = await acquireNaaToken(scopes);
       if (token) config.headers.Authorization = `Bearer ${token}`;
-    } catch {
+    } catch (e) {
+      ssWarn('api', 'Teams NAA token attach failed (request will be unauthenticated)', e);
       // Leave request unauthenticated on failure
     }
     return config;
@@ -68,11 +77,14 @@ webApi.interceptors.request.use(async (config) => {
     }
   } catch (error) {
     if (error instanceof InteractionRequiredAuthError) {
+      ssWarn('api', 'MSAL silent token requires interaction; attempting loginRedirect', error);
       try {
         await msalInstance.loginRedirect(interactiveLoginRequest);
       } catch {
         // ignore
       }
+    } else {
+      ssWarn('api', 'MSAL acquireTokenSilent failed (request may be unauthenticated)', error);
     }
   }
 

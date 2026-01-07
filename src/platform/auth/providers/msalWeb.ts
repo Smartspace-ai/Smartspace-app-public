@@ -1,6 +1,7 @@
 import { msalInstance } from '@/platform/auth/msalClient';
 import { interactiveLoginRequest, loginRequest } from '@/platform/auth/msalConfig';
 import { AuthAdapter, GetTokenOptions } from '../types';
+import { ssInfo, ssWarn } from '@/platform/log';
 
 export function createMsalWebAdapter(): AuthAdapter {
   async function ensureActive() {
@@ -12,6 +13,11 @@ export function createMsalWebAdapter(): AuthAdapter {
     async getAccessToken(opts?: GetTokenOptions) {
       await ensureActive();
       const acct = msalInstance.getActiveAccount();
+      ssInfo('auth:web', 'getAccessToken start', {
+        hasActiveAccount: !!acct,
+        accountsCached: msalInstance.getAllAccounts().length,
+        silentOnly: !!opts?.silentOnly,
+      });
       if (!acct) {
         if (opts?.silentOnly) throw new Error('No active account');
         await msalInstance.loginPopup(interactiveLoginRequest);
@@ -19,7 +25,8 @@ export function createMsalWebAdapter(): AuthAdapter {
       try {
         const r = await msalInstance.acquireTokenSilent({ ...loginRequest, account: msalInstance.getActiveAccount()! });
         return r.accessToken;
-      } catch {
+      } catch (e) {
+        ssWarn('auth:web', 'acquireTokenSilent failed', e);
         if (opts?.silentOnly) throw new Error('Silent token failed');
         // Use the same interactive request as sign-in for consistency
         const r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
@@ -29,12 +36,14 @@ export function createMsalWebAdapter(): AuthAdapter {
     async getSession() {
       await ensureActive();
       const a = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
+      ssInfo('auth:web', 'getSession', { hasSession: !!a });
       return a ? { accountId: a.homeAccountId, displayName: a.name ?? undefined } : null;
     },
     async signIn() { 
       // Store the intended redirect URL before redirecting
       const redirectUrl = new URLSearchParams(window.location.search).get('redirect') || '/workspace';
       sessionStorage.setItem('msalRedirectUrl', redirectUrl);
+      ssInfo('auth:web', 'signIn -> loginRedirect', { redirectUrl });
       await msalInstance.loginRedirect(interactiveLoginRequest); 
     },
     async signOut() { await msalInstance.logoutPopup(); },

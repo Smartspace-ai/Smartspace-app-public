@@ -9,6 +9,7 @@ import { useTeams } from '@/app/providers';
 import { Button } from '@/shared/ui/mui-compat/button';
 
 import { Logo } from '@/assets/logo';
+import { ssInfo, ssWarn } from '@/platform/log';
 
 import styles from './Login.module.scss';
 
@@ -26,6 +27,10 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
     if (isInTeams() && !isTeamsInitialized) return;
     const checkSession = async () => {
       try {
+        ssInfo('login', 'checkSession start', {
+          isInTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
+          isTeamsInitialized,
+        });
         if (isInTeams()) {
           setIsLoading(true);
           setShowGenericError(false);
@@ -38,6 +43,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
           try {
             await auth.getAccessToken({ silentOnly: true });
             setSession(currentSession);
+            ssInfo('login', 'session+token OK -> navigate', { to: redirectTo });
             navigate({ to: redirectTo, replace: true });
             return;
           } catch (e) {
@@ -45,6 +51,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
             setSession(null);
             if (isInTeams()) {
               const msg = e instanceof Error ? e.message : String(e);
+              ssWarn('login', 'token acquisition failed (Teams)', msg);
               setError(`Teams token acquisition failed: ${msg}`);
             }
           }
@@ -56,6 +63,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
               await auth.getAccessToken({ silentOnly: true });
             } catch (e) {
               const msg = e instanceof Error ? e.message : String(e);
+              ssWarn('login', 'session missing; token acquisition failed (Teams)', msg);
               setError(`Teams session missing; token acquisition failed: ${msg}`);
             }
           }
@@ -66,6 +74,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
           setIsLoading(false);
         }
       } catch (err) {
+        ssWarn('login', 'checkSession threw', err);
         // No existing session, continue with login flow
         if (isInTeams()) {
           setShowGenericError(true);
