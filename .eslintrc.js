@@ -164,11 +164,12 @@ module.exports = {
     {
       files: ['src/ui/chat-variables/**/*.{ts,tsx}'],
       rules: {
-        '@typescript-eslint/no-explicit-any': 'off',
-        '@typescript-eslint/no-non-null-assertion': 'off',
-        '@typescript-eslint/no-unused-vars': 'off',
-        'import/no-named-as-default-member': 'off',
-        'jsx-a11y/accessible-emoji': 'off',
+        // We want this feature area to be fully typed and clean.
+        '@typescript-eslint/no-explicit-any': 'error',
+        '@typescript-eslint/no-non-null-assertion': 'error',
+        '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+        'import/no-named-as-default-member': 'warn',
+        'jsx-a11y/accessible-emoji': 'warn',
       },
     },
 

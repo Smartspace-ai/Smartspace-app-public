@@ -1,23 +1,45 @@
+import type { ControlElement, ControlProps, JsonSchema7 } from '@jsonforms/core';
 import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import React, { useCallback } from 'react';
 
-interface DropdownRendererProps {
-  data: any;
-  handleChange: (path: string, value: any) => void;
-  path: string;
-  enabled: boolean;
-  schema: any;
-  label: string;
-  description?: string;
-  errors?: string;
-  required?: boolean;
-  uischema?: any;
-  visible?: boolean;
+type AccessUiSchema = { access?: 'Read' | 'Write' };
+type Option = { const: unknown; title?: string };
+
+function hasConst(x: unknown): x is { const: unknown; title?: unknown } {
+  return !!x && typeof x === 'object' && 'const' in x;
 }
 
-const DropdownRenderer: React.FC<DropdownRendererProps> = ({
+function toOptions(schema: JsonSchema7 | undefined): Option[] {
+  if (!schema) return [];
+
+  const fromOneOfAnyOf = (arr?: unknown) => {
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter(hasConst)
+      .map((s) => ({
+        const: s.const,
+        title: typeof s.title === 'string' ? s.title : undefined,
+      }));
+  };
+
+  const oneOf = fromOneOfAnyOf((schema as unknown as { oneOf?: unknown }).oneOf);
+  if (oneOf.length) return oneOf;
+
+  const anyOf = fromOneOfAnyOf((schema as unknown as { anyOf?: unknown }).anyOf);
+  if (anyOf.length) return anyOf;
+
+  const enumVals = (schema as unknown as { enum?: unknown }).enum;
+  if (Array.isArray(enumVals)) {
+    return enumVals.map((v) => ({ const: v, title: typeof v === 'string' ? v : String(v) }));
+  }
+
+  return [];
+}
+
+const DropdownRenderer: React.FC<ControlProps> = ({
   data,
   handleChange,
   path,
@@ -26,23 +48,19 @@ const DropdownRenderer: React.FC<DropdownRendererProps> = ({
   label,
   description,
   errors,
-  required,
   uischema
 }) => {
   // Get options from oneOf or anyOf
-  const options = schema.oneOf || schema.anyOf || schema.enum?.map((value: any) => ({ const: value, title: value })) || [];
+  const options = toOptions(schema as JsonSchema7 | undefined);
 
-  const handleSelectionChange = useCallback((event: any) => {
-    const newValue = event.target.value;
-    handleChange(path, newValue);
+  const handleSelectionChange = useCallback((event: SelectChangeEvent<unknown>) => {
+    handleChange(path, event.target.value);
   }, [handleChange, path]);
 
-  // Find the current option to display its title
-  const currentOption = options.find((option: any) => option.const === data);
-  const displayValue = data || '';
+  const displayValue = data ?? '';
 
   // Get readOnly from uischema (set when access === 'Read')
-  const readOnly = (uischema as any)?.access === 'Read';
+  const readOnly = (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
 
   return (
@@ -161,9 +179,9 @@ const DropdownRenderer: React.FC<DropdownRendererProps> = ({
           },
         }}
       >
-        {options.map((option: any, index: number) => (
+        {options.map((option, index) => (
           <MenuItem 
-            key={option.const || index} 
+            key={typeof option.const === 'string' || typeof option.const === 'number' ? String(option.const) : String(index)} 
             value={option.const}
             sx={{
               padding: '12px 16px',
@@ -183,7 +201,7 @@ const DropdownRenderer: React.FC<DropdownRendererProps> = ({
               },
             }}
           >
-            {option.title || option.const}
+            {option.title ?? String(option.const)}
           </MenuItem>
         ))}
       </Select>
@@ -205,13 +223,13 @@ export const dropdownRendererTester = rankWith(
   90, // High priority to override material renderers
   (uischema, schema) => {
     // Check if this is a Control element
-    if (uischema.type !== 'Control' || !(uischema as any).scope) {
+    if (uischema.type !== 'Control') {
       return false;
     }
 
     // Extract the property path from the scope
-    const propertyPath = (uischema as any).scope.replace('#/properties/', '');
-    const fieldSchema = schema?.properties?.[propertyPath];
+    const propertyPath = (uischema as ControlElement).scope.replace('#/properties/', '');
+    const fieldSchema = (schema as JsonSchema7 | undefined)?.properties?.[propertyPath] as JsonSchema7 | undefined;
     
     if (!fieldSchema) {
       return false;
@@ -225,15 +243,16 @@ export const dropdownRendererTester = rankWith(
     );
 
     // Don't handle model selector fields (they have their own renderer)
-    const isModelSelector = !!(
-      (fieldSchema as any)['x-model-selector'] === true ||
-      fieldSchema.title === 'ModelId' ||
-      fieldSchema.format === 'uuid'
-    );
+    const isModelSelector =
+      ((typeof fieldSchema === 'object' &&
+        fieldSchema &&
+        (fieldSchema as unknown as Record<string, unknown>)['x-model-selector'] === true) ||
+        fieldSchema.title === 'ModelId' ||
+        fieldSchema.format === 'uuid');
 
     return hasDropdownOptions && !isModelSelector;
   }
 );
 
 // Export the wrapped component
-export const DropdownRendererControl = withJsonFormsControlProps(DropdownRenderer as any); 
+export const DropdownRendererControl = withJsonFormsControlProps(DropdownRenderer); 

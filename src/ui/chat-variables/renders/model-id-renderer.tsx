@@ -1,6 +1,8 @@
+import type { ControlElement, ControlProps, JsonSchema7 } from '@jsonforms/core';
 import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Autocomplete, TextField } from '@mui/material';
+import type { AutocompleteInputChangeReason } from '@mui/material/useAutocomplete';
 import { Loader2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -8,21 +10,9 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/shared/ui/m
 
 import { llmModelIcons } from '../../../assets/providers';
 import { useModels } from '../../../domains/models/queries';
-import { Model } from '../../../domains/models/schemas';
+import type { Model } from '../../../domains/models/schemas';
 
-interface ModelIdRendererProps {
-  data: any;
-  handleChange: (path: string, value: any) => void;
-  path: string;
-  enabled: boolean;
-  schema: any;
-  label: string;
-  description?: string;
-  errors?: string;
-  required?: boolean;
-  uischema?: any;
-  visible?: boolean;
-}
+type AccessUiSchema = { access?: 'Read' | 'Write' };
 
 // Helper function to get provider logo/icon
 const getProviderInfo = (providerType: string): { iconSrc: string | null; bgColor: string; textColor: string } => {
@@ -47,12 +37,11 @@ const getProviderInfo = (providerType: string): { iconSrc: string | null; bgColo
   }
 };
 
-const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
+const ModelIdRenderer: React.FC<ControlProps> = ({
   data,
   handleChange,
   path,
   enabled,
-  schema,
   label,
   description,
   errors,
@@ -62,7 +51,7 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const debounceTimerRef = useRef<NodeJS.Timeout>();
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   
   // Debounce search to prevent excessive API calls
   useEffect(() => {
@@ -105,7 +94,10 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
     }
   }, [modelsData?.data]);
 
-  const selectedModel = (data && listModels.length) ? listModels.find(model => model.id === data) : null;
+  const selectedModel =
+    (typeof data === 'string' && data && listModels.length)
+      ? listModels.find((model) => model.id === data)
+      : null;
 
   // Compute the input value to show either the search term or the selected model's name
   const displayInputValue = useMemo(() => {
@@ -121,7 +113,7 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
     return '';
   }, [searchValue, selectedModel]);
 
-  const handleModelChange = useCallback((_event: any, newValue: Model | null) => {
+  const handleModelChange = useCallback((_event: React.SyntheticEvent | null, newValue: Model | null) => {
     if (newValue) {
       handleChange(path, newValue.id);
     } else {
@@ -133,15 +125,12 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
     setIsOpen(false);
   }, [handleChange, path, setIsOpen]);
 
-  const handleInputChange = useCallback((_event: any, newInputValue: string, reason: string) => {
+  const handleInputChange = useCallback((_event: React.SyntheticEvent, newInputValue: string, reason: AutocompleteInputChangeReason) => {
     // Only update search value when user is typing, not when selecting
     if (reason === 'input') {
       setSearchValue(newInputValue);
     }
   }, []);
-
-  // Prevent focus/blur jitter causing flicker by keeping dialog open during typing
-  const inputRef = React.useRef<HTMLInputElement | null>(null);
 
   const handleOpen = useCallback(() => {
     setIsOpen(true);
@@ -156,7 +145,7 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
 
   // Get readOnly from uischema (set when access === 'Read')
-  const readOnly = (uischema as any)?.access === 'Read';
+  const readOnly = (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
 
   if (isMobile) {
@@ -194,12 +183,13 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
                       <button
                         type="button"
                         className="w-full text-left px-3 py-2 hover:bg-accent cursor-pointer"
-                        onClick={() => handleModelChange(null as any, option)}
+                        onClick={() => handleModelChange(null, option)}
                       >
                       <div className="flex items-center gap-2">
-                        {getProviderInfo(option.modelDeploymentProviderType || '').iconSrc && (
-                          <img src={getProviderInfo(option.modelDeploymentProviderType || '').iconSrc!} alt="Provider" className="h-4 w-4" />
-                        )}
+                        {(() => {
+                          const icon = getProviderInfo(option.modelDeploymentProviderType || '').iconSrc;
+                          return icon ? <img src={icon} alt="Provider" className="h-4 w-4" /> : null;
+                        })()}
                         <span className="text-sm">{option.displayName || option.name}</span>
                       </div>
                       </button>
@@ -397,7 +387,7 @@ const ModelIdRenderer: React.FC<ModelIdRendererProps> = ({
                     }}
                   />
                 ) : (
-                  <span style={{ color: providerInfo.textColor, fontSize: '12px' }}>⚡</span>
+                  <span role="img" aria-label="Provider" style={{ color: providerInfo.textColor, fontSize: '12px' }}>⚡</span>
                 )}
               </div>
               
@@ -472,22 +462,25 @@ export const modelIdRendererTester = rankWith(
   100, // Much higher rank to ensure it takes priority
   (uischema, schema) => {
     // Check if this is a Control element (individual field)
-    if (uischema.type !== 'Control' || !(uischema as any).scope) {
+    if (uischema.type !== 'Control') {
       return false;
     }
 
     // Extract the property path from the scope (e.g., "#/properties/Model" -> "Model")
-    const propertyPath = (uischema as any).scope.replace('#/properties/', '');
+    const propertyPath = (uischema as ControlElement).scope.replace('#/properties/', '');
     
     // Get the individual field schema from the root schema
-    const fieldSchema = schema?.properties?.[propertyPath];
+    const fieldSchema = (schema as JsonSchema7 | undefined)?.properties?.[propertyPath] as JsonSchema7 | undefined;
     
     if (!fieldSchema) {
       return false;
     }
 
     // Check if this field has the ModelId indicators
-    const hasModelSelector = (fieldSchema as any)['x-model-selector'] === true;
+    const hasModelSelector =
+      (typeof fieldSchema === 'object' &&
+        fieldSchema &&
+        (fieldSchema as unknown as Record<string, unknown>)['x-model-selector'] === true);
     const hasModelIdTitle = fieldSchema.title === 'ModelId';
     const result = hasModelIdTitle || hasModelSelector;
     
@@ -496,4 +489,4 @@ export const modelIdRendererTester = rankWith(
 );
 
 // Export the wrapped component
-export const ModelIdRendererControl = withJsonFormsControlProps(ModelIdRenderer as any); 
+export const ModelIdRendererControl = withJsonFormsControlProps(ModelIdRenderer); 
