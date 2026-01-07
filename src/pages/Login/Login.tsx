@@ -1,70 +1,90 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
-import { isInTeams } from '@/platform/auth/msalConfig';
 import { useAuth } from '@/platform/auth/session';
+import { isInTeams } from '@/platform/auth/msalConfig';
 
 import { useTeams } from '@/app/providers';
 
 import { Button } from '@/shared/ui/mui-compat/button';
 
 import { Logo } from '@/assets/logo';
+import { ssInfo, ssWarn } from '@/platform/log';
 
 import styles from './Login.module.scss';
 
-export function Login() {
-  // Grab intended redirect path from URL if present
-  const redirectParam = new URLSearchParams(window.location.search).get('redirect') ?? '/workspace';
+export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
 
   const auth = useAuth();
   const navigate = useNavigate();
-  const { isTeamsInitialized, teamsUser } = useTeams();
+  const { isTeamsInitialized, teamsUser, teamsContext, isInTeams: isInTeamsFromProvider } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGenericError, setShowGenericError] = useState(false);
-  const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
   const [session, setSession] = useState<{ accountId?: string; displayName?: string } | null>(null);
   // Check for existing session on mount
   useEffect(() => {
+    if (isInTeams() && !isTeamsInitialized) return;
     const checkSession = async () => {
       try {
-        const currentSession = await auth.adapter.getSession();
-        setSession(currentSession);
+        ssInfo('login', 'checkSession start', {
+          isInTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
+          isTeamsInitialized,
+        });
+        if (isInTeams()) {
+          setIsLoading(true);
+          setShowGenericError(false);
+          setError(null);
+        }
+        const currentSession = await auth.getSession();
+        // Only auto-navigate when we can also acquire a token silently.
+        // Otherwise we can end up in a /login <-> /_protected redirect loop.
         if (currentSession) {
-          // Same as route guard: only auto-navigate if we can also silently acquire a token.
-          // Otherwise we'd bounce /login -> /_protected -> /login forever in environments
-          // where an account is cached but silent token acquisition fails.
           try {
-            await auth.adapter.getAccessToken({ silentOnly: true });
-            navigate({ to: redirectParam, replace: true });
-          } catch {
-            // stay on the login page; user can click "Sign in" to trigger interactive flow
+            await auth.getAccessToken({ silentOnly: true });
+            setSession(currentSession);
+            ssInfo('login', 'session+token OK -> navigate', { to: redirectTo });
+            navigate({ to: redirectTo, replace: true });
+            return;
+          } catch (e) {
+            // Treat as not signed in; user needs interactive sign-in.
+            setSession(null);
+            if (isInTeams()) {
+              const msg = e instanceof Error ? e.message : String(e);
+              ssWarn('login', 'token acquisition failed (Teams)', msg);
+              setError(`Teams token acquisition failed: ${msg}`);
+            }
+          }
+        } else {
+          setSession(null);
+          // If we got no session, try to acquire a token anyway so we can surface the real failure.
+          if (isInTeams()) {
+            try {
+              await auth.getAccessToken({ silentOnly: true });
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : String(e);
+              ssWarn('login', 'session missing; token acquisition failed (Teams)', msg);
+              setError(`Teams session missing; token acquisition failed: ${msg}`);
+            }
           }
         }
+        if (isInTeams()) {
+          setShowGenericError(true);
+          setError((prev) => prev ?? 'Unable to sign in with your Teams account.');
+          setIsLoading(false);
+        }
       } catch (err) {
+        ssWarn('login', 'checkSession threw', err);
         // No existing session, continue with login flow
+        if (isInTeams()) {
+          setShowGenericError(true);
+          setError(err instanceof Error ? err.message : 'Unable to sign in with your Teams account.');
+          setIsLoading(false);
+        }
       }
     };
     checkSession();
-  }, [auth, redirectParam, navigate]);
-
-  // Auto-attempt Teams authentication (desktop and mobile)
-  useEffect(() => {
-    if (isInTeams() && isTeamsInitialized && !isLoading && !hasAttemptedAutoLogin && !session) {
-      setHasAttemptedAutoLogin(true);
-      setIsLoading(true);
-      setError(null);
-      
-      auth.adapter.signIn().then(() => {
-        // After successful Teams sign in, navigate to the redirect URL
-        navigate({ to: redirectParam, replace: true });
-      }).catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Authentication failed');
-        setShowGenericError(true);
-        setIsLoading(false);
-      });
-    }
-  }, [isTeamsInitialized, isLoading, hasAttemptedAutoLogin, session, auth, navigate, redirectParam]);
+  }, [auth, redirectTo, navigate, isTeamsInitialized]);
 
   // Avoid flashing the login UI if we already have a session
   if (session) {
@@ -74,7 +94,7 @@ export function Login() {
   // Fallback manual login for browser or if Teams SSO fails
   const handleManualLogin = async () => {
     if (session) {
-      navigate({ to: redirectParam, replace: true });
+      navigate({ to: redirectTo, replace: true });
       return;
     }
     
@@ -87,7 +107,7 @@ export function Login() {
     setError(null);
     
     try {
-      await auth.adapter.signIn();
+      await auth.signIn();
       // For web auth (MSAL), signIn() performs a redirect, so we don't navigate here
       // For Teams auth, the redirect will be handled by the auto-login effect
     } catch (authError: unknown) {
@@ -99,8 +119,6 @@ export function Login() {
       console.error('[Login] Manual login failed:', authError);
     }
   };
-
-  // Teams auto-login; no manual handlers needed
 
   const getButtonText = () => {
     if (isLoading) {
@@ -150,6 +168,46 @@ export function Login() {
 
   // Prominent Teams error panel content
   const showTeamsErrorPanel = isInTeams() && (showGenericError || !!error);
+  const canShowDiag = showTeamsErrorPanel; // always show diagnostics when Teams sign-in fails
+
+  const diag = {
+    href: (() => { try { return window.location.href; } catch { return null; } })(),
+    origin: (() => { try { return window.location.origin; } catch { return null; } })(),
+    isInTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
+    isInTeams_provider: isInTeamsFromProvider,
+    isTeamsInitialized,
+    teamsUser: teamsUser ?? null,
+    teamsContextHasUser: !!(teamsContext as any)?.user,
+    lastTeamsAuthError: (() => { try { return (window as any).__teamsAuthLastError ?? null; } catch { return null; } })(),
+    ssconfig: (() => { try { return (window as any)?.ssconfig ?? null; } catch { return null; } })(),
+    build: {
+      mode: import.meta.env.MODE,
+      // Optional: set this in CI for easier “which build is deployed?” checks.
+      sha: (import.meta as any)?.env?.VITE_BUILD_SHA ?? null,
+    },
+  };
+
+  const enableDebugAndReload = () => {
+    try { localStorage.setItem('ss_debug', '1'); } catch { /* ignore */ }
+    try { sessionStorage.setItem('ss_debug', '1'); } catch { /* ignore */ }
+    try { window.location.reload(); } catch { /* ignore */ }
+  };
+
+  const copyDiagnostics = async () => {
+    const payload = {
+      ...diag,
+      ssLogs: (() => { try { return (window as any).__ssLogs ?? []; } catch { return []; } })(),
+    };
+    const text = JSON.stringify(payload, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      // Give lightweight feedback without adding new UI deps
+      setError((prev) => prev ?? 'Diagnostics copied to clipboard.');
+    } catch {
+      // Clipboard may be blocked in some Teams contexts; fall back to showing text.
+      setError((prev) => prev ?? 'Unable to copy diagnostics (clipboard blocked). Please select/copy the diagnostics text below.');
+    }
+  };
 
   return (
     <div className={`ss-login ${styles['container']}`}>
@@ -170,6 +228,30 @@ export function Login() {
                 <div className="mt-2 p-3 rounded border border-red-200 bg-red-50 text-red-800 text-sm">
                   <div className="font-semibold mb-1">Teams sign-in error</div>
                   {getErrorMessage()}
+                  {canShowDiag ? (
+                    <div className="mt-2">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          onClick={enableDebugAndReload}
+                          className="text-xs"
+                        >
+                          Enable debug logs
+                        </Button>
+                        <Button
+                          onClick={copyDiagnostics}
+                          className="text-xs"
+                        >
+                          Copy diagnostics
+                        </Button>
+                      </div>
+                      <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-red-900/90 max-h-[260px] overflow-auto">
+{JSON.stringify(diag, null, 2)}
+                      </pre>
+                      <pre className="mt-2 whitespace-pre-wrap break-words text-[11px] text-red-900/80 max-h-[260px] overflow-auto">
+{JSON.stringify((() => { try { return (window as any).__ssLogs ?? []; } catch { return []; } })(), null, 2)}
+                      </pre>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>

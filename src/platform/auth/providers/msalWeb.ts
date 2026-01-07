@@ -1,75 +1,58 @@
 import { msalInstance } from '@/platform/auth/msalClient';
-import { interactiveLoginRequest } from '@/platform/auth/msalConfig';
-import { parseScopes } from '@/platform/auth/utils';
-
-import type { AuthAdapter, GetTokenOptions } from '../types';
+import { interactiveLoginRequest, loginRequest } from '@/platform/auth/msalConfig';
+import { AuthAdapter, GetTokenOptions } from '../types';
+import { ssInfo, ssWarn } from '@/platform/log';
 
 export function createMsalWebAdapter(): AuthAdapter {
-  const ensureActive = async () => {
+  async function ensureActive() {
     const current = msalInstance.getActiveAccount();
     const all = msalInstance.getAllAccounts();
-    if (!current && all.length > 0) {
-      let preferred = all[0];
-      try {
-        const saved = localStorage.getItem('msalActiveHomeAccountId');
-        if (saved) preferred = all.find(a => a.homeAccountId === saved) ?? preferred;
-      } catch {
-        // ignore storage failures
-      }
-      msalInstance.setActiveAccount(preferred);
-    }
-  };
-
+    if (!current && all.length > 0) msalInstance.setActiveAccount(all[0]);
+  }
   return {
     async getAccessToken(opts?: GetTokenOptions) {
       await ensureActive();
-      const scopes = opts?.scopes ?? parseScopes(import.meta.env.VITE_CLIENT_SCOPES);
-      const account = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
-
-      if (!account && opts?.silentOnly) {
-        throw new Error('No active account');
+      const acct = msalInstance.getActiveAccount();
+      ssInfo('auth:web', 'getAccessToken start', {
+        hasActiveAccount: !!acct,
+        accountsCached: msalInstance.getAllAccounts().length,
+        silentOnly: !!opts?.silentOnly,
+      });
+      if (!acct) {
+        if (opts?.silentOnly) throw new Error('No active account');
+        await msalInstance.loginPopup(interactiveLoginRequest);
       }
-
       try {
-        const res = await msalInstance.acquireTokenSilent({
-          account: account ?? undefined,
-          scopes,
-          forceRefresh: !!opts?.forceRefresh,
-        });
-        return res.accessToken;
+        const r = await msalInstance.acquireTokenSilent({ ...loginRequest, account: msalInstance.getActiveAccount()! });
+        return r.accessToken;
       } catch (e) {
-        if (opts?.silentOnly) throw e;
-        // Interactive fallback
-        const res = await msalInstance.acquireTokenPopup({ scopes });
-        return res.accessToken;
+        ssWarn('auth:web', 'acquireTokenSilent failed', e);
+        if (opts?.silentOnly) throw new Error('Silent token failed');
+        // Use the same interactive request as sign-in for consistency
+        const r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
+        return r.accessToken;
       }
     },
-
     async getSession() {
       await ensureActive();
       const a = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
-      return a ? { accountId: a.homeAccountId, displayName: a.name ?? a.username } : null;
+      ssInfo('auth:web', 'getSession', { hasSession: !!a });
+      return a ? { accountId: a.homeAccountId, displayName: a.name ?? undefined } : null;
     },
-
-    // Use redirect for sign-in (your current behavior)
-    async signIn() {
-      // Persist intended redirect, default to /workspace (tweak to your app)
+    async signIn() { 
+      // Store the intended redirect URL before redirecting
       const redirectUrl = new URLSearchParams(window.location.search).get('redirect') || '/workspace';
-      try { sessionStorage.setItem('msalRedirectUrl', redirectUrl); } catch {
-        // no session storage; no redirect handled in the app
-      }
-      await msalInstance.loginRedirect(interactiveLoginRequest);
+      sessionStorage.setItem('msalRedirectUrl', redirectUrl);
+      ssInfo('auth:web', 'signIn -> loginRedirect', { redirectUrl });
+      await msalInstance.loginRedirect(interactiveLoginRequest); 
     },
-
-    async signOut() {
-      await msalInstance.logoutPopup();
-    },
-
+    async signOut() { await msalInstance.logoutPopup(); },
     getStoredRedirectUrl() {
-      try { return sessionStorage.getItem('msalRedirectUrl'); } catch { return null; }
-    },
-    clearStoredRedirectUrl() {
-      try { sessionStorage.removeItem('msalRedirectUrl'); } catch { /* noop */ }
+      try {
+        return sessionStorage.getItem('msalRedirectUrl');
+      } catch {
+        return null;
+      }
     },
   };
 }

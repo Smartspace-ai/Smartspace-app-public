@@ -1,21 +1,27 @@
+import { isInTeams } from '@/platform/auth/msalConfig';
 import { createMsalWebAdapter } from './providers/msalWeb';
 import { createTeamsNaaAdapter } from './providers/teamsNaa';
 import type { AuthAdapter } from './types';
-import { isInTeams } from './utils';
+import { ssInfo } from '@/platform/log';
 
-export type AdapterMode = 'auto' | 'web' | 'teams';
+export function createAuthAdapter(): AuthAdapter {
+  // Check if we're in Teams with more robust detection
+  const inTeams = isInTeams() || 
+                  (typeof window !== 'undefined' && 
+                   (window as any).__teamsState?.isInTeams === true);
 
-/** Factory for non-React usage; provider uses its own picker. */
-export function createAuthAdapter(mode: AdapterMode = 'auto'): AuthAdapter {
-  const pick =
-    mode === 'teams' || (mode === 'auto' && isInTeams())
-      ? createTeamsNaaAdapter
-      : createMsalWebAdapter;
-  const adapter = pick();
-  try {
-    (window as any).__authAdapterKind = pick === createTeamsNaaAdapter ? 'teams' : 'web';
-  } catch {
-    // ignore
-  }
-  return adapter;
+  ssInfo('auth', `createAuthAdapter -> ${inTeams ? 'teams' : 'web'}`, {
+    inTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
+    inTeams_state: (() => { try { return (window as any).__teamsState?.isInTeams ?? null; } catch { return null; } })(),
+    origin: (() => { try { return window.location.origin; } catch { return null; } })(),
+  });
+
+  return inTeams ? createTeamsNaaAdapter() : createMsalWebAdapter();
 }
+export * from './msalClient';
+export * from './naaClient';
+export * from './providers/msalWeb';
+export * from './providers/teamsNaa';
+export * from './session';
+export * from './types';
+

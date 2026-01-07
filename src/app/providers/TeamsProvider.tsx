@@ -4,6 +4,9 @@ import {
     createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
 
+import { isInTeams as detectIsInTeams } from '@/platform/auth/msalConfig';
+import { ssInfo, ssWarn } from '@/platform/log';
+
 type TeamsTheme = 'default' | 'dark' | 'contrast';
 
 interface TeamsContextType {
@@ -25,17 +28,10 @@ const TeamsContext = createContext<TeamsContextType>({
 export const useTeams = () => useContext(TeamsContext);
 
 export function TeamsProvider({ children }: { children: ReactNode }) {
-  // quick heuristic: iframe or ?inTeams=true → likely inside Teams
-  const likelyInTeams = (() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      const inParam = new URLSearchParams(window.location.search).get('inTeams') === 'true';
-      const embedded = window.parent !== window;
-      return inParam || embedded;
-    } catch {
-      return false;
-    }
-  })();
+  const likelyInTeams = detectIsInTeams();
+  ssInfo('teams', `TeamsProvider mount (likelyInTeams=${likelyInTeams})`, {
+    href: (() => { try { return window.location.href; } catch { return null; } })(),
+  });
 
   const [isInTeams, setIsInTeams] = useState(likelyInTeams);
   const [teamsContext, setTeamsContext] = useState<app.Context | null>(null);
@@ -109,6 +105,7 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
     (async () => {
       for (let attempt = 1; attempt <= 3 && !cancelled; attempt++) {
         try {
+          ssInfo('teams', `Teams initialize attempt ${attempt}/3`);
           await app.initialize();
           if (cancelled) return;
 
@@ -117,6 +114,11 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
           const ctx = await app.getContext();
           if (cancelled) return;
 
+          ssInfo('teams', 'Teams getContext success', {
+            hasUser: !!(ctx as any)?.user,
+            hostClientType: (ctx as any)?.host?.clientType ?? null,
+            appHost: (ctx as any)?.app?.host?.name ?? null,
+          });
           setTeamsContext(ctx);
           setTeamsUser(ctx.user ?? null);
           setTeamsTheme(((ctx as unknown as { app?: { theme?: unknown } }).app?.theme ?? 'default') as TeamsTheme);
@@ -133,7 +135,8 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
           }
 
           break; // success
-        } catch {
+        } catch (e) {
+          ssWarn('teams', `Teams init/context failed (attempt ${attempt}/3)`, e);
           if (attempt < 3) {
             await new Promise((r) => setTimeout(r, 1000 * attempt));
           } else {

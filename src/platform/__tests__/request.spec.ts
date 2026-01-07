@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { request, requestOrThrow, unwrap } from '@/platform/request';
-import * as transportMod from '@/platform/transport';
+import * as apiClient from '@/platform/api/apiClient';
 
 describe('request/unwrap', () => {
   it('returns ok result on success', async () => {
-    const spy = vi.spyOn(transportMod.transport, 'request').mockResolvedValueOnce({ data: { a: 1 } } as unknown as { data: { a: number } });
+    const spy = vi.spyOn(apiClient.api, 'request').mockResolvedValueOnce({ data: { a: 1 } } as unknown as { data: { a: number } });
     const res = await request<{ a: number }>({ method: 'GET', url: '/x' });
     expect(res.ok).toBe(true);
     // @ts-expect-error guarded by ok flag
@@ -15,7 +15,7 @@ describe('request/unwrap', () => {
 
   it('maps network error', async () => {
     const err = new Error('net');
-    const spy = vi.spyOn(transportMod.transport, 'request').mockRejectedValueOnce(err);
+    const spy = vi.spyOn(apiClient.api, 'request').mockRejectedValueOnce(err);
     const res = await request({ method: 'GET', url: '/x' });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error.type).toBe('NetworkError');
@@ -23,7 +23,7 @@ describe('request/unwrap', () => {
   });
 
   it('maps http error to AppError', async () => {
-    const spy = vi.spyOn(transportMod.transport, 'request').mockRejectedValueOnce({ response: { status: 404, data: {} } });
+    const spy = vi.spyOn(apiClient.api, 'request').mockRejectedValueOnce({ response: { status: 404, data: {} } });
     const res = await request({ method: 'GET', url: '/x' });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error.type).toBe('NotFound');
@@ -31,11 +31,11 @@ describe('request/unwrap', () => {
   });
 
   it('requestOrThrow throws on Err and returns data on Ok', async () => {
-    const success = vi.spyOn(transportMod.transport, 'request').mockResolvedValueOnce({ data: { ok: true } } as unknown as { data: { ok: boolean } });
+    const success = vi.spyOn(apiClient.api, 'request').mockResolvedValueOnce({ data: { ok: true } } as unknown as { data: { ok: boolean } });
     await expect(requestOrThrow({ method: 'GET', url: '/ok' })).resolves.toEqual({ ok: true });
     success.mockRestore();
 
-    const fail = vi.spyOn(transportMod.transport, 'request').mockRejectedValueOnce({ response: { status: 403 } });
+    const fail = vi.spyOn(apiClient.api, 'request').mockRejectedValueOnce({ response: { status: 403 } });
     await expect(requestOrThrow({ method: 'GET', url: '/fail' })).rejects.toMatchObject({ type: 'Forbidden' });
     fail.mockRestore();
   });

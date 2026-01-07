@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-import { isInTeams } from '@/platform/auth/utils';
+import { isInTeams } from '@/platform/auth/msalConfig';
 
 import { MessageValueType, useMessages } from '@/domains/messages';
 import { useThread } from '@/domains/threads/queries';

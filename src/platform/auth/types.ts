@@ -6,5 +6,4 @@ export interface AuthAdapter {
   signIn(): Promise<void>;
   signOut(): Promise<void>;
   getStoredRedirectUrl(): string | null;
-  clearStoredRedirectUrl?(): void;
 }

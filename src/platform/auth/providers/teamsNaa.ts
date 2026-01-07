@@ -1,62 +1,85 @@
-import { app as teamsApp } from '@microsoft/teams-js';
-
 import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
-import { parseScopes } from '@/platform/auth/utils';
+import { app as teamsApp } from '@microsoft/teams-js';
+import { AuthAdapter, type GetTokenOptions } from '../types';
+import { ssInfo, ssWarn } from '@/platform/log';
 
-import type { AuthAdapter, GetTokenOptions } from '../types';
-
-async function getTeamsSsoToken(): Promise<string> {
-  // Works in older Teams clients where NAA may not be supported.
-  // v2 teams-js: app.initialize + app.authentication.getAuthToken()
-  try { await teamsApp.initialize(); } catch { /* ignore */ }
-  const auth: any = (teamsApp as any).authentication;
-  if (!auth || typeof auth.getAuthToken !== 'function') {
-    throw new Error('Teams SSO is not available in this host');
-  }
-  const res = await auth.getAuthToken();
-  // Some hosts return string, others object { token }
-  if (typeof res === 'string') return res;
-  if (res && typeof res === 'object' && typeof (res as any).token === 'string') return (res as any).token;
-  throw new Error('Teams SSO did not return a token');
+function parseScopes(raw: unknown): string[] {
+  return String(raw ?? '')
+    .split(/[ ,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 export function createTeamsNaaAdapter(): AuthAdapter {
   return {
     async getAccessToken(opts?: GetTokenOptions) {
-      const scopes = opts?.scopes ?? parseScopes(import.meta.env.VITE_CLIENT_SCOPES);
       try {
+        ssInfo('auth:teams', 'getAccessToken start', {
+          silentOnly: !!opts?.silentOnly,
+          scopesProvided: !!opts?.scopes?.length,
+        });
         await naaInit();
-        return await acquireNaaToken(scopes, { forceRefresh: !!opts?.forceRefresh, silentOnly: !!opts?.silentOnly });
-      } catch (e) {
-        // If NAA isn't supported in this Teams client (common in some desktop builds),
-        // fall back to Teams SSO token acquisition so desktop and web both work.
-        if (opts?.silentOnly) {
-          // silentOnly should still be respected (route guard). getAuthToken is effectively silent in Teams.
-          return await getTeamsSsoToken();
-        }
-        return await getTeamsSsoToken();
+        const raw =
+          (window as any)?.ssconfig?.Client_Scopes ??
+          import.meta.env.VITE_CLIENT_SCOPES ??
+          '';
+        const scopes = opts?.scopes?.length ? opts.scopes : parseScopes(raw);
+        ssInfo('auth:teams', 'getAccessToken acquiring (no token will be logged)', {
+          scopesCount: scopes.length,
+          scopes: scopes,
+          scopeSource: (opts?.scopes?.length ? 'callsite' : ((window as any)?.ssconfig?.Client_Scopes ? 'ssconfig' : 'viteEnv')),
+        });
+        return acquireNaaToken(scopes);
+      } catch (error) {
+        console.error('Teams NAA token acquisition failed:', error);
+        ssWarn('auth:teams', 'getAccessToken failed', error);
+        try { (window as any).__teamsAuthLastError = String((error as any)?.message ?? error); } catch { /* ignore */ }
+        throw error;
       }
     },
-
     async getSession() {
       try {
-        // Initialize if needed; ignore if already initialized
-        try { await teamsApp.initialize(); } catch {
-          // ignore – app may already be initialized by host
+        ssInfo('auth:teams', 'getSession start');
+        // Try to initialize Teams if not already done
+        try {
+          await teamsApp.initialize();
+        } catch (initError) {
+          // Teams might already be initialized, ignore this error
+          console.log('Teams already initialized or not available');
+          ssWarn('auth:teams', 'teamsApp.initialize threw (ignored)', initError);
         }
+        
         const ctx = await teamsApp.getContext();
-        const user = (ctx as any)?.user;
-        if (!user) return null;
-        return { accountId: user.id, displayName: user.displayName };
-      } catch {
+        if (!ctx.user) {
+          console.warn('No user context available in Teams');
+          ssWarn('auth:teams', 'getSession: ctx.user missing', ctx);
+          try { (window as any).__teamsAuthLastError = 'Teams context missing user (ctx.user is empty)'; } catch { /* ignore */ }
+          return null;
+        }
+        
+        ssInfo('auth:teams', 'getSession success', { userId: ctx.user.id, hasDisplayName: !!ctx.user.displayName });
+        return { 
+          accountId: ctx.user.id, 
+          displayName: ctx.user.displayName 
+        };
+      } catch (error) {
+        console.error('Teams session retrieval failed:', error);
+        ssWarn('auth:teams', 'getSession failed', error);
+        try { (window as any).__teamsAuthLastError = String((error as any)?.message ?? error); } catch { /* ignore */ }
         return null;
       }
     },
-
-    // SSO is handled by Teams; these are no-ops by design
-    async signIn() { /* no-op in Teams */ },
-    async signOut() { /* no-op in Teams */ },
-
-    getStoredRedirectUrl() { return null; },
+    async signIn() { 
+      // Teams handles authentication through SSO
+      console.log('Teams sign-in requested - handled by Teams SSO');
+    },
+    async signOut() { 
+      // Teams handles sign-out
+      console.log('Teams sign-out requested - handled by Teams');
+    },
+    getStoredRedirectUrl() {
+      // Teams doesn't use redirect URLs in the same way
+      return null;
+    },
   };
 }

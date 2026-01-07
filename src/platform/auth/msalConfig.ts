@@ -1,5 +1,4 @@
 import { Configuration, PopupRequest } from '@azure/msal-browser';
-import { isInTeams } from '@/platform/auth/utils';
 
 // Environment variables (provided via Vite)
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
@@ -17,16 +16,22 @@ export const handleTrailingSlash = (url: string): string => {
   return url.endsWith('/') ? url : `${url}/`;
 };
 
+// Check if we're running in Teams
+const isInTeams = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const inTeamsParam = urlParams.get('inTeams') === 'true';
+  const parentCheck = window.parent !== window;
+  
+  return inTeamsParam || parentCheck;
+};
+
 // MSAL configuration object
 const msalConfig: Configuration = {
   auth: {
     clientId: CLIENT_ID,
     authority: AUTHORITY,
-    // IMPORTANT: For Entra ID SPA redirect URIs, an extra trailing slash often causes
-    // `AADSTS50011: The reply URL specified in the request does not match...` in prod.
-    // Use the exact origin (no forced slash) and register that origin in the app registration.
-    redirectUri: window.location.origin,
-    postLogoutRedirectUri: window.location.origin,
+    redirectUri: handleTrailingSlash(window.location.origin),
+    postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
     // For Teams, we need to support popup flows
     navigateToLoginRequestUrl: false,
   },
