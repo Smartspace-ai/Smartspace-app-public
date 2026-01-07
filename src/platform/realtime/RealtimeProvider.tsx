@@ -35,7 +35,16 @@ export type RealtimeProviderProps = {
 };
 
 const defaultBaseUrl = () => {
-  const cfg = (window as any)?.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
+  type SsConfig = { Chat_Api_Uri?: unknown };
+  type SsWindow = Window & { ssconfig?: SsConfig };
+  const cfg = (() => {
+    try {
+      const w = window as unknown as SsWindow;
+      return w.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
+    } catch {
+      return import.meta.env.VITE_CHAT_API_URI;
+    }
+  })();
   return (typeof cfg === 'string' && cfg.length) ? cfg : '';
 };
 
@@ -141,21 +150,21 @@ export function RealtimeProvider({
     conn.onclose?.((err) => {
       realtimeDebugLog('onclose', {
         state: conn.state,
-        connectionId: (conn as any)?.connectionId,
+        connectionId: conn.connectionId,
         error: err ? String(err) : undefined,
       });
     });
     conn.onreconnecting?.((err) => {
       realtimeDebugLog('onreconnecting', {
         state: conn.state,
-        connectionId: (conn as any)?.connectionId,
+        connectionId: conn.connectionId,
         error: err ? String(err) : undefined,
       });
     });
     conn.onreconnected?.((connectionId) => {
       realtimeDebugLog('onreconnected', {
         state: conn.state,
-        connectionId: connectionId ?? (conn as any)?.connectionId,
+        connectionId: connectionId ?? conn.connectionId,
       });
     });
 
@@ -182,7 +191,7 @@ export function RealtimeProvider({
         realtimeDebugLog('connected', {
           hubUrl,
           state: conn.state,
-          connectionId: (conn as any)?.connectionId,
+          connectionId: conn.connectionId,
         });
       })
       .catch(err => {
@@ -196,7 +205,7 @@ export function RealtimeProvider({
       realtimeDebugLog('stopping connection', {
         hubUrl,
         state: conn.state,
-        connectionId: (conn as any)?.connectionId,
+        connectionId: conn.connectionId,
       });
       conn.stop().catch(() => {
         console.error('Error stopping connection');

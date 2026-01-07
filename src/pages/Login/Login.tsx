@@ -177,13 +177,27 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
     isInTeams_provider: isInTeamsFromProvider,
     isTeamsInitialized,
     teamsUser: teamsUser ?? null,
-    teamsContextHasUser: !!(teamsContext as any)?.user,
-    lastTeamsAuthError: (() => { try { return (window as any).__teamsAuthLastError ?? null; } catch { return null; } })(),
-    ssconfig: (() => { try { return (window as any)?.ssconfig ?? null; } catch { return null; } })(),
+    teamsContextHasUser: !!(teamsContext && typeof teamsContext === 'object' && 'user' in teamsContext),
+    lastTeamsAuthError: (() => {
+      try {
+        const w = window as unknown as Window & { __teamsAuthLastError?: unknown };
+        return w.__teamsAuthLastError ?? null;
+      } catch {
+        return null;
+      }
+    })(),
+    ssconfig: (() => {
+      try {
+        const w = window as unknown as Window & { ssconfig?: unknown };
+        return w.ssconfig ?? null;
+      } catch {
+        return null;
+      }
+    })(),
     build: {
       mode: import.meta.env.MODE,
       // Optional: set this in CI for easier “which build is deployed?” checks.
-      sha: (import.meta as any)?.env?.VITE_BUILD_SHA ?? null,
+      sha: ((import.meta.env as unknown as { VITE_BUILD_SHA?: string })?.VITE_BUILD_SHA) ?? null,
     },
   };
 
@@ -196,7 +210,14 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
   const copyDiagnostics = async () => {
     const payload = {
       ...diag,
-      ssLogs: (() => { try { return (window as any).__ssLogs ?? []; } catch { return []; } })(),
+      ssLogs: (() => {
+        try {
+          const w = window as unknown as Window & { __ssLogs?: unknown };
+          return w.__ssLogs ?? [];
+        } catch {
+          return [];
+        }
+      })(),
     };
     const text = JSON.stringify(payload, null, 2);
     try {
@@ -248,7 +269,14 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
 {JSON.stringify(diag, null, 2)}
                       </pre>
                       <pre className="mt-2 whitespace-pre-wrap break-words text-[11px] text-red-900/80 max-h-[260px] overflow-auto">
-{JSON.stringify((() => { try { return (window as any).__ssLogs ?? []; } catch { return []; } })(), null, 2)}
+{JSON.stringify((() => {
+  try {
+    const w = window as unknown as Window & { __ssLogs?: unknown };
+    return w.__ssLogs ?? [];
+  } catch {
+    return [];
+  }
+})(), null, 2)}
                       </pre>
                     </div>
                   ) : null}

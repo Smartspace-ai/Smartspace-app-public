@@ -7,7 +7,7 @@ import { FileInfo } from '@/domains/files';
 
 import { MessageDto, MessagesEnvelopeDto } from './dto';
 import { mapMessageDtoToModel, mapMessagesDtoToModels } from './mapper';
-import { Message } from './model';
+import type { Message, MessageContentItem } from './model';
 
 
 // Fetch all messages in a given message thread
@@ -78,11 +78,11 @@ export async function postMessage({
 }: {
   workSpaceId: string;
   threadId: string;
-  contentList?: any[];
+  contentList?: MessageContentItem[];
   files?: FileInfo[];
   variables?: Record<string, unknown>;
 }): Promise<Subject<Message>> {
-  const inputs = [] as any[];
+  const inputs: Array<{ name: string; value: unknown }> = [];
 
   if (contentList?.length) {
     inputs.push({

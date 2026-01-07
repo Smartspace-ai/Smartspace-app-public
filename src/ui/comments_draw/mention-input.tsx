@@ -330,20 +330,20 @@ export const MentionInput = (props: MentionInputProps) => {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
               // Avoid autoFocus for better accessibility; focus is controlled via shouldFocus
-            sx={{
-              ...mergedSx,
-              '& .MuiInputBase-root': { ...((mergedSx as any)['& .MuiInputBase-root'] || {}), backgroundColor: 'transparent', position: 'relative', zIndex: 1 },
-              '& .MuiInputBase-inputMultiline': {
-                ...((mergedSx as any)['& .MuiInputBase-inputMultiline'] || {}),
-                backgroundColor: 'transparent',
-                caretColor: 'var(--foreground)',
+            sx={[
+              mergedSx,
+              {
+                '& .MuiInputBase-root': { backgroundColor: 'transparent', position: 'relative', zIndex: 1 },
+                '& .MuiInputBase-inputMultiline': {
+                  backgroundColor: 'transparent',
+                  caretColor: 'var(--foreground)',
+                },
+                '& .MuiInputBase-input': {
+                  backgroundColor: 'transparent',
+                  caretColor: 'var(--foreground)',
+                },
               },
-              '& .MuiInputBase-input': {
-                ...((mergedSx as any)['& .MuiInputBase-input'] || {}),
-                backgroundColor: 'transparent',
-                caretColor: 'var(--foreground)',
-              },
-            }}
+            ]}
             inputProps={{ style: { caretColor: 'var(--foreground)' } }}
           />
           {showFullscreenToggle && showExpand && (

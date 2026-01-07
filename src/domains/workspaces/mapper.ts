@@ -27,7 +27,7 @@ export function mapMentionUserDtoToModel(dto: TMentionUserDto): MentionUser {
 export function mapVariablesDtoToModel(dto: unknown): Variables {
   if (!dto || typeof dto !== 'object') return {};
   const out: Variables = {};
-  for (const [key, val] of Object.entries(dto as Record<string, any>)) {
+  for (const [key, val] of Object.entries(dto as Record<string, unknown>)) {
     if (!val || typeof val !== 'object') continue;
     const schema = (val.schema && typeof val.schema === 'object') ? (val.schema as Record<string, unknown>) : {};
     const access = (val.access === 'Read' || val.access === 'Write') ? val.access : 'Read';

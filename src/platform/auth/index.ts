@@ -5,15 +5,18 @@ import { createMsalWebAdapter } from './providers/msalWeb';
 import { createTeamsNaaAdapter } from './providers/teamsNaa';
 import type { AuthAdapter } from './types';
 
+type TeamsState = { isInTeams?: unknown };
+type SsWindow = Window & { __teamsState?: TeamsState };
+
 export function createAuthAdapter(): AuthAdapter {
   // Check if we're in Teams with more robust detection
   const inTeams = isInTeams() || 
                   (typeof window !== 'undefined' && 
-                   (window as any).__teamsState?.isInTeams === true);
+                   (window as unknown as SsWindow).__teamsState?.isInTeams === true);
 
   ssInfo('auth', `createAuthAdapter -> ${inTeams ? 'teams' : 'web'}`, {
     inTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
-    inTeams_state: (() => { try { return (window as any).__teamsState?.isInTeams ?? null; } catch { return null; } })(),
+    inTeams_state: (() => { try { return (window as unknown as SsWindow).__teamsState?.isInTeams ?? null; } catch { return null; } })(),
     origin: (() => { try { return window.location.origin; } catch { return null; } })(),
   });
 

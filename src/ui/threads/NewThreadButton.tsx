@@ -13,6 +13,25 @@ import { Button } from '@/shared/ui/mui-compat/button';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 import { createDraftThreadId, isDraftThreadId, markDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
 
+type ThreadsListMeta = { workspaceId?: string };
+type ThreadsListKey = readonly unknown[];
+
+function isThreadsListMeta(x: unknown): x is ThreadsListMeta {
+  return !!x && typeof x === 'object' && ('workspaceId' in x);
+}
+
+function isThreadsResponse(x: unknown): x is ThreadsResponse {
+  if (!x || typeof x !== 'object') return false;
+  const obj = x as Record<string, unknown>;
+  return Array.isArray(obj.data);
+}
+
+function isInfiniteThreadsResponse(x: unknown): x is { pages: ThreadsResponse[]; pageParams?: unknown[] } {
+  if (!x || typeof x !== 'object') return false;
+  const obj = x as Record<string, unknown>;
+  return Array.isArray(obj.pages);
+}
+
 export default function NewThreadButton() {
   const { isMobile, setOpenMobileLeft } = useSidebar();
   const { workspaceId } = useRouteIds();
@@ -28,17 +47,17 @@ export default function NewThreadButton() {
     const findExistingDraftThreadId = (): string | null => {
       const listQueries = queryClient.getQueryCache().findAll({ queryKey: threadsKeys.lists() });
       for (const q of listQueries) {
-        const qk = q.queryKey as any[];
+        const qk = q.queryKey as ThreadsListKey;
         const meta = qk?.[2];
-        if (!meta || typeof meta !== 'object') continue;
+        if (!isThreadsListMeta(meta)) continue;
         if (meta.workspaceId !== workspaceId) continue;
 
-        const data = queryClient.getQueryData(qk) as any;
+        const data = queryClient.getQueryData(qk);
         if (!data) continue;
 
         // Infinite query shape: { pages: [{ data, total }, ...] }
-        if (Array.isArray(data.pages)) {
-          for (const page of data.pages as ThreadsResponse[]) {
+        if (isInfiniteThreadsResponse(data)) {
+          for (const page of data.pages) {
             const found = page?.data?.find?.((t: MessageThread) => isDraftThreadId(t.id));
             if (found) return found.id;
           }
@@ -46,8 +65,8 @@ export default function NewThreadButton() {
         }
 
         // Non-infinite shape: { data, total }
-        if (Array.isArray((data as ThreadsResponse).data)) {
-          const found = (data as ThreadsResponse).data.find((t) => isDraftThreadId(t.id));
+        if (isThreadsResponse(data)) {
+          const found = data.data.find((t) => isDraftThreadId(t.id));
           if (found) return found.id;
         }
       }
@@ -60,16 +79,16 @@ export default function NewThreadButton() {
         .findAll({ queryKey: threadsKeys.lists() });
 
       for (const q of queries) {
-        const qk = q.queryKey as any[];
+        const qk = q.queryKey as ThreadsListKey;
         const meta = qk?.[2];
-        if (!meta || typeof meta !== 'object') continue;
+        if (!isThreadsListMeta(meta)) continue;
         if (meta.workspaceId !== workspaceId) continue;
 
-        queryClient.setQueryData(qk, (old: any) => {
+        queryClient.setQueryData(qk, (old: unknown) => {
           if (!old) return old;
 
           // Infinite query shape: { pages: [{ data, total }, ...], pageParams: [...] }
-          if (Array.isArray(old.pages)) {
+          if (isInfiniteThreadsResponse(old)) {
             const pages = old.pages.slice();
             if (!pages[0] || !Array.isArray(pages[0].data)) return old;
 
@@ -87,8 +106,8 @@ export default function NewThreadButton() {
           }
 
           // Non-infinite shape: { data, total }
-          if (Array.isArray((old as ThreadsResponse).data)) {
-            const env = old as ThreadsResponse;
+          if (isThreadsResponse(old)) {
+            const env = old;
             const already = env.data.some((t) => t.id === draft.id);
             if (already) return old;
             return {
@@ -109,17 +128,17 @@ export default function NewThreadButton() {
         .findAll({ queryKey: threadsKeys.lists() });
 
       for (const q of queries) {
-        const qk = q.queryKey as any[];
+        const qk = q.queryKey as ThreadsListKey;
         const meta = qk?.[2];
-        if (!meta || typeof meta !== 'object') continue;
+        if (!isThreadsListMeta(meta)) continue;
         if (meta.workspaceId !== workspaceId) continue;
 
-        queryClient.setQueryData(qk, (old: any) => {
+        queryClient.setQueryData(qk, (old: unknown) => {
           if (!old) return old;
 
-          if (Array.isArray(old.pages)) {
-            const hadAny = old.pages.some((p: ThreadsResponse) => Array.isArray(p?.data) && p.data.some((t) => t.id === draftId));
-            const pages = old.pages.map((p: ThreadsResponse) => {
+          if (isInfiniteThreadsResponse(old)) {
+            const hadAny = old.pages.some((p) => Array.isArray(p?.data) && p.data.some((t) => t.id === draftId));
+            const pages = old.pages.map((p) => {
               if (!p || !Array.isArray(p.data)) return p;
               const next = p.data.filter((t) => t.id !== draftId);
               const total =
@@ -131,8 +150,8 @@ export default function NewThreadButton() {
             return { ...old, pages };
           }
 
-          if (Array.isArray((old as ThreadsResponse).data)) {
-            const env = old as ThreadsResponse;
+          if (isThreadsResponse(old)) {
+            const env = old;
             const next = env.data.filter((t) => t.id !== draftId);
             if (next.length === env.data.length) return old;
             return {

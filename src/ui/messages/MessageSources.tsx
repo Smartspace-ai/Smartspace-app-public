@@ -70,7 +70,8 @@ export function ChatMessageSources({
   const [isExpanded, setIsExpanded] = useState(true);
 
   const fileSources = (sources ?? []).filter(
-    (s) => s.sourceType === MessageResponseSourceType.File && !!s.file
+    (s): s is MessageResponseSource & { file: { id: string; name: string } } =>
+      s.sourceType === MessageResponseSourceType.File && !!s.file
   );
 
   if (fileSources.length === 0) return null;
@@ -105,7 +106,7 @@ export function ChatMessageSources({
             style={{ paddingLeft: 0, marginLeft: 0 }}
           >
             {fileSources.map((source) => {
-              const file = source.file!;
+              const file = source.file;
               const displayName = file.name || `Source ${source.index}`;
               const Icon = getFileIcon(file.name);
 

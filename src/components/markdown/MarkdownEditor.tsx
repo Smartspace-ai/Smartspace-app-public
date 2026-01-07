@@ -3,6 +3,7 @@ import { clipboard } from '@milkdown/plugin-clipboard'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { commonmark } from '@milkdown/preset-commonmark'
 import { Slice } from '@milkdown/prose/model'
+import type { Node as PMNode } from '@milkdown/prose/model'
 import type { EditorView } from '@milkdown/prose/view'
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react'
 import { useQuery } from '@tanstack/react-query'
@@ -344,7 +345,7 @@ function EditorInner({
     view.dispatch(tr.scrollIntoView())
   }
 
-  function insertNodeAtSelection(view: EditorView, node: any) {
+  function insertNodeAtSelection(view: EditorView, node: PMNode) {
     const { from, to } = view.state.selection
     const tr = view.state.tr.replaceWith(from, to, node)
     view.dispatch(tr.scrollIntoView())
@@ -372,7 +373,7 @@ function EditorInner({
         const rawH = dims?.height ?? 500
         const { width, height } = clampImageSize(rawW, rawH)
         try {
-          const type = (view.state.schema.nodes as any)['ssImage']
+          const type = view.state.schema.nodes.get('ssImage')
           if (type) {
             const node = type.create({ fileId: id, alt: name, w: width, h: height })
             insertNodeAtSelection(view, node)
@@ -385,7 +386,7 @@ function EditorInner({
         }
       } else {
         try {
-          const type = (view.state.schema.nodes as any)['fileTag']
+          const type = view.state.schema.nodes.get('fileTag')
           if (type) {
             const node = type.create({ id, label: name })
             insertNodeAtSelection(view, node)
@@ -465,7 +466,7 @@ function EditorInner({
         const view = viewRef.current
         if (!view) return (value ?? '') as string
         const doc = view.state.doc
-        const leafText = (node: any) => {
+        const leafText = (node: PMNode) => {
           try {
             if (node?.type?.name === 'mention') {
               const attrs = node.attrs as unknown as { label?: unknown }

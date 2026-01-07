@@ -331,7 +331,7 @@ const Sidebar = forwardRef<
             open={openMobile}
             onOpenChange={setOpenMobile}
             style={{ width: SIDEBAR_WIDTH_MOBILE }}
-            onOpenAutoFocus={(e: any) => e.preventDefault()}
+            onOpenAutoFocus={(e: React.SyntheticEvent) => e.preventDefault()}
             className="p-0 bg-sidebar text-sidebar-foreground"
           >
             <SheetHeader>

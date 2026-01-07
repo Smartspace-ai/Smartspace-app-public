@@ -5,6 +5,16 @@ import { ssInfo, ssWarn } from '@/platform/log';
 
 import { AuthAdapter, type GetTokenOptions } from '../types';
 
+type SsConfig = { Client_Scopes?: unknown };
+type SsWindow = Window & { ssconfig?: SsConfig; __teamsAuthLastError?: string };
+
+function getSsWindow(): SsWindow | null {
+  try {
+    return window as unknown as SsWindow;
+  } catch {
+    return null;
+  }
+}
 
 function parseScopes(raw: unknown): string[] {
   return String(raw ?? '')
@@ -23,20 +33,23 @@ export function createTeamsNaaAdapter(): AuthAdapter {
         });
         await naaInit();
         const raw =
-          (window as any)?.ssconfig?.Client_Scopes ??
+          getSsWindow()?.ssconfig?.Client_Scopes ??
           import.meta.env.VITE_CLIENT_SCOPES ??
           '';
         const scopes = opts?.scopes?.length ? opts.scopes : parseScopes(raw);
         ssInfo('auth:teams', 'getAccessToken acquiring (no token will be logged)', {
           scopesCount: scopes.length,
           scopes: scopes,
-          scopeSource: (opts?.scopes?.length ? 'callsite' : ((window as any)?.ssconfig?.Client_Scopes ? 'ssconfig' : 'viteEnv')),
+          scopeSource: (opts?.scopes?.length ? 'callsite' : (getSsWindow()?.ssconfig?.Client_Scopes ? 'ssconfig' : 'viteEnv')),
         });
         return acquireNaaToken(scopes);
       } catch (error) {
         console.error('Teams NAA token acquisition failed:', error);
         ssWarn('auth:teams', 'getAccessToken failed', error);
-        try { (window as any).__teamsAuthLastError = String((error as any)?.message ?? error); } catch { /* ignore */ }
+        try {
+          const w = getSsWindow();
+          if (w) w.__teamsAuthLastError = String(error instanceof Error ? error.message : error);
+        } catch { /* ignore */ }
         throw error;
       }
     },
@@ -56,7 +69,10 @@ export function createTeamsNaaAdapter(): AuthAdapter {
         if (!ctx.user) {
           console.warn('No user context available in Teams');
           ssWarn('auth:teams', 'getSession: ctx.user missing', ctx);
-          try { (window as any).__teamsAuthLastError = 'Teams context missing user (ctx.user is empty)'; } catch { /* ignore */ }
+          try {
+            const w = getSsWindow();
+            if (w) w.__teamsAuthLastError = 'Teams context missing user (ctx.user is empty)';
+          } catch { /* ignore */ }
           return null;
         }
         
@@ -68,7 +84,10 @@ export function createTeamsNaaAdapter(): AuthAdapter {
       } catch (error) {
         console.error('Teams session retrieval failed:', error);
         ssWarn('auth:teams', 'getSession failed', error);
-        try { (window as any).__teamsAuthLastError = String((error as any)?.message ?? error); } catch { /* ignore */ }
+        try {
+          const w = getSsWindow();
+          if (w) w.__teamsAuthLastError = String(error instanceof Error ? error.message : error);
+        } catch { /* ignore */ }
         return null;
       }
     },

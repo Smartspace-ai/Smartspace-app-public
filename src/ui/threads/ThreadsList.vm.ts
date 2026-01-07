@@ -38,8 +38,8 @@ export function useThreadsListVm({workspaceId,  pageSize = 30 }: Options) {
 
       // Our draft threads are created with empty user ids; server threads should have these populated.
       const looksServerBacked =
-        typeof (t as any).createdByUserId === 'string' &&
-        (t as any).createdByUserId.trim().length > 0;
+        typeof t.createdByUserId === 'string' &&
+        t.createdByUserId.trim().length > 0;
 
       if (looksServerBacked) unmarkDraftThreadId(t.id);
     }

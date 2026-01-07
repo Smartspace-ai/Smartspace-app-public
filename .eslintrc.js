@@ -113,10 +113,9 @@ module.exports = {
      * High-signal correctness
      */
     'react-hooks/exhaustive-deps': 'error',
-    // NOTE: This codebase integrates several external SDKs (MSAL, Teams, Milkdown, SignalR, JSONForms)
-    // where pragmatic typing is often required. We prefer strict TypeScript + tests over banning `any`.
-    '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/no-non-null-assertion': 'off',
+    // Tech-test mode: keep typing strict and eliminate `any`/non-null assertions in production code.
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/no-non-null-assertion': 'error',
     'no-loop-func': 'error',
     'jsx-a11y/alt-text': 'error',
 
@@ -140,8 +139,8 @@ module.exports = {
       files: ['src/**/*.{ts,tsx}', 'theme/**/*.{ts,tsx}'],
       extends: ['plugin:@nx/typescript'],
       rules: {
-        '@typescript-eslint/no-explicit-any': 'off',
-        '@typescript-eslint/no-non-null-assertion': 'off',
+        '@typescript-eslint/no-explicit-any': 'error',
+        '@typescript-eslint/no-non-null-assertion': 'error',
       },
     },
 
@@ -188,14 +187,7 @@ module.exports = {
       },
     },
 
-    // UI compatibility layers (shadcn/MUI wrappers) often need pragmatic typing.
-    {
-      files: ['src/shared/ui/**/*.{ts,tsx}'],
-      rules: {
-        '@typescript-eslint/no-explicit-any': 'off',
-        '@typescript-eslint/no-non-null-assertion': 'off',
-      },
-    },
+    // UI compatibility layers (shadcn/MUI wrappers) are still held to strict typing in tech-test mode.
 
     // Mocks
     {

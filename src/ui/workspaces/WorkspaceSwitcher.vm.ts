@@ -89,13 +89,16 @@ export function useWorkspaceSwitcherVm() {
 
     // Seed the active-workspace query cache immediately from the dropdown list item,
     // so header + dropdown reflect the new workspace without waiting for a refetch.
-    queryClient.setQueryData(workspaceDetailOptions(id).queryKey, (old: Workspace | undefined) => ({
-      ...(old ?? ({} as Workspace)),
-      ...(ws as any),
-      id,
-      name: ws.name,
-      tags: ws.tags ?? old?.tags ?? [],
-    }));
+    queryClient.setQueryData(workspaceDetailOptions(id).queryKey, (old: Workspace | undefined) => {
+      const base: Partial<Workspace> = old ?? {};
+      return {
+        ...base,
+        ...ws,
+        id,
+        name: ws.name,
+        tags: ws.tags ?? old?.tags ?? [],
+      } as Workspace;
+    });
 
     // Immediately clear list/detail caches so the UI shows loading states instead
     // of stale threads/messages/comments from the previous workspace.

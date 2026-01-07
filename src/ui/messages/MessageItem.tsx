@@ -14,6 +14,7 @@ import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 // local UI
 import { MessageBubble } from './MessageBubble';
+import type { MessageResponseSource } from './MessageSources';
 
 interface MessageItemProps {
   message: Message;
@@ -46,15 +47,26 @@ function pushContent(items: MessageContentItem[], value: unknown) {
     return;
   }
   if (typeof value === 'object') {
-    const v = value as any;
-    if (v.text || v.image) {
-      items.push(v);
+    const v = value as Record<string, unknown>;
+    if (typeof v.text === 'string' || typeof v.image === 'string') {
+      items.push(v as unknown as MessageContentItem);
       return;
     }
     items.push({ text: JSON.stringify(value) });
     return;
   }
   items.push({ text: String(value) });
+}
+
+function isMessageResponseSource(x: unknown): x is MessageResponseSource {
+  if (!x || typeof x !== 'object') return false;
+  const obj = x as Record<string, unknown>;
+  return typeof obj.index === 'number' && typeof obj.sourceType === 'string';
+}
+
+function coerceSources(x: unknown): MessageResponseSource[] {
+  if (!Array.isArray(x)) return [];
+  return x.filter(isMessageResponseSource);
 }
 
 export const MessageItem: FC<MessageItemProps> = ({ message }) => {
@@ -85,7 +97,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
 
   // current aggregation group
   let groupContent: MessageContentItem[] = [];
-  let groupSources: any[] = [];
+  let groupSources: MessageResponseSource[] = [];
   let groupFiles: FileInfo[] = [];
   let groupType: MessageValueType = MessageValueType.INPUT;
   let lastCreatedAt: Date | string = '';
@@ -139,10 +151,12 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
         } else if (
           name === 'response' &&
           typeof v.value === 'object' &&
-          (v.value as any).content
+          v.value !== null &&
+          'content' in (v.value as Record<string, unknown>)
         ) {
-          pushContent(groupContent, (v.value as any).content);
-          groupSources = (v.value as any).sources ?? [];
+          const resp = v.value as Record<string, unknown>;
+          pushContent(groupContent, resp.content);
+          groupSources = coerceSources(resp.sources);
         } else {
           pushContent(groupContent, v.value);
         }
@@ -168,11 +182,11 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
               createdBy={v.createdBy}
               createdAt={v.createdAt}
               type={v.type}
-              content={[{ text: (v.value as any)?.message }]}
+              content={[{ text: typeof (v.value as Record<string, unknown> | null)?.message === 'string' ? String((v.value as Record<string, unknown>).message) : '' }]}
               files={[]}
               sources={[]}
-              userOutput={v.value as any}
-              userInput={userInput?.value as any}
+              userOutput={(v.value && typeof v.value === 'object') ? (v.value as unknown as { message: string; schema: unknown }) : null}
+              userInput={userInput?.value}
               onSubmitUserForm={onSubmitUserForm(message.id ?? '')}
             />
           );
@@ -190,7 +204,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
       }
 
       case 'sources': {
-        groupSources = (v.value as any[]) ?? [];
+        groupSources = coerceSources(v.value);
         groupOpen = true;
         break;
       }

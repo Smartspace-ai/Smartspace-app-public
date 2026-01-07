@@ -6,10 +6,29 @@ import { interactiveLoginRequest, isInTeams } from '@/platform/auth/msalConfig';
 import { acquireNaaToken } from '@/platform/auth/naaClient';
 import { ssInfo, ssWarn } from '@/platform/log';
 
+type SsConfig = {
+  Chat_Api_Uri?: unknown;
+  Client_Scopes?: unknown;
+};
+
+type TeamsState = { isInTeams?: unknown };
+
+type SsWindow = Window & {
+  ssconfig?: SsConfig;
+  __teamsState?: TeamsState;
+};
+
+function getSsWindow(): SsWindow | null {
+  try {
+    return window as unknown as SsWindow;
+  } catch {
+    return null;
+  }
+}
+
 function getBaseUrl() {
-  const configBaseUrl =
-    (window as any)?.ssconfig?.Chat_Api_Uri ||
-    import.meta.env.VITE_CHAT_API_URI;
+  const w = getSsWindow();
+  const configBaseUrl = w?.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
   return configBaseUrl ? configBaseUrl : '';
 }
 
@@ -31,7 +50,7 @@ webApi.interceptors.request.use(async (config) => {
   }
 
   const inTeamsEnvironment =
-    ((window as any)?.__teamsState?.isInTeams === true) || isInTeams();
+    (getSsWindow()?.__teamsState?.isInTeams === true) || isInTeams();
 
   ssInfo('api', `request -> ${inTeamsEnvironment ? 'teams' : 'web'}`, {
     method: (config.method ?? 'get').toUpperCase(),
@@ -42,7 +61,7 @@ webApi.interceptors.request.use(async (config) => {
   // Teams: use NAA to get delegated API token (no fallback)
   if (inTeamsEnvironment) {
     try {
-      const raw = (window as any)?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
+      const raw = getSsWindow()?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
       const scopes = String(raw)
         .split(/[ ,]+/)
         .map((s) => s.trim())
@@ -58,7 +77,7 @@ webApi.interceptors.request.use(async (config) => {
   }
 
   // Web (non-Teams): use MSAL
-  const rawScopes = (window as any)?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
+  const rawScopes = getSsWindow()?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
   const scopes = String(rawScopes)
     .split(/[ ,]+/)
     .map((s) => s.trim())

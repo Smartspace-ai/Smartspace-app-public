@@ -10,6 +10,24 @@ import { deleteThread, renameThread, setFavorite } from './service';
 
 // Variable update mutation moved to flowruns domain
 
+function isThreadsResponse(x: unknown): x is ThreadsResponse {
+  if (!x || typeof x !== 'object') return false;
+  const obj = x as Record<string, unknown>;
+  return Array.isArray(obj.data);
+}
+
+function isInfiniteThreadsResponse(x: unknown): x is InfiniteData<ThreadsResponse> {
+  if (!x || typeof x !== 'object') return false;
+  const obj = x as Record<string, unknown>;
+  return Array.isArray(obj.pages);
+}
+
+function isMessageThread(x: unknown): x is MessageThread {
+  if (!x || typeof x !== 'object') return false;
+  const obj = x as Record<string, unknown>;
+  return typeof obj.id === 'string';
+}
+
 export function useSetFavorite() {
   const qc = useQueryClient();
 
@@ -34,19 +52,14 @@ export function useSetFavorite() {
         if (!old) return old;
 
         // Non-infinite list shape: { data, total }
-        if (typeof old === 'object' && old && 'data' in (old as any) && Array.isArray((old as any).data)) {
-          const res = old as ThreadsResponse;
+        if (isThreadsResponse(old)) {
+          const res = old;
           return { ...res, data: res.data.map(patchThread) };
         }
 
         // Infinite list shape: { pages: [{data,total}, ...], pageParams: [...] }
-        if (
-          typeof old === 'object' &&
-          old &&
-          'pages' in (old as any) &&
-          Array.isArray((old as any).pages)
-        ) {
-          const inf = old as InfiniteData<ThreadsResponse>;
+        if (isInfiniteThreadsResponse(old)) {
+          const inf = old;
           return {
             ...inf,
             pages: inf.pages.map((page) => ({ ...page, data: page.data.map(patchThread) })),
@@ -58,9 +71,7 @@ export function useSetFavorite() {
 
       qc.setQueriesData({ queryKey: threadsKeys.details() }, (old) => {
         if (!old) return old;
-        if (typeof old === 'object' && old && 'id' in (old as any)) {
-          return patchThread(old as MessageThread);
-        }
+        if (isMessageThread(old)) return patchThread(old);
         return old;
       });
 
@@ -109,13 +120,13 @@ export function useRenameThread(threadId: string) {
       qc.setQueriesData({ queryKey: threadsKeys.lists() }, (old) => {
         if (!old) return old;
 
-        if (typeof old === 'object' && old && 'data' in (old as any) && Array.isArray((old as any).data)) {
-          const res = old as ThreadsResponse;
+        if (isThreadsResponse(old)) {
+          const res = old;
           return { ...res, data: res.data.map(patchThread) };
         }
 
-        if (typeof old === 'object' && old && 'pages' in (old as any) && Array.isArray((old as any).pages)) {
-          const inf = old as InfiniteData<ThreadsResponse>;
+        if (isInfiniteThreadsResponse(old)) {
+          const inf = old;
           return { ...inf, pages: inf.pages.map((p) => ({ ...p, data: p.data.map(patchThread) })) };
         }
 
@@ -124,7 +135,7 @@ export function useRenameThread(threadId: string) {
 
       qc.setQueriesData({ queryKey: threadsKeys.details() }, (old) => {
         if (!old) return old;
-        if (typeof old === 'object' && old && 'id' in (old as any)) return patchThread(old as MessageThread);
+        if (isMessageThread(old)) return patchThread(old);
         return old;
       });
 
@@ -167,15 +178,15 @@ export function useDeleteThread() {
 
         const removeThread = (t: MessageThread) => t.id !== threadId;
 
-        if (typeof old === 'object' && old && 'data' in (old as any) && Array.isArray((old as any).data)) {
-          const res = old as ThreadsResponse;
+        if (isThreadsResponse(old)) {
+          const res = old;
           const next = res.data.filter(removeThread);
           if (next.length === res.data.length) return old;
           return { ...res, data: next, total: typeof res.total === 'number' ? Math.max(0, res.total - 1) : res.total };
         }
 
-        if (typeof old === 'object' && old && 'pages' in (old as any) && Array.isArray((old as any).pages)) {
-          const inf = old as InfiniteData<ThreadsResponse>;
+        if (isInfiniteThreadsResponse(old)) {
+          const inf = old;
           const hadAny = inf.pages.some((p) => p.data.some((t) => t.id === threadId));
           if (!hadAny) return old;
           const pages = inf.pages.map((p) => {
@@ -191,8 +202,9 @@ export function useDeleteThread() {
 
       // Remove cached details for this thread id (any workspace)
       for (const [key] of previousDetails) {
-        const meta = (key as any[])?.[2];
-        if (meta && typeof meta === 'object' && meta.threadId === threadId) {
+        const meta = key?.[2];
+        const metaObj = meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : null;
+        if (typeof metaObj?.threadId === 'string' && metaObj.threadId === threadId) {
           qc.removeQueries({ queryKey: key, exact: true });
         }
       }

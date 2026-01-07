@@ -28,14 +28,19 @@ import { ChatMessageImage } from './MessageImage';
 import type { MessageResponseSource } from './MessageSources';
 import { ChatMessageSources } from './MessageSources';
 
+type UserOutputPayload = {
+  message: string;
+  schema: unknown;
+};
+
 export interface MessageBubbleProps {
   createdBy: string;
   createdAt: Date | string;
   type: MessageValueType;
   content: MessageContentItem[] ;
   sources: MessageResponseSource[] ;
-  userOutput: { message: string; schema: Record<string, any> |any[] | any } | null;
-  userInput?: any;
+  userOutput: UserOutputPayload | null;
+  userInput?: unknown;
   files: FileInfo[];
   onSubmitUserForm?: (name: string, value: unknown) => void;
 }
@@ -46,7 +51,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
     createdBy, createdAt, type, content, sources, files,
     userOutput, userInput, onSubmitUserForm,
   } = props;
-  const [responseFormData, setResponseFormData] = useState<any>(userInput);
+  const [responseFormData, setResponseFormData] = useState<unknown>(userInput);
   const [responseFormValid, setResponseFormValid] = useState<boolean>(false);
   const isBotResponse = type === MessageValueType.OUTPUT;
   const showForm = userOutput ;
