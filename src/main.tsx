@@ -43,7 +43,7 @@ msalInstance.initialize().then(async () => {
     msalInstance.setActiveAccount(accounts[0]);
   }
 
-  msalInstance.addEventCallback((event: EventMessage) => {
+  msalInstance.addEventCallback((_event: EventMessage) => {
     const accountsNow = msalInstance.getAllAccounts();
     if (accountsNow.length > 0) {
       msalInstance.setActiveAccount(accountsNow[0]);

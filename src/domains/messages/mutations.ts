@@ -110,7 +110,7 @@ export function useSendMessage() {
             return copy;
           });
         },
-        error: (err: Error) => {
+        error: (_err: Error) => {
           // rollback: remove any optimistics
           qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
             old.filter((x) => !x.optimistic)

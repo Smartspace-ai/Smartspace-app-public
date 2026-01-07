@@ -22,9 +22,12 @@ export function createMsalWebAdapter(): AuthAdapter {
       if (!acct) {
         if (opts?.silentOnly) throw new Error('No active account');
         await msalInstance.loginPopup(interactiveLoginRequest);
+        await ensureActive();
       }
       try {
-        const r = await msalInstance.acquireTokenSilent({ ...loginRequest, account: msalInstance.getActiveAccount()! });
+        const account = msalInstance.getActiveAccount();
+        if (!account) throw new Error('No active account');
+        const r = await msalInstance.acquireTokenSilent({ ...loginRequest, account });
         return r.accessToken;
       } catch (e) {
         ssWarn('auth:web', 'acquireTokenSilent failed', e);

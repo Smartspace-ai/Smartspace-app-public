@@ -16,7 +16,11 @@ function hashToHSL(hash: number): string {
 }
 
 function hslToRgb(hsl: string): { r: number; g: number; b: number } {
-  const [h, s, l] = hsl.match(/\d+/g)!.map(Number);
+  const parts = hsl.match(/\d+/g);
+  if (!parts || parts.length < 3) {
+    return { r: 0, g: 0, b: 0 };
+  }
+  const [h, s, l] = parts.map(Number);
   const a = (s * Math.min(l, 100 - l)) / 100;
   const f = (n: number) => {
     const k = (n + h / 30) % 12;

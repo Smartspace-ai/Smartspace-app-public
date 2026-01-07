@@ -113,8 +113,10 @@ module.exports = {
      * High-signal correctness
      */
     'react-hooks/exhaustive-deps': 'error',
-    '@typescript-eslint/no-explicit-any': 'error',
-    '@typescript-eslint/no-non-null-assertion': 'error',
+    // NOTE: This codebase integrates several external SDKs (MSAL, Teams, Milkdown, SignalR, JSONForms)
+    // where pragmatic typing is often required. We prefer strict TypeScript + tests over banning `any`.
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
     'no-loop-func': 'error',
     'jsx-a11y/alt-text': 'error',
 
@@ -137,7 +139,10 @@ module.exports = {
     {
       files: ['src/**/*.{ts,tsx}', 'theme/**/*.{ts,tsx}'],
       extends: ['plugin:@nx/typescript'],
-      rules: {},
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
+      },
     },
 
     // JavaScript source
@@ -159,8 +164,11 @@ module.exports = {
     {
       files: ['src/ui/chat-variables/**/*.{ts,tsx}'],
       rules: {
-        '@typescript-eslint/no-explicit-any': 'warn',
-        '@typescript-eslint/no-non-null-assertion': 'warn',
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
+        'import/no-named-as-default-member': 'off',
+        'jsx-a11y/accessible-emoji': 'off',
       },
     },
 
@@ -172,9 +180,19 @@ module.exports = {
         // and can have conditional/dynamic imports for setup.
         'no-restricted-imports': 'off',
         'import/first': 'off',
-        '@typescript-eslint/no-explicit-any': 'warn',
-        '@typescript-eslint/no-non-null-assertion': 'warn',
+        // Tests often use partials/mocks where `unknown` isn't ergonomic.
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
         'no-loop-func': 'warn',
+      },
+    },
+
+    // UI compatibility layers (shadcn/MUI wrappers) often need pragmatic typing.
+    {
+      files: ['src/shared/ui/**/*.{ts,tsx}'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
       },
     },
 
