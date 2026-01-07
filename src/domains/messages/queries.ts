@@ -1,9 +1,10 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 
+import { isDraftThreadId } from '@/shared/utils/threadId';
+
 import type { Message } from './model';
 import { messagesKeys } from './queryKeys';
 import { fetchMessages } from './service';
-import { isDraftThreadId } from '@/shared/utils/threadId';
 
 export const messagesListOptions = (
   threadId: string,

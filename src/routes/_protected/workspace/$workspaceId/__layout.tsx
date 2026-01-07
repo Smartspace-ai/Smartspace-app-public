@@ -6,8 +6,7 @@ import { queryClient } from '@/platform/reactQueryClient';
 
 import { useWorkspace, workspaceDetailOptions } from '@/domains/workspaces/queries';
 
-import { RouteIdsProvider } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+import { RouteIdsProvider , useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 

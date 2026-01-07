@@ -1,15 +1,15 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
-import { useAuth } from '@/platform/auth/session';
 import { isInTeams } from '@/platform/auth/msalConfig';
+import { useAuth } from '@/platform/auth/session';
+import { ssInfo, ssWarn } from '@/platform/log';
 
 import { useTeams } from '@/app/providers';
 
 import { Button } from '@/shared/ui/mui-compat/button';
 
 import { Logo } from '@/assets/logo';
-import { ssInfo, ssWarn } from '@/platform/log';
 
 import styles from './Login.module.scss';
 

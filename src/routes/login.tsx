@@ -28,9 +28,11 @@ export const Route = createFileRoute('/login')({
       throw redirect({ to });
     }
   },
-  component: () => {
-    const search = useSearch({ from: '/login' }) as { redirect?: string };
-    const redirectTo = normalizeRedirectPath(search.redirect, '/workspace');
-    return <Login redirectTo={redirectTo} />;
-  },
+  component: LoginRouteComponent,
 });
+
+function LoginRouteComponent() {
+  const search = useSearch({ from: '/login' }) as { redirect?: string };
+  const redirectTo = normalizeRedirectPath(search.redirect, '/workspace');
+  return <Login redirectTo={redirectTo} />;
+}

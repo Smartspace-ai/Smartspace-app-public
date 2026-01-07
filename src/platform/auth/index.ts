@@ -1,8 +1,9 @@
 import { isInTeams } from '@/platform/auth/msalConfig';
+import { ssInfo } from '@/platform/log';
+
 import { createMsalWebAdapter } from './providers/msalWeb';
 import { createTeamsNaaAdapter } from './providers/teamsNaa';
 import type { AuthAdapter } from './types';
-import { ssInfo } from '@/platform/log';
 
 export function createAuthAdapter(): AuthAdapter {
   // Check if we're in Teams with more robust detection

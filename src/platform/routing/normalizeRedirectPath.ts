@@ -5,7 +5,7 @@
  */
 export function normalizeRedirectPath(
   raw: string | null | undefined,
-  fallback: string = '/workspace'
+  fallback = '/workspace'
 ): string {
   const value = (raw ?? '').trim();
   if (!value) return fallback;
@@ -29,5 +29,6 @@ export function normalizeRedirectPath(
     return fallback;
   }
 }
+
 
 

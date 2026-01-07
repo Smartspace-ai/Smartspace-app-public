@@ -1,8 +1,8 @@
 // src/platform/realtime/useWorkspaceRealtime.ts
 import { useEffect } from 'react';
 
-import { useRealtime } from './RealtimeProvider';
 import { realtimeDebugLog } from './realtimeDebug';
+import { useRealtime } from './RealtimeProvider';
 
 type Handlers = {
   onThreadUpdate?: (threadId: string) => void;

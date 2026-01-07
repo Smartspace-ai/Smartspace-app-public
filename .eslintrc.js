@@ -168,6 +168,10 @@ module.exports = {
     {
       files: ['src/**/*.{spec,test}.{ts,tsx,js,jsx}'],
       rules: {
+        // Unit tests often need to import lower-level modules directly (service/mapper/dto)
+        // and can have conditional/dynamic imports for setup.
+        'no-restricted-imports': 'off',
+        'import/first': 'off',
         '@typescript-eslint/no-explicit-any': 'warn',
         '@typescript-eslint/no-non-null-assertion': 'warn',
         'no-loop-func': 'warn',

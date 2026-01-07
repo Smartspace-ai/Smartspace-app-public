@@ -1,14 +1,16 @@
 // src/main.tsx
-import { StrictMode } from 'react';
-import * as ReactDOM from 'react-dom/client';
-
-import { msalInstance } from '@/platform/auth/msalClient'; // ✅ new path
 import { EventMessage } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
+import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { StrictMode } from 'react';
+import * as ReactDOM from 'react-dom/client';
+import { ErrorBoundary } from 'react-error-boundary';
+
+import { msalInstance } from '@/platform/auth/msalClient'; // ✅ new path
 
 import AppProviders from '@/app/AppProviders';
-import { RouterProvider, createRouter } from '@tanstack/react-router';
-import { ErrorBoundary } from 'react-error-boundary';
+
+
 import { routeTree } from './routeTree.gen';
 
 function fallbackRender({ error }: { error: Error }) {

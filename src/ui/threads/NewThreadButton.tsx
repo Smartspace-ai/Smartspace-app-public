@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import type { MessageThread, ThreadsResponse } from '@/domains/threads';
 import { threadsKeys } from '@/domains/threads/queryKeys';
+
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { Button } from '@/shared/ui/mui-compat/button';

@@ -2,15 +2,17 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Subject } from 'rxjs';
 import { toast } from 'sonner';
 
-import { FileInfo } from '@/domains/files';
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
+
+import { FileInfo } from '@/domains/files';
+import { threadsKeys } from '@/domains/threads/queryKeys';
+
+import { isDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
 
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
 import { messagesKeys } from './queryKeys';
 import { addInputToMessage, postMessage } from './service';
-import { isDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
-import { threadsKeys } from '@/domains/threads/queryKeys';
 
 type SendArgs = {
   workspaceId: string;

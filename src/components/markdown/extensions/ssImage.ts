@@ -1,5 +1,5 @@
-import type { Node as PMNode } from '@milkdown/prose/model'
 import { editorViewCtx } from '@milkdown/core'
+import type { Node as PMNode } from '@milkdown/prose/model'
 import { $node, $view } from '@milkdown/utils'
 
 function parseQuery(query: string): Record<string, string> {

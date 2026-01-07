@@ -1,7 +1,10 @@
-import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
 import { app as teamsApp } from '@microsoft/teams-js';
-import { AuthAdapter, type GetTokenOptions } from '../types';
+
+import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
 import { ssInfo, ssWarn } from '@/platform/log';
+
+import { AuthAdapter, type GetTokenOptions } from '../types';
+
 
 function parseScopes(raw: unknown): string[] {
   return String(raw ?? '')

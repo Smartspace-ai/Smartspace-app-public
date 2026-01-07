@@ -1,5 +1,6 @@
 // src/routes/__root.tsx
 import { Outlet, createRootRoute } from '@tanstack/react-router'
+
 import { RootErrorBoundary } from '@/app/ui/RouteErrorEnvelope'
 
 import TeamsLoaderPage from '@/pages/teams_loader'

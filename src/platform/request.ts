@@ -1,8 +1,8 @@
 // src/platform/request.ts
 import type { AxiosRequestConfig } from 'axios';
 
-import { Result, toAppError } from './envelopes';
 import { api } from './api/apiClient';
+import { Result, toAppError } from './envelopes';
 
 export async function request<T = unknown>(config: AxiosRequestConfig): Promise<Result<T>> {
   try {

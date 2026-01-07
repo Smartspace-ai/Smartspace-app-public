@@ -1,6 +1,7 @@
 // src/ui/threads/useThreadsList.vm.ts
+import { useEffect, useMemo } from 'react';
+
 import { useInfiniteThreads } from '@/domains/threads';
-import { useEffect } from 'react';
 
 import { isDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
 
@@ -23,7 +24,7 @@ export function useThreadsListVm({workspaceId,  pageSize = 30 }: Options) {
     fetchNextPage,
     refetch,
   } = useInfiniteThreads(workspaceId, { pageSize });
-  const threads = data?.pages.flatMap(page => page.data) ?? [];
+  const threads = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
   const isInitialLoading = !workspaceId || isPending || (isFetching && !data);
   const firstThread = threads[0] ?? null;
 

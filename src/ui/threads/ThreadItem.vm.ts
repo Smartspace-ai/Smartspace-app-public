@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import type { MessageThread } from '@/domains/threads';
 import { useDeleteThread, useSetFavorite } from '@/domains/threads/mutations';
+
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 type UseThreadItemVmArgs = {

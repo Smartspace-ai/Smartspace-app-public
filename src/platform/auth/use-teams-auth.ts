@@ -1,6 +1,7 @@
 'use client';
 import { app as teamsApp } from '@microsoft/teams-js';
 import { useCallback, useState } from 'react';
+
 import { acquireNaaToken, naaInit } from './naaClient';
 
 export function useTeamsAuth() {

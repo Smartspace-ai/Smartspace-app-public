@@ -10,6 +10,7 @@ import { downloadFile, getFileDownloadUrl, uploadFiles } from './service';
 
 // All mutations and state for file management
 export const useFileMutations = (scope: FileScope) => {
+  const { workspaceId, threadId } = scope;
 
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
   const [fileProgress, setFileProgress] = useState<Record<string, number>>({});
@@ -88,10 +89,10 @@ export const useFileMutations = (scope: FileScope) => {
 
   const getFileBlobUrl = useCallback(
     async (id: string) => {
-      const blob = await downloadFile(id, scope);
+      const blob = await downloadFile(id, { workspaceId, threadId });
       return URL.createObjectURL(blob);
     },
-    [scope.workspaceId, scope.threadId],
+    [workspaceId, threadId],
   );
 
   return {

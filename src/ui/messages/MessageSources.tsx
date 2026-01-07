@@ -1,12 +1,14 @@
 
+import { ChevronUp, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Presentation } from 'lucide-react';
+import { useState } from 'react';
+
 import { useFileMutations } from '@/domains/files/mutations';
 import { MessageResponseSourceType } from '@/domains/messages/enums';
 // Keeping this component generic; adjust type if needed in the future
 
 import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
 import { cn } from '@/shared/utils/utils';
-import { ChevronUp, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Presentation } from 'lucide-react';
-import { useState } from 'react';
 
 export type MessageResponseSource = {
   index: number;

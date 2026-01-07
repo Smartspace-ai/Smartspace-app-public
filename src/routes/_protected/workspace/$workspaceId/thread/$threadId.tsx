@@ -2,13 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { queryClient } from '@/platform/reactQueryClient';
 
-import { threadDetailOptions } from '@/domains/threads/queries';
 import type { MessageThread, ThreadsResponse } from '@/domains/threads';
+import { threadDetailOptions } from '@/domains/threads/queries';
 import { threadsKeys } from '@/domains/threads/queryKeys';
-import { isDraftThreadId, markDraftThreadId } from '@/shared/utils/threadId';
+
 
 import ChatBotPage from "@/pages/WorkspaceThreadPage/chat";
 import { RouteIdsProvider } from "@/pages/WorkspaceThreadPage/RouteIdsProvider";
+
+import { isDraftThreadId, markDraftThreadId } from '@/shared/utils/threadId';
 
 function upsertDraftIntoListCache(workspaceId: string, draft: MessageThread) {
   const queries = queryClient.getQueryCache().findAll({ queryKey: threadsKeys.lists() });
