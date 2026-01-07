@@ -4,7 +4,7 @@ import { TMentionUserDto, TWorkspaceDto } from './dto';
 import { MentionUser, Variables, Workspace } from './model';
 
 const toDate = (x: string | Date | null | undefined): Date | undefined =>
-  x == null ? undefined : (x instanceof Date ? x : new Date(x));
+  x == null ? undefined : x instanceof Date ? x : new Date(x);
 
 const truthy = (b: unknown): boolean => Boolean(b);
 
@@ -29,15 +29,22 @@ export function mapVariablesDtoToModel(dto: unknown): Variables {
   const out: Variables = {};
   for (const [key, val] of Object.entries(dto as Record<string, unknown>)) {
     if (!val || typeof val !== 'object') continue;
-    const schema = (val.schema && typeof val.schema === 'object') ? (val.schema as Record<string, unknown>) : {};
-    const access = (val.access === 'Read' || val.access === 'Write') ? val.access : 'Read';
+    const v = val as Record<string, unknown>;
+    const schemaRaw = v['schema'];
+    const schema =
+      schemaRaw && typeof schemaRaw === 'object'
+        ? (schemaRaw as Record<string, unknown>)
+        : {};
+
+    const accessRaw = v['access'];
+    const access =
+      accessRaw === 'Read' || accessRaw === 'Write' ? accessRaw : 'Read';
     out[key] = { schema, access };
   }
   return out;
 }
 
 export function mapWorkspaceDtoToModel(dto: TWorkspaceDto): Workspace {
-
   const variables = mapVariablesDtoToModel(dto.variables);
 
   return {
@@ -59,7 +66,8 @@ export function mapWorkspaceDtoToModel(dto: TWorkspaceDto): Workspace {
     firstPrompt: dto.firstPrompt ?? undefined,
 
     outputSchema: dto.outputSchema ?? undefined,
-    isPromptAndResponseLoggingEnabled: dto.isPromptAndResponseLoggingEnabled ?? undefined,
+    isPromptAndResponseLoggingEnabled:
+      dto.isPromptAndResponseLoggingEnabled ?? undefined,
     inputs: dto.inputs ?? undefined,
 
     variables,
@@ -71,4 +79,5 @@ export function mapWorkspaceDtoToModel(dto: TWorkspaceDto): Workspace {
   };
 }
 
-export const mapWorkspacesDtoToModels = (arr: TWorkspaceDto[]) => arr.map(mapWorkspaceDtoToModel);
+export const mapWorkspacesDtoToModels = (arr: TWorkspaceDto[]) =>
+  arr.map(mapWorkspaceDtoToModel);

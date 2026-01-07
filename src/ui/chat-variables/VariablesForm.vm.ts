@@ -1,7 +1,10 @@
 // VM: hydrate from server on success, or from schema defaults on error OR empty server {}.
-import type { ControlElement, JsonSchema7, UISchemaElement } from '@jsonforms/core';
+import type {
+  ControlElement,
+  JsonSchema7,
+  UISchemaElement,
+} from '@jsonforms/core';
 import { createAjv } from '@jsonforms/core';
-import type { default as AjvInstance } from 'ajv';
 import * as React from 'react';
 
 import { useUpdateFlowRunVariable } from '@/domains/flowruns/mutations';
@@ -10,12 +13,19 @@ import { useFlowRunVariables } from '@/domains/flowruns/queries';
 import { cells, renderers } from './renders/index';
 import type { WorkspaceLike } from './types';
 
-type VarsRecord = Record<string, { schema?: JsonSchema7; access?: 'Read' | 'Write' }>;
+type VarsRecord = Record<
+  string,
+  { schema?: JsonSchema7; access?: 'Read' | 'Write' }
+>;
 type VmParams = { workspace: WorkspaceLike; threadId: string };
 
 // Layout helper types
 type VerticalLayout = { type: 'VerticalLayout'; elements: UISchemaElement[] };
-type HorizontalLayout = { type: 'HorizontalLayout'; elements: UISchemaElement[]; options?: Record<string, unknown> };
+type HorizontalLayout = {
+  type: 'HorizontalLayout';
+  elements: UISchemaElement[];
+  options?: Record<string, unknown>;
+};
 
 interface ChatVariablesFormVm {
   schema: JsonSchema7;
@@ -23,7 +33,7 @@ interface ChatVariablesFormVm {
   data: Record<string, unknown> | null;
   renderers: typeof renderers;
   cells: typeof cells;
-  ajv: AjvInstance;
+  ajv: ReturnType<typeof createAjv>;
   onChange: (args: { data: Record<string, unknown> }) => void;
   config: {
     restrict: boolean;
@@ -40,7 +50,11 @@ function buildSimpleSchemaAndUi(
   vars: VarsRecord | undefined,
   threadVars: Record<string, unknown> | undefined,
   useDefaults: boolean
-): { schema: JsonSchema7; uiSchema: UISchemaElement; initialData: Record<string, unknown> } {
+): {
+  schema: JsonSchema7;
+  uiSchema: UISchemaElement;
+  initialData: Record<string, unknown>;
+} {
   const names = Object.keys(vars || {});
 
   const properties: Record<string, JsonSchema7> = {};
@@ -53,7 +67,8 @@ function buildSimpleSchemaAndUi(
     properties[name] = s;
 
     const hasServerKey =
-      threadVars !== undefined && Object.prototype.hasOwnProperty.call(threadVars, name);
+      threadVars !== undefined &&
+      Object.prototype.hasOwnProperty.call(threadVars, name);
 
     const val = hasServerKey
       ? threadVars?.[name]
@@ -63,7 +78,10 @@ function buildSimpleSchemaAndUi(
 
     initialData[name] = val;
 
-    const control: ControlElement = { type: 'Control', scope: `#/properties/${name}` };
+    const control: ControlElement = {
+      type: 'Control',
+      scope: `#/properties/${name}`,
+    };
     if (cfg.access === 'Read') {
       (properties[name] as unknown as { readOnly?: boolean }).readOnly = true;
       (control as unknown as { enabled?: boolean }).enabled = false;
@@ -91,20 +109,27 @@ export function useChatVariablesFormVm({
   workspace,
   threadId,
   setVariables,
-}: VmParams & { setVariables: (variables: Record<string, unknown>) => void }): ChatVariablesFormVm {
-  const { data: threadVars, isLoading, isError } = useFlowRunVariables(threadId);
-  const { mutate: updateVariableMutation } = useUpdateFlowRunVariable()
+}: VmParams & {
+  setVariables: (variables: Record<string, unknown>) => void;
+}): ChatVariablesFormVm {
+  const {
+    data: threadVars,
+    isLoading,
+    isError,
+  } = useFlowRunVariables(threadId);
+  const { mutate: updateVariableMutation } = useUpdateFlowRunVariable();
   const querySettled = !isLoading && (threadVars !== undefined || isError);
 
   // use defaults if error OR server returned {}
-  const shouldUseDefaults = isError || (threadVars && Object.keys(threadVars).length === 0);
+  const shouldUseDefaults =
+    isError || (threadVars && Object.keys(threadVars).length === 0);
 
   const built = React.useMemo(() => {
     return buildSimpleSchemaAndUi(
       workspace.variables as VarsRecord,
       threadVars,
       shouldUseDefaults ?? false
-    );  
+    );
   }, [workspace.variables, threadVars, shouldUseDefaults]);
 
   const [data, setData] = React.useState<Record<string, unknown> | null>(null);
@@ -132,7 +157,11 @@ export function useChatVariablesFormVm({
           const before = prevRef.current?.[k];
           const after = next?.[k];
           if (before !== after) {
-            updateVariableMutation({ flowRunId: threadId, variableName: k, value: after })
+            updateVariableMutation({
+              flowRunId: threadId,
+              variableName: k,
+              value: after,
+            });
           }
         }
       }

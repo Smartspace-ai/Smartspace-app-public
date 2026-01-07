@@ -61,6 +61,20 @@ export default defineConfig({
     },
   },
 
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // Suppress Sass deprecation warnings coming from dependencies in node_modules.
+        // Warnings from *your* scss still show.
+        quietDeps: true,
+        // Dart Sass emits this when the toolchain calls the legacy JS API.
+        // This isn't actionable in app code; silence just this deprecation for a cleaner build.
+        // (Keeps other deprecations visible.)
+        silenceDeprecations: ['legacy-js-api'],
+      },
+    },
+  },
+
   // Uncomment this if you are using workers.
   // worker: {
   //  plugins: [ nxViteTsPaths() ],
@@ -72,6 +86,41 @@ export default defineConfig({
     reportCompressedSize: true,
     commonjsOptions: {
       transformMixedEsModules: true,
+    },
+    rollupOptions: {
+      onwarn(warning, warn) {
+        const msg = typeof warning?.message === 'string' ? warning.message : '';
+        const file =
+          // @ts-expect-error rollup warning shapes vary
+          warning?.loc?.file ?? // rollup
+          // @ts-expect-error rollup warning shapes vary
+          warning?.id ??
+          '';
+
+        // Silence a noisy, non-actionable warning from a dependency.
+        if (
+          msg.includes('contains an annotation that Rollup cannot interpret') &&
+          String(file).includes('@microsoft/signalr')
+        ) {
+          return;
+        }
+
+        warn(warning);
+      },
+      output: {
+        // Practical code-splitting to keep bundles smaller and reduce chunk-size warnings.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+
+          if (id.includes('/react') || id.includes('/react-dom')) return 'react';
+          if (id.includes('/@mui/')) return 'mui';
+          if (id.includes('/@milkdown/')) return 'milkdown';
+          if (id.includes('/@tanstack/')) return 'tanstack';
+          if (id.includes('/ace-builds/')) return 'ace';
+
+          return 'vendor';
+        },
+      },
     },
   },
 
