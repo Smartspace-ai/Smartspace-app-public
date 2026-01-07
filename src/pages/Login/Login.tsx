@@ -168,6 +168,46 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
 
   // Prominent Teams error panel content
   const showTeamsErrorPanel = isInTeams() && (showGenericError || !!error);
+  const canShowDiag = showTeamsErrorPanel; // always show diagnostics when Teams sign-in fails
+
+  const diag = {
+    href: (() => { try { return window.location.href; } catch { return null; } })(),
+    origin: (() => { try { return window.location.origin; } catch { return null; } })(),
+    isInTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
+    isInTeams_provider: isInTeamsFromProvider,
+    isTeamsInitialized,
+    teamsUser: teamsUser ?? null,
+    teamsContextHasUser: !!(teamsContext as any)?.user,
+    lastTeamsAuthError: (() => { try { return (window as any).__teamsAuthLastError ?? null; } catch { return null; } })(),
+    ssconfig: (() => { try { return (window as any)?.ssconfig ?? null; } catch { return null; } })(),
+    build: {
+      mode: import.meta.env.MODE,
+      // Optional: set this in CI for easier “which build is deployed?” checks.
+      sha: (import.meta as any)?.env?.VITE_BUILD_SHA ?? null,
+    },
+  };
+
+  const enableDebugAndReload = () => {
+    try { localStorage.setItem('ss_debug', '1'); } catch { /* ignore */ }
+    try { sessionStorage.setItem('ss_debug', '1'); } catch { /* ignore */ }
+    try { window.location.reload(); } catch { /* ignore */ }
+  };
+
+  const copyDiagnostics = async () => {
+    const payload = {
+      ...diag,
+      ssLogs: (() => { try { return (window as any).__ssLogs ?? []; } catch { return []; } })(),
+    };
+    const text = JSON.stringify(payload, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      // Give lightweight feedback without adding new UI deps
+      setError((prev) => prev ?? 'Diagnostics copied to clipboard.');
+    } catch {
+      // Clipboard may be blocked in some Teams contexts; fall back to showing text.
+      setError((prev) => prev ?? 'Unable to copy diagnostics (clipboard blocked). Please select/copy the diagnostics text below.');
+    }
+  };
 
   return (
     <div className={`ss-login ${styles['container']}`}>
@@ -188,20 +228,30 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
                 <div className="mt-2 p-3 rounded border border-red-200 bg-red-50 text-red-800 text-sm">
                   <div className="font-semibold mb-1">Teams sign-in error</div>
                   {getErrorMessage()}
-                  {/* Always show diagnostics in Teams error state to make deployment issues debuggable. */}
-                  <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-red-900/90">
-{JSON.stringify({
-  href: (() => { try { return window.location.href; } catch { return null; } })(),
-  origin: (() => { try { return window.location.origin; } catch { return null; } })(),
-  isInTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
-  isInTeams_provider: isInTeamsFromProvider,
-  isTeamsInitialized,
-  teamsUser: teamsUser ?? null,
-  teamsContextHasUser: !!(teamsContext as any)?.user,
-  lastTeamsAuthError: (() => { try { return (window as any).__teamsAuthLastError ?? null; } catch { return null; } })(),
-  ssconfig: (() => { try { return (window as any)?.ssconfig ?? null; } catch { return null; } })(),
-}, null, 2)}
-                  </pre>
+                  {canShowDiag ? (
+                    <div className="mt-2">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          onClick={enableDebugAndReload}
+                          className="text-xs"
+                        >
+                          Enable debug logs
+                        </Button>
+                        <Button
+                          onClick={copyDiagnostics}
+                          className="text-xs"
+                        >
+                          Copy diagnostics
+                        </Button>
+                      </div>
+                      <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-red-900/90 max-h-[260px] overflow-auto">
+{JSON.stringify(diag, null, 2)}
+                      </pre>
+                      <pre className="mt-2 whitespace-pre-wrap break-words text-[11px] text-red-900/80 max-h-[260px] overflow-auto">
+{JSON.stringify((() => { try { return (window as any).__ssLogs ?? []; } catch { return []; } })(), null, 2)}
+                      </pre>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>

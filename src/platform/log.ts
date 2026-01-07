@@ -57,6 +57,24 @@ export function ssLog(level: Level, scope: string, msg: string, data?: unknown) 
   } catch {
     fn(line);
   }
+
+  // Also persist a small rolling buffer of logs for cases where DevTools aren't accessible (e.g. Teams managed desktops).
+  try {
+    const w = window as any;
+    const arr: any[] = Array.isArray(w.__ssLogs) ? w.__ssLogs : [];
+    arr.push({
+      t: new Date().toISOString(),
+      level,
+      scope,
+      msg,
+      data: (typeof data === 'undefined') ? null : data,
+    });
+    // cap to last 200 entries
+    while (arr.length > 200) arr.shift();
+    w.__ssLogs = arr;
+  } catch {
+    // ignore
+  }
 }
 
 export const ssDebug = (scope: string, msg: string, data?: unknown) => ssLog('debug', scope, msg, data);
