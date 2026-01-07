@@ -22,7 +22,11 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         height: 24,
         padding: 0,
         '& .MuiSwitch-switchBase': {
-          padding: 2,
+          // Use explicit positioning instead of padding so the thumb stays
+          // perfectly centered (especially when the switch is scaled).
+          padding: 0,
+          top: 2,
+          left: 2,
           '&.Mui-checked': {
             transform: 'translateX(20px)',
             color: 'hsl(var(--background))',
