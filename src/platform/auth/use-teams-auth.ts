@@ -3,6 +3,7 @@ import { app as teamsApp } from '@microsoft/teams-js';
 import { useCallback, useState } from 'react';
 
 import { acquireNaaToken, naaInit } from './naaClient';
+import { getClientScopes } from './scopes';
 
 export function useTeamsAuth() {
   const [isLoading, setLoading] = useState(false);
@@ -13,8 +14,8 @@ export function useTeamsAuth() {
     try {
       await teamsApp.initialize();
       await naaInit();
-      const scopes = (import.meta.env.VITE_CLIENT_SCOPES as string | undefined)?.split(',') || [];
-      await acquireNaaToken(scopes);
+      const scopes = getClientScopes();
+      await acquireNaaToken(scopes, { silentOnly: false });
       // optional: redirect after login using ?redirect=
       const url = new URL(window.location.href);
       const next = url.searchParams.get('redirect') ?? '/';

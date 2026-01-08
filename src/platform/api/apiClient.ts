@@ -1,9 +1,10 @@
-import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import axios from 'axios';
 
-import { msalInstance } from '@/platform/auth/msalClient';
-import { interactiveLoginRequest, isInTeams } from '@/platform/auth/msalConfig';
-import { acquireNaaToken } from '@/platform/auth/naaClient';
+import { createAuthAdapter } from '@/platform/auth';
+import { AuthRequiredError } from '@/platform/auth/errors';
+import { getApiScopes } from '@/platform/auth/scopes';
+import { getAuthRuntimeState, setRuntimeAuthError } from '@/platform/auth/runtime';
+import { isInTeams } from '@/platform/auth/msalConfig';
 import { ssInfo, ssWarn } from '@/platform/log';
 
 type SsConfig = {
@@ -11,11 +12,8 @@ type SsConfig = {
   Client_Scopes?: unknown;
 };
 
-type TeamsState = { isInTeams?: unknown };
-
 type SsWindow = Window & {
   ssconfig?: SsConfig;
-  __teamsState?: TeamsState;
 };
 
 function getSsWindow(): SsWindow | null {
@@ -49,8 +47,9 @@ webApi.interceptors.request.use(async (config) => {
     // ignore
   }
 
-  const inTeamsEnvironment =
-    (getSsWindow()?.__teamsState?.isInTeams === true) || isInTeams();
+  // Prefer runtime store (set by TeamsProvider) when available. Avoid writing to `window.*` for auth state.
+  const runtime = getAuthRuntimeState();
+  const inTeamsEnvironment = runtime.isInTeams === true || isInTeams();
 
   ssInfo('api', `request -> ${inTeamsEnvironment ? 'teams' : 'web'}`, {
     method: (config.method ?? 'get').toUpperCase(),
@@ -58,54 +57,22 @@ webApi.interceptors.request.use(async (config) => {
     baseURL: config.baseURL ?? null,
   });
 
-  // Teams: use NAA to get delegated API token (no fallback)
-  if (inTeamsEnvironment) {
-    try {
-      const raw = getSsWindow()?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
-      const scopes = String(raw)
-        .split(/[ ,]+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-      ssInfo('api', 'Teams token via NAA (no token logged)', { scopesCount: scopes.length, scopes });
-      const token = await acquireNaaToken(scopes);
-      if (token) config.headers.Authorization = `Bearer ${token}`;
-    } catch (e) {
-      ssWarn('api', 'Teams NAA token attach failed (request will be unauthenticated)', e);
-      // Leave request unauthenticated on failure
-    }
-    return config;
-  }
-
-  // Web (non-Teams): use MSAL
-  const rawScopes = getSsWindow()?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
-  const scopes = String(rawScopes)
-    .split(/[ ,]+/)
-    .map((s) => s.trim())
-    .filter((s) => s && !s.includes('smartspaceapi.config.access'));
-
-  const request = { scopes };
-
+  // Unified auth strategy:
+  // - Always attach auth headers via the AuthAdapter
+  // - Never trigger interactive auth in the API layer (silentOnly only)
+  const auth = createAuthAdapter();
+  const scopes = getApiScopes();
   try {
-    const response = await msalInstance.acquireTokenSilent(request);
+    const token = await auth.getAccessToken({ silentOnly: true, scopes });
+    if (!config.headers) config.headers = {};
+    config.headers.Authorization = `Bearer ${token}`;
+    setRuntimeAuthError(null);
+  } catch (e) {
+    // Record diagnostic signal for UI troubleshooting (Teams login screen reads this)
+    setRuntimeAuthError({ source: 'api', message: String(e instanceof Error ? e.message : e) });
 
-    // ✅ safer way of accessing token
-    const accessToken =
-      (response && 'accessToken' in response && response.accessToken) || null;
-
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-  } catch (error) {
-    if (error instanceof InteractionRequiredAuthError) {
-      ssWarn('api', 'MSAL silent token requires interaction; attempting loginRedirect', error);
-      try {
-        await msalInstance.loginRedirect(interactiveLoginRequest);
-      } catch {
-        // ignore
-      }
-    } else {
-      ssWarn('api', 'MSAL acquireTokenSilent failed (request may be unauthenticated)', error);
-    }
+    ssWarn('api', 'silent token attach failed (blocking request)', e);
+    throw (e instanceof AuthRequiredError ? e : new AuthRequiredError());
   }
 
   return config;

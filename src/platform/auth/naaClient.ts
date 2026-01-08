@@ -35,7 +35,9 @@ export const naaInit = () => {
 const tokenCache: Record<string, { token: string; exp: number }> = {}
 const isExpired = (exp: number, skew = 60) => Math.floor(Date.now() / 1000) + skew >= exp
 
-export const acquireNaaToken = async (scopes: string[]): Promise<string> => {
+export type AcquireNaaTokenOptions = { silentOnly?: boolean };
+
+export const acquireNaaToken = async (scopes: string[], opts?: AcquireNaaTokenOptions): Promise<string> => {
   console.log('acquireNaaToken', scopes)
   const key = scopes.sort().join(' ')
   const cached = tokenCache[key]
@@ -59,6 +61,7 @@ export const acquireNaaToken = async (scopes: string[]): Promise<string> => {
     console.log('Silent token acquisition successful');
     return token
   } catch (error) {
+    if (opts?.silentOnly) throw error
     console.warn('Silent token acquisition failed, trying popup:', error);
     try {
       const res = await pca.acquireTokenPopup({ scopes })

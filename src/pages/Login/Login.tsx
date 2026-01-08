@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
-import { useAuth } from '@/platform/auth/session';
+import { useAuth, useAuthRuntime } from '@/platform/auth/session';
 import { ssInfo, ssWarn } from '@/platform/log';
 
 import { useTeams } from '@/app/providers';
@@ -16,6 +16,7 @@ import styles from './Login.module.scss';
 export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
 
   const auth = useAuth();
+  const runtime = useAuthRuntime();
   const navigate = useNavigate();
   const { isTeamsInitialized, teamsUser, teamsContext, isInTeams: isInTeamsFromProvider } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
@@ -178,14 +179,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
     isTeamsInitialized,
     teamsUser: teamsUser ?? null,
     teamsContextHasUser: !!(teamsContext && typeof teamsContext === 'object' && 'user' in teamsContext),
-    lastTeamsAuthError: (() => {
-      try {
-        const w = window as unknown as Window & { __teamsAuthLastError?: unknown };
-        return w.__teamsAuthLastError ?? null;
-      } catch {
-        return null;
-      }
-    })(),
+    lastAuthError: runtime.lastError,
     ssconfig: (() => {
       try {
         const w = window as unknown as Window & { ssconfig?: unknown };

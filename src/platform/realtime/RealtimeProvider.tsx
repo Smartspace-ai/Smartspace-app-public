@@ -4,6 +4,8 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
 
+import { parseScopes } from '@/platform/auth/scopes';
+
 import { realtimeDebugLog } from './realtimeDebug';
 
 type RealtimeCtx = {
@@ -54,8 +56,7 @@ export function RealtimeProvider({
   baseUrl = defaultBaseUrl(),
   hubPath = '/notifications',
   webSocketsOnly = false,
-  scopes = String(import.meta.env.VITE_CLIENT_SCOPES ?? '')
-    .split(/[ ,]+/).map(s => s.trim()).filter(Boolean),
+  scopes = parseScopes(import.meta.env.VITE_CLIENT_SCOPES),
 }: RealtimeProviderProps) {
   const [connection, setConnection] = useState<HubConnection>();
   const desiredGroups = useRef<Set<string>>(new Set());

@@ -2,6 +2,9 @@
   "name": "@smartspace/source",
   "version": "1.0.0",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "env-cmd -f .env concurrently -n TUNNEL,APP \"npm run dev:tunnel\" \"npm run serve\"",
     "serve": "nx serve --open --verbose",
