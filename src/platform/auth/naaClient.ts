@@ -1,6 +1,8 @@
 import { createNestablePublicClientApplication, InteractionRequiredAuthError, type Configuration, type IPublicClientApplication } from '@azure/msal-browser'
 import { app as teamsApp } from '@microsoft/teams-js'
 
+import { ssInfo, ssWarn } from '@/platform/log'
+
 let pcaPromise: Promise<IPublicClientApplication> | null = null
 
 export const naaInit = () => {
@@ -8,9 +10,9 @@ export const naaInit = () => {
     pcaPromise = (async () => {
       try { 
         await teamsApp.initialize() 
-        console.log('Teams SDK initialized for NAA');
+        ssInfo('auth:naa', 'Teams SDK initialized for NAA');
       } catch (error) {
-        console.warn('Teams SDK initialization failed for NAA:', error);
+        ssWarn('auth:naa', 'Teams SDK initialization failed for NAA (continuing)', error);
         // Continue anyway, might work with existing initialization
       }
       const clientId = import.meta.env.VITE_CLIENT_ID as string
@@ -38,7 +40,7 @@ const isExpired = (exp: number, skew = 60) => Math.floor(Date.now() / 1000) + sk
 export type AcquireNaaTokenOptions = { silentOnly?: boolean };
 
 export const acquireNaaToken = async (scopes: string[], opts?: AcquireNaaTokenOptions): Promise<string> => {
-  console.log('acquireNaaToken', scopes)
+  ssInfo('auth:naa', 'acquireNaaToken start', { scopesCount: scopes.length, silentOnly: !!opts?.silentOnly })
   const key = scopes.sort().join(' ')
   const cached = tokenCache[key]
   if (cached && !isExpired(cached.exp)) return cached.token
@@ -49,29 +51,29 @@ export const acquireNaaToken = async (scopes: string[], opts?: AcquireNaaTokenOp
   
   try {
     if (!account) {
-      console.warn('No account found for NAA token acquisition');
+      ssWarn('auth:naa', 'No account found for NAA token acquisition');
       throw new InteractionRequiredAuthError('No account available')
     }
     
-    console.log('Attempting silent token acquisition for account:', account.username);
+    ssInfo('auth:naa', 'Attempting silent token acquisition');
     const res = await pca.acquireTokenSilent({ account, scopes })
     const token = res.accessToken
     const exp = JSON.parse(atob(token.split('.')[1])).exp as number | undefined
     tokenCache[key] = { token, exp: exp ?? Math.floor(Date.now() / 1000) + 900 }
-    console.log('Silent token acquisition successful');
+    ssInfo('auth:naa', 'Silent token acquisition successful');
     return token
   } catch (error) {
     if (opts?.silentOnly) throw error
-    console.warn('Silent token acquisition failed, trying popup:', error);
+    ssWarn('auth:naa', 'Silent token acquisition failed, trying popup', error);
     try {
       const res = await pca.acquireTokenPopup({ scopes })
       const token = res.accessToken
       const exp = JSON.parse(atob(token.split('.')[1])).exp as number | undefined
       tokenCache[key] = { token, exp: exp ?? Math.floor(Date.now() / 1000) + 900 }
-      console.log('Popup token acquisition successful');
+      ssInfo('auth:naa', 'Popup token acquisition successful');
       return token
     } catch (popupError) {
-      console.error('Both silent and popup token acquisition failed:', popupError);
+      ssWarn('auth:naa', 'Both silent and popup token acquisition failed', popupError);
       throw popupError;
     }
   }

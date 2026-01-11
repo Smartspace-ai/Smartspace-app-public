@@ -1,6 +1,8 @@
 // src/platform/request.ts
 import axios, { type AxiosRequestConfig } from 'axios';
 
+import { AuthRequiredError } from '@/platform/auth/errors';
+
 import { api } from './api/apiClient';
 import { Result, toAppError } from './envelopes';
 
@@ -14,6 +16,11 @@ export async function request<T = unknown>(config: AxiosRequestConfig): Promise<
     const res = await api.request<T>(config);
     return { ok: true, data: res.data as T };
   } catch (err: unknown) {
+    // Auth layer may throw a typed error when silent token acquisition is not possible.
+    // Treat it as an Unauthorized AppError so callers can handle it consistently.
+    if (err instanceof AuthRequiredError) {
+      return { ok: false, error: { type: 'Unauthorized' } };
+    }
     const status =
       axios.isAxiosError(err)
         ? err.response?.status

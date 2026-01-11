@@ -26,7 +26,6 @@ export function createTeamsNaaAdapter(): AuthAdapter {
         setRuntimeAuthError(null);
         return token;
       } catch (error) {
-        console.error('Teams NAA token acquisition failed:', error);
         ssWarn('auth:teams', 'getAccessToken failed', error);
         setRuntimeAuthError({
           source: 'teams',
@@ -43,13 +42,11 @@ export function createTeamsNaaAdapter(): AuthAdapter {
           await teamsApp.initialize();
         } catch (initError) {
           // Teams might already be initialized, ignore this error
-          console.log('Teams already initialized or not available');
           ssWarn('auth:teams', 'teamsApp.initialize threw (ignored)', initError);
         }
         
         const ctx = await teamsApp.getContext();
         if (!ctx.user) {
-          console.warn('No user context available in Teams');
           ssWarn('auth:teams', 'getSession: ctx.user missing', ctx);
           setRuntimeAuthError({ source: 'teams', message: 'Teams context missing user (ctx.user is empty)' });
           return null;
@@ -62,7 +59,6 @@ export function createTeamsNaaAdapter(): AuthAdapter {
           displayName: ctx.user.displayName 
         };
       } catch (error) {
-        console.error('Teams session retrieval failed:', error);
         ssWarn('auth:teams', 'getSession failed', error);
         setRuntimeAuthError({
           source: 'teams',
@@ -80,7 +76,7 @@ export function createTeamsNaaAdapter(): AuthAdapter {
     },
     async signOut() { 
       // Teams handles sign-out
-      console.log('Teams sign-out requested - handled by Teams');
+      ssInfo('auth:teams', 'signOut requested - handled by Teams');
     },
     getStoredRedirectUrl() {
       // Teams doesn't use redirect URLs in the same way
