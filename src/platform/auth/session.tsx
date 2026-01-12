@@ -1,4 +1,3 @@
-'use client';
 import React, { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { createAuthAdapter } from './index';

@@ -1,4 +1,3 @@
-'use client';
 import { app as teamsApp } from '@microsoft/teams-js';
 import { useCallback, useState } from 'react';
 

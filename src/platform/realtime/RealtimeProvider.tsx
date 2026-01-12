@@ -6,8 +6,6 @@ import {
 
 import { parseScopes } from '@/platform/auth/scopes';
 
-import { realtimeDebugLog } from './realtimeDebug';
-
 type RealtimeCtx = {
   connection?: HubConnection;
   subscribeToGroup(name: string): Promise<void>;
@@ -74,11 +72,6 @@ export function RealtimeProvider({
     if (isConnected()) return;
     if (startPromise.current) return startPromise.current;
 
-    realtimeDebugLog('ensureConnected(): starting connection', {
-      hubUrl,
-      state: connection.state,
-    });
-
     startPromise.current = connection.start().finally(() => {
       startPromise.current = null;
     });
@@ -88,17 +81,10 @@ export function RealtimeProvider({
   const invokeWithRetry = useCallback(
     async (method: 'joinGroup' | 'leaveGroup', groupName: string, attempt = 0): Promise<void> => {
       if (!connection || !isConnected()) {
-        realtimeDebugLog(`${method}(): skipped (not connected)`, {
-          groupName,
-          attempt,
-          state: connection?.state,
-        });
         return; // lifecycle will re-join
       }
       try {
-        realtimeDebugLog(`${method}(): invoking`, { groupName, attempt });
         await connection.invoke(method, groupName);
-        realtimeDebugLog(`${method}(): success`, { groupName });
       } catch (err) {
         if (attempt < 3) {
           const delay = 300 * Math.pow(2, attempt) + Math.random() * 100;
@@ -113,13 +99,11 @@ export function RealtimeProvider({
   );
 
   const subscribeToGroup = useCallback(async (name: string) => {
-    realtimeDebugLog('subscribeToGroup()', { name });
     desiredGroups.current.add(name);
     await invokeWithRetry('joinGroup', name);
   }, [invokeWithRetry]);
 
   const unsubscribeFromGroup = useCallback(async (name: string) => {
-    realtimeDebugLog('unsubscribeFromGroup()', { name });
     desiredGroups.current.delete(name);
     await invokeWithRetry('leaveGroup', name);
   }, [invokeWithRetry]);
@@ -134,8 +118,6 @@ export function RealtimeProvider({
       return;
     }
 
-    realtimeDebugLog('building connection', { hubUrl, webSocketsOnly });
-
     const builder = new HubConnectionBuilder().withUrl(hubUrl, {
       accessTokenFactory: async () => {
         try { return await getAccessToken(scopes); } catch { return ''; }
@@ -147,35 +129,9 @@ export function RealtimeProvider({
 
     const conn = builder.build();
 
-    // lifecycle logs
-    conn.onclose?.((err) => {
-      realtimeDebugLog('onclose', {
-        state: conn.state,
-        connectionId: conn.connectionId,
-        error: err ? String(err) : undefined,
-      });
-    });
-    conn.onreconnecting?.((err) => {
-      realtimeDebugLog('onreconnecting', {
-        state: conn.state,
-        connectionId: conn.connectionId,
-        error: err ? String(err) : undefined,
-      });
-    });
-    conn.onreconnected?.((connectionId) => {
-      realtimeDebugLog('onreconnected', {
-        state: conn.state,
-        connectionId: connectionId ?? conn.connectionId,
-      });
-    });
-
     // rejoin desired groups after reconnect
     const rejoin = async () => {
       if (conn.state !== HubConnectionState.Connected) return;
-      realtimeDebugLog('rejoin: connected, rejoining desired groups', {
-        count: desiredGroups.current.size,
-        groups: Array.from(desiredGroups.current),
-      });
       for (const g of desiredGroups.current) {
         try {
           await conn.invoke('joinGroup', g);
@@ -188,13 +144,6 @@ export function RealtimeProvider({
 
     // start
     startPromise.current = conn.start()
-      .then(() => {
-        realtimeDebugLog('connected', {
-          hubUrl,
-          state: conn.state,
-          connectionId: conn.connectionId,
-        });
-      })
       .catch(err => {
         console.error('Error starting realtime connection', err);
       })
@@ -203,11 +152,6 @@ export function RealtimeProvider({
 
     return () => {
       startPromise.current = null;
-      realtimeDebugLog('stopping connection', {
-        hubUrl,
-        state: conn.state,
-        connectionId: conn.connectionId,
-      });
       conn.stop().catch(() => {
         console.error('Error stopping connection');
       });
