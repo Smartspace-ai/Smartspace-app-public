@@ -35,7 +35,7 @@ type UserOutputPayload = {
 
 export interface MessageBubbleProps {
   createdBy: string;
-  createdAt: Date | string;
+  createdAt: Date;
   type: MessageValueType;
   content: MessageContentItem[] ;
   sources: MessageResponseSource[] ;

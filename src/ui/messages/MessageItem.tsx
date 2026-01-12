@@ -48,8 +48,18 @@ function pushContent(items: MessageContentItem[], value: unknown) {
   }
   if (typeof value === 'object') {
     const v = value as Record<string, unknown>;
-    if (typeof v.text === 'string' || typeof v.image === 'string') {
-      items.push(v as unknown as MessageContentItem);
+    const text = typeof v.text === 'string' ? v.text : undefined;
+    const imageRaw = v.image;
+    const image =
+      imageRaw &&
+      typeof imageRaw === 'object' &&
+      typeof (imageRaw as Record<string, unknown>).id === 'string' &&
+      typeof (imageRaw as Record<string, unknown>).name === 'string'
+        ? (imageRaw as { id: string; name: string })
+        : undefined;
+
+    if (text !== undefined || image !== undefined) {
+      items.push({ ...(text !== undefined ? { text } : {}), ...(image ? { image } : {}) });
       return;
     }
     items.push({ text: JSON.stringify(value) });
@@ -85,12 +95,17 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
       });
     };
 
+  const safeTime = (d: Date) => {
+    const t = d.getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
+
   // sort without mutating original
   const values = (message.values ?? [])
     .slice()
     .sort(
       (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        safeTime(a.createdAt) - safeTime(b.createdAt)
     );
 
   const bubbles: ReactNode[] = [];
@@ -100,7 +115,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
   let groupSources: MessageResponseSource[] = [];
   let groupFiles: FileInfo[] = [];
   let groupType: MessageValueType = MessageValueType.INPUT;
-  let lastCreatedAt: Date | string = '';
+  let lastCreatedAt: Date = message.createdAt;
   let lastCreatedBy = '';
 
   // whether we have a pending group that hasn't been flushed to bubbles

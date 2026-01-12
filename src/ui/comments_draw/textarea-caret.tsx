@@ -4,6 +4,10 @@ export function getCaretCoordinates(
 ): { top: number; left: number; height: number } {
   const isInput = element.nodeName === "INPUT";
   const computed = window.getComputedStyle(element);
+  const px = (v: string) => {
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  };
 
   // Create mirror div
   const div = document.createElement("div");
@@ -61,7 +65,7 @@ export function getCaretCoordinates(
 
   // Adjust overflow for Firefox quirks
   if ('mozInnerScreenX' in window) {
-    if (element.scrollHeight > parseInt(computed.height)) {
+    if (element.scrollHeight > px(computed.height)) {
       style.overflowY = "scroll";
     }
   } else {
@@ -80,10 +84,11 @@ export function getCaretCoordinates(
   div.appendChild(span);
 
   // Measure
+  const lineHeight = px(computed.lineHeight) || px(computed.fontSize);
   const coords = {
-    top: span.offsetTop + parseInt(computed.borderTopWidth),
-    left: span.offsetLeft + parseInt(computed.borderLeftWidth),
-    height: parseInt(computed.lineHeight),
+    top: span.offsetTop + px(computed.borderTopWidth),
+    left: span.offsetLeft + px(computed.borderLeftWidth),
+    height: isInput ? px(computed.height) : lineHeight,
   };
 
   document.body.removeChild(div);

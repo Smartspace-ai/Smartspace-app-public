@@ -1,10 +1,10 @@
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 
 import { createAuthAdapter } from '@/platform/auth';
 import { AuthRequiredError } from '@/platform/auth/errors';
-import { getApiScopes } from '@/platform/auth/scopes';
-import { getAuthRuntimeState, setRuntimeAuthError } from '@/platform/auth/runtime';
 import { isInTeams } from '@/platform/auth/msalConfig';
+import { getAuthRuntimeState, setRuntimeAuthError } from '@/platform/auth/runtime';
+import { getApiScopes } from '@/platform/auth/scopes';
 import { ssInfo, ssWarn } from '@/platform/log';
 
 type SsConfig = {
@@ -64,8 +64,9 @@ webApi.interceptors.request.use(async (config) => {
   const scopes = getApiScopes();
   try {
     const token = await auth.getAccessToken({ silentOnly: true, scopes });
-    if (!config.headers) config.headers = {};
-    config.headers.Authorization = `Bearer ${token}`;
+    const headers = AxiosHeaders.from(config.headers);
+    headers.set('Authorization', `Bearer ${token}`);
+    config.headers = headers;
     setRuntimeAuthError(null);
   } catch (e) {
     // Record diagnostic signal for UI troubleshooting (Teams login screen reads this)

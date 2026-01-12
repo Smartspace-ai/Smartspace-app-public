@@ -262,33 +262,7 @@ function EditorInner({
       .slice(0, 8);
   }, [mentionOpen, mentionQuery, usersData, enableMentions]);
 
-  // Debug logs for workspace and users
-  useEffect(() => {
-    if (!enableMentions) return;
-    // eslint-disable-next-line no-console
-    console.log('[MarkdownEditor] workspaceId:', workspaceId);
-  }, [workspaceId, enableMentions]);
-  useEffect(() => {
-    if (!enableMentions) return;
-    // eslint-disable-next-line no-console
-    console.log(
-      '[MarkdownEditor] usersData length:',
-      Array.isArray(usersData) ? usersData.length : 'n/a',
-      usersData
-    );
-  }, [usersData, enableMentions]);
-  useEffect(() => {
-    if (!enableMentions) return;
-    // eslint-disable-next-line no-console
-    console.log(
-      '[MarkdownEditor] mentionOpen:',
-      mentionOpen,
-      'mentionQuery:',
-      mentionQuery,
-      'candidates:',
-      mentionCandidates?.length
-    );
-  }, [mentionOpen, mentionQuery, mentionCandidates, enableMentions]);
+  // (debug logs removed)
 
   useEffect(() => {
     return () => {
@@ -343,13 +317,6 @@ function EditorInner({
                   try {
                     const pos = view.state.selection.from;
                     const coords = view.coordsAtPos(pos);
-                    // eslint-disable-next-line no-console
-                    console.log(
-                      '[MarkdownEditor] @ pressed at pos:',
-                      pos,
-                      'coords:',
-                      coords
-                    );
                     setMentionCoords({
                       left: coords.left,
                       top: coords.top,
@@ -916,13 +883,6 @@ function EditorInner({
       const node = type.create({ id: user.id, label: user.displayName });
       const tr = view.state.tr.replaceWith(start, to, node);
       view.dispatch(tr);
-      // eslint-disable-next-line no-console
-      console.log('[MarkdownEditor] inserted mention:', {
-        id: user.id,
-        label: user.displayName,
-        start,
-        to,
-      });
       setMentionOpen(false);
       setMentionQuery('');
     } catch {
@@ -976,13 +936,6 @@ function EditorInner({
       absoluteFrom !== mentionFromPosRef.current || !mentionOpenRef.current;
     if (queryChanged || sessionChanged) setMentionIndex(0);
     setMentionOpen(true);
-    // eslint-disable-next-line no-console
-    console.log('[MarkdownEditor] updateMentionFromView:', {
-      from,
-      absoluteFrom,
-      query: after,
-      coords,
-    });
   }
 
   function getMentionPlacement(caretTop: number): 'up' | 'down' {

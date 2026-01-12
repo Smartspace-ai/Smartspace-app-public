@@ -44,7 +44,7 @@ export function MessageList() {
   const [isAtBottom, setIsAtBottom] = useState(true);
 
   const { data: thread, isPending: threadPending, isFetching: threadFetching, error: threadError } = useThread({ workspaceId, threadId })
-  const { data: messages = [], isPending: messagesPending, isFetching: messagesFetching, error: messagesError } = useMessages(threadId)
+  const { data: messages, isPending: messagesPending, isFetching: messagesFetching, error: messagesError } = useMessages(threadId)
 
 
   const { leftOpen, rightOpen } = useSidebar();
@@ -121,7 +121,11 @@ export function MessageList() {
   // When switching workspaces, we briefly land on /workspace/$workspaceId/ (no threadId) while the route loader
   // redirects to the first thread. During that transition we should show a loading skeleton, not "No messages yet".
   const isChoosingThread = !!workspaceId && !threadId && !!workspaceIndexMatch;
-  const isLoading = isChoosingThread || threadPending || threadFetching || messagesPending || messagesFetching;
+  // Avoid flicker: if we already have data, keep rendering it while refetching.
+  const isLoading =
+    isChoosingThread ||
+    ((threadPending || threadFetching) && !thread) ||
+    ((messagesPending || messagesFetching) && messages === undefined);
 
   if (isLoading) {
     return (
@@ -161,7 +165,9 @@ export function MessageList() {
     );
   }
 
-  if ((messages?.length ?? 0) === 0) {
+  const safeMessages = messages ?? [];
+
+  if (safeMessages.length === 0) {
     return (
       <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
         <h3 className="text-lg font-medium mb-2">{activeWorkspace?.name ?? 'No messages yet'}</h3>
@@ -176,7 +182,9 @@ export function MessageList() {
     );
   }
 
-  const messageHasSomeResponse = (messages?.length ?? 0) > 0 && messages[messages.length - 1]?.values?.some(v => v.type === MessageValueType.OUTPUT)
+  const messageHasSomeResponse =
+    safeMessages.length > 0 &&
+    safeMessages[safeMessages.length - 1]?.values?.some(v => v.type === MessageValueType.OUTPUT)
 
   return (
     <div className={`ss-chat__body ${teamsBg}`} data-ss-layer="message-list" style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%', width: '100%', overflow: 'hidden' }}>
@@ -200,7 +208,7 @@ export function MessageList() {
             ref={contentRef}
             className={`flex flex-col w-full ${!isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''} px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
           >
-            {messages.map((message, index) => (
+            {safeMessages.map((message, index) => (
               <div
                 className="ss-chat__message w-full"
                 key={message.id || index}
@@ -209,7 +217,7 @@ export function MessageList() {
                   message={message}
                 />
 
-                {index === messages.length - 1 && (thread?.isFlowRunning ) && (
+                {index === safeMessages.length - 1 && (thread?.isFlowRunning ) && (
                   messageHasSomeResponse? 
                     <div className="p-3 min-h-3">
                       <div className="flex space-x-2 p-1">

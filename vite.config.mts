@@ -1,10 +1,9 @@
-// @ts-nocheck
 /// <reference types='vitest' />
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { createRequire } from 'module';
-import { defineConfig } from 'vite';
+import { defineConfig, type PluginOption } from 'vite';
 
 const publicOriginHost = (() => {
   const origin = process.env.PUBLIC_ORIGIN;
@@ -36,17 +35,19 @@ export default defineConfig({
 
   plugins: [
     // Dynamically resolve the TanStack Router Vite plugin to avoid editor/moduleResolution issues
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     ((() => {
       const require = createRequire(import.meta.url);
       try {
         // Avoid static analysis resolution by constructing the module name dynamically
         const moduleName = ['@tanstack', 'router-plugin', 'vite'].join('/');
-        // @ts-ignore
-        return require(moduleName).default;
+        const mod = require(moduleName) as { default?: unknown };
+        if (typeof mod?.default === 'function') {
+          return mod.default as (opts: { routeFileIgnorePattern?: string }) => PluginOption;
+        }
       } catch {
-        return () => ({ name: 'tanstack-router-plugin-noop' });
+        // ignore
       }
+      return () => ({ name: 'tanstack-router-plugin-noop' }) as PluginOption;
     })())({
       // Ignore tests and test directories when scanning for route files
       routeFileIgnorePattern: '__tests__|\\.(test|spec)\\.(t|j)sx?$',
@@ -89,12 +90,15 @@ export default defineConfig({
     },
     rollupOptions: {
       onwarn(warning, warn) {
-        const msg = typeof warning?.message === 'string' ? warning.message : '';
+        const w = warning as unknown as {
+          message?: unknown;
+          loc?: { file?: unknown } | null;
+          id?: unknown;
+        };
+        const msg = typeof w?.message === 'string' ? w.message : '';
         const file =
-          // @ts-expect-error rollup warning shapes vary
-          warning?.loc?.file ?? // rollup
-          // @ts-expect-error rollup warning shapes vary
-          warning?.id ??
+          (typeof w?.loc?.file === 'string' ? w.loc.file : undefined) ??
+          (typeof w?.id === 'string' ? w.id : undefined) ??
           '';
 
         // Silence a noisy, non-actionable warning from a dependency.

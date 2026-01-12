@@ -6,14 +6,28 @@ type TeamsLoaderProps = {
 
 export function TeamsLoader({ message = 'Loading…' }: TeamsLoaderProps) {
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
-      <div className="flex flex-col items-center gap-5">
-        <div className="opacity-90">
-          <Logo />
-        </div>
-        <div className="flex items-center gap-3 text-gray-700">
-          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
-          <span className="text-sm">{message}</span>
+    <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground">
+      <div className="rounded-2xl bg-gradient-to-br from-primary/40 via-primary/15 to-transparent p-[1px] shadow-xl">
+        <div className="flex flex-col items-center gap-5 rounded-2xl bg-card/75 px-9 py-8 backdrop-blur">
+          <div className="opacity-95">
+            <Logo />
+          </div>
+          <div className="text-center">
+            <div className="text-sm font-medium">Smartspace</div>
+            <div className="mt-1 text-xs text-muted-foreground">Preparing your workspace…</div>
+          </div>
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <span
+              className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary/20 border-t-primary"
+              aria-hidden="true"
+            />
+            <span className="text-sm">{message}</span>
+            <span className="flex items-center gap-1" aria-hidden="true">
+              <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-primary/70 [animation-delay:0ms]" />
+              <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50 [animation-delay:150ms]" />
+              <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-primary/35 [animation-delay:300ms]" />
+            </span>
+          </div>
         </div>
       </div>
     </div>
