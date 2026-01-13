@@ -17,10 +17,6 @@ export function TeamsLoader({ message = 'Loading…' }: TeamsLoaderProps) {
             <div className="mt-1 text-xs text-muted-foreground">Preparing your workspace…</div>
           </div>
           <div className="flex items-center gap-3 text-muted-foreground">
-            <span
-              className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary/20 border-t-primary"
-              aria-hidden="true"
-            />
             <span className="text-sm">{message}</span>
             <span className="flex items-center gap-1" aria-hidden="true">
               <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-primary/70 [animation-delay:0ms]" />

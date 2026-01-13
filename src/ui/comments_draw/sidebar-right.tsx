@@ -8,6 +8,7 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 import type { Comment } from '@/domains/comments';
 import { useAddComment } from '@/domains/comments/mutations';
 import { useComments } from '@/domains/comments/queries';
+import { fetchTaggableUsers } from '@/domains/workspaces';
 
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
@@ -215,6 +216,10 @@ export function SidebarRight() {
                     setThreadComment({ plain, withMentions: md });
                   }}
                   enableMentions
+                  fetchMentionUsers={async (wsId) => {
+                    const users = await fetchTaggableUsers(wsId);
+                    return users.map((u) => ({ id: u.id, displayName: u.displayName }));
+                  }}
                   disabled={isAddingComment || isDraft}
                   workspaceId={workspaceId}
                   threadId={threadId}
@@ -246,6 +251,10 @@ export function SidebarRight() {
                     setThreadComment({ plain, withMentions: md });
                   }}
                   enableMentions
+                  fetchMentionUsers={async (wsId) => {
+                    const users = await fetchTaggableUsers(wsId);
+                    return users.map((u) => ({ id: u.id, displayName: u.displayName }));
+                  }}
                   disabled={isAddingComment || isDraft}
                   workspaceId={workspaceId}
                   threadId={threadId}
