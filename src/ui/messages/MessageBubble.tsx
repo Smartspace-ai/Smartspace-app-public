@@ -1,6 +1,5 @@
 // src/ui/messages/MessageList/MessageBubble.tsx
 import { JsonSchema } from '@jsonforms/core';
-import { materialCells } from '@jsonforms/material-renderers';
 import { JsonForms } from '@jsonforms/react';
 import Button from '@mui/material/Button';
 import { FC, useEffect, useState } from 'react';
@@ -12,7 +11,7 @@ import { MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 
 
-import { renderers } from '@/ui/chat-variables/renders';
+import { cells, renderers } from '@/ui/chat-variables/renders';
 
 
 import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
@@ -122,7 +121,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
               schema={userOutput.schema as JsonSchema}
               data={responseFormData}
               renderers={renderers}
-              cells={materialCells}
+              cells={cells}
               readonly={userInput !== undefined}
               onChange={({ data, errors }) => { setResponseFormData(data); setResponseFormValid(!errors?.length); }}
             />

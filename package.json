@@ -35,7 +35,6 @@
     "@heroicons/react": "^2.1.5",
     "@hookform/resolvers": "^5.0.1",
     "@jsonforms/core": "^3.5.1",
-    "@jsonforms/material-renderers": "^3.5.1",
     "@jsonforms/react": "^3.5.1",
     "@jsonforms/vanilla-renderers": "^3.5.1",
     "@microsoft/signalr": "^8.0.7",
