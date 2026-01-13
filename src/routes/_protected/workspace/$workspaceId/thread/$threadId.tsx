@@ -1,14 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { queryClient } from '@/platform/reactQueryClient';
+import { RouteIdsProvider } from "@/platform/routing/RouteIdsProvider";
 
 import type { MessageThread, ThreadsResponse } from '@/domains/threads';
 import { threadDetailOptions } from '@/domains/threads/queries';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 
-
 import ChatBotPage from "@/pages/WorkspaceThreadPage/chat";
-import { RouteIdsProvider } from "@/pages/WorkspaceThreadPage/RouteIdsProvider";
 
 import { isDraftThreadId, markDraftThreadId } from '@/shared/utils/threadId';
 
@@ -81,11 +80,7 @@ function upsertDraftIntoListCache(workspaceId: string, draft: MessageThread) {
 // routes/_protected/workspace/$workspaceId/thread/$threadId.tsx
 export const Route = createFileRoute('/_protected/workspace/$workspaceId/thread/$threadId')({
   pendingMs: 0,
-  pendingComponent: () => (
-    <RouteIdsProvider>
-      <ChatBotPage />
-    </RouteIdsProvider>
-  ),
+  pendingComponent: ThreadRouteComponent,
   loader: async ({ params }) => {
     // Draft threads are client-side only until a message is sent (or creation succeeds in background).
     // Avoid fetching thread details for draft ids (backend will 404).
@@ -126,9 +121,14 @@ export const Route = createFileRoute('/_protected/workspace/$workspaceId/thread/
       return null;
     }
   },
-  component: () => (
-    <RouteIdsProvider>
-      <ChatBotPage />
-    </RouteIdsProvider>
-  ),
+  component: ThreadRouteComponent,
 });
+
+function ThreadRouteComponent() {
+  const { workspaceId, threadId } = Route.useParams();
+  return (
+    <RouteIdsProvider>
+      <ChatBotPage workspaceId={workspaceId} threadId={threadId} />
+    </RouteIdsProvider>
+  );
+}

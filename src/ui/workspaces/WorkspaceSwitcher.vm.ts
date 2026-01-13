@@ -4,13 +4,14 @@ import { useNavigate } from '@tanstack/react-router';
 import debounce from 'lodash/debounce';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import { commentsKeys } from '@/domains/comments/queryKeys';
 import { messagesKeys } from '@/domains/messages/queryKeys';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 import type { Workspace } from '@/domains/workspaces/model';
 import { useWorkspace, useWorkspaces, workspaceDetailOptions } from '@/domains/workspaces/queries';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 

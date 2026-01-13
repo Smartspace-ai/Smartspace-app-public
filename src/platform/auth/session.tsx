@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { createAuthAdapter } from './index';
-import type { AuthAdapter } from './types';
 import { getAuthRuntimeState, subscribeAuthRuntime } from './runtime';
+import type { AuthAdapter } from './types';
 
 const AuthCtx = createContext<AuthAdapter | null>(null);
 

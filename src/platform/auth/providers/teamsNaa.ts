@@ -1,8 +1,8 @@
 import { app as teamsApp } from '@microsoft/teams-js';
 
 import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
-import { getClientScopes } from '@/platform/auth/scopes';
 import { setRuntimeAuthError } from '@/platform/auth/runtime';
+import { getClientScopes } from '@/platform/auth/scopes';
 import { ssInfo, ssWarn } from '@/platform/log';
 
 import { AuthAdapter, type GetTokenOptions } from '../types';

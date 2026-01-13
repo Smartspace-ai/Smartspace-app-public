@@ -3,13 +3,16 @@ import { ArrowBigUp, MessageSquare } from 'lucide-react';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import type { Comment } from '@/domains/comments';
 import { useAddComment } from '@/domains/comments/mutations';
 import { useComments } from '@/domains/comments/queries';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
+import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
+import type { MarkdownEditorHandle } from '@/shared/ui/markdown/MarkdownEditor';
 import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from '@/shared/ui/mui-compat/breadcrumb';
 import { Button as UIButton } from '@/shared/ui/mui-compat/button';
@@ -17,8 +20,6 @@ import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/shared/ui/mui-compat/sidebar';
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
-import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
-import type { MarkdownEditorHandle } from '@/components/markdown/MarkdownEditor';
 
 import { getInitials } from '../../shared/utils/initials';
 import { parseDateTime } from '../../shared/utils/parseDateTime';

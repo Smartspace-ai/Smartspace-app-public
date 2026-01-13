@@ -4,10 +4,11 @@ import { useNavigate } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import type { MessageThread, ThreadsResponse } from '@/domains/threads';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { Button } from '@/shared/ui/mui-compat/button';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';

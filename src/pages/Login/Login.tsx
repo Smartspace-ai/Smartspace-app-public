@@ -1,4 +1,3 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
@@ -13,11 +12,16 @@ import { Logo } from '@/assets/logo';
 
 import styles from './Login.module.scss';
 
-export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
+export function Login({
+  redirectTo = '/workspace',
+  onNavigate,
+}: {
+  redirectTo?: string;
+  onNavigate?: (to: string) => void;
+}) {
 
   const auth = useAuth();
   const runtime = useAuthRuntime();
-  const navigate = useNavigate();
   const { isTeamsInitialized, teamsUser, teamsContext, isInTeams: isInTeamsFromProvider } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +49,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
             await auth.getAccessToken({ silentOnly: true });
             setSession(currentSession);
             ssInfo('login', 'session+token OK -> navigate', { to: redirectTo });
-            navigate({ to: redirectTo, replace: true });
+            onNavigate?.(redirectTo);
             return;
           } catch (e) {
             // Treat as not signed in; user needs interactive sign-in.
@@ -85,7 +89,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
       }
     };
     checkSession();
-  }, [auth, redirectTo, navigate, isTeamsInitialized]);
+  }, [auth, redirectTo, onNavigate, isTeamsInitialized]);
 
   // Avoid flashing the login UI if we already have a session
   if (session) {
@@ -95,7 +99,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
   // Fallback manual login for browser or if Teams SSO fails
   const handleManualLogin = async () => {
     if (session) {
-      navigate({ to: redirectTo, replace: true });
+      onNavigate?.(redirectTo);
       return;
     }
     

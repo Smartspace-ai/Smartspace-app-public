@@ -1,7 +1,8 @@
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import { FileInfo } from '@/domains/files';
 import { useFileMutations } from '@/domains/files/mutations';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { Button } from '@/shared/ui/mui-compat/button';
 

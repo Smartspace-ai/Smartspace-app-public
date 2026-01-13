@@ -25,8 +25,8 @@ import { useFileMutations } from '@/domains/files/mutations';
 
 import { ChatVariablesForm } from '@/ui/chat-variables/VariablesForm';
 
-import type { MarkdownEditorHandle } from '@/components/markdown/MarkdownEditor';
-import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+import type { MarkdownEditorHandle } from '@/shared/ui/markdown/MarkdownEditor';
+import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
 
 import { useMessageComposerVm } from './MessageComposer.vm';
 

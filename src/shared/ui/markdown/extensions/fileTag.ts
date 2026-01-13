@@ -69,4 +69,3 @@ export const fileTag = $node('fileTag', () => ({
   } as NodeSerializerSpec,
 }))
 
-

@@ -25,9 +25,6 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-import type { MentionUser } from '@/domains/workspaces';
-import { taggableUsersOptions } from '@/domains/workspaces';
-
 // Note: Mention plugin is not published under @milkdown/plugin-mention on npm.
 // This setup is ready to add a mention-like plugin later if desired.
 import { fileTag } from './extensions/fileTag';
@@ -45,6 +42,9 @@ const initial = [
   '',
   'Mention example: @alice (plugin placeholder)',
 ].join('\n');
+
+export type MentionUserLike = { id: string; displayName: string };
+export type FetchMentionUsers = (workspaceId: string) => Promise<MentionUserLike[]>;
 
 export type MarkdownEditorHandle = {
   addFiles: (files: File[]) => void;
@@ -86,24 +86,22 @@ export type MarkdownEditorProps = {
   workspaceId?: string;
   threadId?: string;
   enableMentions?: boolean;
+  /**
+   * Optional mention users fetcher. Kept as a prop so this shared component does not
+   * depend on any domain/service modules.
+   */
+  fetchMentionUsers?: FetchMentionUsers;
 };
 
 type PMNodeTypeLike = {
   create: (attrs?: Record<string, unknown>) => PMNode;
 };
 
-function getSchemaNodeType(
-  view: EditorView,
-  name: string
-): PMNodeTypeLike | null {
+function getSchemaNodeType(view: EditorView, name: string): PMNodeTypeLike | null {
   const nodes = view.state.schema.nodes as unknown as Record<string, unknown>;
   const t = nodes?.[name];
   if (!t || typeof t !== 'object') return null;
-  if (
-    !('create' in t) ||
-    typeof (t as { create?: unknown }).create !== 'function'
-  )
-    return null;
+  if (!('create' in t) || typeof (t as { create?: unknown }).create !== 'function') return null;
   return t as PMNodeTypeLike;
 }
 
@@ -124,6 +122,7 @@ function EditorInner({
   placeholder,
   workspaceId,
   enableMentions,
+  fetchMentionUsers,
   editorHandleRef,
 }: {
   value?: MarkdownEditorProps['value'];
@@ -142,20 +141,17 @@ function EditorInner({
   placeholder?: MarkdownEditorProps['placeholder'];
   workspaceId?: MarkdownEditorProps['workspaceId'];
   enableMentions?: MarkdownEditorProps['enableMentions'];
+  fetchMentionUsers?: MarkdownEditorProps['fetchMentionUsers'];
   editorHandleRef?: React.ForwardedRef<MarkdownEditorHandle>;
 }) {
   const initialValueRef = useRef(value ?? initial);
-  const isEditable =
-    (editable ?? (disabled != null ? !disabled : true)) === true;
+  const isEditable = (editable ?? (disabled != null ? !disabled : true)) === true;
   const [isEmpty, setIsEmpty] = useState(
-    !initialValueRef.current ||
-      initialValueRef.current.replace(/\s+/g, '') === ''
+    !initialValueRef.current || initialValueRef.current.replace(/\s+/g, '') === ''
   );
   const [hasFocus, setHasFocus] = useState(false);
   const effectivePlaceholder = placeholder ?? ghostMessage;
-  const [attachments, setAttachments] = useState<
-    { url: string; name: string; isImage: boolean }[]
-  >([]);
+  const [attachments, setAttachments] = useState<{ url: string; name: string; isImage: boolean }[]>([]);
   const previewUrlsRef = useRef<string[]>([]);
   const [_isDragging, setIsDragging] = useState(false);
   const viewRef = useRef<EditorView | null>(null);
@@ -197,19 +193,13 @@ function EditorInner({
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionFromPos, setMentionFromPos] = useState<number | null>(null);
-  const [mentionCoords, setMentionCoords] = useState<{
-    left: number;
-    top: number;
-    bottom: number;
-  }>({
+  const [mentionCoords, setMentionCoords] = useState<{ left: number; top: number; bottom: number }>({
     left: 0,
     top: 0,
     bottom: 0,
   });
   const [mentionIndex, setMentionIndex] = useState(0);
-  const [mentionPlacement, setMentionPlacement] = useState<'up' | 'down'>(
-    'down'
-  );
+  const [mentionPlacement, setMentionPlacement] = useState<'up' | 'down'>('down');
 
   // Refs to prevent keyup-driven recalculation from clobbering arrow-key navigation.
   const mentionQueryRef = useRef('');
@@ -240,26 +230,31 @@ function EditorInner({
     isLoading: isUsersLoading,
     isFetching: isUsersFetching,
   } = useQuery({
-    ...taggableUsersOptions(workspaceId || ''),
+    queryKey: ['markdown', 'mentionUsers', workspaceId ?? ''],
+    queryFn: async () => {
+      if (!fetchMentionUsers) return [] as MentionUserLike[];
+      if (!workspaceId) return [] as MentionUserLike[];
+      return await fetchMentionUsers(workspaceId);
+    },
+    staleTime: 30_000,
     enabled:
       !!enableMentions &&
       !!workspaceId &&
+      !!fetchMentionUsers &&
       (mentionOpen || (mentionQuery ?? '').length > 0),
   }) as unknown as {
-    data: MentionUser[];
+    data: MentionUserLike[];
     isLoading: boolean;
     isFetching: boolean;
   };
 
   const mentionCandidates = useMemo(() => {
-    if (!enableMentions) return [] as MentionUser[];
-    if (!mentionOpen) return [] as MentionUser[];
+    if (!enableMentions) return [] as MentionUserLike[];
+    if (!mentionOpen) return [] as MentionUserLike[];
     const q = mentionQuery.trim().toLowerCase();
-    const list = (usersData as MentionUser[]) || [];
+    const list = (usersData as MentionUserLike[]) || [];
     if (!q) return list.slice(0, 8);
-    return list
-      .filter((u) => u.displayName.toLowerCase().includes(q))
-      .slice(0, 8);
+    return list.filter((u) => u.displayName.toLowerCase().includes(q)).slice(0, 8);
   }, [mentionOpen, mentionQuery, usersData, enableMentions]);
 
   // (debug logs removed)
@@ -352,20 +347,15 @@ function EditorInner({
     [isEditable]
   );
 
-  async function getImageDimensions(
-    file: File
-  ): Promise<{ width: number; height: number } | null> {
+  async function getImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
     try {
       const url = URL.createObjectURL(file);
       const img = new Image();
-      const dims = await new Promise<{ width: number; height: number }>(
-        (resolve, reject) => {
-          img.onload = () =>
-            resolve({ width: img.naturalWidth, height: img.naturalHeight });
-          img.onerror = () => reject(new Error('image load failed'));
-          img.src = url;
-        }
-      );
+      const dims = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = () => reject(new Error('image load failed'));
+        img.src = url;
+      });
       URL.revokeObjectURL(url);
       return dims;
     } catch {
@@ -388,14 +378,11 @@ function EditorInner({
     };
   }
 
-  async function uploadSingleFile(
-    file: File
-  ): Promise<{ id: string; name: string } | null> {
+  async function uploadSingleFile(file: File): Promise<{ id: string; name: string } | null> {
     if (!_onUploadFiles) return null;
     try {
       const res = await _onUploadFiles([file]);
-      if (res && res[0])
-        return { id: res[0].id, name: res[0].name || file.name || 'file' };
+      if (res && res[0]) return { id: res[0].id, name: res[0].name || file.name || 'file' };
       return null;
     } catch {
       return null;
@@ -428,8 +415,7 @@ function EditorInner({
       const isImage = file.type.startsWith('image/');
       const uploaded = await uploadSingleFile(file);
       const id = uploaded?.id ?? 'local';
-      const name =
-        uploaded?.name ?? (file.name || (isImage ? 'image' : 'file'));
+      const name = uploaded?.name ?? (file.name || (isImage ? 'image' : 'file'));
 
       if (isImage) {
         const dims = await getImageDimensions(file);
@@ -448,10 +434,7 @@ function EditorInner({
             insertNodeAtSelection(view, node);
             insertTextAtSelection(view, ' ');
           } else {
-            insertTextAtSelection(
-              view,
-              `![${name}](ss-file:${id}?w=${width}&h=${height}) `
-            );
+            insertTextAtSelection(view, `![${name}](ss-file:${id}?w=${width}&h=${height}) `);
           }
         } catch {
           /* ignore insert errors */
@@ -495,13 +478,7 @@ function EditorInner({
       const url = isImage ? URL.createObjectURL(f) : '';
       const key = `${f.name}:${f.size}:${f.type}`;
       if (url) previewUrlsRef.current.push(url);
-      return {
-        key,
-        url,
-        name: f.name || 'file',
-        isImage,
-        status: 'uploading' as const,
-      };
+      return { key, url, name: f.name || 'file', isImage, status: 'uploading' as const };
     });
 
     setAttachments((prev) => [...prev, ...items]);
@@ -527,16 +504,10 @@ function EditorInner({
         const found: Array<{ id: string; displayName: string }> = [];
         view.state.doc.descendants((node) => {
           if (node.type?.name !== 'mention') return true;
-          const attrs = node.attrs as unknown as {
-            id?: unknown;
-            label?: unknown;
-          };
-          const id =
-            typeof attrs?.id === 'string' ? attrs.id : String(attrs?.id ?? '');
+          const attrs = node.attrs as unknown as { id?: unknown; label?: unknown };
+          const id = typeof attrs?.id === 'string' ? attrs.id : String(attrs?.id ?? '');
           const label =
-            typeof attrs?.label === 'string'
-              ? attrs.label
-              : String(attrs?.label ?? '');
+            typeof attrs?.label === 'string' ? attrs.label : String(attrs?.label ?? '');
           const displayName = label.replace(/^@/, '');
           if (id) found.push({ id, displayName });
           return true;
@@ -555,10 +526,7 @@ function EditorInner({
           try {
             if (node?.type?.name === 'mention') {
               const attrs = node.attrs as unknown as { label?: unknown };
-              const raw =
-                typeof attrs?.label === 'string'
-                  ? attrs.label
-                  : String(attrs?.label ?? '');
+              const raw = typeof attrs?.label === 'string' ? attrs.label : String(attrs?.label ?? '');
               const displayName = raw.replace(/^@/, '');
               return `@${displayName}`;
             }
@@ -580,11 +548,7 @@ function EditorInner({
           // Replace the entire document content with the empty doc content.
           // Positions can be a little tricky across PM versions, so we try a safe primary path with a fallback.
           try {
-            const tr = view.state.tr.replace(
-              0,
-              view.state.doc.content.size,
-              slice
-            );
+            const tr = view.state.tr.replace(0, view.state.doc.content.size, slice);
             view.dispatch(tr.scrollIntoView());
           } catch {
             // Fallback: common "inside doc" range.
@@ -604,9 +568,7 @@ function EditorInner({
 
   return (
     <div
-      className={`md-editor${!isEditable ? ' md-editor--readonly' : ''}${
-        className ? ` ${className}` : ''
-      }`}
+      className={`md-editor${!isEditable ? ' md-editor--readonly' : ''}${className ? ` ${className}` : ''}`}
       onKeyDown={(e) => {
         if (
           mentionOpen &&
@@ -618,9 +580,7 @@ function EditorInner({
           if (e.key === 'ArrowDown') {
             e.preventDefault();
             setMentionIndex((i) =>
-              mentionCandidates.length > 0
-                ? (i + 1) % mentionCandidates.length
-                : 0
+              mentionCandidates.length > 0 ? (i + 1) % mentionCandidates.length : 0
             );
             return;
           }
@@ -636,8 +596,7 @@ function EditorInner({
           if (e.key === 'Enter') {
             if (mentionCandidates.length > 0) {
               e.preventDefault();
-              const user =
-                mentionCandidates[mentionIndex] || mentionCandidates[0];
+              const user = mentionCandidates[mentionIndex] || mentionCandidates[0];
               insertMention(user);
               return;
             }
@@ -732,25 +691,13 @@ function EditorInner({
       aria-disabled={isEditable ? 'false' : 'true'}
       aria-multiline="true"
       tabIndex={0}
-      style={((): React.CSSProperties & {
-        ['--md-min-height']?: string;
-        ['--md-max-height']?: string;
-      } => {
-        const vars: React.CSSProperties & {
-          ['--md-min-height']?: string;
-          ['--md-max-height']?: string;
-        } = {};
+      style={((): React.CSSProperties & { ['--md-min-height']?: string; ['--md-max-height']?: string } => {
+        const vars: React.CSSProperties & { ['--md-min-height']?: string; ['--md-max-height']?: string } = {};
         if (minHeight != null) {
-          vars['--md-min-height'] =
-            typeof minHeight === 'number'
-              ? `${minHeight}px`
-              : String(minHeight);
+          vars['--md-min-height'] = typeof minHeight === 'number' ? `${minHeight}px` : String(minHeight);
         }
         if (maxHeight != null) {
-          vars['--md-max-height'] =
-            typeof maxHeight === 'number'
-              ? `${maxHeight}px`
-              : String(maxHeight);
+          vars['--md-max-height'] = typeof maxHeight === 'number' ? `${maxHeight}px` : String(maxHeight);
         }
         return vars;
       })()}
@@ -759,82 +706,63 @@ function EditorInner({
         <div className="md-editor__ghost">{effectivePlaceholder}</div>
       ) : null}
       <Milkdown />
-      {mentionOpen
-        ? createPortal(
-            <div
-              className="md-mention-menu"
-              style={{
-                position: 'fixed',
-                left: mentionCoords.left,
-                top:
-                  mentionPlacement === 'up'
-                    ? mentionCoords.top
-                    : mentionCoords.bottom,
-                transform:
-                  mentionPlacement === 'up'
-                    ? 'translateY(calc(-100% - 8px))'
-                    : 'translateY(8px)',
-              }}
-              role="dialog"
-              aria-label="User mentions"
-            >
-              <ul className="max-h-60 overflow-auto" role="listbox">
-                {mentionCandidates.length === 0 &&
-                (isUsersLoading || isUsersFetching) ? (
-                  <li className="px-3 py-2 text-sm text-muted-foreground">
-                    Loading users…
-                  </li>
-                ) : mentionCandidates.length === 0 ? (
-                  <li className="px-3 py-2 text-sm text-muted-foreground">
-                    No users
-                  </li>
-                ) : (
-                  mentionCandidates.map((u, i) => (
-                    <li
-                      key={u.id}
-                      role="option"
-                      aria-selected={i === mentionIndex}
-                    >
-                      <button
-                        type="button"
-                        className={`w-full text-left px-3 py-1 cursor-pointer ${
-                          i === mentionIndex ? 'bg-muted' : ''
-                        }`}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onMouseEnter={() => setMentionIndex(i)}
-                        onClick={(ev) => {
-                          ev.stopPropagation();
+      {mentionOpen ? (
+        createPortal(
+          <div
+            className="md-mention-menu"
+            style={{
+              position: 'fixed',
+              left: mentionCoords.left,
+              top: mentionPlacement === 'up' ? mentionCoords.top : mentionCoords.bottom,
+              transform:
+                mentionPlacement === 'up'
+                  ? 'translateY(calc(-100% - 8px))'
+                  : 'translateY(8px)',
+            }}
+            role="dialog"
+            aria-label="User mentions"
+          >
+            <ul className="max-h-60 overflow-auto" role="listbox">
+              {mentionCandidates.length === 0 && (isUsersLoading || isUsersFetching) ? (
+                <li className="px-3 py-2 text-sm text-muted-foreground">Loading users…</li>
+              ) : mentionCandidates.length === 0 ? (
+                <li className="px-3 py-2 text-sm text-muted-foreground">No users</li>
+              ) : (
+                mentionCandidates.map((u, i) => (
+                  <li key={u.id} role="option" aria-selected={i === mentionIndex}>
+                    <button
+                      type="button"
+                      className={`w-full text-left px-3 py-1 cursor-pointer ${i === mentionIndex ? 'bg-muted' : ''}`}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() => setMentionIndex(i)}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        insertMention(u);
+                      }}
+                      onKeyDown={(ke) => {
+                        if (ke.key === 'Enter' || ke.key === ' ') {
+                          ke.preventDefault();
                           insertMention(u);
-                        }}
-                        onKeyDown={(ke) => {
-                          if (ke.key === 'Enter' || ke.key === ' ') {
-                            ke.preventDefault();
-                            insertMention(u);
-                          }
-                        }}
-                      >
-                        {u.displayName}
-                      </button>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>,
-            document.body
-          )
-        : null}
+                        }
+                      }}
+                    >
+                      {u.displayName}
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>,
+          document.body
+        )
+      ) : null}
       {attachments.length > 0 ? (
         <div className="mt-2 border-t pt-2">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 auto-rows-min">
             {attachments.map((p, index) => (
-              <div
-                key={`${p.url || p.name}-${index}`}
-                className="relative group"
-              >
+              <div key={`${p.url || p.name}-${index}`} className="relative group">
                 <div
-                  className={`flex items-center gap-2 p-2 rounded-md border bg-muted/20 ${
-                    p.isImage ? 'flex-col' : ''
-                  }`}
+                  className={`flex items-center gap-2 p-2 rounded-md border bg-muted/20 ${p.isImage ? 'flex-col' : ''}`}
                 >
                   {p.isImage && p.url ? (
                     <img
@@ -844,22 +772,16 @@ function EditorInner({
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-full text-xs text-muted-foreground truncate">
-                      {p.name || 'file'}
-                    </div>
+                    <div className="w-full text-xs text-muted-foreground truncate">{p.name || 'file'}</div>
                   )}
                   {!p.isImage ? (
-                    <div className="text-[10px] text-muted-foreground truncate">
-                      {p.name || 'file'}
-                    </div>
+                    <div className="text-[10px] text-muted-foreground truncate">{p.name || 'file'}</div>
                   ) : null}
                 </div>
                 <button
                   type="button"
                   className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-background border opacity-0 group-hover:opacity-100"
-                  onClick={() =>
-                    setAttachments((prev) => prev.filter((_, i) => i !== index))
-                  }
+                  onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== index))}
                   aria-label="Remove attachment"
                 >
                   ×
@@ -872,7 +794,7 @@ function EditorInner({
     </div>
   );
 
-  function insertMention(user: MentionUser) {
+  function insertMention(user: MentionUserLike) {
     try {
       const view = viewRef.current;
       if (!view) return;
@@ -889,8 +811,6 @@ function EditorInner({
       /* ignore insert errors */
     }
   }
-
-  // reserved for future file tag inline insert
 
   function updateMentionFromView() {
     if (!enableMentions) {
@@ -932,8 +852,7 @@ function EditorInner({
     // Only reset the highlighted option when the query/session changes.
     // Otherwise, arrow key navigation will be immediately overwritten by this updater.
     const queryChanged = after !== mentionQueryRef.current;
-    const sessionChanged =
-      absoluteFrom !== mentionFromPosRef.current || !mentionOpenRef.current;
+    const sessionChanged = absoluteFrom !== mentionFromPosRef.current || !mentionOpenRef.current;
     if (queryChanged || sessionChanged) setMentionIndex(0);
     setMentionOpen(true);
   }
@@ -944,16 +863,11 @@ function EditorInner({
     const maxMenuHeight = 240;
     const gap = 12;
     const minViewportPadding = 8;
-    return caretTop - (maxMenuHeight + gap) < minViewportPadding
-      ? 'down'
-      : 'up';
+    return caretTop - (maxMenuHeight + gap) < minViewportPadding ? 'down' : 'up';
   }
 }
 
-export const MarkdownEditor = forwardRef<
-  MarkdownEditorHandle,
-  MarkdownEditorProps
->((props, ref) => {
+export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>((props, ref) => {
   return (
     <MilkdownProvider>
       <EditorInner {...props} editorHandleRef={ref} />
@@ -963,3 +877,4 @@ export const MarkdownEditor = forwardRef<
 MarkdownEditor.displayName = 'MarkdownEditor';
 
 export default MarkdownEditor;
+

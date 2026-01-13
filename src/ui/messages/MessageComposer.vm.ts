@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import { useSendMessage } from '@/domains/messages/mutations';
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';

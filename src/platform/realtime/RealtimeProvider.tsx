@@ -76,7 +76,7 @@ export function RealtimeProvider({
       startPromise.current = null;
     });
     return startPromise.current;
-  }, [connection, isConnected, hubUrl]);
+  }, [connection, isConnected]);
 
   const invokeWithRetry = useCallback(
     async (method: 'joinGroup' | 'leaveGroup', groupName: string, attempt = 0): Promise<void> => {

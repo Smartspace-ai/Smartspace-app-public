@@ -190,3 +190,4 @@ export const ssImageView = $view(ssImageNode, (ctx) => (node) => {
   dom.appendChild(removeBtn)
   return { dom, contentDOM: null }
 })
+

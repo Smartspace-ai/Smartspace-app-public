@@ -6,12 +6,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { MessageValueType, useMessages } from '@/domains/messages';
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';

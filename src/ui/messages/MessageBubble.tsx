@@ -14,12 +14,12 @@ import { MessageValueType } from '@/domains/messages/enums';
 import { cells, renderers } from '@/ui/chat-variables/renders';
 
 
+import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
 import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parseDateTime';
 import { cn } from '@/shared/utils/utils';
 
-import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 
 import { ChatMessageCopyButton } from './MessageCopyButton';
 import { ChatMessageFileDownload } from './MessageFileDownload';

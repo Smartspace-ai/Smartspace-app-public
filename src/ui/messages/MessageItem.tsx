@@ -3,13 +3,14 @@
 import { FC, ReactNode } from 'react';
 
 // domains
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import { FileInfo } from '@/domains/files';
 import { Message, MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 import { getMessageErrorText } from '@/domains/messages/errors';
 import { useAddInputToMessage } from '@/domains/messages/mutations';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 // local UI
 import { MessageBubble } from './MessageBubble';

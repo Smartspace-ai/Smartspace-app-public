@@ -1,10 +1,11 @@
 import Skeleton from '@mui/material/Skeleton';
 import { FC, useEffect, useMemo } from 'react';
 
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import { FileInfo } from '@/domains/files';
 import { useDownloadFileBlobQuery, } from '@/domains/files/queries';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 
 export const ChatMessageImage: FC<{image: FileInfo}> = ({image}) => {

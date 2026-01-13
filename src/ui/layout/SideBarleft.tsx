@@ -6,14 +6,9 @@ import ThreadsList from '@/ui/threads/ThreadsList';
 import { WorkspaceSwitcher } from '@/ui/workspaces/WorkspaceSwitcher';
 
 import { Separator } from '@/shared/ui/mui-compat/separator';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-} from '@/shared/ui/mui-compat/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter } from '@/shared/ui/mui-compat/sidebar';
 
 import SidebarUserHeader from './SidebarUserHeader';
-
 
 export default function SidebarLeft(props: ComponentProps<typeof Sidebar>) {
   return (
