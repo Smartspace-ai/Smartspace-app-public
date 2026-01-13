@@ -78,7 +78,7 @@ const TextareaRenderer: React.FC<ControlProps> = ({
   const minRows = textareaOptions.minRows || 3;
 
   return (
-    <div style={{ marginBottom: '1rem' }}>
+    <div className="ss-jsonforms-field ss-jsonforms-textarea">
       {label && (
         <label
           style={{

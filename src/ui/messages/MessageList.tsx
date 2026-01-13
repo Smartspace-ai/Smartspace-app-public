@@ -1,7 +1,7 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { useMatch } from '@tanstack/react-router';
 import { AlertTriangle } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -11,7 +11,6 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 import { MessageValueType, useMessages } from '@/domains/messages';
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
-
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
@@ -25,27 +24,36 @@ import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 import { MessageItem } from './MessageItem';
 
-
-
-
-
 export function MessageList() {
-    const { workspaceId, threadId } = useRouteIds();
+  const { workspaceId, threadId } = useRouteIds();
   const contentRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const scrollTopRef = useRef<number>(0);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const prevMessageCountRef = useRef<number>(0);
+  const hasInitialScrollRef = useRef<boolean>(false);
   const isMobile = useIsMobile();
 
   const { data: activeWorkspace } = useWorkspace(workspaceId);
-  const workspaceIndexMatch = useMatch({ from: '/_protected/workspace/$workspaceId/', shouldThrow: false });
-
+  const workspaceIndexMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/',
+    shouldThrow: false,
+  });
 
   const [isAtBottom, setIsAtBottom] = useState(true);
 
-  const { data: thread, isPending: threadPending, isFetching: threadFetching, error: threadError } = useThread({ workspaceId, threadId })
-  const { data: messages, isPending: messagesPending, isFetching: messagesFetching, error: messagesError } = useMessages(threadId)
-
+  const {
+    data: thread,
+    isPending: threadPending,
+    isFetching: threadFetching,
+    error: threadError,
+  } = useThread({ workspaceId, threadId });
+  const {
+    data: messages,
+    isPending: messagesPending,
+    isFetching: messagesFetching,
+    error: messagesError,
+  } = useMessages(threadId);
 
   const { leftOpen, rightOpen } = useSidebar();
   const chatbotName = getChatbotName(activeWorkspace?.name);
@@ -56,67 +64,74 @@ export function MessageList() {
   // default primary gradient, or tag-driven gradient when a workspace has tags.
   const teamsBg = useMemo(() => {
     if (!inTeams) return '';
-    const grad = getBackgroundGradientClasses({ tags: activeWorkspace?.tags, name: activeWorkspace?.name });
+    const grad = getBackgroundGradientClasses({
+      tags: activeWorkspace?.tags,
+      name: activeWorkspace?.name,
+    });
     // In Teams web, set an explicit solid base color first, then layer the gradient on top.
     // This prevents any dark host/iframe background from influencing the perceived color.
     return `bg-white bg-gradient-to-b from-white from-10% ${grad} via-40% to-100%`;
   }, [inTeams, activeWorkspace?.tags, activeWorkspace?.name]);
 
-  useEffect(() => {
-    if ( viewportRef.current) {
-      viewportRef.current.scrollTo({top: scrollTopRef.current, behavior: 'auto'});
-    }
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const maxScrollTop = Math.max(
+      0,
+      viewport.scrollHeight - viewport.clientHeight
+    );
+    viewport.scrollTo({ top: maxScrollTop, behavior });
   }, []);
 
-
-  // Scroll to bottom when messages are loaded or updated
+  // Initial: if we have messages, start at the bottom.
   useEffect(() => {
-    if (messages && messages.length > 0 ) {
-      // Use a small delay to ensure DOM is updated
-      const timeoutId = setTimeout(() => {
-        if (messagesEndRef.current && viewportRef.current) {
-          // Only auto-scroll if user is already at or near the bottom
-          const viewport = viewportRef.current;
-          const threshold = 100; // px from bottom to still count as 'at bottom'
-          const isNearBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold;
-          
-          if (isNearBottom || isAtBottom) {
-            // Calculate the exact bottom position
-            const scrollHeight = viewport.scrollHeight;
-            const clientHeight = viewport.clientHeight;
-            const maxScrollTop = Math.max(0, scrollHeight - clientHeight);
-            
-            // Use scrollTo for more precise control
-            viewport.scrollTo({
-              top: maxScrollTop,
-              behavior: 'smooth'
-            });
-            
-            // Fallback: try scrollIntoView if scrollTo doesn't work
-            setTimeout(() => {
-              if (viewportRef.current) {
-                const currentScrollTop = viewportRef.current.scrollTop;
-                const currentScrollHeight = viewportRef.current.scrollHeight;
-                const currentClientHeight = viewportRef.current.clientHeight;
-                const expectedScrollTop = Math.max(0, currentScrollHeight - currentClientHeight);
-                
-                // If we're not at the bottom, try scrollIntoView
-                if (Math.abs(currentScrollTop - expectedScrollTop) > 10) {
-                  messagesEndRef.current?.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'end',
-                    inline: 'nearest'
-                  });
-                }
-              }
-            }, 100);
-          }
-        }
-      }, 100);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [messages, messages?.length, isAtBottom, threadPending, threadFetching, messagesPending, messagesFetching, threadError, messagesError]);
+    if (hasInitialScrollRef.current) return;
+    if (!viewportRef.current) return;
+    if (!messages?.length) return;
+    hasInitialScrollRef.current = true;
+    requestAnimationFrame(() => scrollToBottom('auto'));
+  }, [messages?.length, scrollToBottom]);
+
+  // When new messages arrive and user is already at bottom, keep them pinned to bottom.
+  useEffect(() => {
+    const count = messages?.length ?? 0;
+    const prev = prevMessageCountRef.current;
+    prevMessageCountRef.current = count;
+
+    if (!viewportRef.current) return;
+    if (!count) return;
+
+    // Only auto-scroll if user hasn't scrolled up.
+    if (!isAtBottom) return;
+
+    // Smooth for incremental growth, auto for initial/large jumps.
+    const behavior: ScrollBehavior =
+      prev > 0 && count > prev ? 'smooth' : 'auto';
+    requestAnimationFrame(() => scrollToBottom(behavior));
+  }, [messages?.length, isAtBottom, scrollToBottom]);
+
+  // When the thread starts "running" (typing indicator appears) but message count doesn't change,
+  // still ensure we reveal the loading dots if the user is at the bottom.
+  useEffect(() => {
+    if (!thread?.isFlowRunning) return;
+    if (!isAtBottom) return;
+    requestAnimationFrame(() => scrollToBottom('smooth'));
+  }, [thread?.isFlowRunning, isAtBottom, scrollToBottom]);
+
+  // Also keep pinned when content height changes (streaming tokens, images, typing indicator).
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const content = contentRef.current;
+    if (!viewport || !content) return;
+    if (typeof ResizeObserver === 'undefined') return;
+
+    const ro = new ResizeObserver(() => {
+      if (!isAtBottom) return;
+      scrollToBottom('auto');
+    });
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, [isAtBottom, scrollToBottom]);
 
   // When switching workspaces, we briefly land on /workspace/$workspaceId/ (no threadId) while the route loader
   // redirects to the first thread. During that transition we should show a loading skeleton, not "No messages yet".
@@ -129,7 +144,10 @@ export function MessageList() {
 
   if (isLoading) {
     return (
-      <div className={`ss-chat__body flex-shrink-10 flex-1 overflow-y-auto ${teamsBg}`} data-ss-layer="message-list">
+      <div
+        className={`ss-chat__body flex-shrink-10 flex-1 overflow-y-auto ${teamsBg}`}
+        data-ss-layer="message-list"
+      >
         <div className="space-y-8 p-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex gap-3">
@@ -157,7 +175,9 @@ export function MessageList() {
           {messagesError && (
             <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive">
               <AlertTriangle className="h-4 w-4" />
-              <span className="text-sm font-medium">Failed to load messages</span>
+              <span className="text-sm font-medium">
+                Failed to load messages
+              </span>
             </div>
           )}
         </div>
@@ -170,7 +190,9 @@ export function MessageList() {
   if (safeMessages.length === 0) {
     return (
       <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
-        <h3 className="text-lg font-medium mb-2">{activeWorkspace?.name ?? 'No messages yet'}</h3>
+        <h3 className="text-lg font-medium mb-2">
+          {activeWorkspace?.name ?? 'No messages yet'}
+        </h3>
         {activeWorkspace?.firstPrompt && (
           <div className="max-w-3xl mx-auto p-4 whitespace-pre-wrap">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -184,11 +206,27 @@ export function MessageList() {
 
   const messageHasSomeResponse =
     safeMessages.length > 0 &&
-    safeMessages[safeMessages.length - 1]?.values?.some(v => v.type === MessageValueType.OUTPUT)
+    safeMessages[safeMessages.length - 1]?.values?.some(
+      (v) => v.type === MessageValueType.OUTPUT
+    );
 
   return (
-    <div className={`ss-chat__body ${teamsBg}`} data-ss-layer="message-list" style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%', width: '100%', overflow: 'hidden' }}>
-      <ScrollAreaPrimitive.Root data-ss-layer="scroll-root" className="relative overflow-hidden h-full w-full">
+    <div
+      className={`ss-chat__body ${teamsBg}`}
+      data-ss-layer="message-list"
+      style={{
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        height: '100%',
+        width: '100%',
+        overflow: 'hidden',
+      }}
+    >
+      <ScrollAreaPrimitive.Root
+        data-ss-layer="scroll-root"
+        className="relative overflow-hidden h-full w-full"
+      >
         <ScrollAreaPrimitive.Viewport
           ref={viewportRef}
           data-ss-layer="scroll-viewport"
@@ -196,70 +234,47 @@ export function MessageList() {
           onScroll={() => {
             if (!viewportRef.current) return;
             const viewport = viewportRef.current;
-            
+
             scrollTopRef.current = viewport.scrollTop;
 
             const threshold = 60; // px from bottom to still count as 'at bottom'
-            const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+            const distanceFromBottom =
+              viewport.scrollHeight -
+              viewport.scrollTop -
+              viewport.clientHeight;
             setIsAtBottom(distanceFromBottom < threshold);
           }}
         >
           <div
             ref={contentRef}
-            className={`flex flex-col w-full ${!isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''} px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
+            className={`flex flex-col w-full ${
+              !isMobile
+                ? `${
+                    leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'
+                  } mx-auto`
+                : ''
+            } px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
           >
             {safeMessages.map((message, index) => (
               <div
                 className="ss-chat__message w-full"
                 key={message.id || index}
               >
-                <MessageItem
-                  message={message}
-                />
+                <MessageItem message={message} />
 
-                {index === safeMessages.length - 1 && (thread?.isFlowRunning ) && (
-                  messageHasSomeResponse? 
-                    <div className="p-3 min-h-3">
-                      <div className="flex space-x-2 p-1">
-                        {[0, 300, 600].map((delay) => (
-                          <div
-                            key={delay}
-                            className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
-                            style={{ animationDelay: `${delay}ms` }}
-                          />
-                        ))}
-                      </div>
+                {index === safeMessages.length - 1 && thread?.isFlowRunning && (
+                  <div className="p-3 min-h-3">
+                    <div className="flex space-x-2 p-1">
+                      {[0, 300, 600].map((delay) => (
+                        <div
+                          key={delay}
+                          className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
+                          style={{ animationDelay: `${delay}ms` }}
+                        />
+                      ))}
                     </div>
-                  :
-                    <div className="rounded-lg border bg-background shadow-md mb-4 group mt-4">
-                      <div className="flex items-center justify-between p-3 border-b">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-7 w-7 mt-0.5">
-                            <AvatarFallback className="text-xs">
-                              {getInitials('Chatbot')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                            <span className="text-xs font-medium">{chatbotName}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {parseDateTime(new Date(), 'Do MMMM YYYY, h:mm a')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-3 min-h-3">
-                        <div className="flex space-x-2 p-1">
-                          {[0, 300, 600].map((delay) => (
-                            <div
-                              key={delay}
-                              className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
-                              style={{ animationDelay: `${delay}ms` }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  </div>
+                )}
 
                 <div ref={messagesEndRef} className="h-1" />
               </div>
@@ -279,4 +294,3 @@ export function MessageList() {
     </div>
   );
 }
-

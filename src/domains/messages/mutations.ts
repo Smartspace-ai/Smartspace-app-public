@@ -14,6 +14,12 @@ import { Message, MessageContentItem } from './model';
 import { messagesKeys } from './queryKeys';
 import { addInputToMessage, postMessage } from './service';
 
+function isPromptMessage(m: Message): boolean {
+  return !!m.values?.some(
+    (v) => v.type === MessageValueType.INPUT && v.name === 'prompt'
+  );
+}
+
 type SendArgs = {
   workspaceId: string;
   threadId: string;
@@ -28,7 +34,13 @@ export function useSendMessage() {
   const userName = useUserDisplayName();
 
   return useMutation<Subject<Message>, Error, SendArgs>({
-    mutationFn: async ({ workspaceId, threadId, contentList, files, variables }) => {
+    mutationFn: async ({
+      workspaceId,
+      threadId,
+      contentList,
+      files,
+      variables,
+    }) => {
       if (!threadId) throw new Error('Thread ID is required');
       if (!workspaceId) throw new Error('Workspace ID is required');
 
@@ -47,28 +59,32 @@ export function useSendMessage() {
             createdByUserId: userId ?? undefined,
           },
           ...(files?.length
-            ? [{
-                id: `temp-${Date.now()}-files`,
-                type: MessageValueType.INPUT,
-                name: 'files',
-                value: files,
-                channels: {},
-                createdAt: new Date(),
-                createdBy: userName || 'You',
-                createdByUserId: userId ?? undefined,
-              }]
+            ? [
+                {
+                  id: `temp-${Date.now()}-files`,
+                  type: MessageValueType.INPUT,
+                  name: 'files',
+                  value: files,
+                  channels: {},
+                  createdAt: new Date(),
+                  createdBy: userName || 'You',
+                  createdByUserId: userId ?? undefined,
+                },
+              ]
             : []),
           ...(variables && Object.keys(variables).length
-            ? [{
-                id: `temp-${Date.now()}-vars`,
-                type: MessageValueType.INPUT,
-                name: 'variables',
-                value: variables,
-                channels: {},
-                createdAt: new Date(),
-                createdBy: userName || 'You',
-                createdByUserId: userId ?? undefined,
-              }]
+            ? [
+                {
+                  id: `temp-${Date.now()}-vars`,
+                  type: MessageValueType.INPUT,
+                  name: 'variables',
+                  value: variables,
+                  channels: {},
+                  createdAt: new Date(),
+                  createdBy: userName || 'You',
+                  createdByUserId: userId ?? undefined,
+                },
+              ]
             : []),
         ],
         createdAt: new Date(),
@@ -78,16 +94,22 @@ export function useSendMessage() {
       };
 
       // add optimistic into cache
-      qc.setQueryData<Message[]>(
-        messagesKeys.list(threadId),
-        (old = []) => [...old, optimistic]
-      );
+      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => [
+        ...old,
+        optimistic,
+      ]);
 
       // cancel in-flight refetches for this list
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
       // start server call (streaming Subject)
-      const subject = await postMessage({ workSpaceId: workspaceId, threadId, contentList, files, variables });
+      const subject = await postMessage({
+        workSpaceId: workspaceId,
+        threadId,
+        contentList,
+        files,
+        variables,
+      });
 
       // If the message post succeeded, this thread is no longer "draft-only" even if the stream is empty.
       if (isDraftThreadId(threadId)) {
@@ -99,16 +121,22 @@ export function useSendMessage() {
       // subscribe to server stream: replace optimistic with real items / updates
       const sub = subject.subscribe({
         next: (m: Message) => {
-          qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
-            // drop optimistics
-            const stable = old.filter((x) => !x.optimistic);
-            // upsert by id
-            const idx = stable.findIndex((x) => x.id === m.id);
-            if (idx === -1) return [...stable, m];
-            const copy = stable.slice();
-            copy[idx] = m;
-            return copy;
-          });
+          qc.setQueryData<Message[]>(
+            messagesKeys.list(threadId),
+            (old = []) => {
+              // Only drop optimistic messages if the server actually sent back a prompt message.
+              // Many backends stream assistant output first; dropping optimistics there would hide the user's message.
+              const stable = isPromptMessage(m)
+                ? old.filter((x) => !x.optimistic)
+                : old;
+              // upsert by id
+              const idx = stable.findIndex((x) => x.id === m.id);
+              if (idx === -1) return [...stable, m];
+              const copy = stable.slice();
+              copy[idx] = m;
+              return copy;
+            }
+          );
         },
         error: (_err: Error) => {
           // rollback: remove any optimistics
@@ -176,7 +204,12 @@ export function useAddInputToMessage() {
 
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
-      const result = await addInputToMessage({ messageId, name, value, channels });
+      const result = await addInputToMessage({
+        messageId,
+        name,
+        value,
+        channels,
+      });
       return result; // already parsed in service.ts
     },
     onSuccess: (message, { threadId }) => {

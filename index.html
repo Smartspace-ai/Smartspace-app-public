@@ -138,11 +138,13 @@
 <body>
   <div id="ss-boot-splash" aria-live="polite" aria-busy="true">
     <div class="ss-boot-card">
-      <div class="ss-boot-mark">S</div>
-      <div class="ss-boot-brand">Smartspace</div>
+      <div class="ss-boot-mark">
+        <img id="ss-boot-logo" alt="" style="display:none; width: 28px; height: 28px; object-fit: contain;" />
+        <span id="ss-boot-initial">S</span>
+      </div>
+      <div class="ss-boot-brand" id="ss-boot-brand">Smartspace</div>
       <div class="ss-boot-subtitle">Preparing your workspace…</div>
       <div class="ss-boot-row">
-        <span class="ss-boot-spinner" aria-hidden="true"></span>
         <span>
           Loading
           <span class="ss-boot-dots" aria-hidden="true">
@@ -154,6 +156,68 @@
       </div>
     </div>
   </div>
+  <script>
+    // Apply runtime branding as early as possible (before React loads).
+    (function () {
+      function cleanString(x) {
+        return (typeof x === 'string' && x.trim()) ? x.trim() : null;
+      }
+      function readCssVar(name) {
+        try {
+          var v = getComputedStyle(document.documentElement).getPropertyValue(name);
+          return cleanString(v);
+        } catch {
+          return null;
+        }
+      }
+      function readSsConfigKey(keys) {
+        try {
+          var cfg = (window && window.ssconfig) ? window.ssconfig : null;
+          if (!cfg) return null;
+          for (var i = 0; i < keys.length; i++) {
+            var k = keys[i];
+            var v = cleanString(cfg[k]);
+            if (v) return v;
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      }
+
+      var name =
+        readCssVar('--ss-brand-name') ||
+        readSsConfigKey(['Brand_Name', 'Theme_Name', 'App_Name', 'Product_Name', 'Tenant_Name']) ||
+        cleanString(document.title) ||
+        'Smartspace';
+
+      var logoUrl =
+        readCssVar('--ss-brand-logo-url') ||
+        readSsConfigKey(['Brand_Logo_Uri', 'Brand_Logo_Url', 'Theme_Logo_Uri', 'Theme_Logo_Url', 'App_Logo_Uri', 'App_Logo_Url']) ||
+        null;
+
+      try {
+        var brandEl = document.getElementById('ss-boot-brand');
+        if (brandEl) brandEl.textContent = name;
+
+        // Keep title in sync if a custom name exists
+        if (name && document.title !== name) document.title = name;
+
+        var initialEl = document.getElementById('ss-boot-initial');
+        if (initialEl) initialEl.textContent = (name || 'S').trim().charAt(0).toUpperCase() || 'S';
+
+        var logoEl = document.getElementById('ss-boot-logo');
+        if (logoEl && logoUrl) {
+          logoEl.src = logoUrl;
+          logoEl.alt = name;
+          logoEl.style.display = 'block';
+          if (initialEl) initialEl.style.display = 'none';
+        }
+      } catch {
+        // ignore
+      }
+    })();
+  </script>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
