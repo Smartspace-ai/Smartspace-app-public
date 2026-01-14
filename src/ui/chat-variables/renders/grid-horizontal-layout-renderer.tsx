@@ -1,5 +1,9 @@
-
-import { rankWith, uiTypeIs } from '@jsonforms/core';
+import {
+  rankWith,
+  uiTypeIs,
+  type Layout,
+  type LayoutProps,
+} from '@jsonforms/core';
 import {
   ResolvedJsonFormsDispatch,
   withJsonFormsLayoutProps,
@@ -10,35 +14,23 @@ import React from 'react';
  * Forces JSONForms HorizontalLayout to render as a responsive CSS grid.
  * This avoids the "everything stacked vertically" look when bringing variables back.
  */
-const GridHorizontalLayout = ({
-  uischema,
-  schema,
-  path,
-  visible,
-  renderers,
-  cells,
-}: {
-  uischema: { elements?: unknown[] };
-  schema: unknown;
-  path: string;
-  visible?: boolean;
-  renderers?: unknown;
-  cells?: unknown;
-}) => {
+const GridHorizontalLayout: React.FC<LayoutProps> = (props) => {
+  const { uischema, schema, path, visible, renderers, cells } = props;
   if (visible === false) return null;
 
-  const elements = Array.isArray(uischema?.elements) ? uischema.elements : [];
+  const layout = uischema as Layout;
+  const elements = Array.isArray(layout?.elements) ? layout.elements : [];
 
   return (
     <div className="ss-jsonforms-grid">
       {elements.map((element, idx) => (
         <div className="ss-jsonforms-cell" key={`${path || 'root'}:${idx}`}>
           <ResolvedJsonFormsDispatch
-            uischema={element as never}
-            schema={schema as never}
+            uischema={element}
+            schema={schema}
             path={path}
-            renderers={renderers as never}
-            cells={cells as never}
+            renderers={renderers}
+            cells={cells}
           />
         </div>
       ))}

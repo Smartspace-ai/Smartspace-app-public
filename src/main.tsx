@@ -10,7 +10,7 @@ import { msalInstance } from '@/platform/auth/msalClient'; // ✅ new path
 
 import AppProviders from '@/app/AppProviders';
 
-import { routeTree } from '@/routeTree';
+import { routeTree } from '@/routeTree.gen';
 
 function removeBootSplash() {
   try {

@@ -2,13 +2,14 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
+import { MessageValueType } from './enums';
 import type { Message } from './model';
 import { messagesKeys } from './queryKeys';
 import { fetchMessages } from './service';
 
 function getPromptSignature(m: Message): string | null {
   const prompt = m.values?.find(
-    (v) => v.type === 'INPUT' && v.name === 'prompt'
+    (v) => v.type === MessageValueType.INPUT && v.name === 'prompt'
   );
   if (!prompt) return null;
   try {
