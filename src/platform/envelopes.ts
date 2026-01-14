@@ -16,21 +16,26 @@ export type Ok<T>     = { ok: true; data: T };
 export type Err       = { ok: false; error: AppError };
 export type Result<T> = Ok<T> | Err;
 
-export function toAppError(status?: number, body?: any): AppError {
+function asRecord(x: unknown): Record<string, unknown> | null {
+  return x && typeof x === 'object' ? (x as Record<string, unknown>) : null;
+}
+
+export function toAppError(status?: number, body?: unknown): AppError {
+  const b = asRecord(body);
   switch (status) {
     case 401: return { type: 'Unauthorized' };
     case 403: return { type: 'Forbidden' };
     case 404: return { type: 'NotFound' };
-    case 409: return { type: 'Conflict', message: body?.message };
-    case 422: return { type: 'ValidationError', issues: body?.issues ?? body };
-    case 429: return { type: 'RateLimited', retryAfterSec: Number(body?.retryAfter) || undefined };
-    default:  return { type: 'UnknownError', status, message: body?.message };
+    case 409: return { type: 'Conflict', message: typeof b?.message === 'string' ? b.message : undefined };
+    case 422: return { type: 'ValidationError', issues: (b && 'issues' in b) ? b.issues : body };
+    case 429: return { type: 'RateLimited', retryAfterSec: Number(b?.retryAfter) || undefined };
+    default:  return { type: 'UnknownError', status, message: typeof b?.message === 'string' ? b.message : undefined };
   }
 }
 
 export const isTransient = (e: unknown): boolean => {
-  const err = e as any;
-  if (!err || typeof err !== 'object') return false;
+  const err = asRecord(e);
+  if (!err) return false;
   if (err.type === 'NetworkError') return true;
   if (err.type === 'UnknownError' && typeof err.status === 'number') return err.status >= 500;
   return false;

@@ -113,6 +113,7 @@ module.exports = {
      * High-signal correctness
      */
     'react-hooks/exhaustive-deps': 'error',
+    // Tech-test mode: keep typing strict and eliminate `any`/non-null assertions in production code.
     '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-non-null-assertion': 'error',
     'no-loop-func': 'error',
@@ -137,7 +138,10 @@ module.exports = {
     {
       files: ['src/**/*.{ts,tsx}', 'theme/**/*.{ts,tsx}'],
       extends: ['plugin:@nx/typescript'],
-      rules: {},
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'error',
+        '@typescript-eslint/no-non-null-assertion': 'error',
+      },
     },
 
     // JavaScript source
@@ -159,8 +163,12 @@ module.exports = {
     {
       files: ['src/ui/chat-variables/**/*.{ts,tsx}'],
       rules: {
-        '@typescript-eslint/no-explicit-any': 'warn',
-        '@typescript-eslint/no-non-null-assertion': 'warn',
+        // We want this feature area to be fully typed and clean.
+        '@typescript-eslint/no-explicit-any': 'error',
+        '@typescript-eslint/no-non-null-assertion': 'error',
+        '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+        'import/no-named-as-default-member': 'warn',
+        'jsx-a11y/accessible-emoji': 'warn',
       },
     },
 
@@ -168,11 +176,18 @@ module.exports = {
     {
       files: ['src/**/*.{spec,test}.{ts,tsx,js,jsx}'],
       rules: {
-        '@typescript-eslint/no-explicit-any': 'warn',
-        '@typescript-eslint/no-non-null-assertion': 'warn',
+        // Unit tests often need to import lower-level modules directly (service/mapper/dto)
+        // and can have conditional/dynamic imports for setup.
+        'no-restricted-imports': 'off',
+        'import/first': 'off',
+        // Tests often use partials/mocks where `unknown` isn't ergonomic.
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
         'no-loop-func': 'warn',
       },
     },
+
+    // UI compatibility layers (shadcn/MUI wrappers) are still held to strict typing in tech-test mode.
 
     // Mocks
     {

@@ -50,7 +50,7 @@ interface SheetContentProps extends VariantProps<typeof sheetVariants> {
   onOpenChange?: (open: boolean) => void;
   className?: string;
   style?: React.CSSProperties;
-  onOpenAutoFocus?: (e: any) => void;
+  onOpenAutoFocus?: (e: React.SyntheticEvent) => void;
 }
 
 const SheetContent = React.forwardRef<HTMLDivElement, React.PropsWithChildren<SheetContentProps>>(
@@ -64,7 +64,7 @@ const SheetContent = React.forwardRef<HTMLDivElement, React.PropsWithChildren<Sh
         className: cn(sheetVariants({ side }), className),
         style,
       }}
-      slotProps={{ backdrop: { onAnimationStart: onOpenAutoFocus as any } }}
+      slotProps={{ backdrop: { onAnimationStart: (e) => onOpenAutoFocus?.(e) } }}
       {...props}
     >
       {children}

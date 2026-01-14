@@ -1,9 +1,10 @@
 import { queryOptions, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
+import { isDraftThreadId } from '@/shared/utils/threadId';
+
 import { ThreadsResponse } from './model';
 import { threadsKeys } from './queryKeys';
 import { fetchThread, fetchThreads } from './service';
-import { isDraftThreadId } from '@/shared/utils/threadId';
 
 export const threadDetailOptions = ({ workspaceId, threadId }: { workspaceId: string; threadId: string }) =>
   queryOptions({

@@ -1,4 +1,3 @@
-'use client';
 import { JsonForms } from '@jsonforms/react';
 import { Loader2 } from 'lucide-react';
 import { forwardRef, useImperativeHandle } from 'react';
@@ -8,7 +7,10 @@ import { useChatVariablesFormVm } from './VariablesForm.vm';
 
 import './VariablesForm.css'; // 👈 import the CSS overrides
 
-export const ChatVariablesForm = forwardRef<ChatVariablesFormRef, ChatVariablesFormProps & {setVariables: (variables: Record<string, any>) => void}>(
+export const ChatVariablesForm = forwardRef<
+  ChatVariablesFormRef,
+  ChatVariablesFormProps & { setVariables: (variables: Record<string, unknown>) => void }
+>(
   ({ workspace, threadId, setVariables }, ref) => {
     const vm = useChatVariablesFormVm({ workspace, threadId, setVariables });
 

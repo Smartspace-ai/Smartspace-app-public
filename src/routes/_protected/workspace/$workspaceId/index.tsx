@@ -1,20 +1,16 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { queryClient } from '@/platform/reactQueryClient';
+import { RouteIdsProvider } from "@/platform/routing/RouteIdsProvider";
 
 import { threadsListOptions } from '@/domains/threads/queries';
 
 import ChatBotPage from "@/pages/WorkspaceThreadPage/chat";
-import { RouteIdsProvider } from "@/pages/WorkspaceThreadPage/RouteIdsProvider";
 
 // routes/_protected/workspace/$workspaceId/index.tsx
 export const Route = createFileRoute('/_protected/workspace/$workspaceId/')({
   pendingMs: 0,
-  pendingComponent: () => (
-    <RouteIdsProvider>
-      <ChatBotPage />
-    </RouteIdsProvider>
-  ),
+  pendingComponent: WorkspaceIndexRouteComponent,
   loader: async ({ params }) => {
     // Only fetch the first thread to decide where to redirect.
     // This keeps workspace switching snappy even for large workspaces.
@@ -33,10 +29,15 @@ export const Route = createFileRoute('/_protected/workspace/$workspaceId/')({
     }
     return null;
   },
-  component: () => (
-    <RouteIdsProvider>
-      <ChatBotPage />
-    </RouteIdsProvider>
-  ),
+  component: WorkspaceIndexRouteComponent,
 });
+
+function WorkspaceIndexRouteComponent() {
+  const { workspaceId } = Route.useParams();
+  return (
+    <RouteIdsProvider>
+      <ChatBotPage workspaceId={workspaceId} threadId="" />
+    </RouteIdsProvider>
+  );
+}
 

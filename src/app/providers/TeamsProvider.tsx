@@ -5,9 +5,16 @@ import {
 } from 'react';
 
 import { isInTeams as detectIsInTeams } from '@/platform/auth/msalConfig';
+import { setRuntimeIsInTeams } from '@/platform/auth/runtime';
 import { ssInfo, ssWarn } from '@/platform/log';
 
 type TeamsTheme = 'default' | 'dark' | 'contrast';
+
+type TeamsContextLike = {
+  user?: unknown;
+  host?: { clientType?: unknown };
+  app?: { host?: { name?: unknown }; theme?: unknown };
+};
 
 interface TeamsContextType {
   isInTeams: boolean;
@@ -42,14 +49,10 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
 
-  // Optional: expose minimal global for your axios interceptor
+  // Expose Teams detection to non-React code (routes/api) via a typed runtime store.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as unknown as { __teamsState?: unknown }).__teamsState = {
-        isInTeams, isInitialized: isTeamsInitialized, teamsContext, teamsUser, teamsTheme,
-      };
-    }
-  }, [isInTeams, isTeamsInitialized, teamsContext, teamsUser, teamsTheme]);
+    setRuntimeIsInTeams(isInTeams);
+  }, [isInTeams]);
 
   // Apply Teams theme to our document so Tailwind/shadcn CSS variables switch correctly.
   // Tailwind "dark" mode is class-based in this app.
@@ -114,14 +117,15 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
           const ctx = await app.getContext();
           if (cancelled) return;
 
+          const ctxLike = ctx as unknown as TeamsContextLike;
           ssInfo('teams', 'Teams getContext success', {
-            hasUser: !!(ctx as any)?.user,
-            hostClientType: (ctx as any)?.host?.clientType ?? null,
-            appHost: (ctx as any)?.app?.host?.name ?? null,
+            hasUser: !!ctxLike.user,
+            hostClientType: ctxLike.host?.clientType ?? null,
+            appHost: ctxLike.app?.host?.name ?? null,
           });
           setTeamsContext(ctx);
           setTeamsUser(ctx.user ?? null);
-          setTeamsTheme(((ctx as unknown as { app?: { theme?: unknown } }).app?.theme ?? 'default') as TeamsTheme);
+          setTeamsTheme(((ctxLike.app?.theme ?? 'default') as TeamsTheme));
 
           // theme changes (no unregister API, guard with mounted ref)
           app.registerOnThemeChangeHandler((theme) => {

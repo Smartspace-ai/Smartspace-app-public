@@ -81,4 +81,3 @@ export const createMentionInputRule = $inputRule((ctx) => {
   })
 })
 
-

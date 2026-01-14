@@ -4,12 +4,13 @@ import { MessageResponseSchema, MessageSchema, messageSchemaList } from '@/domai
 
 describe('messages schemas', () => {
   it('parses a minimal Message', () => {
-    const m = MessageSchema.parse({ createdAt: '2024-01-01', hasComments: true });
+    const m = MessageSchema.parse({ createdAt: '2024-01-01T00:00:00Z', hasComments: true });
     expect(m.hasComments).toBe(true);
+    expect(m.createdAt).toBeInstanceOf(Date);
   });
 
   it('parses list of messages', () => {
-    const list = messageSchemaList.parse([{ createdAt: 'x' }]);
+    const list = messageSchemaList.parse([{ createdAt: '2024-01-01T00:00:00Z' }]);
     expect(Array.isArray(list)).toBe(true);
   });
 

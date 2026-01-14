@@ -13,14 +13,14 @@ export type MessageValue = {
   type: MessageValueType;
   value: unknown;
   channels: Record<string, number>;
-  createdAt: Date | string;
+  createdAt: Date;
   createdBy: string;
   createdByUserId?: string | null;
 };
 
 export type Message = {
   id?: string | null;
-  createdAt: Date | string;
+  createdAt: Date;
   createdBy?: string | null;
   hasComments?: boolean;
   createdByUserId?: string | null;

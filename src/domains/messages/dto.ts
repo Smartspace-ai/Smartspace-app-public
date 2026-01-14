@@ -4,6 +4,12 @@ import { MessageResponseSourceType, MessageValueType } from './enums';
 
 export const FileInfoDto = z.object({ id: z.string(), name: z.string() });
 
+const DateFromApi = z.preprocess((v) => {
+  if (v instanceof Date) return v;
+  if (typeof v === 'string' || typeof v === 'number') return new Date(v);
+  return v;
+}, z.date());
+
 export const MessageItemContentDto = z.object({
   text: z.string().nullish(),
   image: FileInfoDto.nullish(),
@@ -16,14 +22,14 @@ export const MessageValueDto = z.object({
   type: z.nativeEnum(MessageValueType),
   value: z.any(),
   channels: z.record(z.number()),
-  createdAt: z.union([z.date(), z.string()]),
+  createdAt: DateFromApi,
   createdBy: z.string(),
   createdByUserId: z.string().nullish(),
 });
 
 export const MessageDto = z.object({
   id: z.string().nullish(),
-  createdAt: z.union([z.date(), z.string()]),
+  createdAt: DateFromApi,
   createdBy: z.string().nullish(),
   hasComments: z.boolean().optional().default(false),
   createdByUserId: z.string().nullish(),

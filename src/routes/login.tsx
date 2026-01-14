@@ -1,5 +1,5 @@
 // routes/login.tsx
-import { createFileRoute, redirect, useSearch } from '@tanstack/react-router';
+import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router';
 
 import { createAuthAdapter } from '@/platform/auth';
 import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
@@ -28,9 +28,17 @@ export const Route = createFileRoute('/login')({
       throw redirect({ to });
     }
   },
-  component: () => {
-    const search = useSearch({ from: '/login' }) as { redirect?: string };
-    const redirectTo = normalizeRedirectPath(search.redirect, '/workspace');
-    return <Login redirectTo={redirectTo} />;
-  },
+  component: LoginRouteComponent,
 });
+
+function LoginRouteComponent() {
+  const search = useSearch({ from: '/login' }) as { redirect?: string };
+  const redirectTo = normalizeRedirectPath(search.redirect, '/workspace');
+  const navigate = useNavigate();
+  return (
+    <Login
+      redirectTo={redirectTo}
+      onNavigate={(to) => navigate({ to, replace: true })}
+    />
+  );
+}

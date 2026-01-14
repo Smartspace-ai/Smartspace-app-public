@@ -2,9 +2,10 @@
 import { Edit, Loader2, MoreHorizontal, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import type { MessageThread } from '@/domains/threads';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { CircleInitials } from '@/shared/components/circle-initials';
 import { Button } from '@/shared/ui/mui-compat/button';

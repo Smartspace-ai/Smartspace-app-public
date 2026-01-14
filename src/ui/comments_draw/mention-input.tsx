@@ -1,14 +1,14 @@
 import {
-    IconButton,
-    List,
-    ListItemAvatar,
-    ListItemButton,
-    ListItemText,
-    Paper,
-    Skeleton,
-    SxProps,
-    TextField,
-    Theme,
+  IconButton,
+  List,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
+  Paper,
+  Skeleton,
+  SxProps,
+  TextField,
+  Theme,
 } from '@mui/material';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -17,12 +17,17 @@ import { createPortal } from 'react-dom';
 import { MentionUser } from '@/domains/workspaces';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
-import { Avatar as SsAvatar, AvatarFallback as SsAvatarFallback } from '@/shared/ui/mui-compat/avatar';
+import {
+  Avatar as SsAvatar,
+  AvatarFallback as SsAvatarFallback,
+} from '@/shared/ui/mui-compat/avatar';
 import { getInitials } from '@/shared/utils/initials';
 
 interface MentionInputProps {
   value: { plain: string; withMentions: string };
-  onChange: React.Dispatch<React.SetStateAction<{ plain: string; withMentions: string }>>;
+  onChange: React.Dispatch<
+    React.SetStateAction<{ plain: string; withMentions: string }>
+  >;
   searchTerm: string;
   setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
   users: MentionUser[];
@@ -107,12 +112,18 @@ export const MentionInput = (props: MentionInputProps) => {
     return { atIndex, candidate, caret };
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const newValue = e.target.value;
 
     // Detect active mention
     const el = inputRef.current;
-    let active = null as null | { atIndex: number; candidate: string; caret: number };
+    let active = null as null | {
+      atIndex: number;
+      candidate: string;
+      caret: number;
+    };
     if (el) {
       el.value = newValue; // keep selection math accurate during change
       active = getActiveMention();
@@ -139,7 +150,10 @@ export const MentionInput = (props: MentionInputProps) => {
         lineHeight = fontSize * 1.4;
       }
       if (lineHeight > 0) {
-        const computedHeight = Math.min(el.scrollHeight, el.clientHeight || el.scrollHeight);
+        const computedHeight = Math.min(
+          el.scrollHeight,
+          el.clientHeight || el.scrollHeight
+        );
         const lines = Math.round(computedHeight / lineHeight);
         setShowExpand(lines >= 4);
       }
@@ -152,7 +166,9 @@ export const MentionInput = (props: MentionInputProps) => {
       const recentAt = value.plain.lastIndexOf('@', caretPosition - 1);
       const inserted = user.displayName + ' ';
       const newPlainValue =
-        value.plain.slice(0, recentAt + 1) + inserted + value.plain.slice(caretPosition);
+        value.plain.slice(0, recentAt + 1) +
+        inserted +
+        value.plain.slice(caretPosition);
 
       const updatedMentionList = mentionList.some((m) => m.id === user.id)
         ? mentionList
@@ -244,7 +260,10 @@ export const MentionInput = (props: MentionInputProps) => {
         lineHeight = fontSize * 1.4;
       }
       if (lineHeight > 0) {
-        const computedHeight = Math.min(el.scrollHeight, el.clientHeight || el.scrollHeight);
+        const computedHeight = Math.min(
+          el.scrollHeight,
+          el.clientHeight || el.scrollHeight
+        );
         const lines = Math.round(computedHeight / lineHeight);
         setShowExpand(lines >= 4);
       }
@@ -257,10 +276,10 @@ export const MentionInput = (props: MentionInputProps) => {
       elevation={3}
       sx={{
         position: 'absolute',
-        bottom: '100%',   // ⬅️ anchor to the top edge of the field
+        bottom: '100%', // ⬅️ anchor to the top edge of the field
         left: 0,
         right: 0,
-        mb: 0.5,          // small gap above the field
+        mb: 0.5, // small gap above the field
         zIndex: (t) => t.zIndex.modal + 1,
         maxHeight: 260,
         overflowY: 'auto',
@@ -329,21 +348,46 @@ export const MentionInput = (props: MentionInputProps) => {
             placeholder={placeholder}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-              // Avoid autoFocus for better accessibility; focus is controlled via shouldFocus
-            sx={{
-              ...mergedSx,
-              '& .MuiInputBase-root': { ...((mergedSx as any)['& .MuiInputBase-root'] || {}), backgroundColor: 'transparent', position: 'relative', zIndex: 1 },
-              '& .MuiInputBase-inputMultiline': {
-                ...((mergedSx as any)['& .MuiInputBase-inputMultiline'] || {}),
-                backgroundColor: 'transparent',
-                caretColor: 'var(--foreground)',
-              },
-              '& .MuiInputBase-input': {
-                ...((mergedSx as any)['& .MuiInputBase-input'] || {}),
-                backgroundColor: 'transparent',
-                caretColor: 'var(--foreground)',
-              },
-            }}
+            // Avoid autoFocus for better accessibility; focus is controlled via shouldFocus
+            sx={
+              Array.isArray(mergedSx)
+                ? [
+                    ...mergedSx,
+                    {
+                      '& .MuiInputBase-root': {
+                        backgroundColor: 'transparent',
+                        position: 'relative',
+                        zIndex: 1,
+                      },
+                      '& .MuiInputBase-inputMultiline': {
+                        backgroundColor: 'transparent',
+                        caretColor: 'var(--foreground)',
+                      },
+                      '& .MuiInputBase-input': {
+                        backgroundColor: 'transparent',
+                        caretColor: 'var(--foreground)',
+                      },
+                    },
+                  ]
+                : [
+                    mergedSx,
+                    {
+                      '& .MuiInputBase-root': {
+                        backgroundColor: 'transparent',
+                        position: 'relative',
+                        zIndex: 1,
+                      },
+                      '& .MuiInputBase-inputMultiline': {
+                        backgroundColor: 'transparent',
+                        caretColor: 'var(--foreground)',
+                      },
+                      '& .MuiInputBase-input': {
+                        backgroundColor: 'transparent',
+                        caretColor: 'var(--foreground)',
+                      },
+                    },
+                  ]
+            }
             inputProps={{ style: { caretColor: 'var(--foreground)' } }}
           />
           {showFullscreenToggle && showExpand && (
@@ -356,7 +400,9 @@ export const MentionInput = (props: MentionInputProps) => {
               <Maximize2 size={16} />
             </IconButton>
           )}
-          {openPopover && (usersLoading || usersError || users.length > 0) && MentionMenu}
+          {openPopover &&
+            (usersLoading || usersError || users.length > 0) &&
+            MentionMenu}
         </div>
       )}
 
@@ -434,7 +480,9 @@ export const MentionInput = (props: MentionInputProps) => {
                   inputProps={{ style: { caretColor: 'var(--foreground)' } }}
                 />
               </div>
-              {openPopover && (usersLoading || usersError || users.length > 0) && MentionMenu}
+              {openPopover &&
+                (usersLoading || usersError || users.length > 0) &&
+                MentionMenu}
             </div>
           </div>,
           document.body
@@ -445,9 +493,10 @@ export const MentionInput = (props: MentionInputProps) => {
 
 const buildWithMentionsFromPlain = (
   plain: string,
-  list: MentionUser[],
+  list: MentionUser[]
 ): { withMentions: string; mentionList: MentionUser[] } => {
-  if (!list || list.length === 0) return { withMentions: plain, mentionList: [] };
+  if (!list || list.length === 0)
+    return { withMentions: plain, mentionList: [] };
 
   const displayNameToId = new Map(list.map((u) => [u.displayName, u.id]));
   const alternation = list
@@ -457,15 +506,21 @@ const buildWithMentionsFromPlain = (
 
   const mentionRegex = new RegExp(`@(${alternation})(?=$|\\W)`, 'g');
 
-  const newWithMentions = plain.replace(mentionRegex, (_match, displayName: string) => {
-    const id = displayNameToId.get(displayName);
-    return id ? `@[${displayName}](${id})` : _match;
-  });
+  const newWithMentions = plain.replace(
+    mentionRegex,
+    (_match, displayName: string) => {
+      const id = displayNameToId.get(displayName);
+      return id ? `@[${displayName}](${id})` : _match;
+    }
+  );
 
   const mentionedIds = new Set(
-    [...newWithMentions.matchAll(/@\[[^\]]+\]\(([^)]+)\)/g)].map((m) => m[1]),
+    [...newWithMentions.matchAll(/@\[[^\]]+\]\(([^)]+)\)/g)].map((m) => m[1])
   );
   const newMentionList = list.filter((user) => mentionedIds.has(user.id));
 
-  return { withMentions: newWithMentions, mentionList: newMentionList as MentionUser[] };
+  return {
+    withMentions: newWithMentions,
+    mentionList: newMentionList as MentionUser[],
+  };
 };

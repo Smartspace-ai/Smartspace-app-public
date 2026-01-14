@@ -1,5 +1,9 @@
 // VM: hydrate from server on success, or from schema defaults on error OR empty server {}.
-import type { ControlElement, JsonSchema7, UISchemaElement } from '@jsonforms/core';
+import type {
+  ControlElement,
+  JsonSchema7,
+  UISchemaElement,
+} from '@jsonforms/core';
 import { createAjv } from '@jsonforms/core';
 import * as React from 'react';
 
@@ -9,21 +13,28 @@ import { useFlowRunVariables } from '@/domains/flowruns/queries';
 import { cells, renderers } from './renders/index';
 import type { WorkspaceLike } from './types';
 
-type VarsRecord = Record<string, { schema?: JsonSchema7; access?: 'Read' | 'Write' }>;
+type VarsRecord = Record<
+  string,
+  { schema?: JsonSchema7; access?: 'Read' | 'Write' }
+>;
 type VmParams = { workspace: WorkspaceLike; threadId: string };
 
 // Layout helper types
 type VerticalLayout = { type: 'VerticalLayout'; elements: UISchemaElement[] };
-type HorizontalLayout = { type: 'HorizontalLayout'; elements: UISchemaElement[]; options?: any };
+type HorizontalLayout = {
+  type: 'HorizontalLayout';
+  elements: UISchemaElement[];
+  options?: Record<string, unknown>;
+};
 
 interface ChatVariablesFormVm {
   schema: JsonSchema7;
   uiSchema: UISchemaElement;
-  data: Record<string, any> | null;
+  data: Record<string, unknown> | null;
   renderers: typeof renderers;
   cells: typeof cells;
-  ajv: any;
-  onChange: (args: { data: Record<string, any> }) => void;
+  ajv: ReturnType<typeof createAjv>;
+  onChange: (args: { data: Record<string, unknown> }) => void;
   config: {
     restrict: boolean;
     trim: boolean;
@@ -37,35 +48,43 @@ interface ChatVariablesFormVm {
 
 function buildSimpleSchemaAndUi(
   vars: VarsRecord | undefined,
-  threadVars: Record<string, any> | undefined,
+  threadVars: Record<string, unknown> | undefined,
   useDefaults: boolean
-): { schema: JsonSchema7; uiSchema: UISchemaElement; initialData: Record<string, any> } {
+): {
+  schema: JsonSchema7;
+  uiSchema: UISchemaElement;
+  initialData: Record<string, unknown>;
+} {
   const names = Object.keys(vars || {});
 
   const properties: Record<string, JsonSchema7> = {};
   const controls: ControlElement[] = [];
-  const initialData: Record<string, any> = {};
+  const initialData: Record<string, unknown> = {};
 
   for (const name of names) {
-    const cfg = vars![name] || {};
+    const cfg = vars?.[name] || {};
     const s = (cfg.schema || {}) as JsonSchema7;
     properties[name] = s;
 
     const hasServerKey =
-      threadVars !== undefined && Object.prototype.hasOwnProperty.call(threadVars, name);
+      threadVars !== undefined &&
+      Object.prototype.hasOwnProperty.call(threadVars, name);
 
     const val = hasServerKey
-      ? threadVars![name]
+      ? threadVars?.[name]
       : useDefaults
-      ? (s as any).default
+      ? (s as unknown as { default?: unknown }).default
       : undefined;
 
     initialData[name] = val;
 
-    const control: ControlElement = { type: 'Control', scope: `#/properties/${name}` };
+    const control: ControlElement = {
+      type: 'Control',
+      scope: `#/properties/${name}`,
+    };
     if (cfg.access === 'Read') {
-      (properties[name] as any).readOnly = true;
-      (control as any).enabled = false;
+      (properties[name] as unknown as { readOnly?: boolean }).readOnly = true;
+      (control as unknown as { enabled?: boolean }).enabled = false;
     }
     controls.push(control);
   }
@@ -86,23 +105,34 @@ function buildSimpleSchemaAndUi(
   return { schema, uiSchema: ui as unknown as UISchemaElement, initialData };
 }
 
-export function useChatVariablesFormVm({ workspace, threadId, setVariables }: VmParams & { setVariables: (variables: Record<string, any>) => void }): ChatVariablesFormVm {
-  const { data: threadVars, isLoading, isError } = useFlowRunVariables(threadId);
-  const { mutate: updateVariableMutation } = useUpdateFlowRunVariable()
+export function useChatVariablesFormVm({
+  workspace,
+  threadId,
+  setVariables,
+}: VmParams & {
+  setVariables: (variables: Record<string, unknown>) => void;
+}): ChatVariablesFormVm {
+  const {
+    data: threadVars,
+    isLoading,
+    isError,
+  } = useFlowRunVariables(threadId);
+  const { mutate: updateVariableMutation } = useUpdateFlowRunVariable();
   const querySettled = !isLoading && (threadVars !== undefined || isError);
 
   // use defaults if error OR server returned {}
-  const shouldUseDefaults = isError || (threadVars && Object.keys(threadVars).length === 0);
+  const shouldUseDefaults =
+    isError || (threadVars && Object.keys(threadVars).length === 0);
 
   const built = React.useMemo(() => {
     return buildSimpleSchemaAndUi(
       workspace.variables as VarsRecord,
       threadVars,
       shouldUseDefaults ?? false
-    );  
+    );
   }, [workspace.variables, threadVars, shouldUseDefaults]);
 
-  const [data, setData] = React.useState<Record<string, any> | null>(null);
+  const [data, setData] = React.useState<Record<string, unknown> | null>(null);
 
   React.useEffect(() => {
     if (querySettled) {
@@ -112,22 +142,26 @@ export function useChatVariablesFormVm({ workspace, threadId, setVariables }: Vm
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [querySettled, built.initialData, setVariables]);
 
-  const ajv = React.useMemo(() => createAjv({ useDefaults: false }) as any, []);
+  const ajv = React.useMemo(() => createAjv({ useDefaults: false }), []);
 
-  const prevRef = React.useRef<Record<string, any> | null>(null);
+  const prevRef = React.useRef<Record<string, unknown> | null>(null);
   React.useEffect(() => {
     prevRef.current = data;
   }, [data]);
 
   const onChange = React.useCallback(
-    ({ data: next }: { data: Record<string, any> }) => {
+    ({ data: next }: { data: Record<string, unknown> }) => {
       if (prevRef.current) {
         const keys = Object.keys((workspace.variables as VarsRecord) || {});
         for (const k of keys) {
           const before = prevRef.current?.[k];
           const after = next?.[k];
           if (before !== after) {
-            updateVariableMutation({ flowRunId: threadId, variableName: k, value: after })
+            updateVariableMutation({
+              flowRunId: threadId,
+              variableName: k,
+              value: after,
+            });
           }
         }
       }

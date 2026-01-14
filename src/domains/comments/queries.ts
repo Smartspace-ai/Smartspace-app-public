@@ -1,8 +1,9 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 
+import { isDraftThreadId } from '@/shared/utils/threadId';
+
 import { commentsKeys } from './queryKeys';
 import { fetchComments } from './service';
-import { isDraftThreadId } from '@/shared/utils/threadId';
 
 export const commentsListOptions = (threadId: string) =>
   queryOptions({

@@ -18,8 +18,8 @@ function RealtimeBridge({ children }: { children: ReactNode }) {
   // you can also derive scopes here if you want a single place
   const getAccessToken = (scopes?: string[]) => adapter.getAccessToken({ scopes, silentOnly: true });
   // Mount realtime only when a session exists to avoid negotiate loops
-  if (loading) return null;
-  if (!session) return <>{children}</>;
+  if (loading) return children;
+  if (!session) return children;
   return (
     <RealtimeProvider getAccessToken={getAccessToken}>
       {children}

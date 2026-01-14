@@ -4,6 +4,11 @@ import { MessageResponseSourceType, MessageValueType } from '@/domains/messages/
 
 import { FileInfoSchema } from '../files/schemas';
 
+const DateFromApi = z.preprocess((v) => {
+  if (v instanceof Date) return v;
+  if (typeof v === 'string' || typeof v === 'number') return new Date(v);
+  return v;
+}, z.date());
 
 // MessageResponseSource schema
 export const MessageResponseSourceSchema = z.object({
@@ -35,7 +40,7 @@ export const MessageErrorMessageSchema = z.object({
 // Message schema
 export const MessageSchema = z.object({
   id: z.string().nullish(),
-  createdAt: z.union([z.date(), z.string()]),
+  createdAt: DateFromApi,
   createdBy: z.string().nullish(),
   hasComments: z.boolean().default(false),
   createdByUserId: z.string().nullish(),
@@ -47,7 +52,7 @@ export const MessageSchema = z.object({
     type: z.nativeEnum(MessageValueType),
     value: z.any(), // Can be string (for Output), array (for Input), or object (for Variables)
     channels: z.record(z.number()),
-    createdAt: z.union([z.date(), z.string()]),
+    createdAt: DateFromApi,
     createdBy: z.string(),
     createdByUserId: z.string().nullish(),
   })).nullish(),

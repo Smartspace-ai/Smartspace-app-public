@@ -5,12 +5,17 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { Notification } from '@/domains/notifications';
 import { NotificationType } from '@/domains/notifications/model';
-import { useMarkAllAsRead, useMarkAsRead } from '@/domains/notifications/mutations';
 import {
-  useNotificationsQuery,
-} from '@/domains/notifications/queries';
+  useMarkAllAsRead,
+  useMarkAsRead,
+} from '@/domains/notifications/mutations';
+import { useNotificationsQuery } from '@/domains/notifications/queries';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/mui-compat/avatar';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/shared/ui/mui-compat/avatar';
 import { Button } from '@/shared/ui/mui-compat/button';
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
 import { Switch } from '@/shared/ui/mui-compat/switch';
@@ -23,8 +28,18 @@ export function NotificationPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
-  const workspaceMatch = useMatch({ from: '/_protected/workspace/$workspaceId', shouldThrow: false });
-  const workspaceId = workspaceMatch?.params?.workspaceId ?? '';
+  const workspaceThreadMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/thread/$threadId',
+    shouldThrow: false,
+  });
+  const workspaceIndexMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/',
+    shouldThrow: false,
+  });
+  const workspaceId =
+    workspaceThreadMatch?.params?.workspaceId ??
+    workspaceIndexMatch?.params?.workspaceId ??
+    '';
 
   const notificationsQuery = useNotificationsQuery(showOnlyUnread);
   const { mutate: markAsRead } = useMarkAsRead();
@@ -57,8 +72,9 @@ export function NotificationPanel() {
     }
   }, [isOpen]);
 
-  const notifications = (notificationsQuery.data?.pages || [])
-    .flatMap((p) => p.items);
+  const notifications = (notificationsQuery.data?.pages || []).flatMap(
+    (p) => p.items
+  );
 
   const totalUnread = notificationsQuery.data?.pages?.[0]?.unreadCount || 0;
 
@@ -74,10 +90,10 @@ export function NotificationPanel() {
         to: '/workspace/$workspaceId/thread/$threadId',
         params: {
           workspaceId: notification.workSpaceId || workspaceId,
-          threadId: notification.threadId
-        }
+          threadId: notification.threadId,
+        },
       });
-      
+
       // Open the comments drawer when navigating to a thread
       // setRightOpen(true);
     }
@@ -108,10 +124,10 @@ export function NotificationPanel() {
       >
         <Bell
           className={cn(
-            "h-4 w-4 transition-colors",
+            'h-4 w-4 transition-colors',
             hasUnreadNotifications
-              ? "text-foreground"
-              : "text-muted-foreground group-hover:text-foreground"
+              ? 'text-foreground'
+              : 'text-muted-foreground group-hover:text-foreground'
           )}
         />
         <AnimatePresence>
@@ -176,46 +192,48 @@ export function NotificationPanel() {
                   {notifications
                     .filter((n) => (showOnlyUnread ? !n.dismissedAt : true))
                     .map((notification) => (
-                    <motion.div
-                      key={notification.id}
-                      className={cn(
-                        'group flex items-start gap-2.5 px-3 py-2 hover:bg-muted/40 transition-all relative cursor-pointer',
-                        !notification.dismissedAt && 'bg-primary/5'
-                      )}
-                      onClick={() => handleClickNotification(notification)}
-                    >
-                      <Avatar className="h-8 w-8 rounded-full">
-                        <AvatarImage
-                          src={notification.avatar || '/placeholder.svg'}
-                          alt={notification.createdBy}
-                        />
-                        <AvatarFallback className="text-xs font-medium">
-                          {getInitials(notification.createdBy || '')}
-                        </AvatarFallback>
-                      </Avatar>
+                      <motion.div
+                        key={notification.id}
+                        className={cn(
+                          'group flex items-start gap-2.5 px-3 py-2 hover:bg-muted/40 transition-all relative cursor-pointer',
+                          !notification.dismissedAt && 'bg-primary/5'
+                        )}
+                        onClick={() => handleClickNotification(notification)}
+                      >
+                        <Avatar className="h-8 w-8 rounded-full">
+                          <AvatarImage
+                            src={notification.avatar || '/placeholder.svg'}
+                            alt={notification.createdBy}
+                          />
+                          <AvatarFallback className="text-xs font-medium">
+                            {getInitials(notification.createdBy || '')}
+                          </AvatarFallback>
+                        </Avatar>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <div className="flex items-center gap-1">
-                            <p className="text-xs font-medium truncate">
-                              {notification.createdBy}
-                            </p>
-                            {getNotificationIcon(notification.notificationType)}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <div className="flex items-center gap-1">
+                              <p className="text-xs font-medium truncate">
+                                {notification.createdBy}
+                              </p>
+                              {getNotificationIcon(
+                                notification.notificationType
+                              )}
+                            </div>
+                            <span className="text-[9px] text-muted-foreground whitespace-nowrap shrink-0">
+                              {parseDateTimeHuman(notification.createdAt)}
+                            </span>
                           </div>
-                          <span className="text-[9px] text-muted-foreground whitespace-nowrap shrink-0">
-                            {parseDateTimeHuman(notification.createdAt)}
-                          </span>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
+                            {notification.description}
+                          </p>
                         </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
-                          {notification.description}
-                        </p>
-                      </div>
 
-                      {!notification.dismissedAt && (
-                        <div className="absolute right-3 top-3 h-1.5 w-1.5 rounded-full bg-primary" />
-                      )}
-                    </motion.div>
-                  ))}
+                        {!notification.dismissedAt && (
+                          <div className="absolute right-3 top-3 h-1.5 w-1.5 rounded-full bg-primary" />
+                        )}
+                      </motion.div>
+                    ))}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 px-4 text-center">

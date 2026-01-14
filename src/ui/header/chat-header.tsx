@@ -2,10 +2,11 @@ import Divider from '@mui/material/Divider';
 import Skeleton from '@mui/material/Skeleton';
 import { MessageSquare, PanelLeft } from 'lucide-react';
 
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
 
