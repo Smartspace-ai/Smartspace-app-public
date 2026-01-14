@@ -1,5 +1,6 @@
-import type { Node as PMNode } from '@milkdown/prose/model'
 import { editorViewCtx } from '@milkdown/core'
+import type { Node as PMNode } from '@milkdown/prose/model'
+import type { EditorView } from '@milkdown/prose/view'
 import { $node, $view } from '@milkdown/utils'
 
 function parseQuery(query: string): Record<string, string> {
@@ -62,7 +63,8 @@ export const ssImageNode = $node('ssImage', () => ({
   parseMarkdown: {
     match: (n) => {
       try {
-        return (n as any).type === 'image' && String((n as any).url || '').startsWith('ss-file:')
+        const md = n as Record<string, unknown>
+        return md.type === 'image' && typeof md.url === 'string' && md.url.startsWith('ss-file:')
       } catch { return false }
     },
     runner: (state, node, type) => {
@@ -99,7 +101,8 @@ export const ssImageNode = $node('ssImage', () => ({
       const query = params.toString()
       const url = `ss-file:${a.fileId}${query ? `?${query}` : ''}`
       // Milkdown's state.addNode('image', ...): use normal image serializer context
-      state.addNode('image', undefined, undefined, { url, title: a.title ?? undefined, alt: a.alt ?? undefined } as any)
+      const imageMeta = { url, title: a.title ?? undefined, alt: a.alt ?? undefined }
+      state.addNode('image', undefined, undefined, imageMeta as Parameters<typeof state.addNode>[3])
     },
   },
 }))
@@ -136,12 +139,12 @@ export const ssImageView = $view(ssImageNode, (ctx) => (node) => {
     e.preventDefault()
     e.stopPropagation()
     try {
-      const view = ctx.get(editorViewCtx)
-      if (!view || (view as any).editable === false) return
-      const pos = (view as any).posAtDOM?.(dom, 0)
+      const view = ctx.get(editorViewCtx) as EditorView
+      if (!view || view.editable === false) return
+      const pos = view.posAtDOM(dom, 0)
       if (typeof pos !== 'number') return
-      const tr = (view as any).state.tr.delete(pos, pos + (node as any).nodeSize)
-      ;(view as any).dispatch(tr.scrollIntoView())
+      const tr = view.state.tr.delete(pos, pos + node.nodeSize)
+      view.dispatch(tr.scrollIntoView())
     } catch {
       // ignore remove errors
     }
@@ -187,3 +190,4 @@ export const ssImageView = $view(ssImageNode, (ctx) => (node) => {
   dom.appendChild(removeBtn)
   return { dom, contentDOM: null }
 })
+

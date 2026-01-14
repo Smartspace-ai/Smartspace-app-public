@@ -6,7 +6,7 @@ import { fetchFlowRunVariables } from './service';
 export const flowRunVariablesOptions = (flowRunId: string) =>
   queryOptions({
     queryKey: flowRunsKeys.variables(flowRunId ?? ''),
-    queryFn: () => fetchFlowRunVariables(flowRunId!),
+    queryFn: () => fetchFlowRunVariables(flowRunId),
     staleTime: 30_000,
   });
 

@@ -1,12 +1,15 @@
 
+import { ChevronUp, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Presentation } from 'lucide-react';
+import { useState } from 'react';
+
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import { useFileMutations } from '@/domains/files/mutations';
 import { MessageResponseSourceType } from '@/domains/messages/enums';
 // Keeping this component generic; adjust type if needed in the future
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
 import { cn } from '@/shared/utils/utils';
-import { ChevronUp, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Presentation } from 'lucide-react';
-import { useState } from 'react';
 
 export type MessageResponseSource = {
   index: number;
@@ -68,7 +71,8 @@ export function ChatMessageSources({
   const [isExpanded, setIsExpanded] = useState(true);
 
   const fileSources = (sources ?? []).filter(
-    (s) => s.sourceType === MessageResponseSourceType.File && !!s.file
+    (s): s is MessageResponseSource & { file: { id: string; name: string } } =>
+      s.sourceType === MessageResponseSourceType.File && !!s.file
   );
 
   if (fileSources.length === 0) return null;
@@ -103,7 +107,7 @@ export function ChatMessageSources({
             style={{ paddingLeft: 0, marginLeft: 0 }}
           >
             {fileSources.map((source) => {
-              const file = source.file!;
+              const file = source.file;
               const displayName = file.name || `Source ${source.index}`;
               const Icon = getFileIcon(file.name);
 

@@ -2,7 +2,7 @@
 import { AlertTriangle, MessageSquare } from 'lucide-react';
 import { Virtuoso } from 'react-virtuoso';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { Skeleton } from '@/shared/ui/mui-compat/skeleton';
 

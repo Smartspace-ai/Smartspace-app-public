@@ -1,29 +1,49 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { queryClient } from '@/platform/reactQueryClient';
+import { RouteIdsProvider } from "@/platform/routing/RouteIdsProvider";
 
-import { threadDetailOptions } from '@/domains/threads/queries';
 import type { MessageThread, ThreadsResponse } from '@/domains/threads';
+import { threadDetailOptions } from '@/domains/threads/queries';
 import { threadsKeys } from '@/domains/threads/queryKeys';
-import { isDraftThreadId, markDraftThreadId } from '@/shared/utils/threadId';
 
 import ChatBotPage from "@/pages/WorkspaceThreadPage/chat";
-import { RouteIdsProvider } from "@/pages/WorkspaceThreadPage/RouteIdsProvider";
+
+import { isDraftThreadId, markDraftThreadId } from '@/shared/utils/threadId';
+
+type ThreadsListMeta = { workspaceId?: string };
+type ThreadsListKey = readonly unknown[];
+
+function isThreadsListMeta(x: unknown): x is ThreadsListMeta {
+  return !!x && typeof x === 'object' && ('workspaceId' in x);
+}
+
+function isThreadsResponse(x: unknown): x is ThreadsResponse {
+  if (!x || typeof x !== 'object') return false;
+  const obj = x as Record<string, unknown>;
+  return Array.isArray(obj.data);
+}
+
+function isInfiniteThreadsResponse(x: unknown): x is { pages: ThreadsResponse[]; pageParams?: unknown[] } {
+  if (!x || typeof x !== 'object') return false;
+  const obj = x as Record<string, unknown>;
+  return Array.isArray(obj.pages);
+}
 
 function upsertDraftIntoListCache(workspaceId: string, draft: MessageThread) {
   const queries = queryClient.getQueryCache().findAll({ queryKey: threadsKeys.lists() });
 
   for (const q of queries) {
-    const qk = q.queryKey as any[];
+    const qk = q.queryKey as ThreadsListKey;
     const meta = qk?.[2];
-    if (!meta || typeof meta !== 'object') continue;
+    if (!isThreadsListMeta(meta)) continue;
     if (meta.workspaceId !== workspaceId) continue;
 
-    queryClient.setQueryData(qk, (old: any) => {
+    queryClient.setQueryData(qk, (old: unknown) => {
       if (!old) return old;
 
       // Infinite query shape: { pages: [{ data, total }, ...], pageParams: [...] }
-      if (Array.isArray(old.pages)) {
+      if (isInfiniteThreadsResponse(old)) {
         const pages = old.pages.slice();
         if (!pages[0] || !Array.isArray(pages[0].data)) return old;
 
@@ -41,8 +61,8 @@ function upsertDraftIntoListCache(workspaceId: string, draft: MessageThread) {
       }
 
       // Non-infinite shape: { data, total }
-      if (Array.isArray((old as ThreadsResponse).data)) {
-        const env = old as ThreadsResponse;
+      if (isThreadsResponse(old)) {
+        const env = old;
         const already = env.data.some((t) => t.id === draft.id);
         if (already) return old;
         return {
@@ -60,11 +80,7 @@ function upsertDraftIntoListCache(workspaceId: string, draft: MessageThread) {
 // routes/_protected/workspace/$workspaceId/thread/$threadId.tsx
 export const Route = createFileRoute('/_protected/workspace/$workspaceId/thread/$threadId')({
   pendingMs: 0,
-  pendingComponent: () => (
-    <RouteIdsProvider>
-      <ChatBotPage />
-    </RouteIdsProvider>
-  ),
+  pendingComponent: ThreadRouteComponent,
   loader: async ({ params }) => {
     // Draft threads are client-side only until a message is sent (or creation succeeds in background).
     // Avoid fetching thread details for draft ids (backend will 404).
@@ -76,7 +92,7 @@ export const Route = createFileRoute('/_protected/workspace/$workspaceId/thread/
       );
     } catch (e: unknown) {
       // If user deep-links to a random GUID that doesn't exist yet, treat it as a draft thread id.
-      const err = e as any;
+      const err = (e && typeof e === 'object') ? (e as Record<string, unknown>) : null;
       if (err?.type !== 'NotFound') throw e;
 
       const draftId = params.threadId;
@@ -105,9 +121,14 @@ export const Route = createFileRoute('/_protected/workspace/$workspaceId/thread/
       return null;
     }
   },
-  component: () => (
-    <RouteIdsProvider>
-      <ChatBotPage />
-    </RouteIdsProvider>
-  ),
+  component: ThreadRouteComponent,
 });
+
+function ThreadRouteComponent() {
+  const { workspaceId, threadId } = Route.useParams();
+  return (
+    <RouteIdsProvider>
+      <ChatBotPage workspaceId={workspaceId} threadId={threadId} />
+    </RouteIdsProvider>
+  );
+}

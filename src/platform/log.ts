@@ -3,6 +3,19 @@
 
 type Level = 'debug' | 'info' | 'warn' | 'error';
 
+type SsLogEntry = {
+  t: string;
+  level: Level;
+  scope: string;
+  msg: string;
+  data: unknown;
+};
+
+type SsWindow = Window & {
+  __ssRunId?: string;
+  __ssLogs?: SsLogEntry[];
+};
+
 function safeGetFlag(storage: Storage | undefined, key: string): string | null {
   try { return storage?.getItem(key) ?? null; } catch { return null; }
 }
@@ -20,7 +33,7 @@ export function isSsDebugEnabled(): boolean {
 
 function getRunId(): string {
   try {
-    const w = window as any;
+    const w = window as unknown as SsWindow;
     if (w.__ssRunId) return String(w.__ssRunId);
     const id = `run_${Math.random().toString(36).slice(2, 8)}_${Date.now().toString(36)}`;
     w.__ssRunId = id;
@@ -60,8 +73,8 @@ export function ssLog(level: Level, scope: string, msg: string, data?: unknown) 
 
   // Also persist a small rolling buffer of logs for cases where DevTools aren't accessible (e.g. Teams managed desktops).
   try {
-    const w = window as any;
-    const arr: any[] = Array.isArray(w.__ssLogs) ? w.__ssLogs : [];
+    const w = window as unknown as SsWindow;
+    const arr: SsLogEntry[] = Array.isArray(w.__ssLogs) ? w.__ssLogs : [];
     arr.push({
       t: new Date().toISOString(),
       level,

@@ -68,7 +68,7 @@ export function isDraftThreadId(threadId?: string | null): boolean {
 export function createDraftThreadId(): string {
   // Must be a GUID-like string (no "draft-" prefix) so it can be safely used anywhere
   // a thread id is expected (including APIs that validate GUID format).
-  const cryptoObj = (globalThis as any)?.crypto as { randomUUID?: () => string } | undefined;
+  const cryptoObj = (globalThis as unknown as { crypto?: Crypto | undefined })?.crypto;
   return typeof cryptoObj?.randomUUID === 'function'
     ? cryptoObj.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;

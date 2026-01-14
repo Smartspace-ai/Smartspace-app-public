@@ -1,24 +1,21 @@
-import { ControlProps, RankedTester, rankWith } from '@jsonforms/core';
+import type { ControlElement, JsonSchema7 } from '@jsonforms/core';
+import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-interface BooleanRendererProps extends ControlProps {
-  data: any;
-  handleChange: (path: string, value: any) => void;
-  path: string;
-}
+type AccessUiSchema = { access?: 'Read' | 'Write' };
 
-const BooleanRenderer: React.FC<BooleanRendererProps> = ({
+const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
   data,
   handleChange,
   path,
   label,
   description,
   errors,
-  schema,
   uischema,
   visible,
-  enabled
+  enabled,
+  required,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -36,17 +33,16 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
 
   // Build styles that differ by mobile/non-mobile
   const dims = useMemo(
-    () =>
-      isMobile
-        ? { w: undefined as any, h: '28px', pad: '2px 10px', knob: { size: 0 } }
-        : { w: '44px', h: '24px', pad: undefined as any, knob: { size: 20 } },
+    () => (isMobile
+      ? { w: undefined as string | undefined, h: '28px', pad: '2px 10px', knobSize: 0 }
+      : { w: '44px', h: '24px', pad: undefined as string | undefined, knobSize: 20 }),
     [isMobile]
   );
 
   if (!visible) return null;
 
   // Read-only if ui schema set access: 'Read'
-  const readOnly = (uischema as any)?.access === 'Read';
+  const readOnly = (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
 
   const hasError = !!errors && errors.length > 0;
@@ -85,7 +81,7 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
           tabIndex={isDisabled ? -1 : 0}
         >
           {label}
-          {(schema as any)?.required && (
+          {required && (
             <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>
           )}
         </label>
@@ -101,9 +97,9 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
         onClick={onToggle}
         disabled={isDisabled}
         // Blur the element after *pointer* interactions so the ring doesn't linger.
-        onPointerUp={(e) => {
+        onPointerUp={(e: React.PointerEvent<HTMLButtonElement>) => {
           // Keep keyboard focus visible for accessibility; only blur on pointer
-          if ((e as any).pointerType === 'mouse' || (e as any).pointerType === 'touch' || (e as any).pointerType === 'pen') {
+          if (e.pointerType === 'mouse' || e.pointerType === 'touch' || e.pointerType === 'pen') {
             (e.currentTarget as HTMLButtonElement).blur();
           }
         }}
@@ -136,8 +132,8 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
               position: 'absolute',
               left: isChecked ? '22px' : '2px',
               top: '2px',
-              width: `${dims.knob.size}px`,
-              height: `${dims.knob.size}px`,
+              width: `${dims.knobSize}px`,
+              height: `${dims.knobSize}px`,
               borderRadius: '50%',
               backgroundColor: '#ffffff',
               transition: 'left 0.2s ease-in-out',
@@ -188,12 +184,13 @@ const BooleanRenderer: React.FC<BooleanRendererProps> = ({
 };
 
 // Match boolean fields
-export const booleanRendererTester: RankedTester = rankWith(
+export const booleanRendererTester = rankWith(
   40,
   (uischema, schema) => {
-    if (uischema.type !== 'Control' || !(uischema as any).scope) return false;
-    const propertyPath = (uischema as any).scope.replace('#/properties/', '');
-    const fieldSchema = schema?.properties?.[propertyPath];
+    if (uischema.type !== 'Control') return false;
+    const scope = (uischema as ControlElement).scope;
+    const propertyPath = scope.replace('#/properties/', '');
+    const fieldSchema = (schema as JsonSchema7 | undefined)?.properties?.[propertyPath] as JsonSchema7 | undefined;
     return fieldSchema?.type === 'boolean';
   }
 );

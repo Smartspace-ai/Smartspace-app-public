@@ -1,12 +1,11 @@
-'use client';
-
 import { useMemo, useState } from 'react';
+
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { useSendMessage } from '@/domains/messages/mutations';
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
@@ -32,6 +31,7 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
 
   // Message + attachments state (owned by VM)
   const [newMessage, setNewMessage] = useState('');
+  const [variables, setVariables] = useState<Record<string, unknown>>({});
 
   // Data/UX context
   const isMobile = useIsMobile();
@@ -58,7 +58,8 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     const contentList = newMessage.trim()
       ? [{ text: newMessage.trim(), image: undefined }]
       : undefined;
-    sendMessage.mutate({ workspaceId, threadId, contentList, files });
+    const vars = variables && Object.keys(variables).length > 0 ? variables : undefined;
+    sendMessage.mutate({ workspaceId, threadId, contentList, files, variables: vars });
     setNewMessage('');
   };
   /** Unified "Send" */
@@ -86,6 +87,8 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     supportsFiles: !!workspace?.supportsFiles,
     disabled: thread?.isFlowRunning,
     isDraftThread,
+    variables,
+    setVariables,
 
     // Thread/workspace context
     workspace,

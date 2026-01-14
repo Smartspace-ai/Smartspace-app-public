@@ -60,7 +60,7 @@ DialogOverlay.displayName = "DialogOverlay"
 
 interface DialogContentProps extends React.ComponentPropsWithoutRef<typeof MuiDialogContent> {
   hideClose?: boolean;
-  onOpenAutoFocus?: (e: any) => void;
+  onOpenAutoFocus?: (e: React.SyntheticEvent) => void;
 }
 
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
@@ -70,7 +70,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       <MuiDialogContent
         ref={ref}
         className={cn("grid gap-4 border bg-background p-5 shadow-lg sm:rounded-lg", className)}
-        onFocus={onOpenAutoFocus as any}
+        onFocus={(e) => onOpenAutoFocus?.(e)}
         {...props}
       >
         {children}

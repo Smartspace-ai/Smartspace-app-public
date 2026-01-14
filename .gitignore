@@ -34,6 +34,10 @@ yarn-error.log
 testem.log
 /typings
 
+# local caches / TS incremental build artifacts
+.eslintcache
+*.tsbuildinfo
+
 # Vite/Node may emit a compiled timestamped config next to vite.config.mts on some platforms
 vite.config.mts.timestamp-*.mjs
 
@@ -47,7 +51,6 @@ Thumbs.db
 # env files
 .env*
 
-!*.env
 !*.env.develop
 !*.env.example
 

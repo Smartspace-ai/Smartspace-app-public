@@ -84,7 +84,6 @@ const SidebarProvider = forwardRef<
     const isMobile = useIsMobile();
     const [openMobileLeft, setOpenMobileLeft] = useState(false);
     const [openMobileRight, setOpenMobileRight] = useState(false);
-    const [mobileViewportHeight, setMobileViewportHeight] = useState<number | undefined>(undefined);
 
     const [_leftOpen, _setLeftOpen] = useState(defaultLeftOpen);
     const [_rightOpen, _setRightOpen] = useState(defaultRightOpen);
@@ -176,13 +175,17 @@ const SidebarProvider = forwardRef<
       if (!isMobile) return;
       const vv = window.visualViewport;
       if (!vv) return;
-      const update = () => setMobileViewportHeight(vv.height);
+      const update = () => {
+        // Useful for mobile layouts (esp. on-screen keyboard); consumers can use var(--ss-viewport-height)
+        document.documentElement.style.setProperty('--ss-viewport-height', `${vv.height}px`);
+      };
       update();
       vv.addEventListener('resize', update);
       vv.addEventListener('scroll', update);
       return () => {
         vv.removeEventListener('resize', update);
         vv.removeEventListener('scroll', update);
+        try { document.documentElement.style.removeProperty('--ss-viewport-height'); } catch { /* ignore */ }
       };
     }, [isMobile, openMobileLeft, openMobileRight]);
 
@@ -328,7 +331,7 @@ const Sidebar = forwardRef<
             open={openMobile}
             onOpenChange={setOpenMobile}
             style={{ width: SIDEBAR_WIDTH_MOBILE }}
-            onOpenAutoFocus={(e: any) => e.preventDefault()}
+            onOpenAutoFocus={(e: React.SyntheticEvent) => e.preventDefault()}
             className="p-0 bg-sidebar text-sidebar-foreground"
           >
             <SheetHeader>

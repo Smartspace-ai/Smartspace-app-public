@@ -1,10 +1,12 @@
 import { Configuration, PopupRequest } from '@azure/msal-browser';
 
+import { parseScopes } from '@/platform/auth/scopes';
+
 // Environment variables (provided via Vite)
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
 const AUTHORITY = import.meta.env.VITE_CLIENT_AUTHORITY;
 const CHAT_API_URI = import.meta.env.VITE_CHAT_API_URI;
-const CUSTOM_SCOPES = import.meta.env.VITE_CLIENT_SCOPES?.split(',') || [];
+const CUSTOM_SCOPES = parseScopes(import.meta.env.VITE_CLIENT_SCOPES);
 const TEAMS_SSO_RESOURCE = import.meta.env.VITE_TEAMS_SSO_RESOURCE;
 
 // Microsoft Graph scopes and endpoints

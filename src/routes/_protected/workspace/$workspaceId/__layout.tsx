@@ -3,11 +3,10 @@ import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { useEffect, useMemo } from 'react';
 
 import { queryClient } from '@/platform/reactQueryClient';
+import { RouteIdsProvider , useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { useWorkspace, workspaceDetailOptions } from '@/domains/workspaces/queries';
 
-import { RouteIdsProvider } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 

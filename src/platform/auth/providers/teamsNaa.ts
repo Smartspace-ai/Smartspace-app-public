@@ -1,14 +1,11 @@
-import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
 import { app as teamsApp } from '@microsoft/teams-js';
-import { AuthAdapter, type GetTokenOptions } from '../types';
+
+import { acquireNaaToken, naaInit } from '@/platform/auth/naaClient';
+import { setRuntimeAuthError } from '@/platform/auth/runtime';
+import { getClientScopes } from '@/platform/auth/scopes';
 import { ssInfo, ssWarn } from '@/platform/log';
 
-function parseScopes(raw: unknown): string[] {
-  return String(raw ?? '')
-    .split(/[ ,]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
+import { AuthAdapter, type GetTokenOptions } from '../types';
 
 export function createTeamsNaaAdapter(): AuthAdapter {
   return {
@@ -19,21 +16,21 @@ export function createTeamsNaaAdapter(): AuthAdapter {
           scopesProvided: !!opts?.scopes?.length,
         });
         await naaInit();
-        const raw =
-          (window as any)?.ssconfig?.Client_Scopes ??
-          import.meta.env.VITE_CLIENT_SCOPES ??
-          '';
-        const scopes = opts?.scopes?.length ? opts.scopes : parseScopes(raw);
+        const scopes = opts?.scopes?.length ? opts.scopes : getClientScopes();
         ssInfo('auth:teams', 'getAccessToken acquiring (no token will be logged)', {
           scopesCount: scopes.length,
           scopes: scopes,
-          scopeSource: (opts?.scopes?.length ? 'callsite' : ((window as any)?.ssconfig?.Client_Scopes ? 'ssconfig' : 'viteEnv')),
+          scopeSource: (opts?.scopes?.length ? 'callsite' : 'configured'),
         });
-        return acquireNaaToken(scopes);
+        const token = await acquireNaaToken(scopes, { silentOnly: !!opts?.silentOnly });
+        setRuntimeAuthError(null);
+        return token;
       } catch (error) {
-        console.error('Teams NAA token acquisition failed:', error);
         ssWarn('auth:teams', 'getAccessToken failed', error);
-        try { (window as any).__teamsAuthLastError = String((error as any)?.message ?? error); } catch { /* ignore */ }
+        setRuntimeAuthError({
+          source: 'teams',
+          message: String(error instanceof Error ? error.message : error),
+        });
         throw error;
       }
     },
@@ -45,37 +42,41 @@ export function createTeamsNaaAdapter(): AuthAdapter {
           await teamsApp.initialize();
         } catch (initError) {
           // Teams might already be initialized, ignore this error
-          console.log('Teams already initialized or not available');
           ssWarn('auth:teams', 'teamsApp.initialize threw (ignored)', initError);
         }
         
         const ctx = await teamsApp.getContext();
         if (!ctx.user) {
-          console.warn('No user context available in Teams');
           ssWarn('auth:teams', 'getSession: ctx.user missing', ctx);
-          try { (window as any).__teamsAuthLastError = 'Teams context missing user (ctx.user is empty)'; } catch { /* ignore */ }
+          setRuntimeAuthError({ source: 'teams', message: 'Teams context missing user (ctx.user is empty)' });
           return null;
         }
         
         ssInfo('auth:teams', 'getSession success', { userId: ctx.user.id, hasDisplayName: !!ctx.user.displayName });
+        setRuntimeAuthError(null);
         return { 
           accountId: ctx.user.id, 
           displayName: ctx.user.displayName 
         };
       } catch (error) {
-        console.error('Teams session retrieval failed:', error);
         ssWarn('auth:teams', 'getSession failed', error);
-        try { (window as any).__teamsAuthLastError = String((error as any)?.message ?? error); } catch { /* ignore */ }
+        setRuntimeAuthError({
+          source: 'teams',
+          message: String(error instanceof Error ? error.message : error),
+        });
         return null;
       }
     },
     async signIn() { 
-      // Teams handles authentication through SSO
-      console.log('Teams sign-in requested - handled by Teams SSO');
+      // Teams: interactive token acquisition via popup can be required on some clients.
+      // Keep this interactive flow in the auth/login layer (not in the API layer).
+      await naaInit();
+      const scopes = getClientScopes();
+      await acquireNaaToken(scopes, { silentOnly: false });
     },
     async signOut() { 
       // Teams handles sign-out
-      console.log('Teams sign-out requested - handled by Teams');
+      ssInfo('auth:teams', 'signOut requested - handled by Teams');
     },
     getStoredRedirectUrl() {
       // Teams doesn't use redirect URLs in the same way

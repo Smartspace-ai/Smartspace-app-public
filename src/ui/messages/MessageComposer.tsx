@@ -1,5 +1,3 @@
-'use client';
-
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import {
@@ -27,8 +25,8 @@ import { useFileMutations } from '@/domains/files/mutations';
 
 import { ChatVariablesForm } from '@/ui/chat-variables/VariablesForm';
 
-import type { MarkdownEditorHandle } from '@/components/markdown/MarkdownEditor';
-import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
+import type { MarkdownEditorHandle } from '@/shared/ui/markdown/MarkdownEditor';
+import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
 
 import { useMessageComposerVm } from './MessageComposer.vm';
 
@@ -110,6 +108,7 @@ export default function MessageComposer() {
     // helpers
     supportsFiles,
     isDraftThread,
+    setVariables,
   } = vm;
 
   // Draft threads use a placeholder thread id; omit it for uploads so files still work in draft mode.
@@ -264,7 +263,7 @@ export default function MessageComposer() {
             !isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''
           } transition-[max-width] duration-300 ease-in-out`}
         >
-          <ChatVariablesForm workspace={workspace} threadId={threadId} setVariables={() => { console.log('setVariables') }}/>
+          <ChatVariablesForm workspace={workspace} threadId={threadId} setVariables={setVariables} />
         </div>
       )}
       {Object.keys(workspace?.variables ?? {}).length > 0 && <hr className="my-2" />}

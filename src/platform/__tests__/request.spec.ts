@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { request, requestOrThrow, unwrap } from '@/platform/request';
 import * as apiClient from '@/platform/api/apiClient';
+import { request, requestOrThrow, unwrap } from '@/platform/request';
 
 describe('request/unwrap', () => {
   it('returns ok result on success', async () => {

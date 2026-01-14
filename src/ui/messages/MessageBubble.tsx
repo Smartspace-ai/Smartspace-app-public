@@ -1,6 +1,5 @@
 // src/ui/messages/MessageList/MessageBubble.tsx
 import { JsonSchema } from '@jsonforms/core';
-import { materialCells } from '@jsonforms/material-renderers';
 import { JsonForms } from '@jsonforms/react';
 import Button from '@mui/material/Button';
 import { FC, useEffect, useState } from 'react';
@@ -12,15 +11,15 @@ import { MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 
 
-import { renderers } from '@/ui/chat-variables/renders';
+import { cells, renderers } from '@/ui/chat-variables/renders';
 
 
+import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
 import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parseDateTime';
 import { cn } from '@/shared/utils/utils';
 
-import { MarkdownEditor } from '@/components/markdown/MarkdownEditor';
 
 import { ChatMessageCopyButton } from './MessageCopyButton';
 import { ChatMessageFileDownload } from './MessageFileDownload';
@@ -28,14 +27,19 @@ import { ChatMessageImage } from './MessageImage';
 import type { MessageResponseSource } from './MessageSources';
 import { ChatMessageSources } from './MessageSources';
 
+type UserOutputPayload = {
+  message: string;
+  schema: unknown;
+};
+
 export interface MessageBubbleProps {
   createdBy: string;
-  createdAt: Date | string;
+  createdAt: Date;
   type: MessageValueType;
   content: MessageContentItem[] ;
   sources: MessageResponseSource[] ;
-  userOutput: { message: string; schema: Record<string, any> |any[] | any } | null;
-  userInput?: any;
+  userOutput: UserOutputPayload | null;
+  userInput?: unknown;
   files: FileInfo[];
   onSubmitUserForm?: (name: string, value: unknown) => void;
 }
@@ -46,7 +50,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
     createdBy, createdAt, type, content, sources, files,
     userOutput, userInput, onSubmitUserForm,
   } = props;
-  const [responseFormData, setResponseFormData] = useState<any>(userInput);
+  const [responseFormData, setResponseFormData] = useState<unknown>(userInput);
   const [responseFormValid, setResponseFormValid] = useState<boolean>(false);
   const isBotResponse = type === MessageValueType.OUTPUT;
   const showForm = userOutput ;
@@ -117,7 +121,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
               schema={userOutput.schema as JsonSchema}
               data={responseFormData}
               renderers={renderers}
-              cells={materialCells}
+              cells={cells}
               readonly={userInput !== undefined}
               onChange={({ data, errors }) => { setResponseFormData(data); setResponseFormValid(!errors?.length); }}
             />

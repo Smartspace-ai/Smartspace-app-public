@@ -7,7 +7,7 @@ import * as messagesService from '@/domains/messages/service';
 describe('messages queries options', () => {
   it('messagesListOptions builds key and reverses array', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const spy = vi.spyOn(messagesService, 'fetchMessages').mockResolvedValueOnce([{ id: 'a', createdAt: '', values: [] } as any, { id: 'b', createdAt: '', values: [] } as any]);
+    const spy = vi.spyOn(messagesService, 'fetchMessages').mockResolvedValueOnce([{ id: 'a', createdAt: new Date('2024-01-01T00:00:00Z'), values: [] } as any, { id: 'b', createdAt: new Date('2024-01-02T00:00:00Z'), values: [] } as any]);
     const opts = messagesListOptions('t1');
     expect(opts.queryKey).toEqual(['messages', 'list', { threadId: 't1' }]);
     const result = await opts.queryFn?.({

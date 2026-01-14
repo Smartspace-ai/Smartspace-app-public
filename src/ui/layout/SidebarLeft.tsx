@@ -14,7 +14,6 @@ import {
 
 import SidebarUserHeader from './SidebarUserHeader';
 
-
 export default function SidebarLeft(props: ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar side="left" className="ss-sidebar__left border-r" {...props}>

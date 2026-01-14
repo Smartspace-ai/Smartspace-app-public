@@ -15,7 +15,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
       disableRipple
       onChange={(e, checked) => {
         onCheckedChange?.(checked)
-        onChange?.(e as any, checked)
+        onChange?.(e, checked)
       }}
       sx={{
         width: 44,

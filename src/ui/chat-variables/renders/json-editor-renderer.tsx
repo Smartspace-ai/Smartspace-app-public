@@ -1,4 +1,5 @@
-import { ControlProps, RankedTester, rankWith } from '@jsonforms/core';
+import type { ControlProps, RankedTester } from '@jsonforms/core';
+import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import 'ace-builds/src-noconflict/ace';
 import 'ace-builds/src-noconflict/ext-language_tools';
@@ -8,30 +9,26 @@ import debounce from 'lodash.debounce';
 import React, { useEffect, useRef, useState } from 'react';
 import AceEditor from 'react-ace';
 
-interface JsonEditorRendererProps extends ControlProps {
-  data: any;
-  handleChange: (path: string, value: any) => void;
-  path: string;
-}
+type AccessUiSchema = { access?: 'Read' | 'Write' };
 
-const JsonEditorRenderer: React.FC<JsonEditorRendererProps> = ({
+const JsonEditorRenderer: React.FC<ControlProps> = ({
   data,
   handleChange,
   path,
   label,
   description,
   errors,
-  schema,
   uischema,
   visible,
-  enabled
+  enabled,
+  required,
 }) => {
   const [jsonValue, setJsonValue] = useState<string>('');
-  const [parseError, setParseError] = useState<string | null>(null);
-  const [displayedParseError, setDisplayedParseError] = useState<string | null>(null);
+  const [displayedParseError, setDisplayedParseError] = useState<string | null>(
+    null
+  );
   const isInitializing = useRef(true);
-  const lastValidData = useRef<any>(null);
-
+  const lastValidData = useRef<unknown>(null);
 
   // Debounced function to display error messages
   const debouncedSetDisplayError = useRef(
@@ -42,11 +39,13 @@ const JsonEditorRenderer: React.FC<JsonEditorRendererProps> = ({
 
   // Convert data to JSON string only on initial load or when external data changes significantly
   useEffect(() => {
-    if (isInitializing.current || (data !== lastValidData.current && data !== undefined)) {
+    if (
+      isInitializing.current ||
+      (data !== lastValidData.current && data !== undefined)
+    ) {
       try {
         const formatted = JSON.stringify(data, null, 2);
         setJsonValue(formatted || '{}');
-        setParseError(null);
         setDisplayedParseError(null);
         debouncedSetDisplayError.current.cancel(); // Cancel any pending error display
         lastValidData.current = data;
@@ -54,7 +53,6 @@ const JsonEditorRenderer: React.FC<JsonEditorRendererProps> = ({
       } catch (error) {
         setJsonValue('{}');
         const errorMsg = 'Invalid JSON data';
-        setParseError(errorMsg);
         setDisplayedParseError(errorMsg);
         isInitializing.current = false;
       }
@@ -64,17 +62,17 @@ const JsonEditorRenderer: React.FC<JsonEditorRendererProps> = ({
   const handleEditorChange = (value: string) => {
     // Always update the editor value to preserve user input and whitespace
     setJsonValue(value);
-    
+
     try {
       const parsed = JSON.parse(value);
-      setParseError(null);
       setDisplayedParseError(null);
       debouncedSetDisplayError.current.cancel(); // Cancel any pending error display
       lastValidData.current = parsed;
       handleChange(path, parsed);
     } catch (error) {
-      const errorMsg = `Invalid JSON: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      setParseError(errorMsg);
+      const errorMsg = `Invalid JSON: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`;
       // Debounce the error display so it doesn't show immediately while typing
       debouncedSetDisplayError.current(errorMsg);
     }
@@ -93,40 +91,52 @@ const JsonEditorRenderer: React.FC<JsonEditorRendererProps> = ({
   }
 
   // Get readOnly from uischema (set when access === 'Read')
-  const readOnly = (uischema as any)?.access === 'Read';
+  const readOnly =
+    (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
 
   return (
     <div style={{ marginBottom: '1rem' }}>
       {label && (
-        <label style={{ 
-          display: 'block', 
-          color: '#475569', 
-          fontSize: '0.875rem', 
-          fontWeight: 500, 
-          marginBottom: '0.375rem' 
-        }}>
+        <label
+          style={{
+            display: 'block',
+            color: '#475569',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            marginBottom: '0.375rem',
+          }}
+        >
           {label}
-          {schema.required && <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>}
+          {required && (
+            <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>
+          )}
         </label>
       )}
-      
+
       {description && (
-        <div style={{ 
-          color: '#6b7280', 
-          fontSize: '0.75rem', 
-          marginBottom: '0.5rem' 
-        }}>
+        <div
+          style={{
+            color: '#6b7280',
+            fontSize: '0.75rem',
+            marginBottom: '0.5rem',
+          }}
+        >
           {description}
         </div>
       )}
 
-      <div style={{ 
-        border: errors || displayedParseError ? '1px solid #ef4444' : '1px solid #d1d5db',
-        borderRadius: '6px',
-        overflow: 'hidden',
-        opacity: isDisabled ? 0.6 : 1
-      }}>
+      <div
+        style={{
+          border:
+            errors || displayedParseError
+              ? '1px solid #ef4444'
+              : '1px solid #d1d5db',
+          borderRadius: '6px',
+          overflow: 'hidden',
+          opacity: isDisabled ? 0.6 : 1,
+        }}
+      >
         <AceEditor
           mode="json"
           theme="github"
@@ -151,29 +161,34 @@ const JsonEditorRenderer: React.FC<JsonEditorRendererProps> = ({
             wrap: true,
           }}
           style={{
-            fontFamily: 'Consolas, Monaco, "Courier New", monospace'
+            fontFamily: 'Consolas, Monaco, "Courier New", monospace',
           }}
         />
       </div>
 
       {displayedParseError && (
-        <div style={{ 
-          color: '#ef4444', 
-          fontSize: '0.75rem', 
-          marginTop: '0.25rem' 
-        }}>
+        <div
+          style={{
+            color: '#ef4444',
+            fontSize: '0.75rem',
+            marginTop: '0.25rem',
+          }}
+        >
           {displayedParseError}
         </div>
       )}
 
-      {errors && <div style={{ 
-          color: '#ef4444', 
-          fontSize: '0.75rem', 
-          marginTop: '0.25rem' 
-        }}>
+      {errors && (
+        <div
+          style={{
+            color: '#ef4444',
+            fontSize: '0.75rem',
+            marginTop: '0.25rem',
+          }}
+        >
           {errors}
         </div>
-      }
+      )}
     </div>
   );
 };
@@ -185,4 +200,5 @@ export const jsonEditorTester: RankedTester = rankWith(
 );
 
 // Enhanced component with JsonForms integration
-export const JsonEditorRendererControl = withJsonFormsControlProps(JsonEditorRenderer); 
+export const JsonEditorRendererControl =
+  withJsonFormsControlProps(JsonEditorRenderer);

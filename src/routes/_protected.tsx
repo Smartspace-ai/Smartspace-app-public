@@ -14,10 +14,14 @@ export const Route = createFileRoute('/_protected')({
   beforeLoad: async ({ location }) => {
     const auth = createAuthAdapter();
     const session = await auth.getSession();
+    const href = (() => {
+      const h = (location as unknown as { href?: unknown })?.href;
+      return typeof h === 'string' ? h : undefined;
+    })();
     const redirectTo = normalizeRedirectPath(
       typeof location?.pathname === 'string'
         ? `${location.pathname}${location.search ?? ''}${location.hash ?? ''}`
-        : (location as any)?.href,
+        : href,
       '/workspace'
     );
     if (!session) throw redirect({ to: '/login', search: { redirect: redirectTo } });

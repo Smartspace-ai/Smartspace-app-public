@@ -3,9 +3,11 @@ import { useNavigate } from '@tanstack/react-router';
 import { useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
 import type { MessageThread } from '@/domains/threads';
 import { useDeleteThread, useSetFavorite } from '@/domains/threads/mutations';
-import { useRouteIds } from '@/pages/WorkspaceThreadPage/RouteIdsProvider';
+
 
 type UseThreadItemVmArgs = {
   thread: MessageThread;

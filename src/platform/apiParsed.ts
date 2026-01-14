@@ -30,11 +30,11 @@ export async function requestParsed<T>(
 export const apiParsed = {
   get:   <T>(schema: ZodSchema<T>, url: string, cfg?: AxiosRequestConfig) =>
           getParsed(schema, url, cfg),
-  post:  <T>(schema: ZodSchema<T>, url: string, data?: any, cfg?: AxiosRequestConfig) =>
+  post:  <T>(schema: ZodSchema<T>, url: string, data?: unknown, cfg?: AxiosRequestConfig) =>
           requestParsed(schema, { method: 'POST', url, data, ...(cfg ?? {}) }),
-  put:   <T>(schema: ZodSchema<T>, url: string, data?: any, cfg?: AxiosRequestConfig) =>
+  put:   <T>(schema: ZodSchema<T>, url: string, data?: unknown, cfg?: AxiosRequestConfig) =>
           requestParsed(schema, { method: 'PUT', url, data, ...(cfg ?? {}) }),
-  patch: <T>(schema: ZodSchema<T>, url: string, data?: any, cfg?: AxiosRequestConfig) =>
+  patch: <T>(schema: ZodSchema<T>, url: string, data?: unknown, cfg?: AxiosRequestConfig) =>
           requestParsed(schema, { method: 'PATCH', url, data, ...(cfg ?? {}) }),
   del:   <T>(schema: ZodSchema<T>, url: string, cfg?: AxiosRequestConfig) =>
           requestParsed(schema, { method: 'DELETE', url, ...(cfg ?? {}) }),

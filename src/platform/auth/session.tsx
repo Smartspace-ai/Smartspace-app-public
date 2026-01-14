@@ -1,6 +1,7 @@
-'use client';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+
 import { createAuthAdapter } from './index';
+import { getAuthRuntimeState, subscribeAuthRuntime } from './runtime';
 import type { AuthAdapter } from './types';
 
 const AuthCtx = createContext<AuthAdapter | null>(null);
@@ -47,4 +48,8 @@ export function useUserId() {
 export function useUserDisplayName() {
   const { session } = useAuthSession();
   return session?.displayName ?? 'You';
+}
+
+export function useAuthRuntime() {
+  return useSyncExternalStore(subscribeAuthRuntime, getAuthRuntimeState, getAuthRuntimeState);
 }

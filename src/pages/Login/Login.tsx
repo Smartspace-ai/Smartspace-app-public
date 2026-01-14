@@ -1,22 +1,27 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
-import { useAuth } from '@/platform/auth/session';
 import { isInTeams } from '@/platform/auth/msalConfig';
+import { useAuth, useAuthRuntime } from '@/platform/auth/session';
+import { ssInfo, ssWarn } from '@/platform/log';
 
 import { useTeams } from '@/app/providers';
 
 import { Button } from '@/shared/ui/mui-compat/button';
 
 import { Logo } from '@/assets/logo';
-import { ssInfo, ssWarn } from '@/platform/log';
 
 import styles from './Login.module.scss';
 
-export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
+export function Login({
+  redirectTo = '/workspace',
+  onNavigate,
+}: {
+  redirectTo?: string;
+  onNavigate?: (to: string) => void;
+}) {
 
   const auth = useAuth();
-  const navigate = useNavigate();
+  const runtime = useAuthRuntime();
   const { isTeamsInitialized, teamsUser, teamsContext, isInTeams: isInTeamsFromProvider } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +49,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
             await auth.getAccessToken({ silentOnly: true });
             setSession(currentSession);
             ssInfo('login', 'session+token OK -> navigate', { to: redirectTo });
-            navigate({ to: redirectTo, replace: true });
+            onNavigate?.(redirectTo);
             return;
           } catch (e) {
             // Treat as not signed in; user needs interactive sign-in.
@@ -84,7 +89,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
       }
     };
     checkSession();
-  }, [auth, redirectTo, navigate, isTeamsInitialized]);
+  }, [auth, redirectTo, onNavigate, isTeamsInitialized]);
 
   // Avoid flashing the login UI if we already have a session
   if (session) {
@@ -94,7 +99,7 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
   // Fallback manual login for browser or if Teams SSO fails
   const handleManualLogin = async () => {
     if (session) {
-      navigate({ to: redirectTo, replace: true });
+      onNavigate?.(redirectTo);
       return;
     }
     
@@ -177,13 +182,20 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
     isInTeams_provider: isInTeamsFromProvider,
     isTeamsInitialized,
     teamsUser: teamsUser ?? null,
-    teamsContextHasUser: !!(teamsContext as any)?.user,
-    lastTeamsAuthError: (() => { try { return (window as any).__teamsAuthLastError ?? null; } catch { return null; } })(),
-    ssconfig: (() => { try { return (window as any)?.ssconfig ?? null; } catch { return null; } })(),
+    teamsContextHasUser: !!(teamsContext && typeof teamsContext === 'object' && 'user' in teamsContext),
+    lastAuthError: runtime.lastError,
+    ssconfig: (() => {
+      try {
+        const w = window as unknown as Window & { ssconfig?: unknown };
+        return w.ssconfig ?? null;
+      } catch {
+        return null;
+      }
+    })(),
     build: {
       mode: import.meta.env.MODE,
       // Optional: set this in CI for easier “which build is deployed?” checks.
-      sha: (import.meta as any)?.env?.VITE_BUILD_SHA ?? null,
+      sha: ((import.meta.env as unknown as { VITE_BUILD_SHA?: string })?.VITE_BUILD_SHA) ?? null,
     },
   };
 
@@ -196,7 +208,14 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
   const copyDiagnostics = async () => {
     const payload = {
       ...diag,
-      ssLogs: (() => { try { return (window as any).__ssLogs ?? []; } catch { return []; } })(),
+      ssLogs: (() => {
+        try {
+          const w = window as unknown as Window & { __ssLogs?: unknown };
+          return w.__ssLogs ?? [];
+        } catch {
+          return [];
+        }
+      })(),
     };
     const text = JSON.stringify(payload, null, 2);
     try {
@@ -248,7 +267,14 @@ export function Login({ redirectTo = '/workspace' }: { redirectTo?: string }) {
 {JSON.stringify(diag, null, 2)}
                       </pre>
                       <pre className="mt-2 whitespace-pre-wrap break-words text-[11px] text-red-900/80 max-h-[260px] overflow-auto">
-{JSON.stringify((() => { try { return (window as any).__ssLogs ?? []; } catch { return []; } })(), null, 2)}
+{JSON.stringify((() => {
+  try {
+    const w = window as unknown as Window & { __ssLogs?: unknown };
+    return w.__ssLogs ?? [];
+  } catch {
+    return [];
+  }
+})(), null, 2)}
                       </pre>
                     </div>
                   ) : null}

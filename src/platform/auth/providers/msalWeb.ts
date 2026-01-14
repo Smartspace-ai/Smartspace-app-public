@@ -1,7 +1,8 @@
 import { msalInstance } from '@/platform/auth/msalClient';
 import { interactiveLoginRequest, loginRequest } from '@/platform/auth/msalConfig';
-import { AuthAdapter, GetTokenOptions } from '../types';
 import { ssInfo, ssWarn } from '@/platform/log';
+
+import { AuthAdapter, GetTokenOptions } from '../types';
 
 export function createMsalWebAdapter(): AuthAdapter {
   async function ensureActive() {
@@ -21,9 +22,12 @@ export function createMsalWebAdapter(): AuthAdapter {
       if (!acct) {
         if (opts?.silentOnly) throw new Error('No active account');
         await msalInstance.loginPopup(interactiveLoginRequest);
+        await ensureActive();
       }
       try {
-        const r = await msalInstance.acquireTokenSilent({ ...loginRequest, account: msalInstance.getActiveAccount()! });
+        const account = msalInstance.getActiveAccount();
+        if (!account) throw new Error('No active account');
+        const r = await msalInstance.acquireTokenSilent({ ...loginRequest, account });
         return r.accessToken;
       } catch (e) {
         ssWarn('auth:web', 'acquireTokenSilent failed', e);
