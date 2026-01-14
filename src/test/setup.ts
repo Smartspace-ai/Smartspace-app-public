@@ -19,28 +19,32 @@ vi.mock('@/platform/log', () => ({
 // triggers "Not implemented: navigation" noise. Stub it globally for unit tests.
 try {
   if (typeof HTMLAnchorElement !== 'undefined') {
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+      () => undefined
+    );
   }
 } catch {
   // ignore
 }
 
 // Mock MSAL/Teams/SignalR related modules to avoid real network/SSO in unit tests
-vi.mock('@/platform/auth/msalClient', () => ({
-  msalInstance: {
+vi.mock('@/platform/auth/msalClient', () => {
+  const msalInstance = {
     acquireTokenSilent: vi.fn(async () => ({ accessToken: 'test-token' })),
     loginRedirect: vi.fn(async () => undefined),
     logoutRedirect: vi.fn(async () => undefined),
     getActiveAccount: vi.fn(() => null),
     getAllAccounts: vi.fn(() => []),
     setActiveAccount: vi.fn(() => undefined),
-  },
-}));
+  };
+  return { getMsalInstance: () => msalInstance };
+});
 
 // Auth: main exports isInTeams from msalConfig; routing helper lives outside auth.
 vi.mock('@/platform/auth/msalConfig', async (orig) => {
   const mod = (await orig()) as unknown;
-  const asObj = (mod && typeof mod === 'object') ? (mod as Record<string, unknown>) : {};
+  const asObj =
+    mod && typeof mod === 'object' ? (mod as Record<string, unknown>) : {};
   return { ...asObj, isInTeams: () => false };
 });
 
@@ -53,8 +57,12 @@ vi.mock('@microsoft/signalr', () => ({
   HttpTransportType: { WebSockets: 1 },
   HubConnectionState: { Connected: 'Connected' },
   HubConnectionBuilder: class {
-    withUrl() { return this; }
-    withAutomaticReconnect() { return this; }
+    withUrl() {
+      return this;
+    }
+    withAutomaticReconnect() {
+      return this;
+    }
     build() {
       return {
         connectionId: 'test-connection-id',
@@ -71,5 +79,3 @@ vi.mock('@microsoft/signalr', () => ({
     }
   },
 }));
-
-

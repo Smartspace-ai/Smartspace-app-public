@@ -1,10 +1,14 @@
-import { msalInstance } from '@/platform/auth/msalClient';
-import { interactiveLoginRequest, loginRequest } from '@/platform/auth/msalConfig';
+import { getMsalInstance } from '@/platform/auth/msalClient';
+import {
+  interactiveLoginRequest,
+  loginRequest,
+} from '@/platform/auth/msalConfig';
 import { ssInfo, ssWarn } from '@/platform/log';
 
 import { AuthAdapter, GetTokenOptions } from '../types';
 
 export function createMsalWebAdapter(): AuthAdapter {
+  const msalInstance = getMsalInstance();
   async function ensureActive() {
     const current = msalInstance.getActiveAccount();
     const all = msalInstance.getAllAccounts();
@@ -27,7 +31,10 @@ export function createMsalWebAdapter(): AuthAdapter {
       try {
         const account = msalInstance.getActiveAccount();
         if (!account) throw new Error('No active account');
-        const r = await msalInstance.acquireTokenSilent({ ...loginRequest, account });
+        const r = await msalInstance.acquireTokenSilent({
+          ...loginRequest,
+          account,
+        });
         return r.accessToken;
       } catch (e) {
         ssWarn('auth:web', 'acquireTokenSilent failed', e);
@@ -39,18 +46,25 @@ export function createMsalWebAdapter(): AuthAdapter {
     },
     async getSession() {
       await ensureActive();
-      const a = msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
+      const a =
+        msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
       ssInfo('auth:web', 'getSession', { hasSession: !!a });
-      return a ? { accountId: a.homeAccountId, displayName: a.name ?? undefined } : null;
+      return a
+        ? { accountId: a.homeAccountId, displayName: a.name ?? undefined }
+        : null;
     },
-    async signIn() { 
+    async signIn() {
       // Store the intended redirect URL before redirecting
-      const redirectUrl = new URLSearchParams(window.location.search).get('redirect') || '/workspace';
+      const redirectUrl =
+        new URLSearchParams(window.location.search).get('redirect') ||
+        '/workspace';
       sessionStorage.setItem('msalRedirectUrl', redirectUrl);
       ssInfo('auth:web', 'signIn -> loginRedirect', { redirectUrl });
-      await msalInstance.loginRedirect(interactiveLoginRequest); 
+      await msalInstance.loginRedirect(interactiveLoginRequest);
     },
-    async signOut() { await msalInstance.logoutPopup(); },
+    async signOut() {
+      await msalInstance.logoutPopup();
+    },
     getStoredRedirectUrl() {
       try {
         return sessionStorage.getItem('msalRedirectUrl');
