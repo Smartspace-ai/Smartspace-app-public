@@ -8,18 +8,14 @@ import remarkGfm from 'remark-gfm';
 import { isInTeams } from '@/platform/auth/msalConfig';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import { MessageValueType, useMessages } from '@/domains/messages';
+import { useMessages } from '@/domains/messages';
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
-import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 import { Skeleton } from '@/shared/ui/mui-compat/skeleton';
-import { getInitials } from '@/shared/utils/initials';
-import { parseDateTime } from '@/shared/utils/parseDateTime';
 
-import { getChatbotName } from '@/theme/public-config';
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 import { MessageItem } from './MessageItem';
@@ -56,7 +52,6 @@ export function MessageList() {
   } = useMessages(threadId);
 
   const { leftOpen, rightOpen } = useSidebar();
-  const chatbotName = getChatbotName(activeWorkspace?.name);
   const inTeams = isInTeams();
 
   // In Teams web, the host can cause the underlying page/background to look dark.
@@ -203,12 +198,6 @@ export function MessageList() {
       </div>
     );
   }
-
-  const messageHasSomeResponse =
-    safeMessages.length > 0 &&
-    safeMessages[safeMessages.length - 1]?.values?.some(
-      (v) => v.type === MessageValueType.OUTPUT
-    );
 
   return (
     <div
