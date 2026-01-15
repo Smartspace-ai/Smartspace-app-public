@@ -116,7 +116,6 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
-          if (id.includes('/react') || id.includes('/react-dom')) return 'react';
           if (id.includes('/@mui/')) return 'mui';
           if (id.includes('/@milkdown/')) return 'milkdown';
           if (id.includes('/@tanstack/')) return 'tanstack';
