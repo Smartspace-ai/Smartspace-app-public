@@ -16,6 +16,8 @@ const publicOriginHost = (() => {
 })();
 
 export default defineConfig({
+  // Use relative base so static hosting works under any path prefix.
+  base: './',
   root: __dirname,
   cacheDir: './node_modules/.vite/smartspace',
 
