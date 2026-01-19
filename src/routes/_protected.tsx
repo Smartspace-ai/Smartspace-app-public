@@ -19,12 +19,41 @@ export const Route = createFileRoute('/_protected')({
       return typeof h === 'string' ? h : undefined;
     })();
     const redirectTo = normalizeRedirectPath(
-      typeof location?.pathname === 'string'
-        ? `${location.pathname}${location.search ?? ''}${location.hash ?? ''}`
-        : href,
+      (() => {
+        if (typeof location?.pathname !== 'string') return href;
+        const rawSearch = (location as unknown as { search?: unknown })?.search;
+        let search = '';
+        if (typeof rawSearch === 'string') {
+          search = rawSearch
+            ? rawSearch.startsWith('?')
+              ? rawSearch
+              : `?${rawSearch}`
+            : '';
+        } else if (rawSearch && typeof rawSearch === 'object') {
+          const params = new URLSearchParams();
+          for (const [key, value] of Object.entries(
+            rawSearch as Record<string, unknown>
+          )) {
+            if (value == null) continue;
+            if (Array.isArray(value)) {
+              for (const v of value) {
+                if (v == null) continue;
+                params.append(key, String(v));
+              }
+            } else {
+              params.set(key, String(value));
+            }
+          }
+          const qs = params.toString();
+          search = qs ? `?${qs}` : '';
+        }
+        const hash = typeof location?.hash === 'string' ? location.hash : '';
+        return `${location.pathname}${search}${hash}`;
+      })(),
       '/workspace'
     );
-    if (!session) throw redirect({ to: '/login', search: { redirect: redirectTo } });
+    if (!session)
+      throw redirect({ to: '/login', search: { redirect: redirectTo } });
     try {
       // Ensure we can acquire an access token silently; otherwise redirect to login
       await auth.getAccessToken({ silentOnly: true });

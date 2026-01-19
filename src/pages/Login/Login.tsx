@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
 import { useAuth, useAuthRuntime } from '@/platform/auth/session';
@@ -19,21 +19,35 @@ export function Login({
   redirectTo?: string;
   onNavigate?: (to: string) => void;
 }) {
-
   const auth = useAuth();
   const runtime = useAuthRuntime();
-  const { isTeamsInitialized, teamsUser, teamsContext, isInTeams: isInTeamsFromProvider } = useTeams();
+  const {
+    isTeamsInitialized,
+    teamsUser,
+    teamsContext,
+    isInTeams: isInTeamsFromProvider,
+  } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGenericError, setShowGenericError] = useState(false);
-  const [session, setSession] = useState<{ accountId?: string; displayName?: string } | null>(null);
+  const [session, setSession] = useState<{
+    accountId?: string;
+    displayName?: string;
+  } | null>(null);
+  const autoSignInAttempted = useRef(false);
   // Check for existing session on mount
   useEffect(() => {
     if (isInTeams() && !isTeamsInitialized) return;
     const checkSession = async () => {
       try {
         ssInfo('login', 'checkSession start', {
-          isInTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
+          isInTeams_msalConfig: (() => {
+            try {
+              return isInTeams();
+            } catch {
+              return null;
+            }
+          })(),
           isTeamsInitialized,
         });
         if (isInTeams()) {
@@ -55,9 +69,24 @@ export function Login({
             // Treat as not signed in; user needs interactive sign-in.
             setSession(null);
             if (isInTeams()) {
-              const msg = e instanceof Error ? e.message : String(e);
-              ssWarn('login', 'token acquisition failed (Teams)', msg);
-              setError(`Teams token acquisition failed: ${msg}`);
+              if (!autoSignInAttempted.current) {
+                autoSignInAttempted.current = true;
+                try {
+                  await auth.signIn();
+                  return;
+                } catch (authError) {
+                  const msg =
+                    authError instanceof Error
+                      ? authError.message
+                      : String(authError);
+                  ssWarn('login', 'auto sign-in failed (Teams)', msg);
+                  setError(`Teams sign-in failed: ${msg}`);
+                }
+              } else {
+                const msg = e instanceof Error ? e.message : String(e);
+                ssWarn('login', 'token acquisition failed (Teams)', msg);
+                setError(`Teams token acquisition failed: ${msg}`);
+              }
             }
           }
         } else {
@@ -67,15 +96,38 @@ export function Login({
             try {
               await auth.getAccessToken({ silentOnly: true });
             } catch (e) {
-              const msg = e instanceof Error ? e.message : String(e);
-              ssWarn('login', 'session missing; token acquisition failed (Teams)', msg);
-              setError(`Teams session missing; token acquisition failed: ${msg}`);
+              if (!autoSignInAttempted.current) {
+                autoSignInAttempted.current = true;
+                try {
+                  await auth.signIn();
+                  return;
+                } catch (authError) {
+                  const msg =
+                    authError instanceof Error
+                      ? authError.message
+                      : String(authError);
+                  ssWarn('login', 'auto sign-in failed (Teams)', msg);
+                  setError(`Teams sign-in failed: ${msg}`);
+                }
+              } else {
+                const msg = e instanceof Error ? e.message : String(e);
+                ssWarn(
+                  'login',
+                  'session missing; token acquisition failed (Teams)',
+                  msg
+                );
+                setError(
+                  `Teams session missing; token acquisition failed: ${msg}`
+                );
+              }
             }
           }
         }
         if (isInTeams()) {
           setShowGenericError(true);
-          setError((prev) => prev ?? 'Unable to sign in with your Teams account.');
+          setError(
+            (prev) => prev ?? 'Unable to sign in with your Teams account.'
+          );
           setIsLoading(false);
         }
       } catch (err) {
@@ -83,7 +135,11 @@ export function Login({
         // No existing session, continue with login flow
         if (isInTeams()) {
           setShowGenericError(true);
-          setError(err instanceof Error ? err.message : 'Unable to sign in with your Teams account.');
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Unable to sign in with your Teams account.'
+          );
           setIsLoading(false);
         }
       }
@@ -102,22 +158,24 @@ export function Login({
       onNavigate?.(redirectTo);
       return;
     }
-    
+
     if (isLoading) {
       return;
     }
-    
+
     setShowGenericError(false); // Clear previous errors
     setIsLoading(true);
     setError(null);
-    
+
     try {
       await auth.signIn();
       // For web auth (MSAL), signIn() performs a redirect, so we don't navigate here
       // For Teams auth, the redirect will be handled by the auto-login effect
     } catch (authError: unknown) {
       // Show generic error on failure
-      setError(authError instanceof Error ? authError.message : 'Authentication failed');
+      setError(
+        authError instanceof Error ? authError.message : 'Authentication failed'
+      );
       setShowGenericError(true);
       setIsLoading(false);
       // eslint-disable-next-line no-console
@@ -128,17 +186,19 @@ export function Login({
   const getButtonText = () => {
     if (isLoading) {
       if (isInTeams()) {
-        return teamsUser ? 
-          `Signing in as ${teamsUser.displayName || teamsUser.userPrincipalName}...` : 
-          'Authenticating with Teams...';
+        return teamsUser
+          ? `Signing in as ${
+              teamsUser.displayName || teamsUser.userPrincipalName
+            }...`
+          : 'Authenticating with Teams...';
       }
       return 'Signing in...';
     }
-    
+
     if (showGenericError || error) {
       return 'Try Again';
     }
-    
+
     return 'Sign in';
   };
 
@@ -147,7 +207,8 @@ export function Login({
       return (
         <div className="text-red-600 text-sm text-center max-w-sm">
           <div className="mb-2">
-            Unable to sign in with your Teams account. This may be due to permission or configuration issues.
+            Unable to sign in with your Teams account. This may be due to
+            permission or configuration issues.
           </div>
           {error}
           <div className="text-xs text-gray-600">
@@ -156,7 +217,7 @@ export function Login({
         </div>
       );
     }
-    
+
     return (
       <div className="text-red-600 text-sm text-center max-w-sm">
         <div className="mb-2">
@@ -176,13 +237,35 @@ export function Login({
   const canShowDiag = showTeamsErrorPanel; // always show diagnostics when Teams sign-in fails
 
   const diag = {
-    href: (() => { try { return window.location.href; } catch { return null; } })(),
-    origin: (() => { try { return window.location.origin; } catch { return null; } })(),
-    isInTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
+    href: (() => {
+      try {
+        return window.location.href;
+      } catch {
+        return null;
+      }
+    })(),
+    origin: (() => {
+      try {
+        return window.location.origin;
+      } catch {
+        return null;
+      }
+    })(),
+    isInTeams_msalConfig: (() => {
+      try {
+        return isInTeams();
+      } catch {
+        return null;
+      }
+    })(),
     isInTeams_provider: isInTeamsFromProvider,
     isTeamsInitialized,
     teamsUser: teamsUser ?? null,
-    teamsContextHasUser: !!(teamsContext && typeof teamsContext === 'object' && 'user' in teamsContext),
+    teamsContextHasUser: !!(
+      teamsContext &&
+      typeof teamsContext === 'object' &&
+      'user' in teamsContext
+    ),
     lastAuthError: runtime.lastError,
     ssconfig: (() => {
       try {
@@ -195,14 +278,28 @@ export function Login({
     build: {
       mode: import.meta.env.MODE,
       // Optional: set this in CI for easier “which build is deployed?” checks.
-      sha: ((import.meta.env as unknown as { VITE_BUILD_SHA?: string })?.VITE_BUILD_SHA) ?? null,
+      sha:
+        (import.meta.env as unknown as { VITE_BUILD_SHA?: string })
+          ?.VITE_BUILD_SHA ?? null,
     },
   };
 
   const enableDebugAndReload = () => {
-    try { localStorage.setItem('ss_debug', '1'); } catch { /* ignore */ }
-    try { sessionStorage.setItem('ss_debug', '1'); } catch { /* ignore */ }
-    try { window.location.reload(); } catch { /* ignore */ }
+    try {
+      localStorage.setItem('ss_debug', '1');
+    } catch {
+      /* ignore */
+    }
+    try {
+      sessionStorage.setItem('ss_debug', '1');
+    } catch {
+      /* ignore */
+    }
+    try {
+      window.location.reload();
+    } catch {
+      /* ignore */
+    }
   };
 
   const copyDiagnostics = async () => {
@@ -224,7 +321,11 @@ export function Login({
       setError((prev) => prev ?? 'Diagnostics copied to clipboard.');
     } catch {
       // Clipboard may be blocked in some Teams contexts; fall back to showing text.
-      setError((prev) => prev ?? 'Unable to copy diagnostics (clipboard blocked). Please select/copy the diagnostics text below.');
+      setError(
+        (prev) =>
+          prev ??
+          'Unable to copy diagnostics (clipboard blocked). Please select/copy the diagnostics text below.'
+      );
     }
   };
 
@@ -242,7 +343,9 @@ export function Login({
           {/* Login controls */}
           {isInTeams() ? (
             <div className="w-full flex flex-col items-stretch gap-2">
-              <div className="text-sm text-gray-700 mb-1">Signing in with Teams…</div>
+              <div className="text-sm text-gray-700 mb-1">
+                Signing in with Teams…
+              </div>
               {showTeamsErrorPanel && (
                 <div className="mt-2 p-3 rounded border border-red-200 bg-red-50 text-red-800 text-sm">
                   <div className="font-semibold mb-1">Teams sign-in error</div>
@@ -256,25 +359,28 @@ export function Login({
                         >
                           Enable debug logs
                         </Button>
-                        <Button
-                          onClick={copyDiagnostics}
-                          className="text-xs"
-                        >
+                        <Button onClick={copyDiagnostics} className="text-xs">
                           Copy diagnostics
                         </Button>
                       </div>
                       <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-red-900/90 max-h-[260px] overflow-auto">
-{JSON.stringify(diag, null, 2)}
+                        {JSON.stringify(diag, null, 2)}
                       </pre>
                       <pre className="mt-2 whitespace-pre-wrap break-words text-[11px] text-red-900/80 max-h-[260px] overflow-auto">
-{JSON.stringify((() => {
-  try {
-    const w = window as unknown as Window & { __ssLogs?: unknown };
-    return w.__ssLogs ?? [];
-  } catch {
-    return [];
-  }
-})(), null, 2)}
+                        {JSON.stringify(
+                          (() => {
+                            try {
+                              const w = window as unknown as Window & {
+                                __ssLogs?: unknown;
+                              };
+                              return w.__ssLogs ?? [];
+                            } catch {
+                              return [];
+                            }
+                          })(),
+                          null,
+                          2
+                        )}
                       </pre>
                     </div>
                   ) : null}
@@ -282,8 +388,8 @@ export function Login({
               )}
             </div>
           ) : (
-            <Button 
-              onClick={handleManualLogin} 
+            <Button
+              onClick={handleManualLogin}
               disabled={isLoading}
               className="w-full text-lg mb-4"
             >
@@ -292,9 +398,7 @@ export function Login({
           )}
 
           {/* Show error message even while loading to surface Teams/MSAL details on mobile */}
-          {(showGenericError || error) && (
-            getErrorMessage()
-          )}
+          {(showGenericError || error) && getErrorMessage()}
 
           {/* Diagnostics removed for production */}
         </div>
