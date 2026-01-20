@@ -67,7 +67,14 @@ export const naaInit = () => {
         system: { allowNativeBroker: false },
         cache: { cacheLocation: 'localStorage' },
       };
-      return createNestablePublicClientApplication(config);
+      const pca = createNestablePublicClientApplication(config);
+      // Ensure cache is hydrated before first token attempt when supported.
+      const maybeInit = (pca as unknown as { initialize?: () => Promise<void> })
+        .initialize;
+      if (typeof maybeInit === 'function') {
+        await maybeInit();
+      }
+      return pca;
     })();
   }
   return pcaPromise;
@@ -92,8 +99,14 @@ export const acquireNaaToken = async (
   if (cached && !isExpired(cached.exp)) return cached.token;
 
   const pca = await naaInit();
-  const accounts = pca.getAllAccounts();
-  const account = accounts[0];
+  let account = pca.getAllAccounts()[0];
+  if (!account) {
+    // Teams/NAA can take a moment to hydrate accounts; retry briefly.
+    for (let attempt = 1; attempt <= 3 && !account; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+      account = pca.getAllAccounts()[0];
+    }
+  }
 
   try {
     if (!account) {

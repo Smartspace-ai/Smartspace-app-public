@@ -17,12 +17,35 @@ export function createTeamsNaaAdapter(): AuthAdapter {
         });
         await naaInit();
         const scopes = opts?.scopes?.length ? opts.scopes : getClientScopes();
-        ssInfo('auth:teams', 'getAccessToken acquiring (no token will be logged)', {
-          scopesCount: scopes.length,
-          scopes: scopes,
-          scopeSource: (opts?.scopes?.length ? 'callsite' : 'configured'),
-        });
-        const token = await acquireNaaToken(scopes, { silentOnly: !!opts?.silentOnly });
+        ssInfo(
+          'auth:teams',
+          'getAccessToken acquiring (no token will be logged)',
+          {
+            scopesCount: scopes.length,
+            scopes: scopes,
+            scopeSource: opts?.scopes?.length ? 'callsite' : 'configured',
+          }
+        );
+        let token: string;
+        try {
+          token = await acquireNaaToken(scopes, {
+            silentOnly: !!opts?.silentOnly,
+          });
+        } catch (error) {
+          const message = String(
+            error instanceof Error ? error.message : error
+          );
+          // First-load race: account cache may not be ready yet; retry once after short delay.
+          if (
+            opts?.silentOnly &&
+            message.toLowerCase().includes('no account')
+          ) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            token = await acquireNaaToken(scopes, { silentOnly: true });
+          } else {
+            throw error;
+          }
+        }
         setRuntimeAuthError(null);
         return token;
       } catch (error) {
@@ -42,21 +65,31 @@ export function createTeamsNaaAdapter(): AuthAdapter {
           await teamsApp.initialize();
         } catch (initError) {
           // Teams might already be initialized, ignore this error
-          ssWarn('auth:teams', 'teamsApp.initialize threw (ignored)', initError);
+          ssWarn(
+            'auth:teams',
+            'teamsApp.initialize threw (ignored)',
+            initError
+          );
         }
-        
+
         const ctx = await teamsApp.getContext();
         if (!ctx.user) {
           ssWarn('auth:teams', 'getSession: ctx.user missing', ctx);
-          setRuntimeAuthError({ source: 'teams', message: 'Teams context missing user (ctx.user is empty)' });
+          setRuntimeAuthError({
+            source: 'teams',
+            message: 'Teams context missing user (ctx.user is empty)',
+          });
           return null;
         }
-        
-        ssInfo('auth:teams', 'getSession success', { userId: ctx.user.id, hasDisplayName: !!ctx.user.displayName });
+
+        ssInfo('auth:teams', 'getSession success', {
+          userId: ctx.user.id,
+          hasDisplayName: !!ctx.user.displayName,
+        });
         setRuntimeAuthError(null);
-        return { 
-          accountId: ctx.user.id, 
-          displayName: ctx.user.displayName 
+        return {
+          accountId: ctx.user.id,
+          displayName: ctx.user.displayName,
         };
       } catch (error) {
         ssWarn('auth:teams', 'getSession failed', error);
@@ -67,14 +100,14 @@ export function createTeamsNaaAdapter(): AuthAdapter {
         return null;
       }
     },
-    async signIn() { 
+    async signIn() {
       // Teams: interactive token acquisition via popup can be required on some clients.
       // Keep this interactive flow in the auth/login layer (not in the API layer).
       await naaInit();
       const scopes = getClientScopes();
       await acquireNaaToken(scopes, { silentOnly: false });
     },
-    async signOut() { 
+    async signOut() {
       // Teams handles sign-out
       ssInfo('auth:teams', 'signOut requested - handled by Teams');
     },

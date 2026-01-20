@@ -202,7 +202,8 @@ export function Login({
     }
   };
 
-  // Teams auto-login; no manual handlers needed
+  // Teams auto-login may be blocked without user gesture in some hosts.
+  // Provide a manual retry button in the Teams error panel.
 
   const getButtonText = () => {
     if (isLoading) {
@@ -374,6 +375,9 @@ export function Login({
                   {canShowDiag ? (
                     <div className="mt-2">
                       <div className="flex gap-2 flex-wrap">
+                        <Button onClick={handleManualLogin} className="text-xs">
+                          Retry sign-in
+                        </Button>
                         <Button
                           onClick={enableDebugAndReload}
                           className="text-xs"
