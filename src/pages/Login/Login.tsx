@@ -2,7 +2,9 @@ import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
-import { useAuth } from '@/platform/auth/session';
+import { useAuth, useAuthRuntime } from '@/platform/auth/session';
+import { ssInfo, ssWarn } from '@/platform/log';
+import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
 import { useTeams } from '@/app/providers';
 
@@ -12,78 +14,153 @@ import { Logo } from '@/assets/logo';
 
 import styles from './Login.module.scss';
 
-export function Login() {
-  // Grab intended redirect path from URL if present
-  const redirectParam =
-    new URLSearchParams(window.location.search).get('redirect') ?? '/workspace';
+declare const __BUILD_TIME__: string;
+
+export function Login({
+  redirectTo,
+  onNavigate,
+}: {
+  redirectTo?: string;
+  onNavigate?: (to: string) => void;
+}) {
+  const auth = useAuth();
+  const runtime = useAuthRuntime();
+  const navigate = useNavigate();
+  const {
+    isTeamsInitialized,
+    teamsUser,
+    teamsContext,
+    isInTeams: isInTeamsFromProvider,
+  } = useTeams();
+  const redirectParam = new URLSearchParams(window.location.search).get(
+    'redirect'
+  );
+  const resolvedRedirect = normalizeRedirectPath(
+    redirectTo ?? redirectParam,
+    '/workspace'
+  );
   const buildTime =
     typeof __BUILD_TIME__ === 'string' && __BUILD_TIME__
       ? __BUILD_TIME__
       : 'unknown';
-
-  const auth = useAuth();
-  const navigate = useNavigate();
-  const { isTeamsInitialized, teamsUser } = useTeams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGenericError, setShowGenericError] = useState(false);
-  const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
   const [session, setSession] = useState<{
     accountId?: string;
     displayName?: string;
   } | null>(null);
+  const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
   // Check for existing session on mount
   useEffect(() => {
+    if (isInTeams() && !isTeamsInitialized) return;
     const checkSession = async () => {
       try {
+        ssInfo('login', 'checkSession start', {
+          isInTeams_msalConfig: (() => {
+            try {
+              return isInTeams();
+            } catch {
+              return null;
+            }
+          })(),
+          isTeamsInitialized,
+        });
+        if (isInTeams()) {
+          setIsLoading(true);
+          setShowGenericError(false);
+          setError(null);
+        }
         const currentSession = await auth.getSession();
         setSession(currentSession);
         if (currentSession) {
-          navigate({ to: redirectParam, replace: true });
+          try {
+            await auth.getAccessToken({ silentOnly: true });
+            setSession(currentSession);
+            ssInfo('login', 'session+token OK -> navigate', {
+              to: resolvedRedirect,
+            });
+            if (onNavigate) {
+              onNavigate(resolvedRedirect);
+            } else {
+              navigate({ to: resolvedRedirect, replace: true });
+            }
+            return;
+          } catch (e) {
+            // Treat as not signed in; user needs interactive sign-in.
+            setSession(null);
+            if (isInTeams()) {
+              const msg = e instanceof Error ? e.message : String(e);
+              ssWarn('login', 'token acquisition failed (Teams)', msg);
+              setError(`Teams token acquisition failed: ${msg}`);
+            }
+          }
+        } else {
+          setSession(null);
+          // If we got no session, try to acquire a token anyway so we can surface the real failure.
+          if (isInTeams()) {
+            try {
+              await auth.getAccessToken({ silentOnly: true });
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : String(e);
+              ssWarn(
+                'login',
+                'session missing; token acquisition failed (Teams)',
+                msg
+              );
+              setError(
+                `Teams session missing; token acquisition failed: ${msg}`
+              );
+            }
+          }
+        }
+        if (isInTeams()) {
+          setShowGenericError(true);
+          setError(
+            (prev) => prev ?? 'Unable to sign in with your Teams account.'
+          );
+          setIsLoading(false);
         }
       } catch (err) {
         // No existing session, continue with login flow
+        if (isInTeams()) {
+          setShowGenericError(true);
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Unable to sign in with your Teams account.'
+          );
+          setIsLoading(false);
+        }
       }
     };
     checkSession();
-  }, [auth, redirectParam, navigate]);
+  }, [auth, resolvedRedirect, onNavigate, isTeamsInitialized, navigate]);
 
-  // Auto-attempt Teams authentication (desktop and mobile)
+  // Auto-attempt Teams authentication when silent token acquisition fails.
   useEffect(() => {
     if (
-      isInTeams() &&
-      isTeamsInitialized &&
-      !isLoading &&
-      !hasAttemptedAutoLogin &&
-      !session
+      !isInTeams() ||
+      !isTeamsInitialized ||
+      isLoading ||
+      hasAttemptedAutoLogin ||
+      session
     ) {
-      setHasAttemptedAutoLogin(true);
-      setIsLoading(true);
-      setError(null);
-
-      auth
-        .signIn()
-        .then(() => {
-          // After successful Teams sign in, navigate to the redirect URL
-          navigate({ to: redirectParam, replace: true });
-        })
-        .catch((err: unknown) => {
-          setError(
-            err instanceof Error ? err.message : 'Authentication failed'
-          );
-          setShowGenericError(true);
-          setIsLoading(false);
-        });
+      return;
     }
-  }, [
-    isTeamsInitialized,
-    isLoading,
-    hasAttemptedAutoLogin,
-    session,
-    auth,
-    navigate,
-    redirectParam,
-  ]);
+
+    setHasAttemptedAutoLogin(true);
+    setIsLoading(true);
+    setShowGenericError(false);
+    setError(null);
+
+    auth.signIn().catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : 'Authentication failed';
+      setError(msg);
+      setShowGenericError(true);
+      setIsLoading(false);
+    });
+  }, [auth, isTeamsInitialized, isLoading, hasAttemptedAutoLogin, session]);
 
   // Avoid flashing the login UI if we already have a session
   if (session) {
@@ -93,7 +170,11 @@ export function Login() {
   // Fallback manual login for browser or if Teams SSO fails
   const handleManualLogin = async () => {
     if (session) {
-      navigate({ to: redirectParam, replace: true });
+      if (onNavigate) {
+        onNavigate(resolvedRedirect);
+      } else {
+        navigate({ to: resolvedRedirect, replace: true });
+      }
       return;
     }
 
@@ -174,6 +255,100 @@ export function Login() {
 
   // Prominent Teams error panel content
   const showTeamsErrorPanel = isInTeams() && (showGenericError || !!error);
+  const canShowDiag = showTeamsErrorPanel; // always show diagnostics when Teams sign-in fails
+
+  const diag = {
+    href: (() => {
+      try {
+        return window.location.href;
+      } catch {
+        return null;
+      }
+    })(),
+    origin: (() => {
+      try {
+        return window.location.origin;
+      } catch {
+        return null;
+      }
+    })(),
+    isInTeams_msalConfig: (() => {
+      try {
+        return isInTeams();
+      } catch {
+        return null;
+      }
+    })(),
+    isInTeams_provider: isInTeamsFromProvider,
+    isTeamsInitialized,
+    teamsUser: teamsUser ?? null,
+    teamsContextHasUser: !!(
+      teamsContext &&
+      typeof teamsContext === 'object' &&
+      'user' in teamsContext
+    ),
+    lastAuthError: runtime.lastError,
+    ssconfig: (() => {
+      try {
+        const w = window as unknown as Window & { ssconfig?: unknown };
+        return w.ssconfig ?? null;
+      } catch {
+        return null;
+      }
+    })(),
+    build: {
+      mode: import.meta.env.MODE,
+      // Optional: set this in CI for easier “which build is deployed?” checks.
+      sha:
+        (import.meta.env as unknown as { VITE_BUILD_SHA?: string })
+          ?.VITE_BUILD_SHA ?? null,
+    },
+  };
+
+  const enableDebugAndReload = () => {
+    try {
+      localStorage.setItem('ss_debug', '1');
+    } catch {
+      /* ignore */
+    }
+    try {
+      sessionStorage.setItem('ss_debug', '1');
+    } catch {
+      /* ignore */
+    }
+    try {
+      window.location.reload();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const copyDiagnostics = async () => {
+    const payload = {
+      ...diag,
+      ssLogs: (() => {
+        try {
+          const w = window as unknown as Window & { __ssLogs?: unknown };
+          return w.__ssLogs ?? [];
+        } catch {
+          return [];
+        }
+      })(),
+    };
+    const text = JSON.stringify(payload, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      // Give lightweight feedback without adding new UI deps
+      setError((prev) => prev ?? 'Diagnostics copied to clipboard.');
+    } catch {
+      // Clipboard may be blocked in some Teams contexts; fall back to showing text.
+      setError(
+        (prev) =>
+          prev ??
+          'Unable to copy diagnostics (clipboard blocked). Please select/copy the diagnostics text below.'
+      );
+    }
+  };
 
   return (
     <div className={`ss-login ${styles['container']}`}>
@@ -196,6 +371,40 @@ export function Login() {
                 <div className="mt-2 p-3 rounded border border-red-200 bg-red-50 text-red-800 text-sm">
                   <div className="font-semibold mb-1">Teams sign-in error</div>
                   {getErrorMessage()}
+                  {canShowDiag ? (
+                    <div className="mt-2">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          onClick={enableDebugAndReload}
+                          className="text-xs"
+                        >
+                          Enable debug logs
+                        </Button>
+                        <Button onClick={copyDiagnostics} className="text-xs">
+                          Copy diagnostics
+                        </Button>
+                      </div>
+                      <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-red-900/90 max-h-[260px] overflow-auto">
+                        {JSON.stringify(diag, null, 2)}
+                      </pre>
+                      <pre className="mt-2 whitespace-pre-wrap break-words text-[11px] text-red-900/80 max-h-[260px] overflow-auto">
+                        {JSON.stringify(
+                          (() => {
+                            try {
+                              const w = window as unknown as Window & {
+                                __ssLogs?: unknown;
+                              };
+                              return w.__ssLogs ?? [];
+                            } catch {
+                              return [];
+                            }
+                          })(),
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>

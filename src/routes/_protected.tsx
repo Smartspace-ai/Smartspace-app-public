@@ -1,69 +1,45 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
 import { createAuthAdapter } from '@/platform/auth';
+import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
 
 export const Route = createFileRoute('/_protected')({
   beforeLoad: async ({ location }) => {
+    const auth = createAuthAdapter();
+    const session = await auth.getSession();
+    const redirectTo = normalizeRedirectPath(
+      formatLocationHref(location),
+      '/workspace'
+    );
+    if (!session)
+      throw redirect({ to: '/login', search: { redirect: redirectTo } });
     try {
-      // Give Teams/MSAL time to initialize properly (slightly longer on cold start)
-      await delay(700);
-
-      // Try to get session with retry logic for Teams
-      let session = null;
-      let attempts = 0;
-      const maxAttempts = 3;
-
-      while (!session && attempts < maxAttempts) {
-        try {
-          // Recreate adapter each attempt to pick up environment/init changes
-          const auth = createAuthAdapter();
-          session = await auth.getSession();
-          if (session) break;
-        } catch (error) {
-          console.warn(`Authentication attempt ${attempts + 1} failed:`, error);
-        }
-
-        attempts++;
-        if (attempts < maxAttempts) {
-          // Wait before retry, with increasing delay
-          await delay(1000 * attempts);
-        }
-      }
-
-      if (!session) {
-        console.log(
-          'No valid session found after retries, redirecting to login'
-        );
-        throw redirect({
-          to: '/login',
-          search: { redirect: getRedirectHref(location) },
-        });
-      }
-
-      console.log('Authentication successful:', session);
-    } catch (error) {
-      console.error('Authentication failed:', error);
-      throw redirect({
-        to: '/login',
-        search: { redirect: getRedirectHref(location) },
-      });
+      // Ensure we can acquire an access token silently; otherwise redirect to login
+      await auth.getAccessToken({ silentOnly: true });
+    } catch {
+      throw redirect({ to: '/login', search: { redirect: redirectTo } });
     }
   },
-  component: () => <Outlet />,
+
+  component: () => (
+    <>
+      {/* Global top progress bar for route transitions (with a small delay to avoid flicker) */}
+      <RouteProgressBar />
+      <Outlet />
+    </>
+  ),
 });
 
-function getRedirectHref(location: {
+function formatLocationHref(location: {
   href?: unknown;
   pathname?: unknown;
   search?: unknown;
   hash?: unknown;
-}): string {
-  const href = typeof location.href === 'string' ? location.href : '';
-  if (href && !href.includes('[object Object]')) {
-    return href;
-  }
+}): string | undefined {
+  const href = typeof location.href === 'string' ? location.href : undefined;
+  if (href) return href;
 
   const pathname =
     typeof location.pathname === 'string' ? location.pathname : '/';
