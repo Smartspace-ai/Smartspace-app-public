@@ -46,6 +46,7 @@ export function Login({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGenericError, setShowGenericError] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [session, setSession] = useState<{
     accountId?: string;
     displayName?: string;
@@ -55,6 +56,7 @@ export function Login({
   useEffect(() => {
     if (isInTeams() && !isTeamsInitialized) return;
     const checkSession = async () => {
+      setIsCheckingSession(true);
       try {
         ssInfo('login', 'checkSession start', {
           isInTeams_msalConfig: (() => {
@@ -132,6 +134,8 @@ export function Login({
           );
           setIsLoading(false);
         }
+      } finally {
+        setIsCheckingSession(false);
       }
     };
     checkSession();
@@ -162,10 +166,7 @@ export function Login({
     });
   }, [auth, isTeamsInitialized, isLoading, hasAttemptedAutoLogin, session]);
 
-  // Avoid flashing the login UI if we already have a session
-  if (session) {
-    return null;
-  }
+  const showLoadingScreen = session || isCheckingSession || isLoading;
 
   // Fallback manual login for browser or if Teams SSO fails
   const handleManualLogin = async () => {
@@ -363,7 +364,9 @@ export function Login({
           </div>
 
           {/* Login controls */}
-          {isInTeams() ? (
+          {showLoadingScreen ? (
+            <div className="text-sm text-gray-700">Loading SmartSpace…</div>
+          ) : isInTeams() ? (
             <div className="w-full flex flex-col items-stretch gap-2">
               <div className="text-sm text-gray-700 mb-1">
                 Signing in with Teams…
@@ -423,7 +426,9 @@ export function Login({
           )}
 
           {/* Show error message even while loading to surface Teams/MSAL details on mobile */}
-          {(showGenericError || error) && getErrorMessage()}
+          {!showLoadingScreen &&
+            (showGenericError || error) &&
+            getErrorMessage()}
 
           {/* Diagnostics removed for production */}
           <div className="mt-3 text-[11px] text-gray-400 text-center">
