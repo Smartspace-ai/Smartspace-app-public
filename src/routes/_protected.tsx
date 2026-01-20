@@ -36,14 +36,48 @@ export const Route = createFileRoute('/_protected')({
         console.log(
           'No valid session found after retries, redirecting to login'
         );
-        throw redirect({ to: '/login', search: { redirect: location.href } });
+        throw redirect({
+          to: '/login',
+          search: { redirect: getRedirectHref(location) },
+        });
       }
 
       console.log('Authentication successful:', session);
     } catch (error) {
       console.error('Authentication failed:', error);
-      throw redirect({ to: '/login', search: { redirect: location.href } });
+      throw redirect({
+        to: '/login',
+        search: { redirect: getRedirectHref(location) },
+      });
     }
   },
   component: () => <Outlet />,
 });
+
+function getRedirectHref(location: {
+  href?: unknown;
+  pathname?: unknown;
+  search?: unknown;
+  hash?: unknown;
+}): string {
+  const href = typeof location.href === 'string' ? location.href : '';
+  if (href && !href.includes('[object Object]')) {
+    return href;
+  }
+
+  const pathname =
+    typeof location.pathname === 'string' ? location.pathname : '/';
+  const hash = typeof location.hash === 'string' ? location.hash : '';
+  const search =
+    typeof location.search === 'string'
+      ? location.search
+      : location.search && typeof location.search === 'object'
+      ? `?${new URLSearchParams(
+          Object.entries(location.search as Record<string, unknown>)
+            .filter(([, value]) => value !== undefined && value !== null)
+            .map(([key, value]) => [key, String(value)])
+        ).toString()}`
+      : '';
+
+  return `${pathname}${search}${hash}`;
+}
