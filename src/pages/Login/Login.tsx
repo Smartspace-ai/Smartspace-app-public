@@ -16,6 +16,10 @@ export function Login() {
   // Grab intended redirect path from URL if present
   const redirectParam =
     new URLSearchParams(window.location.search).get('redirect') ?? '/workspace';
+  const buildTime =
+    typeof __BUILD_TIME__ === 'string' && __BUILD_TIME__
+      ? __BUILD_TIME__
+      : 'unknown';
 
   const auth = useAuth();
   const navigate = useNavigate();
@@ -209,6 +213,9 @@ export function Login() {
           {(showGenericError || error) && getErrorMessage()}
 
           {/* Diagnostics removed for production */}
+          <div className="mt-3 text-[11px] text-gray-400 text-center">
+            Build: {buildTime}
+          </div>
         </div>
       </div>
     </div>

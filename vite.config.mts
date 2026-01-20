@@ -18,6 +18,9 @@ const publicOriginHost = (() => {
 export default defineConfig({
   root: __dirname,
   cacheDir: './node_modules/.vite/smartspace',
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
 
   server: {
     port: 4300,
