@@ -10,6 +10,8 @@ import * as React from 'react';
 import { useUpdateFlowRunVariable } from '@/domains/flowruns/mutations';
 import { useFlowRunVariables } from '@/domains/flowruns/queries';
 
+import { isDraftThreadId } from '@/shared/utils/threadId';
+
 import { cells, renderers } from './renders/index';
 import type { WorkspaceLike } from './types';
 
@@ -151,7 +153,7 @@ export function useChatVariablesFormVm({
 
   const onChange = React.useCallback(
     ({ data: next }: { data: Record<string, unknown> }) => {
-      if (prevRef.current) {
+      if (prevRef.current && !isDraftThreadId(threadId)) {
         const keys = Object.keys((workspace.variables as VarsRecord) || {});
         for (const k of keys) {
           const before = prevRef.current?.[k];
