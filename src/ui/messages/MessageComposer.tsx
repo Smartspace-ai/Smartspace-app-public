@@ -1,4 +1,4 @@
-import Button from '@mui/material/Button';
+import MuiButton from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import {
   ArrowBigUp,
@@ -27,6 +27,7 @@ import { ChatVariablesForm } from '@/ui/chat-variables/VariablesForm';
 
 import type { MarkdownEditorHandle } from '@/shared/ui/markdown/MarkdownEditor';
 import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
+import { Button as UIButton } from '@/shared/ui/mui-compat/button';
 
 import { useMessageComposerVm } from './MessageComposer.vm';
 
@@ -36,7 +37,15 @@ declare global {
   }
 }
 
-const imageExtensions = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg']);
+const imageExtensions = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'bmp',
+  'svg',
+]);
 
 function getExtension(fileName: string) {
   const parts = (fileName || '').split('.');
@@ -51,10 +60,32 @@ function getFileIcon(fileName: string) {
   const ext = getExtension(fileName);
 
   if (imageExtensions.has(ext)) return FileImage;
-  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(ext)) return FileVideo;
-  if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma'].includes(ext)) return FileAudio;
-  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) return FileArchive;
-  if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'cs', 'php', 'html', 'css', 'json', 'xml', 'md'].includes(ext)) return FileCode;
+  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(ext))
+    return FileVideo;
+  if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma'].includes(ext))
+    return FileAudio;
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext))
+    return FileArchive;
+  if (
+    [
+      'js',
+      'ts',
+      'jsx',
+      'tsx',
+      'py',
+      'java',
+      'cpp',
+      'c',
+      'cs',
+      'php',
+      'html',
+      'css',
+      'json',
+      'xml',
+      'md',
+    ].includes(ext)
+  )
+    return FileCode;
   if (['xlsx', 'xls', 'csv'].includes(ext)) return FileSpreadsheet;
   if (['pptx', 'ppt'].includes(ext)) return Presentation;
   return FileText;
@@ -91,16 +122,28 @@ export default function MessageComposer() {
     hasAttachments: uploadedAttachments.length > 0,
     isUploadingFiles: isUploadingAttachments,
   });
- 
+
   const {
     // context
-    workspace, workspaceId, threadId, isMobile, leftOpen, rightOpen,
+    workspace,
+    workspaceId,
+    threadId,
+    isMobile,
+    leftOpen,
+    rightOpen,
 
     // text
-    newMessage, setNewMessage, handleKeyDown, handleSendMessage, isSending, disabled,
+    newMessage,
+    setNewMessage,
+    handleKeyDown,
+    handleSendMessage,
+    isSending,
+    disabled,
 
     // ui state
-    isFullscreen, setIsFullscreen, showExpand,
+    isFullscreen,
+    setIsFullscreen,
+    showExpand,
 
     // derived
     sendDisabled,
@@ -185,7 +228,11 @@ export default function MessageComposer() {
         return next;
       });
     } catch {
-      setAttachments((prev) => prev.map((a) => (items.some((it) => it.key === a.key) ? { ...a, status: 'error' } : a)));
+      setAttachments((prev) =>
+        prev.map((a) =>
+          items.some((it) => it.key === a.key) ? { ...a, status: 'error' } : a
+        )
+      );
     } finally {
       setUploadingCount((c) => Math.max(0, c - 1));
     }
@@ -196,7 +243,11 @@ export default function MessageComposer() {
     const keys = new Set(attachments.map((a) => a.key));
     for (const [k, url] of Object.entries(previewUrlsRef.current)) {
       if (keys.has(k)) continue;
-      try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+        /* ignore */
+      }
       delete previewUrlsRef.current[k];
     }
   }, [attachments]);
@@ -213,7 +264,11 @@ export default function MessageComposer() {
     setAttachments((prev) => prev.filter((a) => a.key !== id));
     const url = previewUrlsRef.current[id];
     if (url) {
-      try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+        /* ignore */
+      }
       delete previewUrlsRef.current[id];
     }
   };
@@ -221,7 +276,11 @@ export default function MessageComposer() {
   const handleClearAttachments = () => {
     setAttachments([]);
     for (const url of Object.values(previewUrlsRef.current)) {
-      try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+        /* ignore */
+      }
     }
     previewUrlsRef.current = {};
   };
@@ -260,27 +319,42 @@ export default function MessageComposer() {
       {workspace && threadId && (
         <div
           className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
-            !isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''
+            !isMobile
+              ? `${
+                  leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'
+                } mx-auto`
+              : ''
           } transition-[max-width] duration-300 ease-in-out`}
         >
-          <ChatVariablesForm workspace={workspace} threadId={threadId} setVariables={setVariables} />
+          <ChatVariablesForm
+            workspace={workspace}
+            threadId={threadId}
+            setVariables={setVariables}
+          />
         </div>
       )}
-      {Object.keys(workspace?.variables ?? {}).length > 0 && <hr className="my-2" />}
+      {Object.keys(workspace?.variables ?? {}).length > 0 && (
+        <hr className="my-2" />
+      )}
 
       <div
         className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
-          !isMobile ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto` : ''
-        } bg-background ${isMobile ? '' : 'rounded-md border shadow-sm'} transition-[max-width] duration-300 ease-in-out`}
+          !isMobile
+            ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
+            : ''
+        } bg-background ${
+          isMobile ? '' : 'rounded-md border shadow-sm'
+        } transition-[max-width] duration-300 ease-in-out`}
       >
         {attachments.length > 0 && (
           <div className="border-b bg-muted/5 px-3 py-2">
             <div className="flex items-center justify-between gap-2">
               <div className="text-xs font-medium text-foreground/80">
-                {attachments.length} {attachments.length === 1 ? 'file' : 'files'} selected
+                {attachments.length}{' '}
+                {attachments.length === 1 ? 'file' : 'files'} selected
                 {isUploadingAttachments ? ' (uploading...)' : ''}
               </div>
-              <Button
+              <MuiButton
                 type="button"
                 size="small"
                 variant="text"
@@ -289,7 +363,7 @@ export default function MessageComposer() {
                 className="text-xs normal-case min-w-0 px-2 h-7 text-muted-foreground hover:text-destructive"
               >
                 Remove all
-              </Button>
+              </MuiButton>
             </div>
 
             <div className="mt-2 overflow-x-auto">
@@ -311,7 +385,12 @@ export default function MessageComposer() {
                       <div className="h-[58px] w-full bg-muted/10 flex items-center justify-center overflow-hidden">
                         {isImage ? (
                           previewUrl ? (
-                            <img src={previewUrl} alt={f.name} className="h-full w-full object-cover" loading="lazy" />
+                            <img
+                              src={previewUrl}
+                              alt={f.name}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
                           ) : (
                             <span className="h-5 w-5 rounded-full border-2 border-muted-foreground/30 border-t-foreground/60 animate-spin" />
                           )
@@ -323,10 +402,15 @@ export default function MessageComposer() {
                       </div>
 
                       <div className="px-2 py-1.5">
-                        <div className="text-xs font-medium text-foreground truncate" title={f.name}>
+                        <div
+                          className="text-xs font-medium text-foreground truncate"
+                          title={f.name}
+                        >
                           {f.name}
                         </div>
-                        <div className="text-[10px] text-muted-foreground truncate">{ext}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">
+                          {ext}
+                        </div>
                       </div>
 
                       {/* Status: uploaded check / uploading spinner */}
@@ -368,7 +452,9 @@ export default function MessageComposer() {
                     value={newMessage}
                     onChange={(md) => setNewMessage(md)}
                     onKeyDown={handleComposerKeyDown}
-                    onFilesAdded={(files) => { void addAttachments(files); }}
+                    onFilesAdded={(files) => {
+                      void addAttachments(files);
+                    }}
                     onUploadFiles={onUploadFiles}
                     fileHandlingMode="attachments"
                     workspaceId={workspaceId}
@@ -398,13 +484,18 @@ export default function MessageComposer() {
                     disabled={disabled}
                     aria-label="Upload files"
                   >
-                    <Paperclip className="h-5 w-5 text-muted-foreground/70" strokeWidth={2} />
+                    <Paperclip
+                      className="h-5 w-5 text-muted-foreground/70"
+                      strokeWidth={2}
+                    />
                   </IconButton>
                 )}
 
                 <IconButton
                   onClick={handleSendMessageAndClear}
-                  className={`h-10 w-10 rounded-full self-end ${sendDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`h-10 w-10 rounded-full self-end ${
+                    sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                   disabled={sendDisabled}
                   aria-label="Send"
                 >
@@ -419,7 +510,9 @@ export default function MessageComposer() {
                   value={newMessage}
                   onChange={(md) => setNewMessage(md)}
                   onKeyDown={handleComposerKeyDown}
-                  onFilesAdded={(files) => { void addAttachments(files); }}
+                  onFilesAdded={(files) => {
+                    void addAttachments(files);
+                  }}
                   onUploadFiles={onUploadFiles}
                   fileHandlingMode="attachments"
                   workspaceId={workspaceId}
@@ -437,7 +530,16 @@ export default function MessageComposer() {
           isFullscreen &&
           typeof document !== 'undefined' &&
           createPortal(
-            <div className="fixed inset-x-0" style={{ top: '5vh', height: '95vh', left: 0, right: 0, zIndex: 1300 }}>
+            <div
+              className="fixed inset-x-0"
+              style={{
+                top: '5vh',
+                height: '95vh',
+                left: 0,
+                right: 0,
+                zIndex: 1300,
+              }}
+            >
               <div className="relative h-full w-full bg-background border shadow-lg">
                 <IconButton
                   type="button"
@@ -460,7 +562,9 @@ export default function MessageComposer() {
                       value={newMessage}
                       onChange={(md) => setNewMessage(md)}
                       onKeyDown={handleComposerKeyDown}
-                      onFilesAdded={(files) => { void addAttachments(files); }}
+                      onFilesAdded={(files) => {
+                        void addAttachments(files);
+                      }}
                       onUploadFiles={onUploadFiles}
                       fileHandlingMode="attachments"
                       workspaceId={workspaceId}
@@ -477,12 +581,17 @@ export default function MessageComposer() {
                         disabled={disabled}
                         aria-label="Upload files"
                       >
-                        <Paperclip className="h-5 w-5 text-muted-foreground/70" strokeWidth={2} />
+                        <Paperclip
+                          className="h-5 w-5 text-muted-foreground/70"
+                          strokeWidth={2}
+                        />
                       </IconButton>
                     )}
                     <IconButton
                       onClick={handleSendMessageAndClear}
-                      className={`h-10 w-10 rounded-full ${sendDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`h-10 w-10 rounded-full ${
+                        sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                       disabled={sendDisabled}
                       aria-label="Send"
                     >
@@ -492,7 +601,7 @@ export default function MessageComposer() {
                 </div>
               </div>
             </div>,
-            document.body,
+            document.body
           )}
 
         {/* Desktop footer actions */}
@@ -512,9 +621,9 @@ export default function MessageComposer() {
               )}
             </div>
 
-            <Button
+            <UIButton
               onClick={handleSendMessageAndClear}
-              className={`text-xs bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1 h-7 ${
+              className={`text-xs h-7 px-4 py-1 ${
                 sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
               }`}
               disabled={sendDisabled}
@@ -528,7 +637,7 @@ export default function MessageComposer() {
               ) : (
                 'Send'
               )}
-            </Button>
+            </UIButton>
           </div>
         )}
       </div>
