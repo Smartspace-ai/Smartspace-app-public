@@ -11,7 +11,6 @@ import { MessageValueType } from '@/domains/messages/enums';
 import { getMessageErrorText } from '@/domains/messages/errors';
 import { useAddInputToMessage } from '@/domains/messages/mutations';
 
-
 // local UI
 import { MessageBubble } from './MessageBubble';
 import type { MessageResponseSource } from './MessageSources';
@@ -59,7 +58,10 @@ function pushContent(items: MessageContentItem[], value: unknown) {
         : undefined;
 
     if (text !== undefined || image !== undefined) {
-      items.push({ ...(text !== undefined ? { text } : {}), ...(image ? { image } : {}) });
+      items.push({
+        ...(text !== undefined ? { text } : {}),
+        ...(image ? { image } : {}),
+      });
       return;
     }
     items.push({ text: JSON.stringify(value) });
@@ -103,10 +105,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
   // sort without mutating original
   const values = (message.values ?? [])
     .slice()
-    .sort(
-      (a, b) =>
-        safeTime(a.createdAt) - safeTime(b.createdAt)
-    );
+    .sort((a, b) => safeTime(a.createdAt) - safeTime(b.createdAt));
 
   const bubbles: ReactNode[] = [];
 
@@ -153,6 +152,10 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
     const name = v.name.toLowerCase();
 
     switch (name) {
+      case 'variables': {
+        // Do not display message variables payloads
+        continue;
+      }
       case 'prompt':
       case 'response':
       case 'content': {
@@ -197,10 +200,22 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
               createdBy={v.createdBy}
               createdAt={v.createdAt}
               type={v.type}
-              content={[{ text: typeof (v.value as Record<string, unknown> | null)?.message === 'string' ? String((v.value as Record<string, unknown>).message) : '' }]}
+              content={[
+                {
+                  text:
+                    typeof (v.value as Record<string, unknown> | null)
+                      ?.message === 'string'
+                      ? String((v.value as Record<string, unknown>).message)
+                      : '',
+                },
+              ]}
               files={[]}
               sources={[]}
-              userOutput={(v.value && typeof v.value === 'object') ? (v.value as unknown as { message: string; schema: unknown }) : null}
+              userOutput={
+                v.value && typeof v.value === 'object'
+                  ? (v.value as unknown as { message: string; schema: unknown })
+                  : null
+              }
               userInput={userInput?.value}
               onSubmitUserForm={onSubmitUserForm(message.id ?? '')}
             />
