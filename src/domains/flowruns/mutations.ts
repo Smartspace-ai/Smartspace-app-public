@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+import { isDraftThreadId } from '@/shared/utils/threadId';
+
 import { flowRunsKeys } from './queryKeys';
 import { updateFlowRunVariable } from './service';
 
@@ -17,11 +19,14 @@ export function useUpdateFlowRunVariable() {
       variableName: string;
       value: unknown;
     }) => {
+      if (isDraftThreadId(flowRunId)) return;
       await updateFlowRunVariable(flowRunId, variableName, value);
     },
     onSuccess: (_data, variables) => {
       if (variables?.flowRunId) {
-        qc.invalidateQueries({ queryKey: flowRunsKeys.variables(variables.flowRunId) });
+        qc.invalidateQueries({
+          queryKey: flowRunsKeys.variables(variables.flowRunId),
+        });
       }
     },
     onError: (error) => {
@@ -31,5 +36,3 @@ export function useUpdateFlowRunVariable() {
     },
   });
 }
-
-
