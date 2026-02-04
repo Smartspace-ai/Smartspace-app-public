@@ -106,14 +106,13 @@
 
 /* Mentions popup */
 .md-mention-menu {
-  background: var(--background, #fff);
+  background: hsl(var(--background, 0 0% 100%));
   color: var(--foreground, #111);
   border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   min-width: 220px;
   max-width: 320px;
   overflow: hidden;
   z-index: 1000;
 }
-

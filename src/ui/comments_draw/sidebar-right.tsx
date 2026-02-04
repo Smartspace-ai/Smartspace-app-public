@@ -10,21 +10,28 @@ import { useAddComment } from '@/domains/comments/mutations';
 import { useComments } from '@/domains/comments/queries';
 import { fetchTaggableUsers } from '@/domains/workspaces';
 
-
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
 import type { MarkdownEditorHandle } from '@/shared/ui/markdown/MarkdownEditor';
 import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from '@/shared/ui/mui-compat/breadcrumb';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from '@/shared/ui/mui-compat/breadcrumb';
 import { Button as UIButton } from '@/shared/ui/mui-compat/button';
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/shared/ui/mui-compat/sidebar';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+} from '@/shared/ui/mui-compat/sidebar';
 import { isDraftThreadId } from '@/shared/utils/threadId';
-
 
 import { getInitials } from '../../shared/utils/initials';
 import { parseDateTime } from '../../shared/utils/parseDateTime';
-
 
 const MAX_COMMENT_LENGTH = 350;
 
@@ -32,7 +39,10 @@ function escapeRegExp(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function renderContentWithMentions(text: string, users?: Array<{ displayName?: string | null }>) {
+function renderContentWithMentions(
+  text: string,
+  users?: Array<{ displayName?: string | null }>
+) {
   const renderWithPattern = (pattern: RegExp) => {
     const nodes: React.ReactNode[] = [];
     let lastIndex = 0;
@@ -47,7 +57,7 @@ function renderContentWithMentions(text: string, users?: Array<{ displayName?: s
       nodes.push(
         <span key={key++} className="text-primary">
           {match[0]}
-        </span>,
+        </span>
       );
       lastIndex = end;
     }
@@ -68,19 +78,27 @@ function renderContentWithMentions(text: string, users?: Array<{ displayName?: s
     return renderWithPattern(pattern);
   }
 
-  // Fallback: highlight @ followed by one or more words (supports First or First Last)
-  const fallback = /@[A-Za-z0-9._-]+(?:\s+[A-Za-z0-9._-]+)*/g;
+  // Fallback: highlight @ followed by one or two words (supports First or First Last)
+  const fallback = /@[A-Za-z0-9._-]+(?:\s+[A-Za-z0-9._-]+)?/g;
   return renderWithPattern(fallback);
 }
 
 export function SidebarRight() {
   const { threadId, workspaceId } = useRouteIds();
   const isDraft = isDraftThreadId(threadId);
-  const { data: comments, isLoading, isError: commentsError } = useComments(threadId);
-  const { mutateAsync: addCommentAsync, isPending: isAddingComment } = useAddComment(threadId);
+  const {
+    data: comments,
+    isLoading,
+    isError: commentsError,
+  } = useComments(threadId);
+  const { mutateAsync: addCommentAsync, isPending: isAddingComment } =
+    useAddComment(threadId);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
-  const [threadComment, setThreadComment] = useState({ plain: '', withMentions: '' });
+  const [threadComment, setThreadComment] = useState({
+    plain: '',
+    withMentions: '',
+  });
   const isMobile = useIsMobile();
 
   const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -110,8 +128,6 @@ export function SidebarRight() {
       commentsEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [comments]);
-
-  
 
   return (
     <Sidebar
@@ -151,7 +167,10 @@ export function SidebarRight() {
                   {Array(3)
                     .fill(0)
                     .map((_, index) => (
-                      <div key={index} className="rounded-lg border p-3 animate-pulse">
+                      <div
+                        key={index}
+                        className="rounded-lg border p-3 animate-pulse"
+                      >
                         <div className="flex items-center gap-2 mb-2">
                           <Skeleton className="h-8 w-8 rounded-full" />
                           <div className="flex-1 space-y-1">
@@ -169,7 +188,9 @@ export function SidebarRight() {
                   <div className="rounded-full bg-primary/10 p-4 mb-4">
                     <MessageSquare className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="text-lg font-medium mb-2">Add comments here</h3>
+                  <h3 className="text-lg font-medium mb-2">
+                    Add comments here
+                  </h3>
                 </div>
               ) : (
                 comments?.map((comment: Comment) => (
@@ -184,14 +205,19 @@ export function SidebarRight() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{comment.createdBy}</p>
+                        <p className="text-xs font-medium truncate">
+                          {comment.createdBy}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {parseDateTime(comment.createdAt)}
                         </p>
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed flex flex-wrap gap-1">
-                      {renderContentWithMentions(comment.content, comment.mentionedUsers)}
+                      {renderContentWithMentions(
+                        comment.content,
+                        comment.mentionedUsers
+                      )}
                     </p>
                   </div>
                 ))
@@ -218,7 +244,10 @@ export function SidebarRight() {
                   enableMentions
                   fetchMentionUsers={async (wsId) => {
                     const users = await fetchTaggableUsers(wsId);
-                    return users.map((u) => ({ id: u.id, displayName: u.displayName }));
+                    return users.map((u) => ({
+                      id: u.id,
+                      displayName: u.displayName,
+                    }));
                   }}
                   disabled={isAddingComment || isDraft}
                   workspaceId={workspaceId}
@@ -234,8 +263,16 @@ export function SidebarRight() {
                   size="icon"
                   className={`h-9 w-9 rounded-full absolute bottom-1.5 right-1.5 
                     bg-primary hover:bg-primary/90 text-primary-foreground 
-                    ${threadComment.plain.trim().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={threadComment.plain.trim().length === 0 || isAddingComment || isDraft}
+                    ${
+                      threadComment.plain.trim().length === 0
+                        ? 'opacity-50 cursor-not-allowed'
+                        : ''
+                    }`}
+                  disabled={
+                    threadComment.plain.trim().length === 0 ||
+                    isAddingComment ||
+                    isDraft
+                  }
                   aria-label="Post comment"
                 >
                   <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
@@ -253,7 +290,10 @@ export function SidebarRight() {
                   enableMentions
                   fetchMentionUsers={async (wsId) => {
                     const users = await fetchTaggableUsers(wsId);
-                    return users.map((u) => ({ id: u.id, displayName: u.displayName }));
+                    return users.map((u) => ({
+                      id: u.id,
+                      displayName: u.displayName,
+                    }));
                   }}
                   disabled={isAddingComment || isDraft}
                   workspaceId={workspaceId}
@@ -266,8 +306,16 @@ export function SidebarRight() {
                 <UIButton
                   type="submit"
                   variant="default"
-                  className={`absolute bottom-2 right-2 ${threadComment.plain.trim().length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={threadComment.plain.trim().length === 0 || isAddingComment || isDraft}
+                  className={`absolute bottom-2 right-2 ${
+                    threadComment.plain.trim().length === 0
+                      ? 'opacity-50 cursor-not-allowed'
+                      : ''
+                  }`}
+                  disabled={
+                    threadComment.plain.trim().length === 0 ||
+                    isAddingComment ||
+                    isDraft
+                  }
                 >
                   {isAddingComment ? (
                     <div className="flex items-center gap-2">
