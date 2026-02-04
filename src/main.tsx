@@ -2,6 +2,7 @@
 import { EventMessage } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -110,6 +111,12 @@ if (!msal) {
             <MsalProvider instance={msal}>
               <AppProviders>
                 <RouterProvider router={router} />
+                {import.meta.env.DEV ? (
+                  <TanStackRouterDevtools
+                    router={router}
+                    position="bottom-right"
+                  />
+                ) : null}
               </AppProviders>
             </MsalProvider>
           </ErrorBoundary>

@@ -1,128 +1,78 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { queryClient } from '@/platform/reactQueryClient';
-import { RouteIdsProvider } from "@/platform/routing/RouteIdsProvider";
+import { RouteIdsProvider } from '@/platform/routing/RouteIdsProvider';
 
-import type { MessageThread, ThreadsResponse } from '@/domains/threads';
-import { threadDetailOptions } from '@/domains/threads/queries';
+import {
+  threadDetailOptions,
+  threadsListOptions,
+} from '@/domains/threads/queries';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 
-import ChatBotPage from "@/pages/WorkspaceThreadPage/chat";
+import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
 
-import { isDraftThreadId, markDraftThreadId } from '@/shared/utils/threadId';
-
-type ThreadsListMeta = { workspaceId?: string };
-type ThreadsListKey = readonly unknown[];
-
-function isThreadsListMeta(x: unknown): x is ThreadsListMeta {
-  return !!x && typeof x === 'object' && ('workspaceId' in x);
-}
-
-function isThreadsResponse(x: unknown): x is ThreadsResponse {
-  if (!x || typeof x !== 'object') return false;
-  const obj = x as Record<string, unknown>;
-  return Array.isArray(obj.data);
-}
-
-function isInfiniteThreadsResponse(x: unknown): x is { pages: ThreadsResponse[]; pageParams?: unknown[] } {
-  if (!x || typeof x !== 'object') return false;
-  const obj = x as Record<string, unknown>;
-  return Array.isArray(obj.pages);
-}
-
-function upsertDraftIntoListCache(workspaceId: string, draft: MessageThread) {
-  const queries = queryClient.getQueryCache().findAll({ queryKey: threadsKeys.lists() });
-
-  for (const q of queries) {
-    const qk = q.queryKey as ThreadsListKey;
-    const meta = qk?.[2];
-    if (!isThreadsListMeta(meta)) continue;
-    if (meta.workspaceId !== workspaceId) continue;
-
-    queryClient.setQueryData(qk, (old: unknown) => {
-      if (!old) return old;
-
-      // Infinite query shape: { pages: [{ data, total }, ...], pageParams: [...] }
-      if (isInfiniteThreadsResponse(old)) {
-        const pages = old.pages.slice();
-        if (!pages[0] || !Array.isArray(pages[0].data)) return old;
-
-        const first = pages[0];
-        const already = first.data.some((t: MessageThread) => t.id === draft.id);
-        if (already) return old;
-
-        pages[0] = { ...first, data: [draft, ...first.data] };
-        for (let i = 0; i < pages.length; i++) {
-          const p = pages[i];
-          if (!p || typeof p.total !== 'number') continue;
-          pages[i] = { ...p, total: p.total + 1 };
-        }
-        return { ...old, pages };
-      }
-
-      // Non-infinite shape: { data, total }
-      if (isThreadsResponse(old)) {
-        const env = old;
-        const already = env.data.some((t) => t.id === draft.id);
-        if (already) return old;
-        return {
-          ...env,
-          data: [draft, ...env.data],
-          total: typeof env.total === 'number' ? env.total + 1 : env.total,
-        } satisfies ThreadsResponse;
-      }
-
-      return old;
-    });
-  }
-}
+import { isDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
 
 // routes/_protected/workspace/$workspaceId/thread/$threadId.tsx
-export const Route = createFileRoute('/_protected/workspace/$workspaceId/thread/$threadId')({
+export const Route = createFileRoute(
+  '/_protected/workspace/$workspaceId/thread/$threadId'
+)({
   pendingMs: 0,
-  pendingComponent: ThreadRouteComponent,
+  pendingComponent: ThreadRoutePending,
   loader: async ({ params }) => {
     // Draft threads are client-side only until a message is sent (or creation succeeds in background).
-    // Avoid fetching thread details for draft ids (backend will 404).
-    if (isDraftThreadId(params.threadId)) return null;
+    // Avoid fetching thread details for active draft ids, but ignore stale ones from sessionStorage.
+    if (isDraftThreadId(params.threadId)) {
+      const cachedDraft = queryClient.getQueryData(
+        threadsKeys.detail(params.workspaceId, params.threadId)
+      );
+      if (cachedDraft) return null;
+      unmarkDraftThreadId(params.threadId);
+    }
 
     try {
       return await queryClient.ensureQueryData(
-        threadDetailOptions({ workspaceId: params.workspaceId, threadId: params.threadId })
+        threadDetailOptions({
+          workspaceId: params.workspaceId,
+          threadId: params.threadId,
+        })
       );
     } catch (e: unknown) {
-      // If user deep-links to a random GUID that doesn't exist yet, treat it as a draft thread id.
-      const err = (e && typeof e === 'object') ? (e as Record<string, unknown>) : null;
+      // If user deep-links to a random GUID that doesn't exist, redirect to the first thread
+      // (same behavior as /workspace/$workspaceId/ without a threadId).
+      const err =
+        e && typeof e === 'object' ? (e as Record<string, unknown>) : null;
       if (err?.type !== 'NotFound') throw e;
 
-      const draftId = params.threadId;
-      markDraftThreadId(draftId);
+      const list = await queryClient.ensureQueryData(
+        threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
+      );
+      const first = Array.isArray(list)
+        ? (list[0] as { id?: string })
+        : (list as { data?: { id?: string }[] } | undefined)?.data?.[0];
 
-      const now = new Date();
-      const draftThread: MessageThread = {
-        id: draftId,
-        name: 'New Thread',
-        createdAt: now,
-        createdBy: 'me',
-        createdByUserId: '',
-        isFlowRunning: false,
-        lastUpdated: 'Just now',
-        lastUpdatedAt: now,
-        lastUpdatedByUserId: '',
-        totalMessages: 0,
-        favorited: false,
-        avatarName: null,
-        workSpaceId: params.workspaceId,
-      };
+      if (first?.id) {
+        throw redirect({
+          to: '/workspace/$workspaceId/thread/$threadId',
+          params: { workspaceId: params.workspaceId, threadId: first.id },
+          replace: true,
+        });
+      }
 
-      // Prime caches so UI can render immediately without any backend fetches.
-      queryClient.setQueryData(threadsKeys.detail(params.workspaceId, draftId), draftThread);
-      upsertDraftIntoListCache(params.workspaceId, draftThread);
-      return null;
+      throw redirect({
+        to: '/workspace/$workspaceId',
+        params: { workspaceId: params.workspaceId },
+        replace: true,
+      });
     }
   },
   component: ThreadRouteComponent,
 });
+
+function ThreadRoutePending() {
+  // Avoid mounting chat UI while loader resolves/redirects.
+  return null;
+}
 
 function ThreadRouteComponent() {
   const { workspaceId, threadId } = Route.useParams();
