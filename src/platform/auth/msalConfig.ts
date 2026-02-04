@@ -62,8 +62,19 @@ const isInTeams = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const inTeamsParam = urlParams.get('inTeams') === 'true';
   const parentCheck = window.parent !== window;
+  const userAgent = (() => {
+    try {
+      return navigator.userAgent ?? '';
+    } catch {
+      return '';
+    }
+  })();
+  const userAgentTeams =
+    /TeamsMobile/i.test(userAgent) ||
+    /Microsoft Teams/i.test(userAgent) ||
+    /Teams\/\d/i.test(userAgent);
 
-  return inTeamsParam || parentCheck;
+  return inTeamsParam || parentCheck || userAgentTeams;
 };
 
 // MSAL configuration object

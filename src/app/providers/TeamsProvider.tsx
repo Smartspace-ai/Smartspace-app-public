@@ -1,7 +1,13 @@
 // src/app/providers/TeamsProvider.tsx
 import { app } from '@microsoft/teams-js';
 import {
-    createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
 } from 'react';
 
 import { isInTeams as detectIsInTeams } from '@/platform/auth/msalConfig';
@@ -37,7 +43,13 @@ export const useTeams = () => useContext(TeamsContext);
 export function TeamsProvider({ children }: { children: ReactNode }) {
   const likelyInTeams = detectIsInTeams();
   ssInfo('teams', `TeamsProvider mount (likelyInTeams=${likelyInTeams})`, {
-    href: (() => { try { return window.location.href; } catch { return null; } })(),
+    href: (() => {
+      try {
+        return window.location.href;
+      } catch {
+        return null;
+      }
+    })(),
   });
 
   const [isInTeams, setIsInTeams] = useState(likelyInTeams);
@@ -47,7 +59,12 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
   const [teamsUser, setTeamsUser] = useState<app.Context['user'] | null>(null);
 
   const mounted = useRef(true);
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    []
+  );
 
   // Expose Teams detection to non-React code (routes/api) via a typed runtime store.
   useEffect(() => {
@@ -75,8 +92,22 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
         root.style.setProperty('--background', '0 0% 100%');
         root.style.setProperty('--popover', '0 0% 100%');
 
+        // Ensure any transparent areas don't show a dark host/iframe background.
+        root.style.backgroundColor = 'hsl(0 0% 100%)';
+        if (document.body) {
+          document.body.style.backgroundColor = 'hsl(0 0% 100%)';
+        }
+        const appRoot = document.getElementById('root');
+        if (appRoot) {
+          appRoot.style.backgroundColor = 'hsl(0 0% 100%)';
+        }
+
         // Prefer light form control rendering too.
-        (root.style as unknown as CSSStyleDeclaration & { colorScheme?: string }).colorScheme = 'light';
+        (
+          root.style as unknown as CSSStyleDeclaration & {
+            colorScheme?: string;
+          }
+        ).colorScheme = 'light';
       };
 
       applyLight();
@@ -86,12 +117,20 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
 
       // Teams web can re-apply classes/styles after load; keep light pinned.
       const obs = new MutationObserver(() => applyLight());
-      obs.observe(root, { attributes: true, attributeFilter: ['class', 'style'] });
+      obs.observe(root, {
+        attributes: true,
+        attributeFilter: ['class', 'style'],
+      });
       try {
-        if (document.body) obs.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
-      } catch { /* ignore */ }
+        if (document.body)
+          obs.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class', 'style'],
+          });
+      } catch {
+        /* ignore */
+      }
       return () => obs.disconnect();
-
     } catch {
       // ignore DOM failures
     }
@@ -125,14 +164,17 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
           });
           setTeamsContext(ctx);
           setTeamsUser(ctx.user ?? null);
-          setTeamsTheme(((ctxLike.app?.theme ?? 'default') as TeamsTheme));
+          setTeamsTheme((ctxLike.app?.theme ?? 'default') as TeamsTheme);
 
           // theme changes (no unregister API, guard with mounted ref)
           app.registerOnThemeChangeHandler((theme) => {
             if (mounted.current) setTeamsTheme(theme as TeamsTheme);
           });
 
-          if (typeof navigator !== 'undefined' && typeof document !== 'undefined') {
+          if (
+            typeof navigator !== 'undefined' &&
+            typeof document !== 'undefined'
+          ) {
             if (/android/i.test(navigator.userAgent)) {
               document.body.setAttribute('data-teams-android', 'true');
             }
@@ -140,7 +182,11 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
 
           break; // success
         } catch (e) {
-          ssWarn('teams', `Teams init/context failed (attempt ${attempt}/3)`, e);
+          ssWarn(
+            'teams',
+            `Teams init/context failed (attempt ${attempt}/3)`,
+            e
+          );
           if (attempt < 3) {
             await new Promise((r) => setTimeout(r, 1000 * attempt));
           } else {
@@ -153,13 +199,23 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
       if (!cancelled) setIsTeamsInitialized(true);
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [likelyInTeams]);
 
   const value = useMemo(
-    () => ({ isInTeams, teamsContext, isTeamsInitialized, teamsTheme, teamsUser }),
+    () => ({
+      isInTeams,
+      teamsContext,
+      isTeamsInitialized,
+      teamsTheme,
+      teamsUser,
+    }),
     [isInTeams, teamsContext, isTeamsInitialized, teamsTheme, teamsUser]
   );
 
-  return <TeamsContext.Provider value={value}>{children}</TeamsContext.Provider>;
+  return (
+    <TeamsContext.Provider value={value}>{children}</TeamsContext.Provider>
+  );
 }
