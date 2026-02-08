@@ -3,6 +3,7 @@ import { ssInfo } from '@/platform/log';
 
 import { createMsalWebAdapter } from './providers/msalWeb';
 import { createTeamsNaaAdapter } from './providers/teamsNaa';
+import { createTeamsNaaWithMsalFallbackAdapter } from './providers/teamsNaaWithMsalFallback';
 import { getAuthRuntimeState } from './runtime';
 import type { AuthAdapter } from './types';
 
@@ -11,21 +12,41 @@ export function createAuthAdapter(): AuthAdapter {
   const runtime = getAuthRuntimeState();
   const inTeams = runtime.isInTeams === true || isInTeams();
 
-  ssInfo('auth', `createAuthAdapter -> ${inTeams ? 'teams' : 'web'}`, {
-    inTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
-    inTeams_runtime: runtime.isInTeams,
-    origin: (() => { try { return window.location.origin; } catch { return null; } })(),
-  });
+  ssInfo(
+    'auth',
+    `createAuthAdapter -> ${
+      inTeams ? 'teams (NAA with MSAL fallback)' : 'web'
+    }`,
+    {
+      inTeams_msalConfig: (() => {
+        try {
+          return isInTeams();
+        } catch {
+          return null;
+        }
+      })(),
+      inTeams_runtime: runtime.isInTeams,
+      origin: (() => {
+        try {
+          return window.location.origin;
+        } catch {
+          return null;
+        }
+      })(),
+    }
+  );
 
-  return inTeams ? createTeamsNaaAdapter() : createMsalWebAdapter();
+  return inTeams
+    ? createTeamsNaaWithMsalFallbackAdapter()
+    : createMsalWebAdapter();
 }
 export * from './msalClient';
 export * from './naaClient';
 export * from './providers/msalWeb';
 export * from './providers/teamsNaa';
+export * from './providers/teamsNaaWithMsalFallback';
 export * from './session';
 export * from './runtime';
 export * from './scopes';
 export * from './errors';
 export * from './types';
-
