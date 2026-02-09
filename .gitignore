@@ -57,3 +57,7 @@ Thumbs.db
 /teams/*.zip
 /teams/manifest.json
 
+# OpenAPI specs and generated client
+/openapi/
+/src/platform/api/generated/
+

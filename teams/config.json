@@ -1,6 +1,6 @@
 {
-  "appId": "32f90523-394f-47dc-8826-266d199cd2fe",
-  "baseUrl": "https://30qn00sj-4300.aue.devtunnels.ms",
-  "appName": "SmartSpace Local",
-  "version": "1.0.2"
-}                                                                        
+  "appId": "b7e5f086-648e-4bc0-9039-540e5c22e7c4",
+  "baseUrl": "https://ca-smartspace-api-chat.agreeablerock-7966d77b.australiaeast.azurecontainerapps.io",
+  "appName": "SmartSpace",
+  "version": "1.0.0"
+}

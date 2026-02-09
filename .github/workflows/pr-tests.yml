@@ -29,6 +29,13 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: OpenAPI sync (chat)
+        env:
+          OPENAPI_STORAGE_CONNECTION_STRING: ${{ secrets.OPENAPI_STORAGE_CONNECTION_STRING }}
+          OPENAPI_CONTAINER: openapi
+          OPENAPI_BASELINE_PREFIX: develop
+        run: npm run -s openapi:sync
+
       - name: Test
         run: npm test
 

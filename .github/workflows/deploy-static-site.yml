@@ -46,6 +46,7 @@ jobs:
       - name: Build your site
         run: |
           npm install
+          npm run -s openapi:sync
           npm run build
 
       - name: Deploy to Azure Storage
