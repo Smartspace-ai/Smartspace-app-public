@@ -1,11 +1,17 @@
 import { api } from '@/platform/api';
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import {
+  getFilesIdResponse as fileInfoResponseSchema,
+  postFilesResponse as filesResponseSchema,
+} from '@/platform/api/generated/chat/zod';
+import { parseOrThrow } from '@/platform/validation';
 
-import { FileInfoDto } from './dto';
 import { mapFileInfoDtoToModel } from './mapper';
 import type { FileInfo, FileScope } from './model';
 
 export const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
 
+const chatApi = getSmartSpaceChatAPI();
 
 const uploadFileInChunks = async (
   file: File,
@@ -13,24 +19,22 @@ const uploadFileInChunks = async (
   onChunkUploaded?: (
     chunkIndex: number,
     totalChunks: number,
-    file: File,
-  ) => void,
+    file: File
+  ) => void
 ): Promise<FileInfo> => {
   const uploadId = crypto.randomUUID();
   const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
   for (let i = 0; i < totalChunks; i++) {
     const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-    const formData = new FormData();
-    formData.append('files', chunk, file.name);
-    formData.append('uploadId', uploadId);
-    formData.append('chunkIndex', i.toString());
-    formData.append('totalChunks', totalChunks.toString());
-    formData.append('lastChunk', (i === totalChunks - 1).toString());
-    if (scope.workspaceId) formData.append('workspaceId', scope.workspaceId);
-    if (scope.threadId) formData.append('threadId', scope.threadId);
-
-    const response = await api.post<unknown>(`/files`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    const chunkFile = new File([chunk], file.name, { type: file.type });
+    const response = await chatApi.postFiles({
+      files: [chunkFile],
+      uploadId,
+      chunkIndex: i,
+      totalChunks,
+      lastChunk: i === totalChunks - 1,
+      workspaceId: scope.workspaceId,
+      threadId: scope.threadId,
     });
 
     // Call the per-chunk callback
@@ -38,9 +42,12 @@ const uploadFileInChunks = async (
 
     // Only the last chunk returns the file info
     if (i === totalChunks - 1) {
-      const data = response as unknown as unknown[];
-      const parsed = FileInfoDto.parse(data[0]);
-      return mapFileInfoDtoToModel(parsed);
+      const parsed = parseOrThrow(
+        filesResponseSchema,
+        response.data,
+        'POST /files (chunked)'
+      );
+      return mapFileInfoDtoToModel(parsed[0]);
     }
   }
   throw new Error('Chunked upload did not complete.');
@@ -53,8 +60,8 @@ export const uploadFiles = async (
   onChunkUploaded?: (
     chunkIndex: number,
     totalChunks: number,
-    file: File,
-  ) => void,
+    file: File
+  ) => void
 ): Promise<FileInfo[]> => {
   const results: FileInfo[] = [];
   for (const file of files) {
@@ -63,16 +70,17 @@ export const uploadFiles = async (
       fileInfo = await uploadFileInChunks(file, scope, onChunkUploaded);
     } else {
       // Use the same endpoint for small files
-      const formData = new FormData();
-      formData.append('files', file);
-      if (scope.workspaceId) formData.append('workspaceId', scope.workspaceId);
-      if (scope.threadId) formData.append('threadId', scope.threadId);
-
-      const response = await api.post<unknown>(`/files`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await chatApi.postFiles({
+        files: [file],
+        workspaceId: scope.workspaceId,
+        threadId: scope.threadId,
       });
-      const data = response as unknown as unknown[];
-      fileInfo = mapFileInfoDtoToModel(FileInfoDto.parse(data[0]));
+      const parsed = parseOrThrow(
+        filesResponseSchema,
+        response.data,
+        'POST /files'
+      );
+      fileInfo = mapFileInfoDtoToModel(parsed[0]);
     }
     results.push(fileInfo);
     if (onFileUploaded) onFileUploaded(file, fileInfo);
@@ -82,7 +90,7 @@ export const uploadFiles = async (
 
 export const downloadFile = async (
   id: string,
-  scope?: FileScope,
+  scope?: FileScope
 ): Promise<Blob> => {
   const blob = await api.get<Blob>(`/files/${id}/download`, {
     responseType: 'blob',
@@ -93,16 +101,20 @@ export const downloadFile = async (
 
 export const getFileInfo = async (
   id: string,
-  scope: FileScope,
+  scope: FileScope
 ): Promise<FileInfo> => {
-  const data = await api.get<unknown>(`/files/${id}`, {
-    params: scope,
-  });
-
-  return mapFileInfoDtoToModel(FileInfoDto.parse(data));
+  const response = await chatApi.getFilesId(id, scope);
+  const parsed = parseOrThrow(
+    fileInfoResponseSchema,
+    response.data,
+    `GET /files/${id}`
+  );
+  return mapFileInfoDtoToModel(parsed);
 };
 
-export const getFileDownloadUrl = async (sourceUri: string): Promise<string> => {
+export const getFileDownloadUrl = async (
+  sourceUri: string
+): Promise<string> => {
   const data = await api.get<{ uri: string }>(sourceUri);
   const uri = data?.uri;
   if (!uri) throw new Error('Download URL is missing');

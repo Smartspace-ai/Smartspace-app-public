@@ -1,10 +1,35 @@
-import { MessageListDto, TMessageDto } from './dto';
+import type { z } from 'zod';
+
+import { getMessageThreadsIdMessagesResponse as messagesResponseSchema } from '@/platform/api/generated/chat/zod';
+
+import { parseIsoDate } from '@/shared/utils/parseIsoDate';
+
 import { Message } from './model';
 
-export function mapMessageDtoToModel(dto: TMessageDto): Message {
+type MessagesResponseDto = z.infer<typeof messagesResponseSchema>;
+type MessageDto = MessagesResponseDto['data'][number];
+type MessageValueDto = MessageDto['values'][number];
+
+const toChannelNumber = (value: unknown): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+const normalizeChannels = (
+  channels: Record<string, unknown>
+): Record<string, number> =>
+  Object.fromEntries(
+    Object.entries(channels).map(([key, val]) => [key, toChannelNumber(val)])
+  );
+
+export function mapMessageDtoToModel(dto: MessageDto): Message {
   return {
     id: dto.id ?? undefined,
-    createdAt: dto.createdAt,
+    createdAt: parseIsoDate(dto.createdAt, 'createdAt'),
     createdBy: dto.createdBy ?? undefined,
     hasComments: dto.hasComments ?? false,
     createdByUserId: dto.createdByUserId ?? undefined,
@@ -16,8 +41,8 @@ export function mapMessageDtoToModel(dto: TMessageDto): Message {
           name: v.name,
           type: v.type,
           value: v.value,
-          channels: v.channels,
-          createdAt: v.createdAt,
+          channels: normalizeChannels(v.channels ?? {}),
+          createdAt: parseIsoDate(v.createdAt, 'values.createdAt'),
           createdBy: v.createdBy,
           createdByUserId: v.createdByUserId ?? undefined,
         }))
@@ -25,13 +50,6 @@ export function mapMessageDtoToModel(dto: TMessageDto): Message {
   };
 }
 
-export function mapMessagesDtoToModels(dto: unknown): Message[] {
-  const list = MessageListDto.parse(dto as unknown);
-  return list.map(mapMessageDtoToModel);
+export function mapMessagesDtoToModels(dto: MessageDto[]): Message[] {
+  return dto.map(mapMessageDtoToModel);
 }
-
-
-
-
-
-

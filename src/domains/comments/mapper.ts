@@ -1,26 +1,45 @@
-import { TCommentDto, TMentionUserDto } from './dto';
+import type { z } from 'zod';
+
+import {
+  getMessageThreadsIdCommentsResponse as commentsResponseSchema,
+  postMessageThreadsIdCommentsResponse as commentCreateResponseSchema,
+} from '@/platform/api/generated/chat/zod';
+
+import { parseIsoDate } from '@/shared/utils/parseIsoDate';
+
 import { Comment, MentionUser } from './model';
 
-export function mapMentionUserDtoToModel(dto: TMentionUserDto): MentionUser {
+type CommentsResponseDto = z.infer<typeof commentsResponseSchema>;
+type CommentDto = CommentsResponseDto['data'][number];
+type MentionUserDto = CommentDto['mentionedUsers'][number];
+type CommentCreateDto = z.infer<typeof commentCreateResponseSchema>;
+
+export function mapMentionUserDtoToModel(
+  dto: MentionUserDto | string
+): MentionUser {
+  if (typeof dto === 'string') {
+    return { id: dto, displayName: '', initials: null };
+  }
   return {
     id: dto.id,
-    displayName: dto.displayName,
-    initials: dto.initials ?? null,
+    displayName: dto.name ?? '',
+    initials: null,
   };
 }
 
-export function mapCommentDtoToModel(dto: TCommentDto): Comment {
+export function mapCommentDtoToModel(
+  dto: CommentDto | CommentCreateDto
+): Comment {
   return {
     id: dto.id,
-    createdAt: dto.createdAt,
-    createdByUserId: dto.createdByUserId,
-    createdBy: dto.createdBy,
+    createdAt: parseIsoDate(dto.createdAt, 'createdAt'),
+    createdByUserId: dto.createdByUserId ?? '',
+    createdBy: dto.createdBy ?? '',
     content: dto.content,
     mentionedUsers: (dto.mentionedUsers ?? []).map(mapMentionUserDtoToModel),
-    messageThreadId: dto.messageThreadId,
+    messageThreadId: dto.messageThreadId ?? '',
   };
 }
 
-export const mapCommentsDtoToModels = (arr: TCommentDto[]) => arr.map(mapCommentDtoToModel);
-
-
+export const mapCommentsDtoToModels = (arr: CommentDto[]) =>
+  arr.map(mapCommentDtoToModel);

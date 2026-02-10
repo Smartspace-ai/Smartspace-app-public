@@ -1,26 +1,29 @@
 import { Subject } from 'rxjs';
 
 import { api } from '@/platform/api';
-import { apiParsed } from '@/platform/apiParsed';
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import { getMessageThreadsIdMessagesResponse as messagesResponseSchema } from '@/platform/api/generated/chat/zod';
+import { parseOrThrow } from '@/platform/validation';
 
 import { FileInfo } from '@/domains/files';
 
-import { MessageDto, MessagesEnvelopeDto } from './dto';
 import { mapMessageDtoToModel, mapMessagesDtoToModels } from './mapper';
 import type { Message, MessageContentItem } from './model';
 
+const chatApi = getSmartSpaceChatAPI();
 
 // Fetch all messages in a given message thread
 export async function fetchMessages(
   threadId: string,
   opts?: { take?: number; skip?: number }
 ): Promise<Message[]> {
-  const envelope = await apiParsed.get(
-    MessagesEnvelopeDto,
-    `messagethreads/${threadId}/messages`,
-    { params: opts }
+  const response = await chatApi.getMessageThreadsIdMessages(threadId, opts);
+  const parsed = parseOrThrow(
+    messagesResponseSchema,
+    response.data,
+    `GET /messageThreads/${threadId}/messages`
   );
-  return mapMessagesDtoToModels(envelope.data);
+  return mapMessagesDtoToModels(parsed.data);
 }
 
 // Send structured input (e.g. form values) to a specific message
@@ -46,13 +49,16 @@ export async function addInputToMessage({
       onDownloadProgress: (event) => {
         const raw = String(event.event.currentTarget.response || '');
         // Split by server-sent event message delimiter and normalize "data:" prefix
-        const chunks = raw.split('\n\n').map((c) => c.trim()).filter(Boolean);
+        const chunks = raw
+          .split('\n\n')
+          .map((c) => c.trim())
+          .filter(Boolean);
         const last = chunks[chunks.length - 1] || '';
         const dataLine = last.startsWith('data:') ? last.slice(5).trim() : last;
         if (!dataLine) return;
         try {
           const parsed = JSON.parse(dataLine);
-          const dto = MessageDto.parse(parsed);
+          const dto = messagesResponseSchema.shape.data.element.parse(parsed);
           result = mapMessageDtoToModel(dto);
         } catch (error) {
           // Ignore incomplete JSON frames; wait for more data
@@ -112,30 +118,29 @@ export async function postMessage({
   const observable = new Subject<Message>();
 
   try {
-    await api.post(
-      `/messages`,
-      payload,
-      {
-        headers: { Accept: 'text/event-stream' },
-        responseType: 'stream',
-        onDownloadProgress: (e) => {
-          const raw = String(e.event.currentTarget.response || '');
-          const chunks = raw.split('\n\n').map((c) => c.trim()).filter(Boolean);
-          if (!chunks.length) return;
-          const last = chunks[chunks.length - 1];
-          const dataLine = last.startsWith('data:') ? last.slice(5).trim() : last;
-          if (!dataLine) return;
-          try {
-            const parsed = JSON.parse(dataLine);
-            const dto = MessageDto.parse(parsed);
-            const parsedMessage = mapMessageDtoToModel(dto);
-            observable.next(parsedMessage);
-          } catch {
-            // likely partial frame, ignore
-          }
-        },
+    await api.post(`/messages`, payload, {
+      headers: { Accept: 'text/event-stream' },
+      responseType: 'stream',
+      onDownloadProgress: (e) => {
+        const raw = String(e.event.currentTarget.response || '');
+        const chunks = raw
+          .split('\n\n')
+          .map((c) => c.trim())
+          .filter(Boolean);
+        if (!chunks.length) return;
+        const last = chunks[chunks.length - 1];
+        const dataLine = last.startsWith('data:') ? last.slice(5).trim() : last;
+        if (!dataLine) return;
+        try {
+          const parsed = JSON.parse(dataLine);
+          const dto = messagesResponseSchema.shape.data.element.parse(parsed);
+          const parsedMessage = mapMessageDtoToModel(dto);
+          observable.next(parsedMessage);
+        } catch {
+          // likely partial frame, ignore
+        }
       },
-    );
+    });
     observable.complete();
   } catch (error) {
     observable.error(error);

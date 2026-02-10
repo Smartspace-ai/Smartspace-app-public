@@ -4,6 +4,7 @@ import {
   getWorkspacesWorkspaceIdMessagethreadsIdResponse as threadResponseSchema,
   postWorkspacesWorkspaceIdMessagethreadsResponse as createThreadResponseSchema,
 } from '@/platform/api/generated/chat/zod';
+import { parseOrThrow } from '@/platform/validation';
 
 import { mapThreadDtoToModel, mapThreadsResponseDtoToModel } from './mapper';
 
@@ -18,7 +19,11 @@ export async function fetchThreads(
     take,
     skip,
   });
-  const parsed = threadsListResponseSchema.parse(response.data);
+  const parsed = parseOrThrow(
+    threadsListResponseSchema,
+    response.data,
+    `GET /workspaces/${workspaceId}/messagethreads`
+  );
   return mapThreadsResponseDtoToModel(parsed);
 }
 
@@ -27,7 +32,11 @@ export async function fetchThread(workspaceId: string, id: string) {
     workspaceId,
     id
   );
-  const parsed = threadResponseSchema.parse(response.data);
+  const parsed = parseOrThrow(
+    threadResponseSchema,
+    response.data,
+    `GET /workspaces/${workspaceId}/messagethreads/${id}`
+  );
   return mapThreadDtoToModel(parsed);
 }
 
@@ -45,7 +54,8 @@ export async function renameThread(
   threadId: string,
   name: string
 ): Promise<void> {
-  await chatApi.putMessageThreadsIdName(threadId, name);
+  // API expects a JSON string body; axios won't JSON-encode plain strings.
+  await chatApi.putMessageThreadsIdName(threadId, JSON.stringify(name));
   return;
 }
 
@@ -61,7 +71,11 @@ export async function createThread(name: string, workspaceId: string) {
     workspaceId,
     { name }
   );
-  const parsed = createThreadResponseSchema.parse(response.data);
+  const parsed = parseOrThrow(
+    createThreadResponseSchema,
+    response.data,
+    `POST /workspaces/${workspaceId}/messagethreads`
+  );
   const first = parsed.data?.[0];
   if (!first) {
     throw new Error('Create thread response did not include a thread');

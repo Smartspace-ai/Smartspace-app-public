@@ -1,21 +1,49 @@
 // src/domains/workspaces/service.ts
-import { apiParsed } from '@/platform/apiParsed';
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import {
+  getWorkSpacesIdResponse as workspaceResponseSchema,
+  getWorkSpacesIdUsersResponse as workspaceUsersResponseSchema,
+  getWorkSpacesResponse as workspacesListResponseSchema,
+} from '@/platform/api/generated/chat/zod';
+import { parseOrThrow } from '@/platform/validation';
 
-import { MentionUserListDto, WorkspaceDto, WorkspacesListResponseDto } from './dto';
-import { mapMentionUserDtoToModel, mapWorkspaceDtoToModel, mapWorkspacesDtoToModels } from './mapper';
+import {
+  mapMentionUserDtoToModel,
+  mapWorkspaceDtoToModel,
+  mapWorkspacesDtoToModels,
+} from './mapper';
 import type { MentionUser, Workspace } from './model';
 
+const chatApi = getSmartSpaceChatAPI();
+
 export async function fetchWorkspaces(search?: string): Promise<Workspace[]> {
-  const dto = await apiParsed.get(WorkspacesListResponseDto, '/workspaces', { params: { search } });
-  return mapWorkspacesDtoToModels(dto.data);
+  const response = await chatApi.getWorkSpaces({ search });
+  const parsed = parseOrThrow(
+    workspacesListResponseSchema,
+    response.data,
+    'GET /workspaces'
+  );
+  return mapWorkspacesDtoToModels(parsed.data);
 }
 
 export async function fetchWorkspace(id: string): Promise<Workspace> {
-  const dto = await apiParsed.get(WorkspaceDto, `/workspaces/${id}`);
-  return mapWorkspaceDtoToModel(dto);
+  const response = await chatApi.getWorkSpacesId(id);
+  const parsed = parseOrThrow(
+    workspaceResponseSchema,
+    response.data,
+    `GET /workspaces/${id}`
+  );
+  return mapWorkspaceDtoToModel(parsed);
 }
 
-export async function fetchTaggableUsers(workspaceId: string): Promise<MentionUser[]> {
-  const list = await apiParsed.get(MentionUserListDto, `/workspaces/${workspaceId}/users`);
-  return list.map(mapMentionUserDtoToModel);
+export async function fetchTaggableUsers(
+  workspaceId: string
+): Promise<MentionUser[]> {
+  const response = await chatApi.getWorkSpacesIdUsers(workspaceId);
+  const parsed = parseOrThrow(
+    workspaceUsersResponseSchema,
+    response.data,
+    `GET /workspaces/${workspaceId}/users`
+  );
+  return parsed.map(mapMentionUserDtoToModel);
 }

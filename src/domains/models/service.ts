@@ -1,8 +1,14 @@
-import { apiParsed } from '@/platform/apiParsed';
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import {
+  getModelsIdResponse as modelResponseSchema,
+  getModelsResponse as modelsResponseSchema,
+} from '@/platform/api/generated/chat/zod';
+import { parseOrThrow } from '@/platform/validation';
 
-import { ModelDto, ModelsEnvelopeDto } from './dto';
 import { mapModelDtoToModel, mapModelsEnvelopeDtoToModels } from './mapper';
 import { Model } from './model';
+
+const chatApi = getSmartSpaceChatAPI();
 
 // Fetch threads for a given workspace
 export async function fetchModels({
@@ -13,12 +19,22 @@ export async function fetchModels({
   data: Model[];
   total: number;
 }> {
-  const envelope = await apiParsed.get(ModelsEnvelopeDto, `models`, { params: { search, take, skip } });
-  const result = mapModelsEnvelopeDtoToModels(envelope);
+  const response = await chatApi.getModels({ search, take, skip });
+  const parsed = parseOrThrow(
+    modelsResponseSchema,
+    response.data,
+    'GET /models'
+  );
+  const result = mapModelsEnvelopeDtoToModels(parsed);
   return result;
 }
 
 export async function fetchModel(id: string): Promise<Model> {
-  const dto = await apiParsed.get(ModelDto, `models/${id}`);
-  return mapModelDtoToModel(dto);
+  const response = await chatApi.getModelsId(id);
+  const parsed = parseOrThrow(
+    modelResponseSchema,
+    response.data,
+    `GET /models/${id}`
+  );
+  return mapModelDtoToModel(parsed);
 }

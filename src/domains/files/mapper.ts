@@ -1,17 +1,24 @@
-import { TFileInfoDto } from './dto';
+import type { z } from 'zod';
+
+import {
+  getFilesIdResponse as fileInfoResponseSchema,
+  postFilesResponseItem as fileInfoItemSchema,
+} from '@/platform/api/generated/chat/zod';
+
 import { FileInfo } from './model';
 
-export function mapFileInfoDtoToModel(dto: TFileInfoDto): FileInfo {
+type FileInfoDto = z.infer<typeof fileInfoResponseSchema>;
+type FileInfoItemDto = z.infer<typeof fileInfoItemSchema>;
+
+export function mapFileInfoDtoToModel(
+  dto: FileInfoDto | FileInfoItemDto
+): FileInfo {
   return {
     id: dto.id,
     name: dto.name,
   };
 }
 
-export const mapFileInfosDtoToModels = (arr: TFileInfoDto[]) => arr.map(mapFileInfoDtoToModel);
-
-
-
-
-
-
+export const mapFileInfosDtoToModels = (
+  arr: Array<FileInfoDto | FileInfoItemDto>
+) => arr.map(mapFileInfoDtoToModel);
