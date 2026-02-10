@@ -84,13 +84,13 @@ function renderContentWithMentions(
 }
 
 export function SidebarRight() {
-  const { threadId, workspaceId } = useRouteIds();
+  const { threadId, workspaceId, isNewThreadRoute } = useRouteIds();
   const isDraft = isDraftThreadId(threadId);
   const {
     data: comments,
     isLoading,
     isError: commentsError,
-  } = useComments(threadId);
+  } = useComments(threadId, { skipWhenNewThread: isNewThreadRoute });
   const { mutateAsync: addCommentAsync, isPending: isAddingComment } =
     useAddComment(threadId);
   const commentsEndRef = useRef<HTMLDivElement>(null);
@@ -101,10 +101,11 @@ export function SidebarRight() {
   });
   const isMobile = useIsMobile();
 
+  const cannotAddComment = isDraft || isNewThreadRoute;
   const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isAddingComment) return;
-    if (isDraft) return;
+    if (cannotAddComment) return;
     const content = editorRef.current?.getPlainText?.() ?? threadComment.plain;
     const mentionedUsers = editorRef.current?.getMentionedUsers?.() ?? [];
     if (!content.trim()) return;
@@ -189,7 +190,9 @@ export function SidebarRight() {
                     <MessageSquare className="h-8 w-8 text-primary" />
                   </div>
                   <h3 className="text-lg font-medium mb-2">
-                    Add comments here
+                    {isNewThreadRoute
+                      ? 'Start a thread to add comments'
+                      : 'Add comments here'}
                   </h3>
                 </div>
               ) : (
@@ -249,7 +252,7 @@ export function SidebarRight() {
                       displayName: u.displayName,
                     }));
                   }}
-                  disabled={isAddingComment || isDraft}
+                  disabled={isAddingComment || cannotAddComment}
                   workspaceId={workspaceId}
                   threadId={threadId}
                   className="md-editor--bare text-sm pr-12 pb-10"
@@ -271,7 +274,7 @@ export function SidebarRight() {
                   disabled={
                     threadComment.plain.trim().length === 0 ||
                     isAddingComment ||
-                    isDraft
+                    cannotAddComment
                   }
                   aria-label="Post comment"
                 >
@@ -295,7 +298,7 @@ export function SidebarRight() {
                       displayName: u.displayName,
                     }));
                   }}
-                  disabled={isAddingComment || isDraft}
+                  disabled={isAddingComment || cannotAddComment}
                   workspaceId={workspaceId}
                   threadId={threadId}
                   className="md-editor--bare text-sm pr-28 pb-12"
@@ -314,7 +317,7 @@ export function SidebarRight() {
                   disabled={
                     threadComment.plain.trim().length === 0 ||
                     isAddingComment ||
-                    isDraft
+                    cannotAddComment
                   }
                 >
                   {isAddingComment ? (

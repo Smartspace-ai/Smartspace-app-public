@@ -1,11 +1,12 @@
+/** Page size used by the sidebar thread list; must match ThreadsList.vm so list cache key is consistent. */
+export const THREAD_LIST_PAGE_SIZE = 30;
+
 export const threadsKeys = {
   all: ['threads'] as const,
 
   lists: () => [...threadsKeys.all, 'list'] as const,
-  list: (
-    workspaceId: string,
-    opts?: { take?: number; skip?: number }
-  ) => [...threadsKeys.lists(), { workspaceId, ...opts }] as const,
+  list: (workspaceId: string, opts?: { take?: number; skip?: number }) =>
+    [...threadsKeys.lists(), { workspaceId, ...opts }] as const,
 
   details: () => [...threadsKeys.all, 'detail'] as const,
   detail: (workspaceId: string, threadId: string) =>

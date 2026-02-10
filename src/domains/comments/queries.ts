@@ -12,12 +12,15 @@ export const commentsListOptions = (threadId: string) =>
     refetchOnWindowFocus: false,
   });
 
-export const useComments = (threadId: string) => {
+export const useComments = (
+  threadId: string,
+  opts?: { skipWhenNewThread?: boolean }
+) => {
   const isDraft = isDraftThreadId(threadId);
+  const skipFetch = opts?.skipWhenNewThread || !threadId || isDraft;
   return useQuery({
     ...commentsListOptions(threadId),
-    enabled: !!threadId && !isDraft,
-    // For draft threads, we want a fast, non-loading empty state (no backend fetch).
-    initialData: isDraft ? [] : undefined,
+    enabled: !opts?.skipWhenNewThread && !!threadId && !isDraft,
+    initialData: skipFetch ? [] : undefined,
   });
 };

@@ -20,7 +20,7 @@ module.exports = {
   settings: {
     // Path alias resolution (@/...)
     'import/resolver': {
-      typescript: { 
+      typescript: {
         // Use absolute paths so this works even when ESLint is executed from the repo root
         // (common in monorepos and in editor integrations)
         project: [
@@ -31,7 +31,7 @@ module.exports = {
         alwaysTryTypes: true,
         extensions: ['.ts', '.tsx', '.js', '.jsx'],
       },
-      node: { 
+      node: {
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
       },
     },
@@ -40,13 +40,15 @@ module.exports = {
     // Architectural layers for boundaries
     'boundaries/elements': [
       { type: 'platform', pattern: 'src/platform/**' },
-      { type: 'app',      pattern: 'src/app/**' },
-      { type: 'domains',  pattern: 'src/domains/**' },
-      { type: 'ui',       pattern: 'src/ui/**' },
-      { type: 'pages',    pattern: 'src/pages/**' },
-      { type: 'shared',   pattern: 'src/shared/**' },
-      { type: 'mocks',    pattern: 'src/mocks/**' },
-      { type: 'tests',    pattern: 'src/tests/**' },
+      { type: 'app', pattern: 'src/app/**' },
+      { type: 'domains', pattern: 'src/domains/**' },
+      { type: 'forms', pattern: 'src/forms/**' },
+      { type: 'theme', pattern: 'src/theme/**' },
+      { type: 'ui', pattern: 'src/ui/**' },
+      { type: 'pages', pattern: 'src/pages/**' },
+      { type: 'shared', pattern: 'src/shared/**' },
+      { type: 'mocks', pattern: 'src/mocks/**' },
+      { type: 'tests', pattern: 'src/tests/**' },
     ],
   },
 
@@ -54,60 +56,117 @@ module.exports = {
     /**
      * Architecture boundaries
      */
-    'boundaries/element-types': [2, {
-      default: 'allow',
-      rules: [
-        // platform is foundational; it must not depend on higher layers
-        { from: 'platform',  disallow: ['app', 'domains', 'ui', 'pages'] },
+    'boundaries/element-types': [
+      2,
+      {
+        default: 'allow',
+        rules: [
+          // platform is foundational; it must not depend on higher layers
+          {
+            from: 'platform',
+            disallow: ['app', 'domains', 'theme', 'ui', 'pages'],
+          },
 
-        // app composes everything
-        { from: 'app',       allow: ['platform', 'shared', 'domains', 'ui', 'pages'] },
+          // app composes everything
+          {
+            from: 'app',
+            allow: [
+              'platform',
+              'shared',
+              'domains',
+              'forms',
+              'theme',
+              'ui',
+              'pages',
+            ],
+          },
 
-        // domains use platform + shared only
-        { from: 'domains',   allow: ['platform', 'shared'] },
+          // domains use platform + shared only
+          { from: 'domains', allow: ['platform', 'shared'] },
 
-        // ui can use domains + platform + shared (no pages to avoid cycles)
-        { from: 'ui',        allow: ['platform', 'shared', 'domains'] },
+          // forms: validation + server error mapping; no feature layers
+          { from: 'forms', allow: ['platform', 'shared'] },
 
-        // pages can use ui + domains + platform + shared
-        { from: 'pages',     allow: ['ui', 'domains', 'platform', 'shared'] },
+          // theme is design tokens / MUI theme; no feature layers
+          { from: 'theme', disallow: ['app', 'domains', 'ui', 'pages'] },
 
-        // shared must stay pure
-        { from: 'shared',    disallow: ['app', 'domains', 'ui', 'pages'] },
-      ],
-    }],
+          // ui can use domains + platform + shared + theme + forms (no pages to avoid cycles)
+          {
+            from: 'ui',
+            allow: ['platform', 'shared', 'domains', 'forms', 'theme'],
+          },
+
+          // pages can use ui + domains + platform + shared + theme + forms
+          {
+            from: 'pages',
+            allow: ['ui', 'domains', 'platform', 'shared', 'forms', 'theme'],
+          },
+
+          // shared must stay pure
+          {
+            from: 'shared',
+            disallow: ['app', 'domains', 'theme', 'ui', 'pages'],
+          },
+        ],
+      },
+    ],
 
     /**
      * Import hygiene & ordering
      */
-    'import/order': ['error', {
-      groups: ['builtin', 'external', 'internal', ['parent', 'sibling', 'index']],
-      pathGroups: [
-        { pattern: '@/platform/**', group: 'internal', position: 'before' },
-        { pattern: '@/app/**',      group: 'internal', position: 'before' },
-        { pattern: '@/domains/**',  group: 'internal', position: 'before' },
-        { pattern: '@/ui/**',       group: 'internal', position: 'before' },
-        { pattern: '@/pages/**',    group: 'internal', position: 'before' },
-        { pattern: '@/shared/**',   group: 'internal', position: 'before' },
-      ],
-      pathGroupsExcludedImportTypes: ['builtin'],
-      alphabetize: { order: 'asc', caseInsensitive: true },
-      'newlines-between': 'always',
-    }],
+    'import/order': [
+      'error',
+      {
+        groups: [
+          'builtin',
+          'external',
+          'internal',
+          ['parent', 'sibling', 'index'],
+        ],
+        pathGroups: [
+          { pattern: '@/platform/**', group: 'internal', position: 'before' },
+          { pattern: '@/app/**', group: 'internal', position: 'before' },
+          { pattern: '@/domains/**', group: 'internal', position: 'before' },
+          { pattern: '@/ui/**', group: 'internal', position: 'before' },
+          { pattern: '@/pages/**', group: 'internal', position: 'before' },
+          { pattern: '@/shared/**', group: 'internal', position: 'before' },
+          { pattern: '@/forms/**', group: 'internal', position: 'before' },
+          { pattern: '@/theme/**', group: 'internal', position: 'before' },
+        ],
+        pathGroupsExcludedImportTypes: ['builtin'],
+        alphabetize: { order: 'asc', caseInsensitive: true },
+        'newlines-between': 'always',
+      },
+    ],
 
     // 🚫 Outside platform: do not import axios or raw transport
-    'no-restricted-imports': ['error', {
-      paths: [
-        { name: 'axios', message: 'Use @/platform/api (or request/http helpers) instead of axios directly.' },
-        { name: '@/platform/transport', message: 'Do not import raw transport outside platform.' },
-      ],
-      patterns: [
-        {
-          group: ['@/domains/**/dto', '@/domains/**/mapper', '@/domains/**/service'],
-          message: 'Import domain models/queries/mutations, not DTO/mapper/service.',
-        },
-      ],
-    }],
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [
+          {
+            name: 'axios',
+            message:
+              'Use @/platform/api (or request/http helpers) instead of axios directly.',
+          },
+          {
+            name: '@/platform/transport',
+            message: 'Do not import raw transport outside platform.',
+          },
+        ],
+        patterns: [
+          {
+            group: [
+              '@/domains/**/dto',
+              '@/domains/**/mapper',
+              '@/domains/**/service',
+            ],
+            message:
+              'Import domain models/queries/mutations, not DTO/mapper/service.',
+          },
+        ],
+      },
+    ],
 
     /**
      * High-signal correctness
@@ -125,9 +184,35 @@ module.exports = {
     'jsx-a11y/no-autofocus': 'off',
 
     /**
+     * Design system: prefer semantic tokens; no raw hex, px font sizes, or inline transitions.
+     * Warnings so existing code doesn't fail CI; fix gradually and tighten to error later.
+     */
+    'no-restricted-syntax': [
+      'warn',
+      {
+        selector: 'Literal[value=/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/]',
+        message:
+          'Use semantic tokens from theme (no raw hex). See theme/contracts/README.theming.md',
+      },
+      {
+        selector: "Property[key.name='fontSize'] > Literal[value=/.*px$/]",
+        message:
+          'Use theme typography tokens (rem); no px font sizes. See theme/contracts/README.theming.md',
+      },
+      {
+        selector: "Property[key.name='transition'] > Literal",
+        message:
+          'Use motion tokens from @/theme/tokens/motion; no inline transition values.',
+      },
+    ],
+
+    /**
      * Useful-but-noisy as warnings
      */
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+    ],
     'import/no-named-as-default': 'warn',
     'import/no-named-as-default-member': 'warn',
     'jsx-a11y/heading-has-content': 'warn',
@@ -166,7 +251,10 @@ module.exports = {
         // We want this feature area to be fully typed and clean.
         '@typescript-eslint/no-explicit-any': 'error',
         '@typescript-eslint/no-non-null-assertion': 'error',
-        '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+        '@typescript-eslint/no-unused-vars': [
+          'warn',
+          { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+        ],
         'import/no-named-as-default-member': 'warn',
         'jsx-a11y/accessible-emoji': 'warn',
       },
@@ -184,6 +272,8 @@ module.exports = {
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-non-null-assertion': 'off',
         'no-loop-func': 'warn',
+        // Tests may use hex/px for snapshots or style assertions
+        'no-restricted-syntax': 'off',
       },
     },
 
@@ -197,10 +287,22 @@ module.exports = {
         '@typescript-eslint/no-non-null-assertion': 'warn',
       },
     },
+
+    // Theme token definitions: core colors are allowed to use hex
+    {
+      files: ['src/theme/tokens/core.colors.ts'],
+      rules: {
+        'no-restricted-syntax': 'off',
+      },
+    },
   ],
 
   ignorePatterns: [
-    'dist', 'build', 'coverage', '.turbo', '.next',
+    'dist',
+    'build',
+    'coverage',
+    '.turbo',
+    '.next',
     // generated router tree or similar
     'src/routeTree.gen.ts',
   ],

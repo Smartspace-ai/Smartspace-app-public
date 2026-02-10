@@ -14,20 +14,21 @@ import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
-import { Skeleton } from '@/shared/ui/mui-compat/skeleton';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 import { MessageItem } from './MessageItem';
+import { MessageListSkeleton } from './MessageList.skeleton';
 
 export function MessageList() {
-  const { workspaceId, threadId } = useRouteIds();
+  const { workspaceId, threadId, isNewThreadRoute } = useRouteIds();
   const contentRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const scrollTopRef = useRef<number>(0);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const prevMessageCountRef = useRef<number>(0);
   const hasInitialScrollRef = useRef<boolean>(false);
+  const messageCountWhenNotAtBottomRef = useRef<number>(0);
   const isMobile = useIsMobile();
 
   const { data: activeWorkspace } = useWorkspace(workspaceId);
@@ -49,7 +50,7 @@ export function MessageList() {
     isPending: messagesPending,
     isFetching: messagesFetching,
     error: messagesError,
-  } = useMessages(threadId);
+  } = useMessages(threadId, { skipWhenNewThread: isNewThreadRoute });
 
   const { leftOpen, rightOpen } = useSidebar();
   const inTeams = isInTeams();
@@ -84,6 +85,7 @@ export function MessageList() {
     if (!viewportRef.current) return;
     if (!messages?.length) return;
     hasInitialScrollRef.current = true;
+    messageCountWhenNotAtBottomRef.current = messages.length;
     requestAnimationFrame(() => scrollToBottom('auto'));
   }, [messages?.length, scrollToBottom]);
 
@@ -128,14 +130,29 @@ export function MessageList() {
     return () => ro.disconnect();
   }, [isAtBottom, scrollToBottom]);
 
+  // All hooks must run before any conditional return (Rules of Hooks).
+  const safeMessages = messages ?? [];
+  const newMessageCount =
+    !isAtBottom && safeMessages.length > messageCountWhenNotAtBottomRef.current
+      ? safeMessages.length - messageCountWhenNotAtBottomRef.current
+      : 0;
+  const handleScrollToBottomFromPill = useCallback(() => {
+    messageCountWhenNotAtBottomRef.current = safeMessages.length;
+    scrollToBottom('smooth');
+  }, [safeMessages.length, scrollToBottom]);
+
   // When switching workspaces, we briefly land on /workspace/$workspaceId/ (no threadId) while the route loader
   // redirects to the first thread. During that transition we should show a loading skeleton, not "No messages yet".
-  const isChoosingThread = !!workspaceId && !threadId && !!workspaceIndexMatch;
+  // On thread/new we intentionally have no threadId; show the empty list, not the skeleton.
+  const isChoosingThread =
+    !!workspaceId && !threadId && !!workspaceIndexMatch && !isNewThreadRoute;
   // Avoid flicker: if we already have data, keep rendering it while refetching.
+  // On new-thread route we never show skeleton (messages are skipped, thread is not fetched).
   const isLoading =
-    isChoosingThread ||
-    ((threadPending || threadFetching) && !thread) ||
-    ((messagesPending || messagesFetching) && messages === undefined);
+    !isNewThreadRoute &&
+    (isChoosingThread ||
+      ((threadPending || threadFetching) && !thread) ||
+      ((messagesPending || messagesFetching) && messages === undefined));
 
   if (isLoading) {
     return (
@@ -143,17 +160,7 @@ export function MessageList() {
         className={`ss-chat__body flex-shrink-10 flex-1 overflow-y-auto ${teamsBg}`}
         data-ss-layer="message-list"
       >
-        <div className="space-y-8 p-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex gap-3">
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <div className="space-y-2 flex-1">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-20 w-full" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <MessageListSkeleton />
       </div>
     );
   }
@@ -179,8 +186,6 @@ export function MessageList() {
       </div>
     );
   }
-
-  const safeMessages = messages ?? [];
 
   if (safeMessages.length === 0) {
     return (
@@ -216,6 +221,19 @@ export function MessageList() {
         data-ss-layer="scroll-root"
         className="relative overflow-hidden h-full w-full"
       >
+        {newMessageCount > 0 && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+            <button
+              type="button"
+              onClick={handleScrollToBottomFromPill}
+              className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-md hover:bg-primary/90 transition-colors"
+            >
+              {newMessageCount === 1
+                ? '1 new message'
+                : `${newMessageCount} new messages`}
+            </button>
+          </div>
+        )}
         <ScrollAreaPrimitive.Viewport
           ref={viewportRef}
           data-ss-layer="scroll-viewport"
@@ -231,7 +249,11 @@ export function MessageList() {
               viewport.scrollHeight -
               viewport.scrollTop -
               viewport.clientHeight;
-            setIsAtBottom(distanceFromBottom < threshold);
+            const atBottom = distanceFromBottom < threshold;
+            if (atBottom) {
+              messageCountWhenNotAtBottomRef.current = messages?.length ?? 0;
+            }
+            setIsAtBottom(atBottom);
           }}
         >
           <div

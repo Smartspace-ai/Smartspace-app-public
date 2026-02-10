@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Theme tokens contract",
+  "description": "Semantic token names and structure. Components must use only these; no raw hex/px.",
+  "type": "object",
+  "properties": {
+    "background": {
+      "type": "object",
+      "properties": {
+        "canvas": { "type": "string", "description": "Page background" },
+        "surface": { "type": "string", "description": "Cards, panels" },
+        "elevated": { "type": "string", "description": "Floating surfaces" },
+        "overlay": { "type": "string", "description": "Modal backdrop" }
+      }
+    },
+    "text": {
+      "type": "object",
+      "properties": {
+        "primary": { "type": "string" },
+        "secondary": { "type": "string" },
+        "muted": { "type": "string" },
+        "inverse": { "type": "string" },
+        "disabled": { "type": "string" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "properties": {
+        "primary": {
+          "type": "object",
+          "properties": {
+            "main": {},
+            "hover": {},
+            "active": {},
+            "disabled": {},
+            "focus": {}
+          }
+        },
+        "secondary": { "type": "object" },
+        "danger": { "type": "object" },
+        "success": { "type": "object" }
+      }
+    },
+    "border": {
+      "type": "object",
+      "properties": {
+        "subtle": { "type": "string" },
+        "default": { "type": "string" },
+        "strong": { "type": "string" },
+        "focus": { "type": "string" }
+      }
+    },
+    "state": {
+      "type": "object",
+      "properties": {
+        "error": { "type": "object", "properties": { "bg": {}, "text": {} } },
+        "success": { "type": "object" },
+        "warning": { "type": "object" },
+        "info": { "type": "object" }
+      }
+    }
+  }
+}

@@ -60,4 +60,3 @@ Thumbs.db
 # OpenAPI specs and generated client
 /openapi/
 /src/platform/api/generated/
-

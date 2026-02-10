@@ -1,23 +1,25 @@
-import MuiSkeleton from "@mui/material/Skeleton"
-import * as React from "react"
+import MuiSkeleton from '@mui/material/Skeleton';
+import * as React from 'react';
 
-import { cn } from "@/shared/utils/utils"
+import { cn } from '@/shared/utils/utils';
 
-type LegacyDivProps = React.HTMLAttributes<HTMLDivElement>
+type LegacyDivProps = React.HTMLAttributes<HTMLDivElement>;
 
 function Skeleton({ className, ...props }: LegacyDivProps) {
   return (
     <MuiSkeleton
-      variant="rectangular"
       animation="pulse"
-      className={cn("rounded-md bg-muted", className)}
-      sx={{ backgroundColor: "hsl(var(--muted))" }}
+      className={cn(className)}
       component="div"
+      variant="rectangular"
+      sx={(theme) => ({
+        backgroundColor: theme.palette.action.hover,
+        borderRadius: theme.shape.borderRadius,
+      })}
       // Spread legacy div props for compatibility
       {...(props as unknown as Record<string, unknown>)}
     />
-  )
+  );
 }
 
-export { Skeleton }
-
+export { Skeleton };

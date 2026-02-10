@@ -5,9 +5,6 @@ import { toast } from 'sonner';
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 
 import { FileInfo } from '@/domains/files';
-import { threadsKeys } from '@/domains/threads/queryKeys';
-
-import { isDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
 
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
@@ -111,13 +108,6 @@ export function useSendMessage() {
         variables,
       });
 
-      // If the message post succeeded, this thread is no longer "draft-only" even if the stream is empty.
-      if (isDraftThreadId(threadId)) {
-        unmarkDraftThreadId(threadId);
-        qc.invalidateQueries({ queryKey: threadsKeys.lists() });
-        qc.invalidateQueries({ queryKey: threadsKeys.details() });
-      }
-
       // subscribe to server stream: replace optimistic with real items / updates
       const sub = subject.subscribe({
         next: (m: Message) => {
@@ -147,9 +137,17 @@ export function useSendMessage() {
           sub.unsubscribe();
         },
         complete: () => {
-          // Optionally invalidate related queries (e.g., thread list)
-          // qc.invalidateQueries(threadsKeys.list(workspaceId));
           sub.unsubscribe();
+          qc.invalidateQueries({
+            predicate: (query) => {
+              const k = query.queryKey as unknown[];
+              return (
+                k[0] === 'threads' &&
+                k[1] === 'list' &&
+                (k[2] as { workspaceId?: string })?.workspaceId === workspaceId
+              );
+            },
+          });
         },
       });
 

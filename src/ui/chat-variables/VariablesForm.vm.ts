@@ -19,7 +19,11 @@ type VarsRecord = Record<
   string,
   { schema?: JsonSchema7; access?: 'Read' | 'Write' }
 >;
-type VmParams = { workspace: WorkspaceLike; threadId: string };
+type VmParams = {
+  workspace: WorkspaceLike;
+  threadId: string;
+  isNewThreadRoute?: boolean;
+};
 
 // Layout helper types
 type VerticalLayout = { type: 'VerticalLayout'; elements: UISchemaElement[] };
@@ -111,6 +115,7 @@ export function useChatVariablesFormVm({
   workspace,
   threadId,
   setVariables,
+  isNewThreadRoute = false,
 }: VmParams & {
   setVariables: (variables: Record<string, unknown>) => void;
 }): ChatVariablesFormVm {
@@ -120,21 +125,27 @@ export function useChatVariablesFormVm({
     isError,
   } = useFlowRunVariables(threadId);
   const { mutate: updateVariableMutation } = useUpdateFlowRunVariable();
-  const querySettled = !isLoading && (threadVars !== undefined || isError);
 
-  // use defaults if error OR server returned {}
+  // On new-thread route: no flow run yet; use workspace schema + defaults only (no query).
+  const querySettled =
+    isNewThreadRoute || (!isLoading && (threadVars !== undefined || isError));
   const shouldUseDefaults =
-    isError || (threadVars && Object.keys(threadVars).length === 0);
+    isNewThreadRoute ||
+    isError ||
+    (threadVars && Object.keys(threadVars).length === 0);
 
   const built = React.useMemo(() => {
     return buildSimpleSchemaAndUi(
       workspace.variables as VarsRecord,
-      threadVars,
+      isNewThreadRoute ? undefined : threadVars,
       shouldUseDefaults ?? false
     );
-  }, [workspace.variables, threadVars, shouldUseDefaults]);
+  }, [workspace.variables, threadVars, shouldUseDefaults, isNewThreadRoute]);
 
-  const [data, setData] = React.useState<Record<string, unknown> | null>(null);
+  // When isNewThreadRoute, hydrate from workspace defaults immediately to avoid a flash of loading spinner.
+  const [data, setData] = React.useState<Record<string, unknown> | null>(() =>
+    isNewThreadRoute ? built.initialData : null
+  );
 
   React.useEffect(() => {
     if (querySettled) {
@@ -153,7 +164,8 @@ export function useChatVariablesFormVm({
 
   const onChange = React.useCallback(
     ({ data: next }: { data: Record<string, unknown> }) => {
-      if (prevRef.current && !isDraftThreadId(threadId)) {
+      // Only persist to flow run when we have a real thread (not draft, not new-thread route).
+      if (prevRef.current && !isDraftThreadId(threadId) && !isNewThreadRoute) {
         const keys = Object.keys((workspace.variables as VarsRecord) || {});
         for (const k of keys) {
           const before = prevRef.current?.[k];
@@ -170,7 +182,13 @@ export function useChatVariablesFormVm({
       setData(next);
       setVariables(next);
     },
-    [workspace.variables, setVariables, updateVariableMutation, threadId]
+    [
+      workspace.variables,
+      setVariables,
+      updateVariableMutation,
+      threadId,
+      isNewThreadRoute,
+    ]
   );
 
   const config = React.useMemo(

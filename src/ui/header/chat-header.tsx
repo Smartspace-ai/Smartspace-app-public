@@ -1,24 +1,35 @@
 import Divider from '@mui/material/Divider';
 import Skeleton from '@mui/material/Skeleton';
 import { MessageSquare, PanelLeft } from 'lucide-react';
+import { useEffect } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
-
-import { SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
+import { SidebarTrigger, useSidebar } from '@/shared/ui/mui-compat/sidebar';
+import { Tooltip } from '@/shared/ui/mui-compat/tooltip';
 
 import { getTagChipClasses } from '@/theme/tag-styles';
 
 import { NotificationPanel } from './notifications-panel';
 
 export function ChatHeader() {
-  const { workspaceId, threadId } = useRouteIds();
-  const { data: activeWorkspace, isPending: workspaceLoading, isError: workspaceError } = useWorkspace(workspaceId);
+  const { workspaceId, threadId, isNewThreadRoute } = useRouteIds();
+  const { setRightOpen } = useSidebar();
+  const {
+    data: activeWorkspace,
+    isPending: workspaceLoading,
+    isError: workspaceError,
+  } = useWorkspace(workspaceId);
   const { data: activeThread } = useThread({ workspaceId, threadId });
-  
+
+  // Close comments panel when navigating to new thread (can't comment on a thread that doesn't exist yet).
+  useEffect(() => {
+    if (isNewThreadRoute) setRightOpen(false);
+  }, [isNewThreadRoute, setRightOpen]);
+
   // Render all tags as chips; color-code safe/unsafe (and other known tags)
   const tagChips = (() => {
     const tags = activeWorkspace?.tags || [];
@@ -29,7 +40,10 @@ export function ChatHeader() {
           const v = (t || '').toString();
           const cls = getTagChipClasses(v);
           return (
-            <span key={`${v}-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}>
+            <span
+              key={`${v}-${i}`}
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}
+            >
               {v}
             </span>
           );
@@ -85,13 +99,21 @@ export function ChatHeader() {
       <div className="flex items-center gap-2 px-4">
         <NotificationPanel />
         <Divider orientation="vertical" className="h-4" />
-        <SidebarTrigger
-          side="right"
-          icon={<MessageSquare className="h-4 w-4" />}
-          className="text-muted-foreground hover:text-foreground h-8 w-8"
-        />
+        <Tooltip
+          title={
+            isNewThreadRoute ? 'Start a thread to add comments' : 'Comments'
+          }
+        >
+          <span className="inline-flex">
+            <SidebarTrigger
+              side="right"
+              icon={<MessageSquare className="h-4 w-4" />}
+              className="text-muted-foreground hover:text-foreground h-8 w-8"
+              disabled={isNewThreadRoute}
+            />
+          </span>
+        </Tooltip>
       </div>
-      
     </header>
   );
 }

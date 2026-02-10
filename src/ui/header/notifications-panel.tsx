@@ -92,10 +92,8 @@ export function NotificationPanel() {
           workspaceId: notification.workSpaceId || workspaceId,
           threadId: notification.threadId,
         },
+        search: { panel: 'comments' },
       });
-
-      // Open the comments drawer when navigating to a thread
-      // setRightOpen(true);
     }
 
     setIsOpen(false);

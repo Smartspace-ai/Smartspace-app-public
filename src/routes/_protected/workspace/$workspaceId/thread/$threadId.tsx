@@ -1,37 +1,39 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
-
-import { queryClient } from '@/platform/reactQueryClient';
-import { RouteIdsProvider } from '@/platform/routing/RouteIdsProvider';
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { useEffect, useRef } from 'react';
+import { z } from 'zod';
 
 import {
   threadDetailOptions,
   threadsListOptions,
+  useThread,
 } from '@/domains/threads/queries';
-import { threadsKeys } from '@/domains/threads/queryKeys';
+
+import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
+import { ThreadRenameModal } from '@/ui/threads/ThreadRenameModal';
 
 import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
 
-import { isDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
+
+const threadRouteSearchSchema = z.object({
+  modal: z.enum(['rename', 'delete']).optional(),
+  targetId: z.string().optional(),
+  panel: z.enum(['comments']).optional(),
+  focusMessageId: z.string().optional(),
+});
+
+export type ThreadRouteSearch = z.infer<typeof threadRouteSearchSchema>;
 
 // routes/_protected/workspace/$workspaceId/thread/$threadId.tsx
 export const Route = createFileRoute(
   '/_protected/workspace/$workspaceId/thread/$threadId'
 )({
+  validateSearch: (search): ThreadRouteSearch =>
+    threadRouteSearchSchema.parse(search),
   pendingMs: 0,
-  pendingComponent: ThreadRoutePending,
-  loader: async ({ params }) => {
-    // Draft threads are client-side only until a message is sent (or creation succeeds in background).
-    // Avoid fetching thread details for active draft ids, but ignore stale ones from sessionStorage.
-    if (isDraftThreadId(params.threadId)) {
-      const cachedDraft = queryClient.getQueryData(
-        threadsKeys.detail(params.workspaceId, params.threadId)
-      );
-      if (cachedDraft) return null;
-      unmarkDraftThreadId(params.threadId);
-    }
-
+  loader: async ({ params, context }) => {
     try {
-      return await queryClient.ensureQueryData(
+      return await context.queryClient.ensureQueryData(
         threadDetailOptions({
           workspaceId: params.workspaceId,
           threadId: params.threadId,
@@ -44,7 +46,7 @@ export const Route = createFileRoute(
         e && typeof e === 'object' ? (e as Record<string, unknown>) : null;
       if (err?.type !== 'NotFound') throw e;
 
-      const list = await queryClient.ensureQueryData(
+      const list = await context.queryClient.ensureQueryData(
         threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
       );
       const first = Array.isArray(list)
@@ -69,16 +71,58 @@ export const Route = createFileRoute(
   component: ThreadRouteComponent,
 });
 
-function ThreadRoutePending() {
-  // Avoid mounting chat UI while loader resolves/redirects.
-  return null;
-}
-
 function ThreadRouteComponent() {
   const { workspaceId, threadId } = Route.useParams();
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const { setRightOpen, rightOpen } = useSidebar();
+  const prevRightOpenRef = useRef(rightOpen);
+  const { data: thread } = useThread({ workspaceId, threadId });
+
+  const isRenameOpen =
+    search.modal === 'rename' && search.targetId === threadId && !!thread;
+
+  useEffect(() => {
+    if (search.panel === 'comments') setRightOpen(true);
+  }, [search.panel, setRightOpen]);
+
+  useEffect(() => {
+    if (prevRightOpenRef.current && !rightOpen && search.panel === 'comments') {
+      navigate({
+        to: '.',
+        search: (prev) => ({
+          ...prev,
+          panel: undefined,
+          focusMessageId: undefined,
+        }),
+        replace: true,
+      });
+    }
+    prevRightOpenRef.current = rightOpen;
+  }, [rightOpen, search.panel, navigate]);
+
+  const closeRenameModal = () => {
+    navigate({
+      to: '.',
+      search: (prev) => ({
+        ...prev,
+        modal: undefined,
+        targetId: undefined,
+      }),
+      replace: true,
+    });
+  };
+
   return (
-    <RouteIdsProvider>
+    <PendingThreadsProvider>
       <ChatBotPage workspaceId={workspaceId} threadId={threadId} />
-    </RouteIdsProvider>
+      {thread && (
+        <ThreadRenameModal
+          isOpen={isRenameOpen}
+          onClose={closeRenameModal}
+          thread={thread}
+        />
+      )}
+    </PendingThreadsProvider>
   );
 }

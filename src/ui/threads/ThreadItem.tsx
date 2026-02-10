@@ -1,4 +1,5 @@
 // src/ui/threads/ThreadItem.tsx
+import { useNavigate } from '@tanstack/react-router';
 import { Edit, Loader2, MoreHorizontal, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -7,6 +8,7 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 import type { MessageThread } from '@/domains/threads';
 
 import { CircleInitials } from '@/shared/components/circle-initials';
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { Button } from '@/shared/ui/mui-compat/button';
 import {
   DropdownMenu,
@@ -16,19 +18,18 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/mui-compat/dropdown-menu';
 import { parseDateTimeHuman } from '@/shared/utils/parseDateTime';
-import { isDraftThreadId } from '@/shared/utils/threadId';
+import { NEW_THREAD_ID } from '@/shared/utils/threadId';
 
 import { useThreadItemVm } from './ThreadItem.vm';
-import { ThreadRenameModal } from './ThreadRenameModal';
 
 type Props = {
   thread: MessageThread;
 };
 
 export default function ThreadItem({ thread }: Props) {
-  const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
-  const isDraft = isDraftThreadId(thread.id);
+  const isNewThreadRow = thread.id === NEW_THREAD_ID;
+  const navigate = useNavigate();
 
   const {
     goToThread,
@@ -36,9 +37,14 @@ export default function ThreadItem({ thread }: Props) {
     remove,
     isRunning,
     isSetFavoritePending,
+    prefetchThreadDetail,
+    prefetchThreadDetailDebounced,
   } = useThreadItemVm({ thread });
-  const { threadId } = useRouteIds();
-  const isActive = thread.id === threadId;
+  const { threadId, isNewThreadRoute } = useRouteIds();
+  const isActive =
+    (isNewThreadRow && isNewThreadRoute) ||
+    (!isNewThreadRow && thread.id === threadId && !!threadId);
+  const isMobile = useIsMobile();
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (
@@ -46,7 +52,12 @@ export default function ThreadItem({ thread }: Props) {
       (e.target.closest('button') || e.target.closest('[role="menuitem"]'))
     )
       return;
+    if (!isNewThreadRow) prefetchThreadDetail();
     goToThread();
+  };
+
+  const onMouseEnter = () => {
+    if (!isMobile && !isNewThreadRow) prefetchThreadDetailDebounced();
   };
 
   return (
@@ -56,6 +67,7 @@ export default function ThreadItem({ thread }: Props) {
         isActive ? 'bg-accent' : ''
       }`}
       onPointerDown={onPointerDown}
+      onMouseEnter={onMouseEnter}
     >
       <CircleInitials
         className={
@@ -79,6 +91,8 @@ export default function ThreadItem({ thread }: Props) {
               <Loader2 className="h-4 w-4 animate-spin" />
               <p className="text-xs">Running…</p>
             </div>
+          ) : isNewThreadRow ? (
+            <div className="text-muted-foreground">New</div>
           ) : (
             <div>{parseDateTimeHuman(thread.lastUpdatedAt)}</div>
           )}
@@ -91,7 +105,7 @@ export default function ThreadItem({ thread }: Props) {
         </div>
       </div>
 
-      {!isDraft && (
+      {!isNewThreadRow && (
         <DropdownMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <Button
@@ -127,7 +141,15 @@ export default function ThreadItem({ thread }: Props) {
               onClick={(e) => {
                 e.preventDefault();
                 setMenuOpen(false);
-                setIsRenameOpen(true);
+                const wsId = thread.workSpaceId;
+                if (wsId) {
+                  navigate({
+                    to: '/workspace/$workspaceId/thread/$threadId',
+                    params: { workspaceId: wsId, threadId: thread.id },
+                    search: { modal: 'rename', targetId: thread.id },
+                    replace: false,
+                  });
+                }
               }}
             >
               <Edit className="mr-2 h-3.5 w-3.5 text-gray-500" />
@@ -148,12 +170,6 @@ export default function ThreadItem({ thread }: Props) {
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-
-      <ThreadRenameModal
-        isOpen={isRenameOpen}
-        onClose={() => setIsRenameOpen(false)}
-        thread={thread}
-      />
     </div>
   );
 }

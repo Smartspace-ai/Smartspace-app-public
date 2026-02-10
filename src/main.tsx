@@ -7,7 +7,9 @@ import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
 
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
 import { getMsalInstance } from '@/platform/auth/msalClient'; // ✅ new path
+import { queryClient } from '@/platform/reactQueryClient';
 
 import AppProviders from '@/app/AppProviders';
 
@@ -53,6 +55,10 @@ function fallbackRender({ error }: { error: Error }) {
 
 const router = createRouter({
   routeTree,
+  context: {
+    queryClient,
+    api: getSmartSpaceChatAPI(),
+  },
   defaultPreload: 'intent',
   scrollRestoration: true,
 });
