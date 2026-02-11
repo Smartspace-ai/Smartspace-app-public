@@ -9,7 +9,7 @@ import zod from 'zod';
 /**
  * @summary Upload files to be referenced in requests (supports full and chunked uploads)
  */
-export const postFilesBody = zod.object({
+export const postFilesBody = zod.strictObject({
   chunkIndex: zod.number().optional(),
   files: zod.array(zod.instanceof(File)).optional(),
   lastChunk: zod.boolean().optional(),
@@ -19,7 +19,7 @@ export const postFilesBody = zod.object({
   workspaceId: zod.uuid().optional(),
 });
 
-export const postFilesResponseItem = zod.object({
+export const postFilesResponseItem = zod.strictObject({
   createdAt: zod.string(),
   createdByUserId: zod.string(),
   id: zod.uuid(),
@@ -35,11 +35,11 @@ export const postFilesResponse = zod.array(postFilesResponseItem);
 /**
  * @summary Get details for a file previously uploaded
  */
-export const getFilesIdParams = zod.object({
+export const getFilesIdParams = zod.strictObject({
   id: zod.uuid().describe('File id'),
 });
 
-export const getFilesIdQueryParams = zod.object({
+export const getFilesIdQueryParams = zod.strictObject({
   threadId: zod
     .uuid()
     .optional()
@@ -50,7 +50,7 @@ export const getFilesIdQueryParams = zod.object({
     .describe('Optional workspace ID containing the file'),
 });
 
-export const getFilesIdResponse = zod.object({
+export const getFilesIdResponse = zod.strictObject({
   createdAt: zod.string(),
   createdByUserId: zod.string(),
   id: zod.uuid(),
@@ -65,11 +65,11 @@ export const getFilesIdResponse = zod.object({
 /**
  * @summary Download a previously uploaded file
  */
-export const getFilesIdDownloadParams = zod.object({
+export const getFilesIdDownloadParams = zod.strictObject({
   id: zod.uuid().describe('File id'),
 });
 
-export const getFilesIdDownloadQueryParams = zod.object({
+export const getFilesIdDownloadQueryParams = zod.strictObject({
   threadId: zod
     .uuid()
     .optional()
@@ -83,11 +83,11 @@ export const getFilesIdDownloadQueryParams = zod.object({
 /**
  * @summary Get URI of a previously uploaded file
  */
-export const getFilesIdUriParams = zod.object({
+export const getFilesIdUriParams = zod.strictObject({
   id: zod.uuid().describe('File id'),
 });
 
-export const getFilesIdUriQueryParams = zod.object({
+export const getFilesIdUriQueryParams = zod.strictObject({
   threadId: zod
     .uuid()
     .optional()
@@ -100,7 +100,7 @@ export const getFilesIdUriQueryParams = zod.object({
 
 export const getFilesIdUriResponse = zod.string();
 
-export const getFlowRunsIdVariablesParams = zod.object({
+export const getFlowRunsIdVariablesParams = zod.strictObject({
   id: zod.uuid(),
 });
 
@@ -109,7 +109,7 @@ export const getFlowRunsIdVariablesResponse = zod.record(
   zod.any()
 );
 
-export const putFlowRunsIdVariablesVariableNameParams = zod.object({
+export const putFlowRunsIdVariablesVariableNameParams = zod.strictObject({
   id: zod.uuid(),
   variableName: zod.string(),
 });
@@ -119,15 +119,15 @@ export const putFlowRunsIdVariablesVariableNameBody = zod.any();
 /**
  * @summary Delete a specific message thread from SmartSpace, using it's ID.
  */
-export const deleteMessageThreadsIdParams = zod.object({
+export const deleteMessageThreadsIdParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the message thread to delete.'),
 });
 
-export const getMessageThreadsIdParams = zod.object({
+export const getMessageThreadsIdParams = zod.strictObject({
   id: zod.uuid(),
 });
 
-export const getMessageThreadsIdResponse = zod.object({
+export const getMessageThreadsIdResponse = zod.strictObject({
   createdAt: zod.string(),
   createdBy: zod.string().nullish(),
   createdByUserId: zod.string(),
@@ -145,14 +145,14 @@ export const getMessageThreadsIdResponse = zod.object({
 /**
  * @summary Retrieve comments from a specified message thread in SmartSpace, using the thread's ID, with take and skip for pagination control.
  */
-export const getMessageThreadsIdCommentsParams = zod.object({
+export const getMessageThreadsIdCommentsParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the message thread.'),
 });
 
 export const getMessageThreadsIdCommentsQueryTakeDefault = 50;
 export const getMessageThreadsIdCommentsQuerySkipDefault = 0;
 
-export const getMessageThreadsIdCommentsQueryParams = zod.object({
+export const getMessageThreadsIdCommentsQueryParams = zod.strictObject({
   take: zod
     .number()
     .default(getMessageThreadsIdCommentsQueryTakeDefault)
@@ -163,16 +163,16 @@ export const getMessageThreadsIdCommentsQueryParams = zod.object({
     .describe('The number of comments to skip (default is 0).'),
 });
 
-export const getMessageThreadsIdCommentsResponse = zod.object({
+export const getMessageThreadsIdCommentsResponse = zod.strictObject({
   data: zod.array(
-    zod.object({
+    zod.strictObject({
       content: zod.string(),
       createdAt: zod.string(),
       createdBy: zod.string().nullish(),
       createdByUserId: zod.string(),
       id: zod.uuid(),
       mentionedUsers: zod.array(
-        zod.object({
+        zod.strictObject({
           id: zod.string(),
           name: zod.string().nullish(),
         })
@@ -186,16 +186,16 @@ export const getMessageThreadsIdCommentsResponse = zod.object({
 /**
  * @summary Submit a new comment to a specific message thread in SmartSpace, identified by the thread's ID, using the provided comment schema.
  */
-export const postMessageThreadsIdCommentsParams = zod.object({
+export const postMessageThreadsIdCommentsParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the message thread.'),
 });
 
-export const postMessageThreadsIdCommentsBody = zod.object({
+export const postMessageThreadsIdCommentsBody = zod.strictObject({
   content: zod.string(),
   mentionedUsers: zod.array(zod.string()),
 });
 
-export const postMessageThreadsIdCommentsResponse = zod.object({
+export const postMessageThreadsIdCommentsResponse = zod.strictObject({
   content: zod.string(),
   createdAt: zod.string(),
   createdBy: zod.string().nullish(),
@@ -207,7 +207,7 @@ export const postMessageThreadsIdCommentsResponse = zod.object({
 /**
  * @summary Mark a message thread as favorited or not in SmartSpace, using the thread's ID and a boolean value in the request.
  */
-export const putMessageThreadsIdFavoritedParams = zod.object({
+export const putMessageThreadsIdFavoritedParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the chat thread.'),
 });
 
@@ -216,14 +216,14 @@ export const putMessageThreadsIdFavoritedBody = zod.boolean();
 /**
  * @summary Access messages within a specific message thread in SmartSpace, using the thread's ID, along with pagination options take and skip.
  */
-export const getMessageThreadsIdMessagesParams = zod.object({
+export const getMessageThreadsIdMessagesParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the thread.'),
 });
 
 export const getMessageThreadsIdMessagesQueryTakeDefault = 50;
 export const getMessageThreadsIdMessagesQuerySkipDefault = 0;
 
-export const getMessageThreadsIdMessagesQueryParams = zod.object({
+export const getMessageThreadsIdMessagesQueryParams = zod.strictObject({
   take: zod
     .number()
     .default(getMessageThreadsIdMessagesQueryTakeDefault)
@@ -234,14 +234,14 @@ export const getMessageThreadsIdMessagesQueryParams = zod.object({
     .describe('The number of messages to skip (default: 0).'),
 });
 
-export const getMessageThreadsIdMessagesResponse = zod.object({
+export const getMessageThreadsIdMessagesResponse = zod.strictObject({
   data: zod.array(
-    zod.object({
+    zod.strictObject({
       createdAt: zod.string(),
       createdBy: zod.string().nullish(),
       createdByUserId: zod.string(),
       errors: zod.array(
-        zod.object({
+        zod.strictObject({
           blockId: zod.string().nullish(),
           code: zod.number(),
           data: zod.any().nullish(),
@@ -252,7 +252,7 @@ export const getMessageThreadsIdMessagesResponse = zod.object({
       id: zod.uuid(),
       messageThreadId: zod.uuid().nullish(),
       values: zod.array(
-        zod.object({
+        zod.strictObject({
           channels: zod.record(zod.string(), zod.number()),
           createdAt: zod.string(),
           createdBy: zod.string().nullish(),
@@ -271,7 +271,7 @@ export const getMessageThreadsIdMessagesResponse = zod.object({
 /**
  * @summary Update the name of a message thread in SmartSpace, using the thread's ID and providing the new name in the request.
  */
-export const putMessageThreadsIdNameParams = zod.object({
+export const putMessageThreadsIdNameParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the message thread.'),
 });
 
@@ -281,9 +281,9 @@ export const putMessageThreadsIdNameBody = zod.string();
  * @summary Handles the HTTP POST request to create a new message in a thread within SmartSpace.
 This method specifies details like workspace ID, thread ID, and message content in the request.
  */
-export const postMessagesBody = zod.object({
+export const postMessagesBody = zod.strictObject({
   inputs: zod.array(
-    zod.object({
+    zod.strictObject({
       channels: zod.record(zod.string(), zod.number()).nullish(),
       name: zod.string(),
       value: zod.any().nullish(),
@@ -297,21 +297,21 @@ export const postMessagesBody = zod.object({
 /**
  * @summary Remove a specific message from SmartSpace using its ID.
  */
-export const deleteMessagesIdParams = zod.object({
+export const deleteMessagesIdParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the message to delete.'),
 });
 
 /**
  * @summary Retrieve comments attached to a specific message in SmartSpace, using the message's ID, with pagination options 'take' and 'skip'.
  */
-export const getMessagesIdCommentsParams = zod.object({
+export const getMessagesIdCommentsParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the message.'),
 });
 
 export const getMessagesIdCommentsQueryTakeDefault = 50;
 export const getMessagesIdCommentsQuerySkipDefault = 0;
 
-export const getMessagesIdCommentsQueryParams = zod.object({
+export const getMessagesIdCommentsQueryParams = zod.strictObject({
   take: zod
     .number()
     .default(getMessagesIdCommentsQueryTakeDefault)
@@ -322,16 +322,16 @@ export const getMessagesIdCommentsQueryParams = zod.object({
     .describe('The number of comments to skip (default is 0).'),
 });
 
-export const getMessagesIdCommentsResponse = zod.object({
+export const getMessagesIdCommentsResponse = zod.strictObject({
   data: zod.array(
-    zod.object({
+    zod.strictObject({
       content: zod.string(),
       createdAt: zod.string(),
       createdBy: zod.string().nullish(),
       createdByUserId: zod.string(),
       id: zod.uuid(),
       mentionedUsers: zod.array(
-        zod.object({
+        zod.strictObject({
           id: zod.string(),
           name: zod.string().nullish(),
         })
@@ -345,16 +345,16 @@ export const getMessagesIdCommentsResponse = zod.object({
 /**
  * @summary Add a new comment to a message in SmartSpace, using the message's ID and comment details in the request.
  */
-export const postMessagesIdCommentsParams = zod.object({
+export const postMessagesIdCommentsParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the message.'),
 });
 
-export const postMessagesIdCommentsBody = zod.object({
+export const postMessagesIdCommentsBody = zod.strictObject({
   content: zod.string(),
   mentionedUsers: zod.array(zod.string()),
 });
 
-export const postMessagesIdCommentsResponse = zod.object({
+export const postMessagesIdCommentsResponse = zod.strictObject({
   content: zod.string(),
   createdAt: zod.string(),
   createdBy: zod.string().nullish(),
@@ -363,11 +363,11 @@ export const postMessagesIdCommentsResponse = zod.object({
   mentionedUsers: zod.array(zod.string()),
 });
 
-export const postMessagesIdValuesParams = zod.object({
+export const postMessagesIdValuesParams = zod.strictObject({
   id: zod.uuid(),
 });
 
-export const postMessagesIdValuesBody = zod.object({
+export const postMessagesIdValuesBody = zod.strictObject({
   channels: zod.record(zod.string(), zod.number()).nullish(),
   name: zod.string(),
   value: zod.any().nullish(),
@@ -380,7 +380,7 @@ export const getModelsQueryTakeDefault = 50;
 export const getModelsQuerySkipDefault = 0;
 export const getModelsQuerySearchDefault = '';
 
-export const getModelsQueryParams = zod.object({
+export const getModelsQueryParams = zod.strictObject({
   take: zod
     .number()
     .default(getModelsQueryTakeDefault)
@@ -392,9 +392,9 @@ export const getModelsQueryParams = zod.object({
     .describe('The search term to filter the models.'),
 });
 
-export const getModelsResponse = zod.object({
+export const getModelsResponse = zod.strictObject({
   data: zod.array(
-    zod.object({
+    zod.strictObject({
       createdAt: zod.string().nullish(),
       createdByUserId: zod.string().nullish(),
       deploymentStatus: zod
@@ -415,7 +415,7 @@ export const getModelsResponse = zod.object({
         .optional(),
       name: zod.string(),
       properties: zod.array(
-        zod.object({
+        zod.strictObject({
           name: zod.string(),
           type: zod.enum(['Boolean', 'Number', 'String']),
         })
@@ -429,15 +429,15 @@ export const getModelsResponse = zod.object({
 /**
  * @summary Retrieves a model by its ID.
  */
-export const getModelsIdParams = zod.object({
+export const getModelsIdParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the model to retrieve.'),
 });
 
-export const getModelsIdResponse = zod.object({
+export const getModelsIdResponse = zod.strictObject({
   createdAt: zod.string().nullish(),
   createdByUserId: zod.string().nullish(),
   deployment: zod
-    .object({
+    .strictObject({
       createdAt: zod.string().nullish(),
       createdByUserId: zod.string().nullish(),
       detailedMessage: zod.string().nullish(),
@@ -451,7 +451,7 @@ export const getModelsIdResponse = zod.object({
       statusMessage: zod.string().nullish(),
       statusUpdatedAt: zod.string().nullish(),
       steps: zod.array(
-        zod.object({
+        zod.strictObject({
           finishedAt: zod.string().nullish(),
           id: zod.uuid(),
           index: zod.number(),
@@ -490,7 +490,7 @@ export const getModelsIdResponse = zod.object({
     .optional(),
   name: zod.string(),
   properties: zod.array(
-    zod.object({
+    zod.strictObject({
       name: zod.string(),
       type: zod.enum(['Boolean', 'Number', 'String']),
     })
@@ -503,7 +503,7 @@ export const getModelsIdResponse = zod.object({
 export const getWorkSpacesQueryTakeDefault = 20;
 export const getWorkSpacesQuerySkipDefault = 0;
 
-export const getWorkSpacesQueryParams = zod.object({
+export const getWorkSpacesQueryParams = zod.strictObject({
   take: zod
     .number()
     .default(getWorkSpacesQueryTakeDefault)
@@ -519,34 +519,34 @@ export const getWorkSpacesQueryParams = zod.object({
     .describe('The sort order for the returned workspaces.'),
 });
 
-export const getWorkSpacesResponse = zod.object({
+export const getWorkSpacesResponse = zod.strictObject({
   data: zod.array(
-    zod.object({
+    zod.strictObject({
       createdAt: zod.string(),
       createdByUserId: zod.string(),
       dataSpaces: zod.array(
-        zod.object({
+        zod.strictObject({
           createdAt: zod.string(),
           createdByUserId: zod.string(),
           dataSets: zod
             .array(
-              zod.object({
+              zod.strictObject({
                 createdAt: zod.string(),
                 createdByUserId: zod.string(),
                 dataSpaceId: zod.uuid().nullish(),
                 description: zod.string().nullish(),
                 flow: zod
-                  .object({
+                  .strictObject({
                     activeFlowDefinition: zod
-                      .object({
+                      .strictObject({
                         blocks: zod
                           .record(
                             zod.string(),
-                            zod.object({
+                            zod.strictObject({
                               constants: zod
                                 .array(
-                                  zod.object({
-                                    target: zod.object({
+                                  zod.strictObject({
+                                    target: zod.strictObject({
                                       pin: zod.string(),
                                       port: zod.string(),
                                     }),
@@ -557,7 +557,7 @@ export const getWorkSpacesResponse = zod.object({
                               description: zod.string().nullish(),
                               dynamicInputPins: zod
                                 .array(
-                                  zod.object({
+                                  zod.strictObject({
                                     pin: zod.string(),
                                     port: zod.string(),
                                   })
@@ -565,7 +565,7 @@ export const getWorkSpacesResponse = zod.object({
                                 .nullish(),
                               dynamicOutputPins: zod
                                 .array(
-                                  zod.object({
+                                  zod.strictObject({
                                     pin: zod.string(),
                                     port: zod.string(),
                                   })
@@ -579,13 +579,13 @@ export const getWorkSpacesResponse = zod.object({
                           .nullish(),
                         connections: zod
                           .array(
-                            zod.object({
-                              source: zod.object({
+                            zod.strictObject({
+                              source: zod.strictObject({
                                 node: zod.string(),
                                 pin: zod.string().nullish(),
                                 port: zod.string().nullish(),
                               }),
-                              target: zod.object({
+                              target: zod.strictObject({
                                 node: zod.string(),
                                 pin: zod.string().nullish(),
                                 port: zod.string().nullish(),
@@ -596,7 +596,7 @@ export const getWorkSpacesResponse = zod.object({
                         constants: zod
                           .record(
                             zod.string(),
-                            zod.object({
+                            zod.strictObject({
                               value: zod.any().nullish(),
                             })
                           )
@@ -604,7 +604,7 @@ export const getWorkSpacesResponse = zod.object({
                         inputs: zod
                           .record(
                             zod.string(),
-                            zod.object({
+                            zod.strictObject({
                               schema: zod.record(zod.string(), zod.any()),
                             })
                           )
@@ -614,7 +614,7 @@ export const getWorkSpacesResponse = zod.object({
                         outputs: zod
                           .record(
                             zod.string(),
-                            zod.object({
+                            zod.strictObject({
                               schema: zod.record(zod.string(), zod.any()),
                             })
                           )
@@ -622,7 +622,7 @@ export const getWorkSpacesResponse = zod.object({
                         variables: zod
                           .record(
                             zod.string(),
-                            zod.object({
+                            zod.strictObject({
                               access: zod.enum(['None', 'Read', 'Write']),
                               schema: zod.record(zod.string(), zod.any()),
                             })
@@ -633,8 +633,8 @@ export const getWorkSpacesResponse = zod.object({
                     activeFlowDefinitionId: zod.uuid(),
                     id: zod.uuid(),
                     triggers: zod.array(
-                      zod.object({
-                        dataSourceContainer: zod.object({
+                      zod.strictObject({
+                        dataSourceContainer: zod.strictObject({
                           dataSourceId: zod.uuid(),
                           id: zod.uuid(),
                           name: zod.string(),
@@ -653,7 +653,7 @@ export const getWorkSpacesResponse = zod.object({
                 modifiedByUserId: zod.string(),
                 name: zod.string(),
                 properties: zod.array(
-                  zod.object({
+                  zod.strictObject({
                     description: zod.string().nullish(),
                     isVector: zod.boolean(),
                     name: zod.string(),
@@ -670,7 +670,7 @@ export const getWorkSpacesResponse = zod.object({
           parentWorkspaceId: zod.uuid().nullish(),
           workspacesInfo: zod
             .array(
-              zod.object({
+              zod.strictObject({
                 id: zod.uuid(),
                 name: zod.string(),
               })
@@ -683,19 +683,19 @@ export const getWorkSpacesResponse = zod.object({
       id: zod.uuid().nullish(),
       inputs: zod.record(
         zod.string(),
-        zod.object({
+        zod.strictObject({
           schema: zod.record(zod.string(), zod.any()),
         })
       ),
       isPromptAndResponseLoggingEnabled: zod.boolean().nullish(),
       modelConfigurations: zod.array(
-        zod.object({
+        zod.strictObject({
           frequencyPenalty: zod.number(),
-          model: zod.object({
+          model: zod.strictObject({
             createdAt: zod.string().nullish(),
             createdByUserId: zod.string().nullish(),
             deployment: zod
-              .object({
+              .strictObject({
                 createdAt: zod.string().nullish(),
                 createdByUserId: zod.string().nullish(),
                 detailedMessage: zod.string().nullish(),
@@ -715,7 +715,7 @@ export const getWorkSpacesResponse = zod.object({
                 statusMessage: zod.string().nullish(),
                 statusUpdatedAt: zod.string().nullish(),
                 steps: zod.array(
-                  zod.object({
+                  zod.strictObject({
                     finishedAt: zod.string().nullish(),
                     id: zod.uuid(),
                     index: zod.number(),
@@ -754,7 +754,7 @@ export const getWorkSpacesResponse = zod.object({
               .optional(),
             name: zod.string(),
             properties: zod.array(
-              zod.object({
+              zod.strictObject({
                 name: zod.string(),
                 type: zod.enum(['Boolean', 'Number', 'String']),
               })
@@ -778,7 +778,7 @@ export const getWorkSpacesResponse = zod.object({
       tags: zod.array(zod.string()).nullish(),
       variables: zod.record(
         zod.string(),
-        zod.object({
+        zod.strictObject({
           access: zod.enum(['None', 'Read', 'Write']),
           schema: zod.record(zod.string(), zod.any()),
         })
@@ -791,36 +791,36 @@ export const getWorkSpacesResponse = zod.object({
 /**
  * @summary Retrieve detailed information about a specific workspace in SmartSpace, using its ID.
  */
-export const getWorkSpacesIdParams = zod.object({
+export const getWorkSpacesIdParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the workspace to retrieve.'),
 });
 
-export const getWorkSpacesIdResponse = zod.object({
+export const getWorkSpacesIdResponse = zod.strictObject({
   createdAt: zod.string(),
   createdByUserId: zod.string(),
   dataSpaces: zod.array(
-    zod.object({
+    zod.strictObject({
       createdAt: zod.string(),
       createdByUserId: zod.string(),
       dataSets: zod
         .array(
-          zod.object({
+          zod.strictObject({
             createdAt: zod.string(),
             createdByUserId: zod.string(),
             dataSpaceId: zod.uuid().nullish(),
             description: zod.string().nullish(),
             flow: zod
-              .object({
+              .strictObject({
                 activeFlowDefinition: zod
-                  .object({
+                  .strictObject({
                     blocks: zod
                       .record(
                         zod.string(),
-                        zod.object({
+                        zod.strictObject({
                           constants: zod
                             .array(
-                              zod.object({
-                                target: zod.object({
+                              zod.strictObject({
+                                target: zod.strictObject({
                                   pin: zod.string(),
                                   port: zod.string(),
                                 }),
@@ -831,7 +831,7 @@ export const getWorkSpacesIdResponse = zod.object({
                           description: zod.string().nullish(),
                           dynamicInputPins: zod
                             .array(
-                              zod.object({
+                              zod.strictObject({
                                 pin: zod.string(),
                                 port: zod.string(),
                               })
@@ -839,7 +839,7 @@ export const getWorkSpacesIdResponse = zod.object({
                             .nullish(),
                           dynamicOutputPins: zod
                             .array(
-                              zod.object({
+                              zod.strictObject({
                                 pin: zod.string(),
                                 port: zod.string(),
                               })
@@ -853,13 +853,13 @@ export const getWorkSpacesIdResponse = zod.object({
                       .nullish(),
                     connections: zod
                       .array(
-                        zod.object({
-                          source: zod.object({
+                        zod.strictObject({
+                          source: zod.strictObject({
                             node: zod.string(),
                             pin: zod.string().nullish(),
                             port: zod.string().nullish(),
                           }),
-                          target: zod.object({
+                          target: zod.strictObject({
                             node: zod.string(),
                             pin: zod.string().nullish(),
                             port: zod.string().nullish(),
@@ -870,7 +870,7 @@ export const getWorkSpacesIdResponse = zod.object({
                     constants: zod
                       .record(
                         zod.string(),
-                        zod.object({
+                        zod.strictObject({
                           value: zod.any().nullish(),
                         })
                       )
@@ -878,7 +878,7 @@ export const getWorkSpacesIdResponse = zod.object({
                     inputs: zod
                       .record(
                         zod.string(),
-                        zod.object({
+                        zod.strictObject({
                           schema: zod.record(zod.string(), zod.any()),
                         })
                       )
@@ -888,7 +888,7 @@ export const getWorkSpacesIdResponse = zod.object({
                     outputs: zod
                       .record(
                         zod.string(),
-                        zod.object({
+                        zod.strictObject({
                           schema: zod.record(zod.string(), zod.any()),
                         })
                       )
@@ -896,7 +896,7 @@ export const getWorkSpacesIdResponse = zod.object({
                     variables: zod
                       .record(
                         zod.string(),
-                        zod.object({
+                        zod.strictObject({
                           access: zod.enum(['None', 'Read', 'Write']),
                           schema: zod.record(zod.string(), zod.any()),
                         })
@@ -907,8 +907,8 @@ export const getWorkSpacesIdResponse = zod.object({
                 activeFlowDefinitionId: zod.uuid(),
                 id: zod.uuid(),
                 triggers: zod.array(
-                  zod.object({
-                    dataSourceContainer: zod.object({
+                  zod.strictObject({
+                    dataSourceContainer: zod.strictObject({
                       dataSourceId: zod.uuid(),
                       id: zod.uuid(),
                       name: zod.string(),
@@ -927,7 +927,7 @@ export const getWorkSpacesIdResponse = zod.object({
             modifiedByUserId: zod.string(),
             name: zod.string(),
             properties: zod.array(
-              zod.object({
+              zod.strictObject({
                 description: zod.string().nullish(),
                 isVector: zod.boolean(),
                 name: zod.string(),
@@ -944,7 +944,7 @@ export const getWorkSpacesIdResponse = zod.object({
       parentWorkspaceId: zod.uuid().nullish(),
       workspacesInfo: zod
         .array(
-          zod.object({
+          zod.strictObject({
             id: zod.uuid(),
             name: zod.string(),
           })
@@ -957,19 +957,19 @@ export const getWorkSpacesIdResponse = zod.object({
   id: zod.uuid().nullish(),
   inputs: zod.record(
     zod.string(),
-    zod.object({
+    zod.strictObject({
       schema: zod.record(zod.string(), zod.any()),
     })
   ),
   isPromptAndResponseLoggingEnabled: zod.boolean().nullish(),
   modelConfigurations: zod.array(
-    zod.object({
+    zod.strictObject({
       frequencyPenalty: zod.number(),
-      model: zod.object({
+      model: zod.strictObject({
         createdAt: zod.string().nullish(),
         createdByUserId: zod.string().nullish(),
         deployment: zod
-          .object({
+          .strictObject({
             createdAt: zod.string().nullish(),
             createdByUserId: zod.string().nullish(),
             detailedMessage: zod.string().nullish(),
@@ -989,7 +989,7 @@ export const getWorkSpacesIdResponse = zod.object({
             statusMessage: zod.string().nullish(),
             statusUpdatedAt: zod.string().nullish(),
             steps: zod.array(
-              zod.object({
+              zod.strictObject({
                 finishedAt: zod.string().nullish(),
                 id: zod.uuid(),
                 index: zod.number(),
@@ -1028,7 +1028,7 @@ export const getWorkSpacesIdResponse = zod.object({
           .optional(),
         name: zod.string(),
         properties: zod.array(
-          zod.object({
+          zod.strictObject({
             name: zod.string(),
             type: zod.enum(['Boolean', 'Number', 'String']),
           })
@@ -1052,7 +1052,7 @@ export const getWorkSpacesIdResponse = zod.object({
   tags: zod.array(zod.string()).nullish(),
   variables: zod.record(
     zod.string(),
-    zod.object({
+    zod.strictObject({
       access: zod.enum(['None', 'Read', 'Write']),
       schema: zod.record(zod.string(), zod.any()),
     })
@@ -1062,14 +1062,14 @@ export const getWorkSpacesIdResponse = zod.object({
 /**
  * @summary Retrieve the access control details of a specific workspace in SmartSpace, using the workspace's ID, with pagination options take and skip.
  */
-export const getWorkSpacesIdAccessParams = zod.object({
+export const getWorkSpacesIdAccessParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the workspace.'),
 });
 
 export const getWorkSpacesIdAccessQueryTakeDefault = 20;
 export const getWorkSpacesIdAccessQuerySkipDefault = 0;
 
-export const getWorkSpacesIdAccessQueryParams = zod.object({
+export const getWorkSpacesIdAccessQueryParams = zod.strictObject({
   take: zod
     .number()
     .default(getWorkSpacesIdAccessQueryTakeDefault)
@@ -1084,9 +1084,9 @@ export const getWorkSpacesIdAccessQueryParams = zod.object({
     .describe('The search term to filter access controls.'),
 });
 
-export const getWorkSpacesIdAccessResponse = zod.object({
+export const getWorkSpacesIdAccessResponse = zod.strictObject({
   data: zod.array(
-    zod.object({
+    zod.strictObject({
       accessType: zod.union([zod.literal(1), zod.literal(2)]),
       displayName: zod.string().nullish(),
       id: zod.uuid().nullish(),
@@ -1106,14 +1106,14 @@ export const getWorkSpacesIdAccessResponse = zod.object({
 /**
  * @summary Retrieve all message threads associated with a specific workspace in SmartSpace, identified by workspaceId, with pagination options take and skip.
  */
-export const getWorkSpacesIdMessageThreadsParams = zod.object({
+export const getWorkSpacesIdMessageThreadsParams = zod.strictObject({
   id: zod.uuid().describe('The ID of the workspace.'),
 });
 
 export const getWorkSpacesIdMessageThreadsQueryTakeDefault = 50;
 export const getWorkSpacesIdMessageThreadsQuerySkipDefault = 0;
 
-export const getWorkSpacesIdMessageThreadsQueryParams = zod.object({
+export const getWorkSpacesIdMessageThreadsQueryParams = zod.strictObject({
   take: zod
     .number()
     .default(getWorkSpacesIdMessageThreadsQueryTakeDefault)
@@ -1128,9 +1128,9 @@ export const getWorkSpacesIdMessageThreadsQueryParams = zod.object({
     .describe('The term to filter threads by name or id.'),
 });
 
-export const getWorkSpacesIdMessageThreadsResponse = zod.object({
+export const getWorkSpacesIdMessageThreadsResponse = zod.strictObject({
   data: zod.array(
-    zod.object({
+    zod.strictObject({
       createdAt: zod.string(),
       createdBy: zod.string().nullish(),
       createdByUserId: zod.string(),
@@ -1148,20 +1148,20 @@ export const getWorkSpacesIdMessageThreadsResponse = zod.object({
   total: zod.number(),
 });
 
-export const getWorkSpacesIdUsersParams = zod.object({
+export const getWorkSpacesIdUsersParams = zod.strictObject({
   id: zod.uuid(),
 });
 
 export const getWorkSpacesIdUsersQueryTakeDefault = 1000;
 export const getWorkSpacesIdUsersQuerySkipDefault = 0;
 
-export const getWorkSpacesIdUsersQueryParams = zod.object({
+export const getWorkSpacesIdUsersQueryParams = zod.strictObject({
   take: zod.number().default(getWorkSpacesIdUsersQueryTakeDefault),
   skip: zod.number().optional(),
   search: zod.string().optional(),
 });
 
-export const getWorkSpacesIdUsersResponseItem = zod.object({
+export const getWorkSpacesIdUsersResponseItem = zod.strictObject({
   displayName: zod.string(),
   emailAddress: zod.string().nullish(),
   id: zod.string(),
@@ -1174,72 +1174,77 @@ export const getWorkSpacesIdUsersResponse = zod.array(
 /**
  * @summary Retrieve a Shared Access Signature (SAS) for a specific document in a data space, using the dataSpaceId and optional file parameter.
  */
-export const getDataspacesDataSpaceIdDocumentsItemSasParams = zod.object({
+export const getDataspacesDataSpaceIdDocumentsItemSasParams = zod.strictObject({
   dataSpaceId: zod.uuid().describe('The ID of the data space.'),
 });
 
-export const getDataspacesDataSpaceIdDocumentsItemSasQueryParams = zod.object({
-  file: zod.string().optional().describe('The optional file parameter.'),
-});
+export const getDataspacesDataSpaceIdDocumentsItemSasQueryParams =
+  zod.strictObject({
+    file: zod.string().optional().describe('The optional file parameter.'),
+  });
 
-export const getDataspacesDataSpaceIdDocumentsItemSasResponse = zod.object({
-  uri: zod.url(),
-});
+export const getDataspacesDataSpaceIdDocumentsItemSasResponse =
+  zod.strictObject({
+    uri: zod.url(),
+  });
 
-export const postWorkspacesWorkspaceIdMessagethreadsParams = zod.object({
+export const postWorkspacesWorkspaceIdMessagethreadsParams = zod.strictObject({
   workspaceId: zod.uuid(),
 });
 
-export const postWorkspacesWorkspaceIdMessagethreadsBody = zod.object({
+export const postWorkspacesWorkspaceIdMessagethreadsBody = zod.strictObject({
   id: zod.uuid().nullish(),
   name: zod.string().nullish(),
 });
 
-export const postWorkspacesWorkspaceIdMessagethreadsResponse = zod.object({
-  data: zod.array(
-    zod.object({
-      createdAt: zod.string(),
-      createdBy: zod.string().nullish(),
-      createdByUserId: zod.string(),
-      favorited: zod.boolean(),
-      id: zod.uuid(),
-      isFlowRunning: zod.boolean(),
-      lastUpdated: zod.string().nullish(),
-      lastUpdatedAt: zod.string(),
-      lastUpdatedByUserId: zod.string(),
-      name: zod.string().nullish(),
-      totalMessages: zod.number(),
-      workSpaceId: zod.uuid(),
-    })
-  ),
-  total: zod.number(),
-});
+export const postWorkspacesWorkspaceIdMessagethreadsResponse = zod.strictObject(
+  {
+    data: zod.array(
+      zod.strictObject({
+        createdAt: zod.string(),
+        createdBy: zod.string().nullish(),
+        createdByUserId: zod.string(),
+        favorited: zod.boolean(),
+        id: zod.uuid(),
+        isFlowRunning: zod.boolean(),
+        lastUpdated: zod.string().nullish(),
+        lastUpdatedAt: zod.string(),
+        lastUpdatedByUserId: zod.string(),
+        name: zod.string().nullish(),
+        totalMessages: zod.number(),
+        workSpaceId: zod.uuid(),
+      })
+    ),
+    total: zod.number(),
+  }
+);
 
-export const getWorkspacesWorkspaceIdMessagethreadsIdParams = zod.object({
+export const getWorkspacesWorkspaceIdMessagethreadsIdParams = zod.strictObject({
   id: zod.uuid(),
   workspaceId: zod.string(),
 });
 
-export const getWorkspacesWorkspaceIdMessagethreadsIdResponse = zod.object({
-  createdAt: zod.string(),
-  createdBy: zod.string().nullish(),
-  createdByUserId: zod.string(),
-  favorited: zod.boolean(),
-  id: zod.uuid(),
-  isFlowRunning: zod.boolean(),
-  lastUpdated: zod.string().nullish(),
-  lastUpdatedAt: zod.string(),
-  lastUpdatedByUserId: zod.string(),
-  name: zod.string().nullish(),
-  totalMessages: zod.number(),
-  workSpaceId: zod.uuid(),
-});
+export const getWorkspacesWorkspaceIdMessagethreadsIdResponse =
+  zod.strictObject({
+    createdAt: zod.string(),
+    createdBy: zod.string().nullish(),
+    createdByUserId: zod.string(),
+    favorited: zod.boolean(),
+    id: zod.uuid(),
+    isFlowRunning: zod.boolean(),
+    lastUpdated: zod.string().nullish(),
+    lastUpdatedAt: zod.string(),
+    lastUpdatedByUserId: zod.string(),
+    name: zod.string().nullish(),
+    totalMessages: zod.number(),
+    workSpaceId: zod.uuid(),
+  });
 
 /**
  * @summary Access messages within a specific message thread in SmartSpace, using the thread's ID, along with pagination options take and skip.
  */
 export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesParams =
-  zod.object({
+  zod.strictObject({
     id: zod.uuid().describe('The ID of the thread.'),
     workspaceId: zod.string(),
   });
@@ -1248,7 +1253,7 @@ export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryTakeDefault = 
 export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQuerySkipDefault = 0;
 
 export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryParams =
-  zod.object({
+  zod.strictObject({
     take: zod
       .number()
       .default(getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryTakeDefault)
@@ -1260,14 +1265,14 @@ export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryParams =
   });
 
 export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesResponse =
-  zod.object({
+  zod.strictObject({
     data: zod.array(
-      zod.object({
+      zod.strictObject({
         createdAt: zod.string(),
         createdBy: zod.string().nullish(),
         createdByUserId: zod.string(),
         errors: zod.array(
-          zod.object({
+          zod.strictObject({
             blockId: zod.string().nullish(),
             code: zod.number(),
             data: zod.any().nullish(),
@@ -1278,7 +1283,7 @@ export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesResponse =
         id: zod.uuid(),
         messageThreadId: zod.uuid().nullish(),
         values: zod.array(
-          zod.object({
+          zod.strictObject({
             channels: zod.record(zod.string(), zod.number()),
             createdAt: zod.string(),
             createdBy: zod.string().nullish(),

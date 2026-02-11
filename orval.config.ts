@@ -1,5 +1,15 @@
 import { defineConfig } from 'orval';
 
+const strictZodOptions = {
+  strict: {
+    param: true,
+    query: true,
+    header: true,
+    body: true,
+    response: true,
+  },
+};
+
 export default defineConfig({
   chat: {
     input: './openapi/chat-api.json',
@@ -14,7 +24,7 @@ export default defineConfig({
           path: './src/platform/api/orvalMutator.ts',
           name: 'apiMutator',
         },
-        zod: true,
+        zod: strictZodOptions,
       },
     },
   },
@@ -24,6 +34,9 @@ export default defineConfig({
       client: 'zod',
       mode: 'single',
       target: './src/platform/api/generated/chat/zod.ts',
+      override: {
+        zod: strictZodOptions,
+      },
     },
   },
 });
