@@ -4,9 +4,9 @@
  * SmartSpace Chat API
  * OpenAPI spec version: 0.0.0
  */
-import type { ModelModelDeployment } from './modelModelDeployment';
 import type { EnumsModelDeploymentProviderType } from './enumsModelDeploymentProviderType';
 import type { ModelIModelProperty } from './modelIModelProperty';
+import type { ModelModelDeployment } from './modelModelDeployment';
 
 export interface ModelModel {
   /** @nullable */

@@ -4,8 +4,8 @@
  * SmartSpace Chat API
  * OpenAPI spec version: 0.0.0
  */
-import type { MessageMessageValueChannels } from './messageMessageValueChannels';
 import type { EnumsMessageValueType } from './enumsMessageValueType';
+import type { MessageMessageValueChannels } from './messageMessageValueChannels';
 import type { MessageMessageValueValue } from './messageMessageValueValue';
 
 export interface MessageMessageValue {

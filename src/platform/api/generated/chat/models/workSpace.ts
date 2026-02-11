@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 import type { DataSpace } from './dataSpace';
-import type { WorkSpaceInputs } from './workSpaceInputs';
 import type { ModelConfiguration } from './modelConfiguration';
+import type { WorkSpaceInputs } from './workSpaceInputs';
 import type { WorkSpaceVariables } from './workSpaceVariables';
 
 export interface WorkSpace {

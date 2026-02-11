@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 import type { EnumsModelDeploymentStatus } from './enumsModelDeploymentStatus';
-import type { ModelModelDeploymentStep } from './modelModelDeploymentStep';
 import type { EnumsVirtualMachineServerType } from './enumsVirtualMachineServerType';
+import type { ModelModelDeploymentStep } from './modelModelDeploymentStep';
 
 export interface ModelModelDeployment {
   /** @nullable */

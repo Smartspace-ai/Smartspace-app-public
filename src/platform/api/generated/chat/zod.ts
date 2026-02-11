@@ -10,955 +10,1286 @@ import zod from 'zod';
  * @summary Upload files to be referenced in requests (supports full and chunked uploads)
  */
 export const postFilesBody = zod.object({
-  "chunkIndex": zod.number().optional(),
-  "files": zod.array(zod.instanceof(File)).optional(),
-  "lastChunk": zod.boolean().optional(),
-  "threadId": zod.uuid().optional(),
-  "totalChunks": zod.number().optional(),
-  "uploadId": zod.uuid().optional(),
-  "workspaceId": zod.uuid().optional()
-})
+  chunkIndex: zod.number().optional(),
+  files: zod.array(zod.instanceof(File)).optional(),
+  lastChunk: zod.boolean().optional(),
+  threadId: zod.uuid().optional(),
+  totalChunks: zod.number().optional(),
+  uploadId: zod.uuid().optional(),
+  workspaceId: zod.uuid().optional(),
+});
 
 export const postFilesResponseItem = zod.object({
-  "createdAt": zod.string(),
-  "createdByUserId": zod.string(),
-  "id": zod.uuid(),
-  "modifiedAt": zod.string(),
-  "modifiedByUserId": zod.string(),
-  "name": zod.string(),
-  "size": zod.number(),
-  "threadId": zod.uuid().nullish(),
-  "workspaceId": zod.uuid().nullish()
-})
-export const postFilesResponse = zod.array(postFilesResponseItem)
-
+  createdAt: zod.string(),
+  createdByUserId: zod.string(),
+  id: zod.uuid(),
+  modifiedAt: zod.string(),
+  modifiedByUserId: zod.string(),
+  name: zod.string(),
+  size: zod.number(),
+  threadId: zod.uuid().nullish(),
+  workspaceId: zod.uuid().nullish(),
+});
+export const postFilesResponse = zod.array(postFilesResponseItem);
 
 /**
  * @summary Get details for a file previously uploaded
  */
 export const getFilesIdParams = zod.object({
-  "id": zod.uuid().describe('File id')
-})
+  id: zod.uuid().describe('File id'),
+});
 
 export const getFilesIdQueryParams = zod.object({
-  "threadId": zod.uuid().optional().describe('Optional thread ID containing the file'),
-  "workspaceId": zod.uuid().optional().describe('Optional workspace ID containing the file')
-})
+  threadId: zod
+    .uuid()
+    .optional()
+    .describe('Optional thread ID containing the file'),
+  workspaceId: zod
+    .uuid()
+    .optional()
+    .describe('Optional workspace ID containing the file'),
+});
 
 export const getFilesIdResponse = zod.object({
-  "createdAt": zod.string(),
-  "createdByUserId": zod.string(),
-  "id": zod.uuid(),
-  "modifiedAt": zod.string(),
-  "modifiedByUserId": zod.string(),
-  "name": zod.string(),
-  "size": zod.number(),
-  "threadId": zod.uuid().nullish(),
-  "workspaceId": zod.uuid().nullish()
-})
-
+  createdAt: zod.string(),
+  createdByUserId: zod.string(),
+  id: zod.uuid(),
+  modifiedAt: zod.string(),
+  modifiedByUserId: zod.string(),
+  name: zod.string(),
+  size: zod.number(),
+  threadId: zod.uuid().nullish(),
+  workspaceId: zod.uuid().nullish(),
+});
 
 /**
  * @summary Download a previously uploaded file
  */
 export const getFilesIdDownloadParams = zod.object({
-  "id": zod.uuid().describe('File id')
-})
+  id: zod.uuid().describe('File id'),
+});
 
 export const getFilesIdDownloadQueryParams = zod.object({
-  "threadId": zod.uuid().optional().describe('Optional thread ID containing the file'),
-  "workspaceId": zod.uuid().optional().describe('Optional workspace ID containing the file')
-})
-
+  threadId: zod
+    .uuid()
+    .optional()
+    .describe('Optional thread ID containing the file'),
+  workspaceId: zod
+    .uuid()
+    .optional()
+    .describe('Optional workspace ID containing the file'),
+});
 
 /**
  * @summary Get URI of a previously uploaded file
  */
 export const getFilesIdUriParams = zod.object({
-  "id": zod.uuid().describe('File id')
-})
+  id: zod.uuid().describe('File id'),
+});
 
 export const getFilesIdUriQueryParams = zod.object({
-  "threadId": zod.uuid().optional().describe('Optional thread ID containing the file'),
-  "workspaceId": zod.uuid().optional().describe('Optional workspace ID containing the file')
-})
+  threadId: zod
+    .uuid()
+    .optional()
+    .describe('Optional thread ID containing the file'),
+  workspaceId: zod
+    .uuid()
+    .optional()
+    .describe('Optional workspace ID containing the file'),
+});
 
-export const getFilesIdUriResponse = zod.string()
-
+export const getFilesIdUriResponse = zod.string();
 
 export const getFlowRunsIdVariablesParams = zod.object({
-  "id": zod.uuid()
-})
+  id: zod.uuid(),
+});
 
-export const getFlowRunsIdVariablesResponse = zod.record(zod.string(), zod.any())
-
+export const getFlowRunsIdVariablesResponse = zod.record(
+  zod.string(),
+  zod.any()
+);
 
 export const putFlowRunsIdVariablesVariableNameParams = zod.object({
-  "id": zod.uuid(),
-  "variableName": zod.string()
-})
+  id: zod.uuid(),
+  variableName: zod.string(),
+});
 
-export const putFlowRunsIdVariablesVariableNameBody = zod.any()
-
+export const putFlowRunsIdVariablesVariableNameBody = zod.any();
 
 /**
  * @summary Delete a specific message thread from SmartSpace, using it's ID.
  */
 export const deleteMessageThreadsIdParams = zod.object({
-  "id": zod.uuid().describe('The ID of the message thread to delete.')
-})
-
+  id: zod.uuid().describe('The ID of the message thread to delete.'),
+});
 
 export const getMessageThreadsIdParams = zod.object({
-  "id": zod.uuid()
-})
+  id: zod.uuid(),
+});
 
 export const getMessageThreadsIdResponse = zod.object({
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string(),
-  "favorited": zod.boolean(),
-  "id": zod.uuid(),
-  "isFlowRunning": zod.boolean(),
-  "lastUpdated": zod.string().nullish(),
-  "lastUpdatedAt": zod.string(),
-  "lastUpdatedByUserId": zod.string(),
-  "name": zod.string().nullish(),
-  "totalMessages": zod.number(),
-  "workSpaceId": zod.uuid()
-})
-
+  createdAt: zod.string(),
+  createdBy: zod.string().nullish(),
+  createdByUserId: zod.string(),
+  favorited: zod.boolean(),
+  id: zod.uuid(),
+  isFlowRunning: zod.boolean(),
+  lastUpdated: zod.string().nullish(),
+  lastUpdatedAt: zod.string(),
+  lastUpdatedByUserId: zod.string(),
+  name: zod.string().nullish(),
+  totalMessages: zod.number(),
+  workSpaceId: zod.uuid(),
+});
 
 /**
  * @summary Retrieve comments from a specified message thread in SmartSpace, using the thread's ID, with take and skip for pagination control.
  */
 export const getMessageThreadsIdCommentsParams = zod.object({
-  "id": zod.uuid().describe('The ID of the message thread.')
-})
+  id: zod.uuid().describe('The ID of the message thread.'),
+});
 
-export const getMessageThreadsIdCommentsQueryTakeDefault = 50;export const getMessageThreadsIdCommentsQuerySkipDefault = 0;
+export const getMessageThreadsIdCommentsQueryTakeDefault = 50;
+export const getMessageThreadsIdCommentsQuerySkipDefault = 0;
 
 export const getMessageThreadsIdCommentsQueryParams = zod.object({
-  "take": zod.number().default(getMessageThreadsIdCommentsQueryTakeDefault).describe('The maximum number of comments to retrieve (default is 50).'),
-  "skip": zod.number().optional().describe('The number of comments to skip (default is 0).')
-})
+  take: zod
+    .number()
+    .default(getMessageThreadsIdCommentsQueryTakeDefault)
+    .describe('The maximum number of comments to retrieve (default is 50).'),
+  skip: zod
+    .number()
+    .optional()
+    .describe('The number of comments to skip (default is 0).'),
+});
 
 export const getMessageThreadsIdCommentsResponse = zod.object({
-  "data": zod.array(zod.object({
-  "content": zod.string(),
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string(),
-  "id": zod.uuid(),
-  "mentionedUsers": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string().nullish()
-})),
-  "messageThreadId": zod.uuid()
-})),
-  "total": zod.number()
-})
-
+  data: zod.array(
+    zod.object({
+      content: zod.string(),
+      createdAt: zod.string(),
+      createdBy: zod.string().nullish(),
+      createdByUserId: zod.string(),
+      id: zod.uuid(),
+      mentionedUsers: zod.array(
+        zod.object({
+          id: zod.string(),
+          name: zod.string().nullish(),
+        })
+      ),
+      messageThreadId: zod.uuid(),
+    })
+  ),
+  total: zod.number(),
+});
 
 /**
  * @summary Submit a new comment to a specific message thread in SmartSpace, identified by the thread's ID, using the provided comment schema.
  */
 export const postMessageThreadsIdCommentsParams = zod.object({
-  "id": zod.uuid().describe('The ID of the message thread.')
-})
+  id: zod.uuid().describe('The ID of the message thread.'),
+});
 
 export const postMessageThreadsIdCommentsBody = zod.object({
-  "content": zod.string(),
-  "mentionedUsers": zod.array(zod.string())
-})
+  content: zod.string(),
+  mentionedUsers: zod.array(zod.string()),
+});
 
 export const postMessageThreadsIdCommentsResponse = zod.object({
-  "content": zod.string(),
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "id": zod.uuid(),
-  "mentionedUsers": zod.array(zod.string())
-})
-
+  content: zod.string(),
+  createdAt: zod.string(),
+  createdBy: zod.string().nullish(),
+  createdByUserId: zod.string().nullish(),
+  id: zod.uuid(),
+  mentionedUsers: zod.array(zod.string()),
+});
 
 /**
  * @summary Mark a message thread as favorited or not in SmartSpace, using the thread's ID and a boolean value in the request.
  */
 export const putMessageThreadsIdFavoritedParams = zod.object({
-  "id": zod.uuid().describe('The ID of the chat thread.')
-})
+  id: zod.uuid().describe('The ID of the chat thread.'),
+});
 
-export const putMessageThreadsIdFavoritedBody = zod.boolean()
-
+export const putMessageThreadsIdFavoritedBody = zod.boolean();
 
 /**
  * @summary Access messages within a specific message thread in SmartSpace, using the thread's ID, along with pagination options take and skip.
  */
 export const getMessageThreadsIdMessagesParams = zod.object({
-  "id": zod.uuid().describe('The ID of the thread.')
-})
+  id: zod.uuid().describe('The ID of the thread.'),
+});
 
-export const getMessageThreadsIdMessagesQueryTakeDefault = 50;export const getMessageThreadsIdMessagesQuerySkipDefault = 0;
+export const getMessageThreadsIdMessagesQueryTakeDefault = 50;
+export const getMessageThreadsIdMessagesQuerySkipDefault = 0;
 
 export const getMessageThreadsIdMessagesQueryParams = zod.object({
-  "take": zod.number().default(getMessageThreadsIdMessagesQueryTakeDefault).describe('The number of messages to retrieve (default: 50).'),
-  "skip": zod.number().optional().describe('The number of messages to skip (default: 0).')
-})
+  take: zod
+    .number()
+    .default(getMessageThreadsIdMessagesQueryTakeDefault)
+    .describe('The number of messages to retrieve (default: 50).'),
+  skip: zod
+    .number()
+    .optional()
+    .describe('The number of messages to skip (default: 0).'),
+});
 
 export const getMessageThreadsIdMessagesResponse = zod.object({
-  "data": zod.array(zod.object({
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string(),
-  "errors": zod.array(zod.object({
-  "blockId": zod.string().nullish(),
-  "code": zod.number(),
-  "data": zod.any().nullish(),
-  "message": zod.string().nullish()
-})),
-  "hasComments": zod.boolean(),
-  "id": zod.uuid(),
-  "messageThreadId": zod.uuid().nullish(),
-  "values": zod.array(zod.object({
-  "channels": zod.record(zod.string(), zod.number()),
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string(),
-  "id": zod.string(),
-  "name": zod.string(),
-  "type": zod.enum(['Input', 'Output']),
-  "value": zod.any().nullish()
-}))
-})),
-  "total": zod.number()
-})
-
+  data: zod.array(
+    zod.object({
+      createdAt: zod.string(),
+      createdBy: zod.string().nullish(),
+      createdByUserId: zod.string(),
+      errors: zod.array(
+        zod.object({
+          blockId: zod.string().nullish(),
+          code: zod.number(),
+          data: zod.any().nullish(),
+          message: zod.string().nullish(),
+        })
+      ),
+      hasComments: zod.boolean(),
+      id: zod.uuid(),
+      messageThreadId: zod.uuid().nullish(),
+      values: zod.array(
+        zod.object({
+          channels: zod.record(zod.string(), zod.number()),
+          createdAt: zod.string(),
+          createdBy: zod.string().nullish(),
+          createdByUserId: zod.string(),
+          id: zod.string(),
+          name: zod.string(),
+          type: zod.enum(['Input', 'Output']),
+          value: zod.any().nullish(),
+        })
+      ),
+    })
+  ),
+  total: zod.number(),
+});
 
 /**
  * @summary Update the name of a message thread in SmartSpace, using the thread's ID and providing the new name in the request.
  */
 export const putMessageThreadsIdNameParams = zod.object({
-  "id": zod.uuid().describe('The ID of the message thread.')
-})
+  id: zod.uuid().describe('The ID of the message thread.'),
+});
 
-export const putMessageThreadsIdNameBody = zod.string()
-
+export const putMessageThreadsIdNameBody = zod.string();
 
 /**
  * @summary Handles the HTTP POST request to create a new message in a thread within SmartSpace.
 This method specifies details like workspace ID, thread ID, and message content in the request.
  */
 export const postMessagesBody = zod.object({
-  "inputs": zod.array(zod.object({
-  "channels": zod.record(zod.string(), zod.number()).nullish(),
-  "name": zod.string(),
-  "value": zod.any().nullish()
-})),
-  "messageThreadId": zod.uuid().nullish(),
-  "variables": zod.record(zod.string(), zod.any()).nullish(),
-  "workSpaceId": zod.uuid()
-})
-
+  inputs: zod.array(
+    zod.object({
+      channels: zod.record(zod.string(), zod.number()).nullish(),
+      name: zod.string(),
+      value: zod.any().nullish(),
+    })
+  ),
+  messageThreadId: zod.uuid().nullish(),
+  variables: zod.record(zod.string(), zod.any()).nullish(),
+  workSpaceId: zod.uuid(),
+});
 
 /**
  * @summary Remove a specific message from SmartSpace using its ID.
  */
 export const deleteMessagesIdParams = zod.object({
-  "id": zod.uuid().describe('The ID of the message to delete.')
-})
-
+  id: zod.uuid().describe('The ID of the message to delete.'),
+});
 
 /**
  * @summary Retrieve comments attached to a specific message in SmartSpace, using the message's ID, with pagination options 'take' and 'skip'.
  */
 export const getMessagesIdCommentsParams = zod.object({
-  "id": zod.uuid().describe('The ID of the message.')
-})
+  id: zod.uuid().describe('The ID of the message.'),
+});
 
-export const getMessagesIdCommentsQueryTakeDefault = 50;export const getMessagesIdCommentsQuerySkipDefault = 0;
+export const getMessagesIdCommentsQueryTakeDefault = 50;
+export const getMessagesIdCommentsQuerySkipDefault = 0;
 
 export const getMessagesIdCommentsQueryParams = zod.object({
-  "take": zod.number().default(getMessagesIdCommentsQueryTakeDefault).describe('The maximum number of comments to retrieve (default is 50).'),
-  "skip": zod.number().optional().describe('The number of comments to skip (default is 0).')
-})
+  take: zod
+    .number()
+    .default(getMessagesIdCommentsQueryTakeDefault)
+    .describe('The maximum number of comments to retrieve (default is 50).'),
+  skip: zod
+    .number()
+    .optional()
+    .describe('The number of comments to skip (default is 0).'),
+});
 
 export const getMessagesIdCommentsResponse = zod.object({
-  "data": zod.array(zod.object({
-  "content": zod.string(),
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string(),
-  "id": zod.uuid(),
-  "mentionedUsers": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string().nullish()
-})),
-  "messageThreadId": zod.uuid()
-})),
-  "total": zod.number()
-})
-
+  data: zod.array(
+    zod.object({
+      content: zod.string(),
+      createdAt: zod.string(),
+      createdBy: zod.string().nullish(),
+      createdByUserId: zod.string(),
+      id: zod.uuid(),
+      mentionedUsers: zod.array(
+        zod.object({
+          id: zod.string(),
+          name: zod.string().nullish(),
+        })
+      ),
+      messageThreadId: zod.uuid(),
+    })
+  ),
+  total: zod.number(),
+});
 
 /**
  * @summary Add a new comment to a message in SmartSpace, using the message's ID and comment details in the request.
  */
 export const postMessagesIdCommentsParams = zod.object({
-  "id": zod.uuid().describe('The ID of the message.')
-})
+  id: zod.uuid().describe('The ID of the message.'),
+});
 
 export const postMessagesIdCommentsBody = zod.object({
-  "content": zod.string(),
-  "mentionedUsers": zod.array(zod.string())
-})
+  content: zod.string(),
+  mentionedUsers: zod.array(zod.string()),
+});
 
 export const postMessagesIdCommentsResponse = zod.object({
-  "content": zod.string(),
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "id": zod.uuid(),
-  "mentionedUsers": zod.array(zod.string())
-})
-
+  content: zod.string(),
+  createdAt: zod.string(),
+  createdBy: zod.string().nullish(),
+  createdByUserId: zod.string().nullish(),
+  id: zod.uuid(),
+  mentionedUsers: zod.array(zod.string()),
+});
 
 export const postMessagesIdValuesParams = zod.object({
-  "id": zod.uuid()
-})
+  id: zod.uuid(),
+});
 
 export const postMessagesIdValuesBody = zod.object({
-  "channels": zod.record(zod.string(), zod.number()).nullish(),
-  "name": zod.string(),
-  "value": zod.any().nullish()
-})
-
+  channels: zod.record(zod.string(), zod.number()).nullish(),
+  name: zod.string(),
+  value: zod.any().nullish(),
+});
 
 /**
  * @summary Retrieves a list of models.
  */
-export const getModelsQueryTakeDefault = 50;export const getModelsQuerySkipDefault = 0;export const getModelsQuerySearchDefault = "";
+export const getModelsQueryTakeDefault = 50;
+export const getModelsQuerySkipDefault = 0;
+export const getModelsQuerySearchDefault = '';
 
 export const getModelsQueryParams = zod.object({
-  "take": zod.number().default(getModelsQueryTakeDefault).describe('The number of models to retrieve.'),
-  "skip": zod.number().optional().describe('The number of models to skip.'),
-  "search": zod.string().optional().describe('The search term to filter the models.')
-})
+  take: zod
+    .number()
+    .default(getModelsQueryTakeDefault)
+    .describe('The number of models to retrieve.'),
+  skip: zod.number().optional().describe('The number of models to skip.'),
+  search: zod
+    .string()
+    .optional()
+    .describe('The search term to filter the models.'),
+});
 
 export const getModelsResponse = zod.object({
-  "data": zod.array(zod.object({
-  "createdAt": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "deploymentStatus": zod.enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted']).optional(),
-  "displayName": zod.string(),
-  "id": zod.uuid(),
-  "modelDeploymentProviderType": zod.enum(['OpenAi', 'AzureOpenAi', 'HuggingFace', 'Cohere', 'Anthropic', 'Gemini', 'VertexAi']).optional(),
-  "name": zod.string(),
-  "properties": zod.array(zod.object({
-  "name": zod.string(),
-  "type": zod.enum(['Boolean', 'Number', 'String'])
-})),
-  "virtualMachineUrl": zod.string().nullish()
-})),
-  "total": zod.number()
-})
-
+  data: zod.array(
+    zod.object({
+      createdAt: zod.string().nullish(),
+      createdByUserId: zod.string().nullish(),
+      deploymentStatus: zod
+        .enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted'])
+        .optional(),
+      displayName: zod.string(),
+      id: zod.uuid(),
+      modelDeploymentProviderType: zod
+        .enum([
+          'OpenAi',
+          'AzureOpenAi',
+          'HuggingFace',
+          'Cohere',
+          'Anthropic',
+          'Gemini',
+          'VertexAi',
+        ])
+        .optional(),
+      name: zod.string(),
+      properties: zod.array(
+        zod.object({
+          name: zod.string(),
+          type: zod.enum(['Boolean', 'Number', 'String']),
+        })
+      ),
+      virtualMachineUrl: zod.string().nullish(),
+    })
+  ),
+  total: zod.number(),
+});
 
 /**
  * @summary Retrieves a model by its ID.
  */
 export const getModelsIdParams = zod.object({
-  "id": zod.uuid().describe('The ID of the model to retrieve.')
-})
+  id: zod.uuid().describe('The ID of the model to retrieve.'),
+});
 
 export const getModelsIdResponse = zod.object({
-  "createdAt": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "deployment": zod.object({
-  "createdAt": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "detailedMessage": zod.string().nullish(),
-  "dockerFile": zod.string().nullish(),
-  "id": zod.uuid(),
-  "modelName": zod.string(),
-  "providerDeploymentId": zod.string().nullish(),
-  "providerId": zod.uuid().nullish(),
-  "region": zod.string().nullish(),
-  "status": zod.enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted']),
-  "statusMessage": zod.string().nullish(),
-  "statusUpdatedAt": zod.string().nullish(),
-  "steps": zod.array(zod.object({
-  "finishedAt": zod.string().nullish(),
-  "id": zod.uuid(),
-  "index": zod.number(),
-  "message": zod.string(),
-  "name": zod.union([zod.literal(0),zod.literal(1),zod.literal(2),zod.literal(3),zod.literal(4)]),
-  "progress": zod.number(),
-  "startedAt": zod.string().nullish()
-})),
-  "url": zod.string().nullish(),
-  "virtualMachineServerType": zod.union([zod.literal(0),zod.literal(1)]).optional(),
-  "virtualMachineUrl": zod.string().nullish(),
-  "vmSize": zod.string().nullish()
-}).optional(),
-  "displayName": zod.string(),
-  "id": zod.uuid(),
-  "modelDeploymentProviderType": zod.enum(['OpenAi', 'AzureOpenAi', 'HuggingFace', 'Cohere', 'Anthropic', 'Gemini', 'VertexAi']).optional(),
-  "name": zod.string(),
-  "properties": zod.array(zod.object({
-  "name": zod.string(),
-  "type": zod.enum(['Boolean', 'Number', 'String'])
-}))
-})
-
+  createdAt: zod.string().nullish(),
+  createdByUserId: zod.string().nullish(),
+  deployment: zod
+    .object({
+      createdAt: zod.string().nullish(),
+      createdByUserId: zod.string().nullish(),
+      detailedMessage: zod.string().nullish(),
+      dockerFile: zod.string().nullish(),
+      id: zod.uuid(),
+      modelName: zod.string(),
+      providerDeploymentId: zod.string().nullish(),
+      providerId: zod.uuid().nullish(),
+      region: zod.string().nullish(),
+      status: zod.enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted']),
+      statusMessage: zod.string().nullish(),
+      statusUpdatedAt: zod.string().nullish(),
+      steps: zod.array(
+        zod.object({
+          finishedAt: zod.string().nullish(),
+          id: zod.uuid(),
+          index: zod.number(),
+          message: zod.string(),
+          name: zod.union([
+            zod.literal(0),
+            zod.literal(1),
+            zod.literal(2),
+            zod.literal(3),
+            zod.literal(4),
+          ]),
+          progress: zod.number(),
+          startedAt: zod.string().nullish(),
+        })
+      ),
+      url: zod.string().nullish(),
+      virtualMachineServerType: zod
+        .union([zod.literal(0), zod.literal(1)])
+        .optional(),
+      virtualMachineUrl: zod.string().nullish(),
+      vmSize: zod.string().nullish(),
+    })
+    .optional(),
+  displayName: zod.string(),
+  id: zod.uuid(),
+  modelDeploymentProviderType: zod
+    .enum([
+      'OpenAi',
+      'AzureOpenAi',
+      'HuggingFace',
+      'Cohere',
+      'Anthropic',
+      'Gemini',
+      'VertexAi',
+    ])
+    .optional(),
+  name: zod.string(),
+  properties: zod.array(
+    zod.object({
+      name: zod.string(),
+      type: zod.enum(['Boolean', 'Number', 'String']),
+    })
+  ),
+});
 
 /**
  * @summary Fetch a list of all workspaces in SmartSpace, with options for pagination through 'take' and 'skip' query parameters.
  */
-export const getWorkSpacesQueryTakeDefault = 20;export const getWorkSpacesQuerySkipDefault = 0;
+export const getWorkSpacesQueryTakeDefault = 20;
+export const getWorkSpacesQuerySkipDefault = 0;
 
 export const getWorkSpacesQueryParams = zod.object({
-  "take": zod.number().default(getWorkSpacesQueryTakeDefault).describe('The number of workspaces to retrieve.'),
-  "skip": zod.number().optional().describe('The number of workspaces to skip.'),
-  "search": zod.string().optional().describe('The search term to filter workspaces.'),
-  "orderBy": zod.union([zod.literal(0),zod.literal(1),zod.literal(2)]).optional().describe('The sort order for the returned workspaces.')
-})
+  take: zod
+    .number()
+    .default(getWorkSpacesQueryTakeDefault)
+    .describe('The number of workspaces to retrieve.'),
+  skip: zod.number().optional().describe('The number of workspaces to skip.'),
+  search: zod
+    .string()
+    .optional()
+    .describe('The search term to filter workspaces.'),
+  orderBy: zod
+    .union([zod.literal(0), zod.literal(1), zod.literal(2)])
+    .optional()
+    .describe('The sort order for the returned workspaces.'),
+});
 
 export const getWorkSpacesResponse = zod.object({
-  "data": zod.array(zod.object({
-  "createdAt": zod.string(),
-  "createdByUserId": zod.string(),
-  "dataSpaces": zod.array(zod.object({
-  "createdAt": zod.string(),
-  "createdByUserId": zod.string(),
-  "dataSets": zod.array(zod.object({
-  "createdAt": zod.string(),
-  "createdByUserId": zod.string(),
-  "dataSpaceId": zod.uuid().nullish(),
-  "description": zod.string().nullish(),
-  "flow": zod.object({
-  "activeFlowDefinition": zod.object({
-  "blocks": zod.record(zod.string(), zod.object({
-  "constants": zod.array(zod.object({
-  "target": zod.object({
-  "pin": zod.string(),
-  "port": zod.string()
-}),
-  "value": zod.any().nullish()
-})).nullish(),
-  "description": zod.string().nullish(),
-  "dynamicInputPins": zod.array(zod.object({
-  "pin": zod.string(),
-  "port": zod.string()
-})).nullish(),
-  "dynamicOutputPins": zod.array(zod.object({
-  "pin": zod.string(),
-  "port": zod.string()
-})).nullish(),
-  "dynamicPorts": zod.array(zod.string()).nullish(),
-  "name": zod.string(),
-  "version": zod.string()
-})).nullish(),
-  "connections": zod.array(zod.object({
-  "source": zod.object({
-  "node": zod.string(),
-  "pin": zod.string().nullish(),
-  "port": zod.string().nullish()
-}),
-  "target": zod.object({
-  "node": zod.string(),
-  "pin": zod.string().nullish(),
-  "port": zod.string().nullish()
-})
-})).nullish(),
-  "constants": zod.record(zod.string(), zod.object({
-  "value": zod.any().nullish()
-})).nullish(),
-  "inputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish(),
-  "layout": zod.any().nullish(),
-  "name": zod.string().nullish(),
-  "outputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish(),
-  "variables": zod.record(zod.string(), zod.object({
-  "access": zod.enum(['None', 'Read', 'Write']),
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish()
-}).optional(),
-  "activeFlowDefinitionId": zod.uuid(),
-  "id": zod.uuid(),
-  "triggers": zod.array(zod.object({
-  "dataSourceContainer": zod.object({
-  "dataSourceId": zod.uuid(),
-  "id": zod.uuid(),
-  "name": zod.string(),
-  "path": zod.string()
-}),
-  "flowId": zod.uuid(),
-  "id": zod.uuid(),
-  "inputName": zod.string(),
-  "type": zod.union([zod.literal(0),zod.literal(1)])
-}))
-}).optional(),
-  "id": zod.uuid(),
-  "modifiedAt": zod.string(),
-  "modifiedByUserId": zod.string(),
-  "name": zod.string(),
-  "properties": zod.array(zod.object({
-  "description": zod.string().nullish(),
-  "isVector": zod.boolean(),
-  "name": zod.string()
-})),
-  "version": zod.uuid().nullish()
-})).nullish(),
-  "id": zod.uuid(),
-  "modifiedAt": zod.string().nullish(),
-  "modifiedByUserId": zod.string().nullish(),
-  "name": zod.string(),
-  "parentWorkspaceId": zod.uuid().nullish(),
-  "workspacesInfo": zod.array(zod.object({
-  "id": zod.uuid(),
-  "name": zod.string()
-})).nullish()
-})),
-  "favorited": zod.boolean(),
-  "firstPrompt": zod.string().nullish(),
-  "id": zod.uuid().nullish(),
-  "inputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})),
-  "isPromptAndResponseLoggingEnabled": zod.boolean().nullish(),
-  "modelConfigurations": zod.array(zod.object({
-  "frequencyPenalty": zod.number(),
-  "model": zod.object({
-  "createdAt": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "deployment": zod.object({
-  "createdAt": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "detailedMessage": zod.string().nullish(),
-  "dockerFile": zod.string().nullish(),
-  "id": zod.uuid(),
-  "modelName": zod.string(),
-  "providerDeploymentId": zod.string().nullish(),
-  "providerId": zod.uuid().nullish(),
-  "region": zod.string().nullish(),
-  "status": zod.enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted']),
-  "statusMessage": zod.string().nullish(),
-  "statusUpdatedAt": zod.string().nullish(),
-  "steps": zod.array(zod.object({
-  "finishedAt": zod.string().nullish(),
-  "id": zod.uuid(),
-  "index": zod.number(),
-  "message": zod.string(),
-  "name": zod.union([zod.literal(0),zod.literal(1),zod.literal(2),zod.literal(3),zod.literal(4)]),
-  "progress": zod.number(),
-  "startedAt": zod.string().nullish()
-})),
-  "url": zod.string().nullish(),
-  "virtualMachineServerType": zod.union([zod.literal(0),zod.literal(1)]).optional(),
-  "virtualMachineUrl": zod.string().nullish(),
-  "vmSize": zod.string().nullish()
-}).optional(),
-  "displayName": zod.string(),
-  "id": zod.uuid(),
-  "modelDeploymentProviderType": zod.enum(['OpenAi', 'AzureOpenAi', 'HuggingFace', 'Cohere', 'Anthropic', 'Gemini', 'VertexAi']).optional(),
-  "name": zod.string(),
-  "properties": zod.array(zod.object({
-  "name": zod.string(),
-  "type": zod.enum(['Boolean', 'Number', 'String'])
-}))
-}),
-  "prePrompt": zod.string(),
-  "presencePenalty": zod.number(),
-  "role": zod.union([zod.literal(0),zod.literal(1),zod.literal(2)]),
-  "temperature": zod.number(),
-  "topP": zod.number()
-})),
-  "modifiedAt": zod.string().nullish(),
-  "modifiedByUserId": zod.string().nullish(),
-  "name": zod.string(),
-  "outputSchema": zod.string().nullish(),
-  "sandBoxThreadId": zod.uuid().nullish(),
-  "showSources": zod.boolean(),
-  "summary": zod.string().nullish(),
-  "supportsFiles": zod.boolean().nullish(),
-  "tags": zod.array(zod.string()).nullish(),
-  "variables": zod.record(zod.string(), zod.object({
-  "access": zod.enum(['None', 'Read', 'Write']),
-  "schema": zod.record(zod.string(), zod.any())
-}))
-})),
-  "total": zod.number()
-})
-
+  data: zod.array(
+    zod.object({
+      createdAt: zod.string(),
+      createdByUserId: zod.string(),
+      dataSpaces: zod.array(
+        zod.object({
+          createdAt: zod.string(),
+          createdByUserId: zod.string(),
+          dataSets: zod
+            .array(
+              zod.object({
+                createdAt: zod.string(),
+                createdByUserId: zod.string(),
+                dataSpaceId: zod.uuid().nullish(),
+                description: zod.string().nullish(),
+                flow: zod
+                  .object({
+                    activeFlowDefinition: zod
+                      .object({
+                        blocks: zod
+                          .record(
+                            zod.string(),
+                            zod.object({
+                              constants: zod
+                                .array(
+                                  zod.object({
+                                    target: zod.object({
+                                      pin: zod.string(),
+                                      port: zod.string(),
+                                    }),
+                                    value: zod.any().nullish(),
+                                  })
+                                )
+                                .nullish(),
+                              description: zod.string().nullish(),
+                              dynamicInputPins: zod
+                                .array(
+                                  zod.object({
+                                    pin: zod.string(),
+                                    port: zod.string(),
+                                  })
+                                )
+                                .nullish(),
+                              dynamicOutputPins: zod
+                                .array(
+                                  zod.object({
+                                    pin: zod.string(),
+                                    port: zod.string(),
+                                  })
+                                )
+                                .nullish(),
+                              dynamicPorts: zod.array(zod.string()).nullish(),
+                              name: zod.string(),
+                              version: zod.string(),
+                            })
+                          )
+                          .nullish(),
+                        connections: zod
+                          .array(
+                            zod.object({
+                              source: zod.object({
+                                node: zod.string(),
+                                pin: zod.string().nullish(),
+                                port: zod.string().nullish(),
+                              }),
+                              target: zod.object({
+                                node: zod.string(),
+                                pin: zod.string().nullish(),
+                                port: zod.string().nullish(),
+                              }),
+                            })
+                          )
+                          .nullish(),
+                        constants: zod
+                          .record(
+                            zod.string(),
+                            zod.object({
+                              value: zod.any().nullish(),
+                            })
+                          )
+                          .nullish(),
+                        inputs: zod
+                          .record(
+                            zod.string(),
+                            zod.object({
+                              schema: zod.record(zod.string(), zod.any()),
+                            })
+                          )
+                          .nullish(),
+                        layout: zod.any().nullish(),
+                        name: zod.string().nullish(),
+                        outputs: zod
+                          .record(
+                            zod.string(),
+                            zod.object({
+                              schema: zod.record(zod.string(), zod.any()),
+                            })
+                          )
+                          .nullish(),
+                        variables: zod
+                          .record(
+                            zod.string(),
+                            zod.object({
+                              access: zod.enum(['None', 'Read', 'Write']),
+                              schema: zod.record(zod.string(), zod.any()),
+                            })
+                          )
+                          .nullish(),
+                      })
+                      .optional(),
+                    activeFlowDefinitionId: zod.uuid(),
+                    id: zod.uuid(),
+                    triggers: zod.array(
+                      zod.object({
+                        dataSourceContainer: zod.object({
+                          dataSourceId: zod.uuid(),
+                          id: zod.uuid(),
+                          name: zod.string(),
+                          path: zod.string(),
+                        }),
+                        flowId: zod.uuid(),
+                        id: zod.uuid(),
+                        inputName: zod.string(),
+                        type: zod.union([zod.literal(0), zod.literal(1)]),
+                      })
+                    ),
+                  })
+                  .optional(),
+                id: zod.uuid(),
+                modifiedAt: zod.string(),
+                modifiedByUserId: zod.string(),
+                name: zod.string(),
+                properties: zod.array(
+                  zod.object({
+                    description: zod.string().nullish(),
+                    isVector: zod.boolean(),
+                    name: zod.string(),
+                  })
+                ),
+                version: zod.uuid().nullish(),
+              })
+            )
+            .nullish(),
+          id: zod.uuid(),
+          modifiedAt: zod.string().nullish(),
+          modifiedByUserId: zod.string().nullish(),
+          name: zod.string(),
+          parentWorkspaceId: zod.uuid().nullish(),
+          workspacesInfo: zod
+            .array(
+              zod.object({
+                id: zod.uuid(),
+                name: zod.string(),
+              })
+            )
+            .nullish(),
+        })
+      ),
+      favorited: zod.boolean(),
+      firstPrompt: zod.string().nullish(),
+      id: zod.uuid().nullish(),
+      inputs: zod.record(
+        zod.string(),
+        zod.object({
+          schema: zod.record(zod.string(), zod.any()),
+        })
+      ),
+      isPromptAndResponseLoggingEnabled: zod.boolean().nullish(),
+      modelConfigurations: zod.array(
+        zod.object({
+          frequencyPenalty: zod.number(),
+          model: zod.object({
+            createdAt: zod.string().nullish(),
+            createdByUserId: zod.string().nullish(),
+            deployment: zod
+              .object({
+                createdAt: zod.string().nullish(),
+                createdByUserId: zod.string().nullish(),
+                detailedMessage: zod.string().nullish(),
+                dockerFile: zod.string().nullish(),
+                id: zod.uuid(),
+                modelName: zod.string(),
+                providerDeploymentId: zod.string().nullish(),
+                providerId: zod.uuid().nullish(),
+                region: zod.string().nullish(),
+                status: zod.enum([
+                  'Deploying',
+                  'Ready',
+                  'Failed',
+                  'Deleting',
+                  'Deleted',
+                ]),
+                statusMessage: zod.string().nullish(),
+                statusUpdatedAt: zod.string().nullish(),
+                steps: zod.array(
+                  zod.object({
+                    finishedAt: zod.string().nullish(),
+                    id: zod.uuid(),
+                    index: zod.number(),
+                    message: zod.string(),
+                    name: zod.union([
+                      zod.literal(0),
+                      zod.literal(1),
+                      zod.literal(2),
+                      zod.literal(3),
+                      zod.literal(4),
+                    ]),
+                    progress: zod.number(),
+                    startedAt: zod.string().nullish(),
+                  })
+                ),
+                url: zod.string().nullish(),
+                virtualMachineServerType: zod
+                  .union([zod.literal(0), zod.literal(1)])
+                  .optional(),
+                virtualMachineUrl: zod.string().nullish(),
+                vmSize: zod.string().nullish(),
+              })
+              .optional(),
+            displayName: zod.string(),
+            id: zod.uuid(),
+            modelDeploymentProviderType: zod
+              .enum([
+                'OpenAi',
+                'AzureOpenAi',
+                'HuggingFace',
+                'Cohere',
+                'Anthropic',
+                'Gemini',
+                'VertexAi',
+              ])
+              .optional(),
+            name: zod.string(),
+            properties: zod.array(
+              zod.object({
+                name: zod.string(),
+                type: zod.enum(['Boolean', 'Number', 'String']),
+              })
+            ),
+          }),
+          prePrompt: zod.string(),
+          presencePenalty: zod.number(),
+          role: zod.union([zod.literal(0), zod.literal(1), zod.literal(2)]),
+          temperature: zod.number(),
+          topP: zod.number(),
+        })
+      ),
+      modifiedAt: zod.string().nullish(),
+      modifiedByUserId: zod.string().nullish(),
+      name: zod.string(),
+      outputSchema: zod.string().nullish(),
+      sandBoxThreadId: zod.uuid().nullish(),
+      showSources: zod.boolean(),
+      summary: zod.string().nullish(),
+      supportsFiles: zod.boolean().nullish(),
+      tags: zod.array(zod.string()).nullish(),
+      variables: zod.record(
+        zod.string(),
+        zod.object({
+          access: zod.enum(['None', 'Read', 'Write']),
+          schema: zod.record(zod.string(), zod.any()),
+        })
+      ),
+    })
+  ),
+  total: zod.number(),
+});
 
 /**
  * @summary Retrieve detailed information about a specific workspace in SmartSpace, using its ID.
  */
 export const getWorkSpacesIdParams = zod.object({
-  "id": zod.uuid().describe('The ID of the workspace to retrieve.')
-})
+  id: zod.uuid().describe('The ID of the workspace to retrieve.'),
+});
 
 export const getWorkSpacesIdResponse = zod.object({
-  "createdAt": zod.string(),
-  "createdByUserId": zod.string(),
-  "dataSpaces": zod.array(zod.object({
-  "createdAt": zod.string(),
-  "createdByUserId": zod.string(),
-  "dataSets": zod.array(zod.object({
-  "createdAt": zod.string(),
-  "createdByUserId": zod.string(),
-  "dataSpaceId": zod.uuid().nullish(),
-  "description": zod.string().nullish(),
-  "flow": zod.object({
-  "activeFlowDefinition": zod.object({
-  "blocks": zod.record(zod.string(), zod.object({
-  "constants": zod.array(zod.object({
-  "target": zod.object({
-  "pin": zod.string(),
-  "port": zod.string()
-}),
-  "value": zod.any().nullish()
-})).nullish(),
-  "description": zod.string().nullish(),
-  "dynamicInputPins": zod.array(zod.object({
-  "pin": zod.string(),
-  "port": zod.string()
-})).nullish(),
-  "dynamicOutputPins": zod.array(zod.object({
-  "pin": zod.string(),
-  "port": zod.string()
-})).nullish(),
-  "dynamicPorts": zod.array(zod.string()).nullish(),
-  "name": zod.string(),
-  "version": zod.string()
-})).nullish(),
-  "connections": zod.array(zod.object({
-  "source": zod.object({
-  "node": zod.string(),
-  "pin": zod.string().nullish(),
-  "port": zod.string().nullish()
-}),
-  "target": zod.object({
-  "node": zod.string(),
-  "pin": zod.string().nullish(),
-  "port": zod.string().nullish()
-})
-})).nullish(),
-  "constants": zod.record(zod.string(), zod.object({
-  "value": zod.any().nullish()
-})).nullish(),
-  "inputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish(),
-  "layout": zod.any().nullish(),
-  "name": zod.string().nullish(),
-  "outputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish(),
-  "variables": zod.record(zod.string(), zod.object({
-  "access": zod.enum(['None', 'Read', 'Write']),
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish()
-}).optional(),
-  "activeFlowDefinitionId": zod.uuid(),
-  "id": zod.uuid(),
-  "triggers": zod.array(zod.object({
-  "dataSourceContainer": zod.object({
-  "dataSourceId": zod.uuid(),
-  "id": zod.uuid(),
-  "name": zod.string(),
-  "path": zod.string()
-}),
-  "flowId": zod.uuid(),
-  "id": zod.uuid(),
-  "inputName": zod.string(),
-  "type": zod.union([zod.literal(0),zod.literal(1)])
-}))
-}).optional(),
-  "id": zod.uuid(),
-  "modifiedAt": zod.string(),
-  "modifiedByUserId": zod.string(),
-  "name": zod.string(),
-  "properties": zod.array(zod.object({
-  "description": zod.string().nullish(),
-  "isVector": zod.boolean(),
-  "name": zod.string()
-})),
-  "version": zod.uuid().nullish()
-})).nullish(),
-  "id": zod.uuid(),
-  "modifiedAt": zod.string().nullish(),
-  "modifiedByUserId": zod.string().nullish(),
-  "name": zod.string(),
-  "parentWorkspaceId": zod.uuid().nullish(),
-  "workspacesInfo": zod.array(zod.object({
-  "id": zod.uuid(),
-  "name": zod.string()
-})).nullish()
-})),
-  "favorited": zod.boolean(),
-  "firstPrompt": zod.string().nullish(),
-  "id": zod.uuid().nullish(),
-  "inputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})),
-  "isPromptAndResponseLoggingEnabled": zod.boolean().nullish(),
-  "modelConfigurations": zod.array(zod.object({
-  "frequencyPenalty": zod.number(),
-  "model": zod.object({
-  "createdAt": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "deployment": zod.object({
-  "createdAt": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "detailedMessage": zod.string().nullish(),
-  "dockerFile": zod.string().nullish(),
-  "id": zod.uuid(),
-  "modelName": zod.string(),
-  "providerDeploymentId": zod.string().nullish(),
-  "providerId": zod.uuid().nullish(),
-  "region": zod.string().nullish(),
-  "status": zod.enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted']),
-  "statusMessage": zod.string().nullish(),
-  "statusUpdatedAt": zod.string().nullish(),
-  "steps": zod.array(zod.object({
-  "finishedAt": zod.string().nullish(),
-  "id": zod.uuid(),
-  "index": zod.number(),
-  "message": zod.string(),
-  "name": zod.union([zod.literal(0),zod.literal(1),zod.literal(2),zod.literal(3),zod.literal(4)]),
-  "progress": zod.number(),
-  "startedAt": zod.string().nullish()
-})),
-  "url": zod.string().nullish(),
-  "virtualMachineServerType": zod.union([zod.literal(0),zod.literal(1)]).optional(),
-  "virtualMachineUrl": zod.string().nullish(),
-  "vmSize": zod.string().nullish()
-}).optional(),
-  "displayName": zod.string(),
-  "id": zod.uuid(),
-  "modelDeploymentProviderType": zod.enum(['OpenAi', 'AzureOpenAi', 'HuggingFace', 'Cohere', 'Anthropic', 'Gemini', 'VertexAi']).optional(),
-  "name": zod.string(),
-  "properties": zod.array(zod.object({
-  "name": zod.string(),
-  "type": zod.enum(['Boolean', 'Number', 'String'])
-}))
-}),
-  "prePrompt": zod.string(),
-  "presencePenalty": zod.number(),
-  "role": zod.union([zod.literal(0),zod.literal(1),zod.literal(2)]),
-  "temperature": zod.number(),
-  "topP": zod.number()
-})),
-  "modifiedAt": zod.string().nullish(),
-  "modifiedByUserId": zod.string().nullish(),
-  "name": zod.string(),
-  "outputSchema": zod.string().nullish(),
-  "sandBoxThreadId": zod.uuid().nullish(),
-  "showSources": zod.boolean(),
-  "summary": zod.string().nullish(),
-  "supportsFiles": zod.boolean().nullish(),
-  "tags": zod.array(zod.string()).nullish(),
-  "variables": zod.record(zod.string(), zod.object({
-  "access": zod.enum(['None', 'Read', 'Write']),
-  "schema": zod.record(zod.string(), zod.any())
-}))
-})
-
+  createdAt: zod.string(),
+  createdByUserId: zod.string(),
+  dataSpaces: zod.array(
+    zod.object({
+      createdAt: zod.string(),
+      createdByUserId: zod.string(),
+      dataSets: zod
+        .array(
+          zod.object({
+            createdAt: zod.string(),
+            createdByUserId: zod.string(),
+            dataSpaceId: zod.uuid().nullish(),
+            description: zod.string().nullish(),
+            flow: zod
+              .object({
+                activeFlowDefinition: zod
+                  .object({
+                    blocks: zod
+                      .record(
+                        zod.string(),
+                        zod.object({
+                          constants: zod
+                            .array(
+                              zod.object({
+                                target: zod.object({
+                                  pin: zod.string(),
+                                  port: zod.string(),
+                                }),
+                                value: zod.any().nullish(),
+                              })
+                            )
+                            .nullish(),
+                          description: zod.string().nullish(),
+                          dynamicInputPins: zod
+                            .array(
+                              zod.object({
+                                pin: zod.string(),
+                                port: zod.string(),
+                              })
+                            )
+                            .nullish(),
+                          dynamicOutputPins: zod
+                            .array(
+                              zod.object({
+                                pin: zod.string(),
+                                port: zod.string(),
+                              })
+                            )
+                            .nullish(),
+                          dynamicPorts: zod.array(zod.string()).nullish(),
+                          name: zod.string(),
+                          version: zod.string(),
+                        })
+                      )
+                      .nullish(),
+                    connections: zod
+                      .array(
+                        zod.object({
+                          source: zod.object({
+                            node: zod.string(),
+                            pin: zod.string().nullish(),
+                            port: zod.string().nullish(),
+                          }),
+                          target: zod.object({
+                            node: zod.string(),
+                            pin: zod.string().nullish(),
+                            port: zod.string().nullish(),
+                          }),
+                        })
+                      )
+                      .nullish(),
+                    constants: zod
+                      .record(
+                        zod.string(),
+                        zod.object({
+                          value: zod.any().nullish(),
+                        })
+                      )
+                      .nullish(),
+                    inputs: zod
+                      .record(
+                        zod.string(),
+                        zod.object({
+                          schema: zod.record(zod.string(), zod.any()),
+                        })
+                      )
+                      .nullish(),
+                    layout: zod.any().nullish(),
+                    name: zod.string().nullish(),
+                    outputs: zod
+                      .record(
+                        zod.string(),
+                        zod.object({
+                          schema: zod.record(zod.string(), zod.any()),
+                        })
+                      )
+                      .nullish(),
+                    variables: zod
+                      .record(
+                        zod.string(),
+                        zod.object({
+                          access: zod.enum(['None', 'Read', 'Write']),
+                          schema: zod.record(zod.string(), zod.any()),
+                        })
+                      )
+                      .nullish(),
+                  })
+                  .optional(),
+                activeFlowDefinitionId: zod.uuid(),
+                id: zod.uuid(),
+                triggers: zod.array(
+                  zod.object({
+                    dataSourceContainer: zod.object({
+                      dataSourceId: zod.uuid(),
+                      id: zod.uuid(),
+                      name: zod.string(),
+                      path: zod.string(),
+                    }),
+                    flowId: zod.uuid(),
+                    id: zod.uuid(),
+                    inputName: zod.string(),
+                    type: zod.union([zod.literal(0), zod.literal(1)]),
+                  })
+                ),
+              })
+              .optional(),
+            id: zod.uuid(),
+            modifiedAt: zod.string(),
+            modifiedByUserId: zod.string(),
+            name: zod.string(),
+            properties: zod.array(
+              zod.object({
+                description: zod.string().nullish(),
+                isVector: zod.boolean(),
+                name: zod.string(),
+              })
+            ),
+            version: zod.uuid().nullish(),
+          })
+        )
+        .nullish(),
+      id: zod.uuid(),
+      modifiedAt: zod.string().nullish(),
+      modifiedByUserId: zod.string().nullish(),
+      name: zod.string(),
+      parentWorkspaceId: zod.uuid().nullish(),
+      workspacesInfo: zod
+        .array(
+          zod.object({
+            id: zod.uuid(),
+            name: zod.string(),
+          })
+        )
+        .nullish(),
+    })
+  ),
+  favorited: zod.boolean(),
+  firstPrompt: zod.string().nullish(),
+  id: zod.uuid().nullish(),
+  inputs: zod.record(
+    zod.string(),
+    zod.object({
+      schema: zod.record(zod.string(), zod.any()),
+    })
+  ),
+  isPromptAndResponseLoggingEnabled: zod.boolean().nullish(),
+  modelConfigurations: zod.array(
+    zod.object({
+      frequencyPenalty: zod.number(),
+      model: zod.object({
+        createdAt: zod.string().nullish(),
+        createdByUserId: zod.string().nullish(),
+        deployment: zod
+          .object({
+            createdAt: zod.string().nullish(),
+            createdByUserId: zod.string().nullish(),
+            detailedMessage: zod.string().nullish(),
+            dockerFile: zod.string().nullish(),
+            id: zod.uuid(),
+            modelName: zod.string(),
+            providerDeploymentId: zod.string().nullish(),
+            providerId: zod.uuid().nullish(),
+            region: zod.string().nullish(),
+            status: zod.enum([
+              'Deploying',
+              'Ready',
+              'Failed',
+              'Deleting',
+              'Deleted',
+            ]),
+            statusMessage: zod.string().nullish(),
+            statusUpdatedAt: zod.string().nullish(),
+            steps: zod.array(
+              zod.object({
+                finishedAt: zod.string().nullish(),
+                id: zod.uuid(),
+                index: zod.number(),
+                message: zod.string(),
+                name: zod.union([
+                  zod.literal(0),
+                  zod.literal(1),
+                  zod.literal(2),
+                  zod.literal(3),
+                  zod.literal(4),
+                ]),
+                progress: zod.number(),
+                startedAt: zod.string().nullish(),
+              })
+            ),
+            url: zod.string().nullish(),
+            virtualMachineServerType: zod
+              .union([zod.literal(0), zod.literal(1)])
+              .optional(),
+            virtualMachineUrl: zod.string().nullish(),
+            vmSize: zod.string().nullish(),
+          })
+          .optional(),
+        displayName: zod.string(),
+        id: zod.uuid(),
+        modelDeploymentProviderType: zod
+          .enum([
+            'OpenAi',
+            'AzureOpenAi',
+            'HuggingFace',
+            'Cohere',
+            'Anthropic',
+            'Gemini',
+            'VertexAi',
+          ])
+          .optional(),
+        name: zod.string(),
+        properties: zod.array(
+          zod.object({
+            name: zod.string(),
+            type: zod.enum(['Boolean', 'Number', 'String']),
+          })
+        ),
+      }),
+      prePrompt: zod.string(),
+      presencePenalty: zod.number(),
+      role: zod.union([zod.literal(0), zod.literal(1), zod.literal(2)]),
+      temperature: zod.number(),
+      topP: zod.number(),
+    })
+  ),
+  modifiedAt: zod.string().nullish(),
+  modifiedByUserId: zod.string().nullish(),
+  name: zod.string(),
+  outputSchema: zod.string().nullish(),
+  sandBoxThreadId: zod.uuid().nullish(),
+  showSources: zod.boolean(),
+  summary: zod.string().nullish(),
+  supportsFiles: zod.boolean().nullish(),
+  tags: zod.array(zod.string()).nullish(),
+  variables: zod.record(
+    zod.string(),
+    zod.object({
+      access: zod.enum(['None', 'Read', 'Write']),
+      schema: zod.record(zod.string(), zod.any()),
+    })
+  ),
+});
 
 /**
  * @summary Retrieve the access control details of a specific workspace in SmartSpace, using the workspace's ID, with pagination options take and skip.
  */
 export const getWorkSpacesIdAccessParams = zod.object({
-  "id": zod.uuid().describe('The ID of the workspace.')
-})
+  id: zod.uuid().describe('The ID of the workspace.'),
+});
 
-export const getWorkSpacesIdAccessQueryTakeDefault = 20;export const getWorkSpacesIdAccessQuerySkipDefault = 0;
+export const getWorkSpacesIdAccessQueryTakeDefault = 20;
+export const getWorkSpacesIdAccessQuerySkipDefault = 0;
 
 export const getWorkSpacesIdAccessQueryParams = zod.object({
-  "take": zod.number().default(getWorkSpacesIdAccessQueryTakeDefault).describe('The number of access control details to retrieve.'),
-  "skip": zod.number().optional().describe('The number of access control details to skip.'),
-  "search": zod.string().optional().describe('The search term to filter access controls.')
-})
+  take: zod
+    .number()
+    .default(getWorkSpacesIdAccessQueryTakeDefault)
+    .describe('The number of access control details to retrieve.'),
+  skip: zod
+    .number()
+    .optional()
+    .describe('The number of access control details to skip.'),
+  search: zod
+    .string()
+    .optional()
+    .describe('The search term to filter access controls.'),
+});
 
 export const getWorkSpacesIdAccessResponse = zod.object({
-  "data": zod.array(zod.object({
-  "accessType": zod.union([zod.literal(1),zod.literal(2)]),
-  "displayName": zod.string().nullish(),
-  "id": zod.uuid().nullish(),
-  "messageId": zod.uuid().nullish(),
-  "messageThreadId": zod.uuid().nullish(),
-  "objectId": zod.string(),
-  "principalType": zod.union([zod.literal(0),zod.literal(1),zod.literal(2),zod.literal(3)]).optional(),
-  "userEmailAddress": zod.string().nullish(),
-  "workSpaceId": zod.uuid().nullish()
-})),
-  "total": zod.number()
-})
-
+  data: zod.array(
+    zod.object({
+      accessType: zod.union([zod.literal(1), zod.literal(2)]),
+      displayName: zod.string().nullish(),
+      id: zod.uuid().nullish(),
+      messageId: zod.uuid().nullish(),
+      messageThreadId: zod.uuid().nullish(),
+      objectId: zod.string(),
+      principalType: zod
+        .union([zod.literal(0), zod.literal(1), zod.literal(2), zod.literal(3)])
+        .optional(),
+      userEmailAddress: zod.string().nullish(),
+      workSpaceId: zod.uuid().nullish(),
+    })
+  ),
+  total: zod.number(),
+});
 
 /**
  * @summary Retrieve all message threads associated with a specific workspace in SmartSpace, identified by workspaceId, with pagination options take and skip.
  */
 export const getWorkSpacesIdMessageThreadsParams = zod.object({
-  "id": zod.uuid().describe('The ID of the workspace.')
-})
+  id: zod.uuid().describe('The ID of the workspace.'),
+});
 
-export const getWorkSpacesIdMessageThreadsQueryTakeDefault = 50;export const getWorkSpacesIdMessageThreadsQuerySkipDefault = 0;
+export const getWorkSpacesIdMessageThreadsQueryTakeDefault = 50;
+export const getWorkSpacesIdMessageThreadsQuerySkipDefault = 0;
 
 export const getWorkSpacesIdMessageThreadsQueryParams = zod.object({
-  "take": zod.number().default(getWorkSpacesIdMessageThreadsQueryTakeDefault).describe('The number of message threads to retrieve.'),
-  "skip": zod.number().optional().describe('The number of message threads to skip.'),
-  "search": zod.string().optional().describe('The term to filter threads by name or id.')
-})
+  take: zod
+    .number()
+    .default(getWorkSpacesIdMessageThreadsQueryTakeDefault)
+    .describe('The number of message threads to retrieve.'),
+  skip: zod
+    .number()
+    .optional()
+    .describe('The number of message threads to skip.'),
+  search: zod
+    .string()
+    .optional()
+    .describe('The term to filter threads by name or id.'),
+});
 
 export const getWorkSpacesIdMessageThreadsResponse = zod.object({
-  "data": zod.array(zod.object({
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string(),
-  "favorited": zod.boolean(),
-  "id": zod.uuid(),
-  "isFlowRunning": zod.boolean(),
-  "lastUpdated": zod.string().nullish(),
-  "lastUpdatedAt": zod.string(),
-  "lastUpdatedByUserId": zod.string(),
-  "name": zod.string().nullish(),
-  "totalMessages": zod.number(),
-  "workSpaceId": zod.uuid()
-})),
-  "total": zod.number()
-})
-
+  data: zod.array(
+    zod.object({
+      createdAt: zod.string(),
+      createdBy: zod.string().nullish(),
+      createdByUserId: zod.string(),
+      favorited: zod.boolean(),
+      id: zod.uuid(),
+      isFlowRunning: zod.boolean(),
+      lastUpdated: zod.string().nullish(),
+      lastUpdatedAt: zod.string(),
+      lastUpdatedByUserId: zod.string(),
+      name: zod.string().nullish(),
+      totalMessages: zod.number(),
+      workSpaceId: zod.uuid(),
+    })
+  ),
+  total: zod.number(),
+});
 
 export const getWorkSpacesIdUsersParams = zod.object({
-  "id": zod.uuid()
-})
+  id: zod.uuid(),
+});
 
-export const getWorkSpacesIdUsersQueryTakeDefault = 1000;export const getWorkSpacesIdUsersQuerySkipDefault = 0;
+export const getWorkSpacesIdUsersQueryTakeDefault = 1000;
+export const getWorkSpacesIdUsersQuerySkipDefault = 0;
 
 export const getWorkSpacesIdUsersQueryParams = zod.object({
-  "take": zod.number().default(getWorkSpacesIdUsersQueryTakeDefault),
-  "skip": zod.number().optional(),
-  "search": zod.string().optional()
-})
+  take: zod.number().default(getWorkSpacesIdUsersQueryTakeDefault),
+  skip: zod.number().optional(),
+  search: zod.string().optional(),
+});
 
 export const getWorkSpacesIdUsersResponseItem = zod.object({
-  "displayName": zod.string(),
-  "emailAddress": zod.string().nullish(),
-  "id": zod.string(),
-  "userId": zod.string()
-})
-export const getWorkSpacesIdUsersResponse = zod.array(getWorkSpacesIdUsersResponseItem)
-
+  displayName: zod.string(),
+  emailAddress: zod.string().nullish(),
+  id: zod.string(),
+  userId: zod.string(),
+});
+export const getWorkSpacesIdUsersResponse = zod.array(
+  getWorkSpacesIdUsersResponseItem
+);
 
 /**
  * @summary Retrieve a Shared Access Signature (SAS) for a specific document in a data space, using the dataSpaceId and optional file parameter.
  */
 export const getDataspacesDataSpaceIdDocumentsItemSasParams = zod.object({
-  "dataSpaceId": zod.uuid().describe('The ID of the data space.')
-})
+  dataSpaceId: zod.uuid().describe('The ID of the data space.'),
+});
 
 export const getDataspacesDataSpaceIdDocumentsItemSasQueryParams = zod.object({
-  "file": zod.string().optional().describe('The optional file parameter.')
-})
+  file: zod.string().optional().describe('The optional file parameter.'),
+});
 
 export const getDataspacesDataSpaceIdDocumentsItemSasResponse = zod.object({
-  "uri": zod.url()
-})
-
+  uri: zod.url(),
+});
 
 export const postWorkspacesWorkspaceIdMessagethreadsParams = zod.object({
-  "workspaceId": zod.uuid()
-})
+  workspaceId: zod.uuid(),
+});
 
 export const postWorkspacesWorkspaceIdMessagethreadsBody = zod.object({
-  "id": zod.uuid().nullish(),
-  "name": zod.string().nullish()
-})
+  id: zod.uuid().nullish(),
+  name: zod.string().nullish(),
+});
 
 export const postWorkspacesWorkspaceIdMessagethreadsResponse = zod.object({
-  "data": zod.array(zod.object({
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string(),
-  "favorited": zod.boolean(),
-  "id": zod.uuid(),
-  "isFlowRunning": zod.boolean(),
-  "lastUpdated": zod.string().nullish(),
-  "lastUpdatedAt": zod.string(),
-  "lastUpdatedByUserId": zod.string(),
-  "name": zod.string().nullish(),
-  "totalMessages": zod.number(),
-  "workSpaceId": zod.uuid()
-})),
-  "total": zod.number()
-})
-
+  data: zod.array(
+    zod.object({
+      createdAt: zod.string(),
+      createdBy: zod.string().nullish(),
+      createdByUserId: zod.string(),
+      favorited: zod.boolean(),
+      id: zod.uuid(),
+      isFlowRunning: zod.boolean(),
+      lastUpdated: zod.string().nullish(),
+      lastUpdatedAt: zod.string(),
+      lastUpdatedByUserId: zod.string(),
+      name: zod.string().nullish(),
+      totalMessages: zod.number(),
+      workSpaceId: zod.uuid(),
+    })
+  ),
+  total: zod.number(),
+});
 
 export const getWorkspacesWorkspaceIdMessagethreadsIdParams = zod.object({
-  "id": zod.uuid(),
-  "workspaceId": zod.string()
-})
+  id: zod.uuid(),
+  workspaceId: zod.string(),
+});
 
 export const getWorkspacesWorkspaceIdMessagethreadsIdResponse = zod.object({
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string(),
-  "favorited": zod.boolean(),
-  "id": zod.uuid(),
-  "isFlowRunning": zod.boolean(),
-  "lastUpdated": zod.string().nullish(),
-  "lastUpdatedAt": zod.string(),
-  "lastUpdatedByUserId": zod.string(),
-  "name": zod.string().nullish(),
-  "totalMessages": zod.number(),
-  "workSpaceId": zod.uuid()
-})
-
+  createdAt: zod.string(),
+  createdBy: zod.string().nullish(),
+  createdByUserId: zod.string(),
+  favorited: zod.boolean(),
+  id: zod.uuid(),
+  isFlowRunning: zod.boolean(),
+  lastUpdated: zod.string().nullish(),
+  lastUpdatedAt: zod.string(),
+  lastUpdatedByUserId: zod.string(),
+  name: zod.string().nullish(),
+  totalMessages: zod.number(),
+  workSpaceId: zod.uuid(),
+});
 
 /**
  * @summary Access messages within a specific message thread in SmartSpace, using the thread's ID, along with pagination options take and skip.
  */
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesParams = zod.object({
-  "id": zod.uuid().describe('The ID of the thread.'),
-  "workspaceId": zod.string()
-})
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesParams =
+  zod.object({
+    id: zod.uuid().describe('The ID of the thread.'),
+    workspaceId: zod.string(),
+  });
 
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryTakeDefault = 50;export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQuerySkipDefault = 0;
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryTakeDefault = 50;
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQuerySkipDefault = 0;
 
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryParams = zod.object({
-  "take": zod.number().default(getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryTakeDefault).describe('The number of messages to retrieve (default: 50).'),
-  "skip": zod.number().optional().describe('The number of messages to skip (default: 0).')
-})
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryParams =
+  zod.object({
+    take: zod
+      .number()
+      .default(getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryTakeDefault)
+      .describe('The number of messages to retrieve (default: 50).'),
+    skip: zod
+      .number()
+      .optional()
+      .describe('The number of messages to skip (default: 0).'),
+  });
 
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesResponse = zod.object({
-  "data": zod.array(zod.object({
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string(),
-  "errors": zod.array(zod.object({
-  "blockId": zod.string().nullish(),
-  "code": zod.number(),
-  "data": zod.any().nullish(),
-  "message": zod.string().nullish()
-})),
-  "hasComments": zod.boolean(),
-  "id": zod.uuid(),
-  "messageThreadId": zod.uuid().nullish(),
-  "values": zod.array(zod.object({
-  "channels": zod.record(zod.string(), zod.number()),
-  "createdAt": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "createdByUserId": zod.string(),
-  "id": zod.string(),
-  "name": zod.string(),
-  "type": zod.enum(['Input', 'Output']),
-  "value": zod.any().nullish()
-}))
-})),
-  "total": zod.number()
-})
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesResponse =
+  zod.object({
+    data: zod.array(
+      zod.object({
+        createdAt: zod.string(),
+        createdBy: zod.string().nullish(),
+        createdByUserId: zod.string(),
+        errors: zod.array(
+          zod.object({
+            blockId: zod.string().nullish(),
+            code: zod.number(),
+            data: zod.any().nullish(),
+            message: zod.string().nullish(),
+          })
+        ),
+        hasComments: zod.boolean(),
+        id: zod.uuid(),
+        messageThreadId: zod.uuid().nullish(),
+        values: zod.array(
+          zod.object({
+            channels: zod.record(zod.string(), zod.number()),
+            createdAt: zod.string(),
+            createdBy: zod.string().nullish(),
+            createdByUserId: zod.string(),
+            id: zod.string(),
+            name: zod.string(),
+            type: zod.enum(['Input', 'Output']),
+            value: zod.any().nullish(),
+          })
+        ),
+      })
+    ),
+    total: zod.number(),
+  });

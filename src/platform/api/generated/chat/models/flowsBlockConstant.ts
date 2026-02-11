@@ -4,8 +4,8 @@
  * SmartSpace Chat API
  * OpenAPI spec version: 0.0.0
  */
-import type { FlowsBlockPinRef } from './flowsBlockPinRef';
 import type { FlowsBlockConstantValue } from './flowsBlockConstantValue';
+import type { FlowsBlockPinRef } from './flowsBlockPinRef';
 
 export interface FlowsBlockConstant {
   target: FlowsBlockPinRef;
