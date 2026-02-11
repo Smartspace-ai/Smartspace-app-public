@@ -418,6 +418,10 @@ export const getModelsResponse = zod.strictObject({
         zod.strictObject({
           name: zod.string(),
           type: zod.enum(['Boolean', 'Number', 'String']),
+          defaultValue: zod.number().nullish(),
+          minValue: zod.number().nullish(),
+          maxValue: zod.number().nullish(),
+          step: zod.number().nullish(),
         })
       ),
       virtualMachineUrl: zod.string().nullish(),
@@ -493,6 +497,10 @@ export const getModelsIdResponse = zod.strictObject({
     zod.strictObject({
       name: zod.string(),
       type: zod.enum(['Boolean', 'Number', 'String']),
+      defaultValue: zod.number().nullish(),
+      minValue: zod.number().nullish(),
+      maxValue: zod.number().nullish(),
+      step: zod.number().nullish(),
     })
   ),
 });
@@ -757,6 +765,10 @@ export const getWorkSpacesResponse = zod.strictObject({
               zod.strictObject({
                 name: zod.string(),
                 type: zod.enum(['Boolean', 'Number', 'String']),
+                defaultValue: zod.number().nullish(),
+                minValue: zod.number().nullish(),
+                maxValue: zod.number().nullish(),
+                step: zod.number().nullish(),
               })
             ),
           }),
@@ -1031,6 +1043,10 @@ export const getWorkSpacesIdResponse = zod.strictObject({
           zod.strictObject({
             name: zod.string(),
             type: zod.enum(['Boolean', 'Number', 'String']),
+            defaultValue: zod.number().nullish(),
+            minValue: zod.number().nullish(),
+            maxValue: zod.number().nullish(),
+            step: zod.number().nullish(),
           })
         ),
       }),

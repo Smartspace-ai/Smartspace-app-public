@@ -16,6 +16,19 @@ type ModelDetailDto = z.infer<typeof modelResponseSchema>;
 const toStringEnum = (value: unknown): string =>
   typeof value === 'number' || typeof value === 'string' ? String(value) : '';
 
+function mapPropertyDtoToModel(
+  p: ModelDto['properties'][number] | ModelDetailDto['properties'][number]
+): Model['properties'][number] {
+  return {
+    name: p.name,
+    type: toStringEnum(p.type),
+    defaultValue: p.defaultValue ?? 0,
+    minValue: p.minValue ?? 0,
+    maxValue: p.maxValue ?? 0,
+    step: p.step ?? 0,
+  };
+}
+
 export function mapModelDtoToModel(dto: ModelDto | ModelDetailDto): Model {
   return {
     id: dto.id,
@@ -29,7 +42,7 @@ export function mapModelDtoToModel(dto: ModelDto | ModelDetailDto): Model {
     createdAt: dto.createdAt
       ? parseIsoDate(dto.createdAt, 'createdAt').toISOString()
       : '',
-    properties: dto.properties,
+    properties: dto.properties.map(mapPropertyDtoToModel),
     virtualMachineUrl: dto.virtualMachineUrl ?? null,
   };
 }

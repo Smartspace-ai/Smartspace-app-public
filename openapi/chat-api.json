@@ -607,7 +607,11 @@
         "additionalProperties": false,
         "properties": {
           "name": { "readOnly": true, "type": "string" },
-          "type": { "$ref": "#/components/schemas/Enums.ModelPropertyType" }
+          "type": { "$ref": "#/components/schemas/Enums.ModelPropertyType" },
+          "defaultValue": { "nullable": true, "type": "number" },
+          "minValue": { "nullable": true, "type": "number" },
+          "maxValue": { "nullable": true, "type": "number" },
+          "step": { "nullable": true, "type": "number" }
         },
         "required": ["name", "type"],
         "type": "object"

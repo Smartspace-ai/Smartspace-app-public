@@ -9,4 +9,12 @@ import type { EnumsModelPropertyType } from './enumsModelPropertyType';
 export interface ModelIModelProperty {
   readonly name: string;
   type: EnumsModelPropertyType;
+  /** @nullable */
+  defaultValue?: number | null;
+  /** @nullable */
+  minValue?: number | null;
+  /** @nullable */
+  maxValue?: number | null;
+  /** @nullable */
+  step?: number | null;
 }
