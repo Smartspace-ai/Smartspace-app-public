@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import { MessageResponseSourceType, MessageValueType } from '@/domains/messages/enums';
+import {
+  MessageResponseSourceType,
+  MessageValueType,
+} from '@/domains/messages/enums';
 
 import { FileInfoSchema } from '../files/schemas';
 
@@ -29,7 +32,6 @@ export const MessageResponseSchema = z.object({
   requestedJsonSchema: z.string().nullish(),
 });
 
-
 export const MessageErrorMessageSchema = z.object({
   code: z.number(),
   message: z.string().nullish(),
@@ -46,17 +48,21 @@ export const MessageSchema = z.object({
   createdByUserId: z.string().nullish(),
   messageThreadId: z.string().nullish(),
   errors: z.array(MessageErrorMessageSchema).nullish(),
-  values: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    type: z.nativeEnum(MessageValueType),
-    value: z.any(), // Can be string (for Output), array (for Input), or object (for Variables)
-    channels: z.record(z.number()),
-    createdAt: DateFromApi,
-    createdBy: z.string(),
-    createdByUserId: z.string().nullish(),
-  })).nullish(),
-  optimistic: z.boolean().optional().default(false)
+  values: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        type: z.nativeEnum(MessageValueType),
+        value: z.any(), // Can be string (for Output), array (for Input), or object (for Variables)
+        channels: z.record(z.string(), z.number()),
+        createdAt: DateFromApi,
+        createdBy: z.string(),
+        createdByUserId: z.string().nullish(),
+      })
+    )
+    .nullish(),
+  optimistic: z.boolean().optional().default(false),
 });
 
 export const MessageItemContentSchema = z.object({

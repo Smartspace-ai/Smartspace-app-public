@@ -1,4 +1,5 @@
 import {
+  infiniteQueryOptions,
   queryOptions,
   useInfiniteQuery,
   useQuery,
@@ -101,7 +102,7 @@ export function messagesInfiniteOptions(
   threadId: string,
   pageSize = DEFAULT_MESSAGES_PAGE_SIZE
 ) {
-  return queryOptions({
+  return infiniteQueryOptions({
     queryKey: messagesKeys.infinite(threadId),
     queryFn: async ({ pageParam }: { pageParam: number }) => {
       const fetched = await fetchMessages(threadId, {
@@ -111,6 +112,7 @@ export function messagesInfiniteOptions(
       return fetched.reverse();
     },
     initialPageParam: 0,
+    getNextPageParam: () => undefined,
     getPreviousPageParam: (
       firstPage: Message[],
       _allPages: Message[][],

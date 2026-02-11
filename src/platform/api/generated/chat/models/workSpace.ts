@@ -10,6 +10,8 @@ import type { WorkSpaceInputs } from './workSpaceInputs';
 import type { WorkSpaceVariables } from './workSpaceVariables';
 
 export interface WorkSpace {
+  /** @nullable */
+  avatarName?: string | null;
   createdAt: string;
   createdByUserId: string;
   dataSpaces: DataSpace[];

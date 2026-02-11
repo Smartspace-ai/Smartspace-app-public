@@ -43,7 +43,11 @@ export function mapModelDtoToModel(dto: ModelDto | ModelDetailDto): Model {
       ? parseIsoDate(dto.createdAt, 'createdAt').toISOString()
       : '',
     properties: dto.properties.map(mapPropertyDtoToModel),
-    virtualMachineUrl: dto.virtualMachineUrl ?? null,
+    virtualMachineUrl:
+      ('virtualMachineUrl' in dto
+        ? dto.virtualMachineUrl
+        : (dto as { deployment?: { virtualMachineUrl?: string | null } })
+            .deployment?.virtualMachineUrl) ?? null,
   };
 }
 

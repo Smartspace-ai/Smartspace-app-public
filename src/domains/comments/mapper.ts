@@ -37,7 +37,8 @@ export function mapCommentDtoToModel(
     createdBy: dto.createdBy ?? '',
     content: dto.content,
     mentionedUsers: (dto.mentionedUsers ?? []).map(mapMentionUserDtoToModel),
-    messageThreadId: dto.messageThreadId ?? '',
+    messageThreadId:
+      (dto as { messageThreadId?: string }).messageThreadId ?? '',
   };
 }
 

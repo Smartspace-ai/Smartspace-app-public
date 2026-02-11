@@ -530,6 +530,7 @@ export const getWorkSpacesQueryParams = zod.strictObject({
 export const getWorkSpacesResponse = zod.strictObject({
   data: zod.array(
     zod.strictObject({
+      avatarName: zod.string().nullish(),
       createdAt: zod.string(),
       createdByUserId: zod.string(),
       dataSpaces: zod.array(
@@ -808,6 +809,7 @@ export const getWorkSpacesIdParams = zod.strictObject({
 });
 
 export const getWorkSpacesIdResponse = zod.strictObject({
+  avatarName: zod.string().nullish(),
   createdAt: zod.string(),
   createdByUserId: zod.string(),
   dataSpaces: zod.array(

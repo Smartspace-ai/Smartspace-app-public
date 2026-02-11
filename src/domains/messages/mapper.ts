@@ -4,6 +4,7 @@ import { getMessageThreadsIdMessagesResponse as messagesResponseSchema } from '@
 
 import { parseIsoDate } from '@/shared/utils/parseIsoDate';
 
+import { MessageValueType } from './enums';
 import { Message } from './model';
 
 type MessagesResponseDto = z.infer<typeof messagesResponseSchema>;
@@ -39,11 +40,11 @@ export function mapMessageDtoToModel(dto: MessageDto): Message {
       ? dto.values.map((v) => ({
           id: v.id,
           name: v.name,
-          type: v.type,
+          type: v.type as MessageValueType,
           value: v.value,
           channels: normalizeChannels(v.channels ?? {}),
           createdAt: parseIsoDate(v.createdAt, 'values.createdAt'),
-          createdBy: v.createdBy,
+          createdBy: v.createdBy ?? '',
           createdByUserId: v.createdByUserId ?? undefined,
         }))
       : undefined,
