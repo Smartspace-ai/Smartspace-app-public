@@ -8,17 +8,15 @@ import { AuthProvider, useAuthSession } from '@/platform/auth/session';
 import { queryClient } from '@/platform/reactQueryClient';
 import { RealtimeProvider } from '@/platform/realtime/RealtimeProvider';
 
+import { muiTheme } from '@/shared/ui/mui-bridge/theme';
 import { SidebarProvider } from '@/shared/ui/mui-compat/sidebar';
-
-import { appTheme } from '@/theme/mui/createTheme';
 
 import { TeamsProvider } from './providers';
 
 function RealtimeBridge({ children }: { children: ReactNode }) {
   const { adapter, session, loading } = useAuthSession();
   // you can also derive scopes here if you want a single place
-  const getAccessToken = (scopes?: string[]) =>
-    adapter.getAccessToken({ scopes, silentOnly: true });
+  const getAccessToken = (scopes?: string[]) => adapter.getAccessToken({ scopes, silentOnly: true });
   // Mount realtime only when a session exists to avoid negotiate loops
   if (loading) return children;
   if (!session) return children;
@@ -36,7 +34,7 @@ export default function AppProviders({ children }: { children: ReactNode }) {
         <AuthProvider>
           <RealtimeBridge>
             <StyledEngineProvider injectFirst>
-              <ThemeProvider theme={appTheme}>
+              <ThemeProvider theme={muiTheme}>
                 <SidebarProvider defaultRightOpen>{children}</SidebarProvider>
               </ThemeProvider>
             </StyledEngineProvider>

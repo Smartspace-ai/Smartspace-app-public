@@ -150,14 +150,14 @@ export default function MessageComposer() {
 
     // helpers
     supportsFiles,
-    isNewThreadRoute,
+    isDraftThread,
     setVariables,
   } = vm;
 
-  // New thread route has no thread id until first send; omit it for uploads so files still work.
+  // Draft threads use a placeholder thread id; omit it for uploads so files still work in draft mode.
   const { uploadFilesMutation, getFileBlobUrl } = useFileMutations({
     workspaceId,
-    threadId: isNewThreadRoute ? undefined : threadId,
+    threadId: isDraftThread ? undefined : threadId,
   });
   // Provide a global downloader for ssImage node views (non-React context)
   if (typeof window !== 'undefined') {
@@ -316,7 +316,7 @@ export default function MessageComposer() {
           onChange={handleFileSelected}
         />
       )}
-      {workspace && (threadId || isNewThreadRoute) && (
+      {workspace && threadId && (
         <div
           className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
             !isMobile
@@ -330,7 +330,6 @@ export default function MessageComposer() {
             workspace={workspace}
             threadId={threadId}
             setVariables={setVariables}
-            isNewThreadRoute={isNewThreadRoute}
           />
         </div>
       )}

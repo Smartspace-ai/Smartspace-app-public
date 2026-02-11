@@ -1,6 +1,5 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+// src/ui/threads/ThreadRenameModal.tsx
+import { useEffect, useRef, useState } from 'react';
 
 import type { MessageThread } from '@/domains/threads';
 import { useRenameThread } from '@/domains/threads/mutations';
@@ -14,13 +13,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/mui-compat/dialog';
 import { Input } from '@/shared/ui/mui-compat/input';
-
-import {
-  focusFirstInvalidField,
-  FormField,
-  mapServerErrorToForm,
-} from '@/forms';
-import { threadRenameSchema, type ThreadRenameFormValues } from '@/forms';
+import { Label } from '@/shared/ui/mui-compat/label';
 
 interface Props {
   isOpen: boolean;
@@ -29,111 +22,74 @@ interface Props {
 }
 
 export function ThreadRenameModal({ isOpen, onClose, thread }: Props) {
+  const [name, setName] = useState(thread.name ?? '');
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const renameThread = useRenameThread(thread.id);
 
-  const {
-    control,
-    formState: { errors },
-    handleSubmit,
-    reset,
-    setError,
-    setFocus,
-  } = useForm<ThreadRenameFormValues>({
-    defaultValues: { name: thread.name ?? '' },
-    resolver: zodResolver(threadRenameSchema),
-  });
-
+  // reset state when opening or thread changes
   useEffect(() => {
-    if (isOpen) reset({ name: thread.name ?? '' });
-  }, [isOpen, thread.id, thread.name, reset]);
+    if (isOpen) setName(thread.name ?? '');
+  }, [isOpen, thread.id, thread.name]);
 
+  // focus input when opening
   useEffect(() => {
-    if (isOpen) {
-      const id = setTimeout(() => setFocus('name'), 0);
-      return () => clearTimeout(id);
-    }
-  }, [isOpen, setFocus]);
-
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) focusFirstInvalidField(errors);
-  }, [errors]);
-
-  const onFormSubmit = handleSubmit(async (data) => {
-    try {
-      await renameThread.mutateAsync(data.name);
-      onClose();
-    } catch (error) {
-      mapServerErrorToForm(error, setError, {
-        logServerError: (err) => {
-          if (import.meta.env.DEV) {
-            // eslint-disable-next-line no-console
-            console.error('Rename thread server error:', err);
-          }
-        },
-      });
-      // focusFirstInvalidField runs in useEffect when errors update
-    }
-  });
+    if (!isOpen) return;
+    const id = setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 0);
+    return () => clearTimeout(id);
+  }, [isOpen]);
 
   const pending = renameThread.isPending;
-  const rootMessage = errors.root?.message;
+  const trimmed = name.trim();
+  const disableSave = pending || !trimmed || trimmed === (thread.name ?? '');
+
+  const handleSubmit: React.FormEventHandler = async (e) => {
+    e.preventDefault();
+    if (disableSave) return;
+    await renameThread.mutateAsync(trimmed);
+    onClose();
+  };
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => !pending && !open && onClose()}
-    >
+    <Dialog open={isOpen} onOpenChange={(open) => !pending && !open && onClose()}>
       <DialogContent className="sm:max-w-[420px] p-5">
         <DialogHeader>
           <DialogTitle className="font-medium">Rename Thread</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={onFormSubmit}>
+        <form onSubmit={handleSubmit}>
           <div className="grid gap-3 py-2">
-            <Controller
-              control={control}
-              name="name"
-              render={({ field }) => (
-                <FormField error={errors.name} label="Thread Name" name="name">
-                  {({
-                    id,
-                    'aria-invalid': ariaInvalid,
-                    'aria-describedby': ariaDescribedBy,
-                  }) => (
-                    <Input
-                      {...field}
-                      aria-describedby={ariaDescribedBy}
-                      aria-invalid={ariaInvalid}
-                      disabled={pending}
-                      id={id}
-                      placeholder="Enter thread name"
-                    />
-                  )}
-                </FormField>
-              )}
-            />
-            {rootMessage && (
-              <p className="text-sm text-destructive" role="alert">
-                {rootMessage}
-              </p>
-            )}
+            <div className="grid gap-2">
+              <Label htmlFor="thread-name" className="font-medium">Thread Name</Label>
+              <Input
+                id="thread-name"
+                ref={inputRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter thread name"
+                disabled={pending}
+              />
+            </div>
           </div>
 
           <DialogFooter className="mt-4 p-0">
             <Button
-              disabled={pending}
               type="button"
               variant="outline"
               className="text-xs w-20"
               onClick={() => !pending && onClose()}
+              disabled={pending}
             >
               Cancel
             </Button>
             <Button
-              disabled={pending}
               type="submit"
               variant="default"
               className="text-xs w-24"
+              disabled={disableSave}
             >
               {pending ? 'Saving…' : 'Save Changes'}
             </Button>
@@ -143,3 +99,5 @@ export function ThreadRenameModal({ isOpen, onClose, thread }: Props) {
     </Dialog>
   );
 }
+
+

@@ -1,56 +1,32 @@
-import InputBase from '@mui/material/InputBase';
-import * as React from 'react';
+import InputBase from "@mui/material/InputBase"
+import * as React from "react"
 
-import { cn } from '@/shared/utils/utils';
+import { cn } from "@/shared/utils/utils"
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
+const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
     return (
       <InputBase
-        inputRef={ref}
         type={type}
-        className={cn(className)}
+        inputRef={ref}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        // Route legacy HTML input props to the input element
         inputProps={props as unknown as Record<string, unknown>}
         slotProps={{
           input: {
-            sx: (theme) => ({
-              ...theme.typography.body1,
-              backgroundColor: 'transparent',
-              padding: 0,
-              width: '100%',
-              '&::placeholder': {
-                color: theme.palette.text.secondary,
-                opacity: 1,
-              },
-            }),
+            className: cn(
+              "w-full bg-transparent p-0 text-base placeholder:text-muted-foreground md:text-sm",
+            ),
           },
         }}
-        sx={(theme) => ({
-          alignItems: 'center',
-          backgroundColor: theme.palette.background.paper,
-          border: '1px solid',
-          borderColor: theme.palette.divider,
-          borderRadius: theme.shape.borderRadius,
-          cursor: 'default',
-          display: 'flex',
-          height: theme.spacing(5),
-          outline: 'none',
-          padding: theme.spacing(1, 1.5),
-          width: '100%',
-          '&.Mui-focused': {
-            outline: '2px solid',
-            outlineColor: theme.palette.primary.main,
-            outlineOffset: 2,
-          },
-          '&.Mui-disabled': {
-            cursor: 'not-allowed',
-            opacity: 0.5,
-          },
-        })}
       />
-    );
+    )
   }
-);
-Input.displayName = 'Input';
+)
+Input.displayName = "Input"
 
-export { Input };
+export { Input }
+

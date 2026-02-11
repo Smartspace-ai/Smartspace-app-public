@@ -13,7 +13,6 @@ export interface WorkspaceLike {
 export interface ChatVariablesFormProps {
   workspace: WorkspaceLike;
   threadId: string;
-  isNewThreadRoute?: boolean;
 }
 
 export interface ChatVariablesFormRef {
