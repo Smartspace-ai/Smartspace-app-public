@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 
 import { createAuthAdapter } from './index';
 import { getAuthRuntimeState, subscribeAuthRuntime } from './runtime';
@@ -7,7 +14,17 @@ import type { AuthAdapter } from './types';
 const AuthCtx = createContext<AuthAdapter | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const adapter = useMemo(() => createAuthAdapter(), []);
+  const runtime = useSyncExternalStore(
+    subscribeAuthRuntime,
+    getAuthRuntimeState,
+    getAuthRuntimeState
+  );
+  // Recreate adapter when runtime state changes (e.g. guest detection completes)
+  const adapter = useMemo(
+    () => createAuthAdapter(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runtime.isInTeams/isGuestUser trigger re-evaluation of adapter selection
+    [runtime.isInTeams, runtime.isGuestUser]
+  );
   return <AuthCtx.Provider value={adapter}>{children}</AuthCtx.Provider>;
 }
 
@@ -24,17 +41,29 @@ export function useAuth() {
  */
 export function useAuthSession() {
   const adapter = useAuth();
-  const [session, setSession] = useState<{ accountId?: string; displayName?: string } | null>(null);
+  const [session, setSession] = useState<{
+    accountId?: string;
+    displayName?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    adapter.getSession()
-      .then((s) => { if (mounted) setSession(s); })
-      .catch(() => { if (mounted) setSession(null); })
-      .finally(() => { if (mounted) setLoading(false); });
-    return () => { mounted = false; };
+    adapter
+      .getSession()
+      .then((s) => {
+        if (mounted) setSession(s);
+      })
+      .catch(() => {
+        if (mounted) setSession(null);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
   }, [adapter]);
 
   return { adapter, session, loading };
@@ -51,5 +80,9 @@ export function useUserDisplayName() {
 }
 
 export function useAuthRuntime() {
-  return useSyncExternalStore(subscribeAuthRuntime, getAuthRuntimeState, getAuthRuntimeState);
+  return useSyncExternalStore(
+    subscribeAuthRuntime,
+    getAuthRuntimeState,
+    getAuthRuntimeState
+  );
 }

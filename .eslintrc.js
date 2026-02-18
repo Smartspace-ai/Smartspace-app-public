@@ -221,7 +221,7 @@ module.exports = {
   overrides: [
     // TypeScript source
     {
-      files: ['src/**/*.{ts,tsx}', 'theme/**/*.{ts,tsx}'],
+      files: ['src/**/*.{ts,tsx}', 'theme/**/*.{ts,tsx}', 'teams/**/*.ts'],
       extends: ['plugin:@nx/typescript'],
       rules: {
         '@typescript-eslint/no-explicit-any': 'error',
@@ -292,6 +292,15 @@ module.exports = {
     {
       files: ['src/theme/tokens/core.colors.ts'],
       rules: {
+        'no-restricted-syntax': 'off',
+      },
+    },
+
+    // Teams build scripts: Node/CommonJS, manifest schema requires hex
+    {
+      files: ['teams/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-var-requires': 'off',
         'no-restricted-syntax': 'off',
       },
     },

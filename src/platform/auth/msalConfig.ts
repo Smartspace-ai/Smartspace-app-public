@@ -89,7 +89,7 @@ const msalConfig: Configuration = {
   },
   cache: {
     cacheLocation: 'localStorage', // Persists auth state across tabs/sessions
-    storeAuthStateInCookie: false, // Recommended false unless supporting legacy browsers
+    storeAuthStateInCookie: true, // Helps in Teams iframe and third-party contexts
   },
   system: {
     allowNativeBroker: false, // Only relevant for native/mobile clients

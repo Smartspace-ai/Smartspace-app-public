@@ -30,6 +30,7 @@ jobs:
             VITE_CLIENT_AUTHORITY
             VITE_CLIENT_SCOPES
             VITE_CHAT_API_URI
+            VITE_TEAMS_USE_MSAL
           )
           for var in "${required_vars[@]}"; do
             if ! grep -q "^$var=" .env; then

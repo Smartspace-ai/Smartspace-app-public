@@ -1,10 +1,12 @@
 import { getMsalInstance } from '@/platform/auth/msalClient';
 import {
   interactiveLoginRequest,
+  isInTeams,
   loginRequest,
 } from '@/platform/auth/msalConfig';
 import { ssInfo, ssWarn } from '@/platform/log';
 
+import { setStoredUseMsalInTeams } from '../runtime';
 import { AuthAdapter, GetTokenOptions } from '../types';
 
 export function createMsalWebAdapter(): AuthAdapter {
@@ -35,12 +37,14 @@ export function createMsalWebAdapter(): AuthAdapter {
           ...loginRequest,
           account,
         });
+        if (isInTeams()) setStoredUseMsalInTeams(true);
         return r.accessToken;
       } catch (e) {
         ssWarn('auth:web', 'acquireTokenSilent failed', e);
         if (opts?.silentOnly) throw new Error('Silent token failed');
         // Use the same interactive request as sign-in for consistency
         const r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
+        if (isInTeams()) setStoredUseMsalInTeams(true);
         return r.accessToken;
       }
     },
@@ -63,6 +67,7 @@ export function createMsalWebAdapter(): AuthAdapter {
       await msalInstance.loginRedirect(interactiveLoginRequest);
     },
     async signOut() {
+      if (isInTeams()) setStoredUseMsalInTeams(false);
       await msalInstance.logoutPopup();
     },
     getStoredRedirectUrl() {

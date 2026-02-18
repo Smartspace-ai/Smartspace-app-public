@@ -2,6 +2,8 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { z } from 'zod';
 
+import { isNotFoundError } from '@/platform/envelopes';
+
 import {
   threadDetailOptions,
   threadsListOptions,
@@ -42,9 +44,7 @@ export const Route = createFileRoute(
     } catch (e: unknown) {
       // If user deep-links to a random GUID that doesn't exist, redirect to the first thread
       // (same behavior as /workspace/$workspaceId/ without a threadId).
-      const err =
-        e && typeof e === 'object' ? (e as Record<string, unknown>) : null;
-      if (err?.type !== 'NotFound') throw e;
+      if (!isNotFoundError(e)) throw e;
 
       const list = await context.queryClient.ensureQueryData(
         threadsListOptions(params.workspaceId, { take: 1, skip: 0 })

@@ -13,6 +13,7 @@ import { queryClient } from '@/platform/reactQueryClient';
 
 import AppProviders from '@/app/AppProviders';
 
+import { NotFoundPage } from '@/routes/__root.notFound';
 import { routeTree } from '@/routeTree.gen';
 
 function removeBootSplash() {
@@ -61,6 +62,7 @@ const router = createRouter({
   },
   defaultPreload: 'intent',
   scrollRestoration: true,
+  defaultNotFoundComponent: ({ data }) => <NotFoundPage data={data} />,
 });
 
 declare module '@tanstack/react-router' {

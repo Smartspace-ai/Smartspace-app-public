@@ -3,21 +3,31 @@ import { ssInfo } from '@/platform/log';
 
 import { createMsalWebAdapter } from './providers/msalWeb';
 import { createTeamsNaaAdapter } from './providers/teamsNaa';
-import { getAuthRuntimeState } from './runtime';
+import { getAuthRuntimeState, getStoredUseMsalInTeams } from './runtime';
 import type { AuthAdapter } from './types';
 
 export function createAuthAdapter(): AuthAdapter {
-  // Prefer runtime state (set by TeamsProvider) when available, otherwise fall back to URL/parent detection.
   const runtime = getAuthRuntimeState();
+  const forceMsalInTeams = import.meta.env.VITE_TEAMS_USE_MSAL === 'true';
   const inTeams = runtime.isInTeams === true || isInTeams();
+  const isGuest = runtime.isGuestUser === true;
+  const storedUseMsal = getStoredUseMsalInTeams();
 
-  ssInfo('auth', `createAuthAdapter -> ${inTeams ? 'teams' : 'web'}`, {
-    inTeams_msalConfig: (() => { try { return isInTeams(); } catch { return null; } })(),
-    inTeams_runtime: runtime.isInTeams,
-    origin: (() => { try { return window.location.origin; } catch { return null; } })(),
-  });
+  const useMsalInTeams = forceMsalInTeams || isGuest || storedUseMsal === true;
+  const useTeamsNaa = inTeams && !useMsalInTeams;
 
-  return inTeams ? createTeamsNaaAdapter() : createMsalWebAdapter();
+  ssInfo(
+    'auth',
+    `createAuthAdapter -> ${useTeamsNaa ? 'teams-naa' : 'web/msal'}`,
+    {
+      inTeams,
+      forceMsalInTeams,
+      isGuest,
+      storedUseMsal,
+    }
+  );
+
+  return useTeamsNaa ? createTeamsNaaAdapter() : createMsalWebAdapter();
 }
 export * from './msalClient';
 export * from './naaClient';
@@ -28,4 +38,3 @@ export * from './runtime';
 export * from './scopes';
 export * from './errors';
 export * from './types';
-

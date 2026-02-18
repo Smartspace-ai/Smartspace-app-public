@@ -1,6 +1,6 @@
 {
-  "appId": "b7e5f086-648e-4bc0-9039-540e5c22e7c4",
-  "baseUrl": "https://ca-smartspace-api-chat.agreeablerock-7966d77b.australiaeast.azurecontainerapps.io",
+  "appId": "0fb4d246-796f-41ce-8782-21e7618b8427",
+  "baseUrl": "https://stpublicapp.z8.web.core.windows.net/",
   "appName": "SmartSpace",
-  "version": "1.0.0"
+  "version": "1.2.2"
 }
