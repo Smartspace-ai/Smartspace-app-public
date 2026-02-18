@@ -76,7 +76,7 @@ export const isTransient = (e: unknown): boolean => {
 export function isNotFoundError(e: unknown): boolean {
   const r = e && typeof e === 'object' ? (e as Record<string, unknown>) : null;
   if (r?.type === 'NotFound') return true;
-  const res =
-    r && 'response' in r && (r as { response?: { status?: number } }).response;
+  if (!r || !('response' in r)) return false;
+  const res = (r as { response?: { status?: number } }).response;
   return res?.status === 404;
 }
