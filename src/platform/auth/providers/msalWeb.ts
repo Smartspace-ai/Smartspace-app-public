@@ -11,6 +11,9 @@ import { AuthAdapter, GetTokenOptions } from '../types';
 
 /** Shared in-flight popup promise to prevent AADSTS50196 (client request loop). */
 let inFlightPopupPromise: Promise<string> | null = null;
+/** Cooldown after popup: avoid starting another popup for this many ms. */
+const POPUP_COOLDOWN_MS = 8000;
+let popupCooldownUntil = 0;
 
 export function createMsalWebAdapter(): AuthAdapter {
   const msalInstance = getMsalInstance();
@@ -46,7 +49,26 @@ export function createMsalWebAdapter(): AuthAdapter {
         ssWarn('auth:web', 'acquireTokenSilent failed', e);
         if (opts?.silentOnly && !isInTeams())
           throw new Error('Silent token failed');
-        // Deduplicate: concurrent callers share one popup to avoid AADSTS50196 (client request loop).
+        // Cooldown: after a popup, retry silent first (token should be cached). Avoids AADSTS50196 loop.
+        const now = Date.now();
+        if (now < popupCooldownUntil) {
+          await new Promise((r) => setTimeout(r, 500));
+          const account = msalInstance.getActiveAccount();
+          if (account) {
+            try {
+              const r = await msalInstance.acquireTokenSilent({
+                ...loginRequest,
+                account,
+              });
+              if (isInTeams()) setStoredUseMsalInTeams(true);
+              return r.accessToken;
+            } catch {
+              /* fall through to throw */
+            }
+          }
+          throw new Error('Silent token failed');
+        }
+        // Deduplicate: concurrent callers share one popup.
         if (inFlightPopupPromise) return inFlightPopupPromise;
         inFlightPopupPromise = (async () => {
           const account = msalInstance.getActiveAccount();
@@ -70,6 +92,7 @@ export function createMsalWebAdapter(): AuthAdapter {
             }
           }
           if (isInTeams()) setStoredUseMsalInTeams(true);
+          popupCooldownUntil = Date.now() + POPUP_COOLDOWN_MS;
           return r.accessToken;
         })().finally(() => {
           inFlightPopupPromise = null;
