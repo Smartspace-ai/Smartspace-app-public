@@ -19,11 +19,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getAuthRuntimeState,
     getAuthRuntimeState
   );
-  // Recreate adapter when runtime state changes (e.g. guest/desktop detection completes)
+  // Recreate adapter when runtime state changes (e.g. guest detection completes)
   const adapter = useMemo(
     () => createAuthAdapter(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- runtime.isInTeams/isGuestUser/isTeamsDesktop trigger re-evaluation of adapter selection
-    [runtime.isInTeams, runtime.isGuestUser, runtime.isTeamsDesktop]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runtime.isInTeams/isGuestUser trigger re-evaluation of adapter selection
+    [runtime.isInTeams, runtime.isGuestUser]
   );
   return <AuthCtx.Provider value={adapter}>{children}</AuthCtx.Provider>;
 }

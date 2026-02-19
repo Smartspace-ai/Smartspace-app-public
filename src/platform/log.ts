@@ -17,7 +17,11 @@ type SsWindow = Window & {
 };
 
 function safeGetFlag(storage: Storage | undefined, key: string): string | null {
-  try { return storage?.getItem(key) ?? null; } catch { return null; }
+  try {
+    return storage?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function isSsDebugEnabled(): boolean {
@@ -26,8 +30,14 @@ export function isSsDebugEnabled(): boolean {
 
   // Enable in prod via localStorage/sessionStorage flag
   const v =
-    safeGetFlag(typeof localStorage !== 'undefined' ? localStorage : undefined, 'ss_debug') ??
-    safeGetFlag(typeof sessionStorage !== 'undefined' ? sessionStorage : undefined, 'ss_debug');
+    safeGetFlag(
+      typeof localStorage !== 'undefined' ? localStorage : undefined,
+      'ss_debug'
+    ) ??
+    safeGetFlag(
+      typeof sessionStorage !== 'undefined' ? sessionStorage : undefined,
+      'ss_debug'
+    );
   return v === '1' || v === 'true';
 }
 
@@ -35,7 +45,9 @@ function getRunId(): string {
   try {
     const w = window as unknown as SsWindow;
     if (w.__ssRunId) return String(w.__ssRunId);
-    const id = `run_${Math.random().toString(36).slice(2, 8)}_${Date.now().toString(36)}`;
+    const id = `run_${Math.random()
+      .toString(36)
+      .slice(2, 8)}_${Date.now().toString(36)}`;
     w.__ssRunId = id;
     return id;
   } catch {
@@ -47,22 +59,29 @@ function fmt(scope: string, msg: string) {
   return `[SmartSpace][${scope}][${getRunId()}] ${msg}`;
 }
 
-export function ssLog(level: Level, scope: string, msg: string, data?: unknown) {
+export function ssLog(
+  level: Level,
+  scope: string,
+  msg: string,
+  data?: unknown,
+  forceEmit?: boolean
+) {
   const enabled = isSsDebugEnabled();
   if (!enabled && level === 'debug') return;
 
   const line = fmt(scope, msg);
-  // Always emit warn/error; emit info only when enabled.
-  if (!enabled && level === 'info') return;
+  // Always emit warn/error; emit info only when enabled (unless forceEmit).
+  if (!forceEmit && !enabled && level === 'info') return;
 
   // eslint-disable-next-line no-console
-  const fn = level === 'error'
-    ? console.error
-    : level === 'warn'
+  const fn =
+    level === 'error'
+      ? console.error
+      : level === 'warn'
       ? console.warn
       : level === 'info'
-        ? console.info
-        : console.debug;
+      ? console.info
+      : console.debug;
 
   try {
     if (typeof data === 'undefined') fn(line);
@@ -80,7 +99,7 @@ export function ssLog(level: Level, scope: string, msg: string, data?: unknown) 
       level,
       scope,
       msg,
-      data: (typeof data === 'undefined') ? null : data,
+      data: typeof data === 'undefined' ? null : data,
     });
     // cap to last 200 entries
     while (arr.length > 200) arr.shift();
@@ -90,9 +109,14 @@ export function ssLog(level: Level, scope: string, msg: string, data?: unknown) 
   }
 }
 
-export const ssDebug = (scope: string, msg: string, data?: unknown) => ssLog('debug', scope, msg, data);
-export const ssInfo  = (scope: string, msg: string, data?: unknown) => ssLog('info', scope, msg, data);
-export const ssWarn  = (scope: string, msg: string, data?: unknown) => ssLog('warn', scope, msg, data);
-export const ssError = (scope: string, msg: string, data?: unknown) => ssLog('error', scope, msg, data);
-
-
+export const ssDebug = (scope: string, msg: string, data?: unknown) =>
+  ssLog('debug', scope, msg, data);
+export const ssInfo = (scope: string, msg: string, data?: unknown) =>
+  ssLog('info', scope, msg, data);
+/** Like ssInfo but always emits, even when ss_debug is off. Use for critical diagnostics (e.g. auth adapter selection). */
+export const ssInfoAlways = (scope: string, msg: string, data?: unknown) =>
+  ssLog('info', scope, msg, data, true);
+export const ssWarn = (scope: string, msg: string, data?: unknown) =>
+  ssLog('warn', scope, msg, data);
+export const ssError = (scope: string, msg: string, data?: unknown) =>
+  ssLog('error', scope, msg, data);

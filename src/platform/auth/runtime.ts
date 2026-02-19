@@ -13,8 +13,6 @@ export type AuthRuntimeState = {
   isInTeams: boolean | null;
   /** When true, user is a guest in Teams (UPN contains #EXT#) → use MSAL instead of NAA. */
   isGuestUser: boolean | null;
-  /** When true, running in Teams desktop app (vs web). NAA has known issues in desktop → use MSAL. */
-  isTeamsDesktop: boolean | null;
   lastError: AuthRuntimeError | null;
 };
 
@@ -23,7 +21,6 @@ type Listener = () => void;
 let state: AuthRuntimeState = {
   isInTeams: null,
   isGuestUser: null,
-  isTeamsDesktop: null,
   lastError: null,
 };
 const listeners = new Set<Listener>();
@@ -58,12 +55,6 @@ export function setRuntimeAuthError(
 export function setRuntimeIsGuestUser(isGuest: boolean) {
   if (state.isGuestUser === isGuest) return;
   state = { ...state, isGuestUser: isGuest };
-  emit();
-}
-
-export function setRuntimeIsTeamsDesktop(isDesktop: boolean) {
-  if (state.isTeamsDesktop === isDesktop) return;
-  state = { ...state, isTeamsDesktop: isDesktop };
   emit();
 }
 
