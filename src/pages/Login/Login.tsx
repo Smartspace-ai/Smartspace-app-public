@@ -134,13 +134,25 @@ export function Login({
     setShowGenericError(false);
     setError(null);
 
-    auth.signIn().catch((err: unknown) => {
-      const msg = err instanceof Error ? err.message : 'Authentication failed';
-      setError(msg);
-      setShowGenericError(true);
-      setIsLoading(false);
-    });
-  }, [auth, isTeamsInitialized, isLoading, hasAttemptedAutoLogin, session]);
+    auth
+      .signIn()
+      .then(() => onNavigate?.(redirectTo))
+      .catch((err: unknown) => {
+        const msg =
+          err instanceof Error ? err.message : 'Authentication failed';
+        setError(msg);
+        setShowGenericError(true);
+        setIsLoading(false);
+      });
+  }, [
+    auth,
+    isTeamsInitialized,
+    isLoading,
+    hasAttemptedAutoLogin,
+    session,
+    redirectTo,
+    onNavigate,
+  ]);
 
   // Avoid flashing the login UI if we already have a session
   if (session) {

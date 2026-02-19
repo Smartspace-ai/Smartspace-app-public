@@ -58,13 +58,19 @@ export function createMsalWebAdapter(): AuthAdapter {
         : null;
     },
     async signIn() {
-      // Store the intended redirect URL before redirecting
       const redirectUrl =
         new URLSearchParams(window.location.search).get('redirect') ||
         '/workspace';
       sessionStorage.setItem('msalRedirectUrl', redirectUrl);
-      ssInfo('auth:web', 'signIn -> loginRedirect', { redirectUrl });
-      await msalInstance.loginRedirect(interactiveLoginRequest);
+      if (isInTeams()) {
+        ssInfo('auth:web', 'signIn -> loginPopup (Teams iframe)', {
+          redirectUrl,
+        });
+        await msalInstance.loginPopup(interactiveLoginRequest);
+      } else {
+        ssInfo('auth:web', 'signIn -> loginRedirect', { redirectUrl });
+        await msalInstance.loginRedirect(interactiveLoginRequest);
+      }
     },
     async signOut() {
       if (isInTeams()) setStoredUseMsalInTeams(false);
