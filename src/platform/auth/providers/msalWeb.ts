@@ -43,8 +43,28 @@ export function createMsalWebAdapter(): AuthAdapter {
         ssWarn('auth:web', 'acquireTokenSilent failed', e);
         if (opts?.silentOnly && !isInTeams())
           throw new Error('Silent token failed');
-        // Use the same interactive request as sign-in for consistency
-        const r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
+        // Use prompt: 'none' to reuse existing session without showing account picker.
+        // Only use select_account when user must re-authenticate.
+        const account = msalInstance.getActiveAccount();
+        const popupRequest = account
+          ? { ...loginRequest, account }
+          : interactiveLoginRequest;
+        let r;
+        try {
+          r = await msalInstance.acquireTokenPopup(popupRequest);
+        } catch (popupErr) {
+          const needsInteraction =
+            popupErr &&
+            typeof popupErr === 'object' &&
+            'errorCode' in popupErr &&
+            (popupErr.errorCode === 'interaction_required' ||
+              popupErr.errorCode === 'login_required');
+          if (needsInteraction && account) {
+            r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
+          } else {
+            throw popupErr;
+          }
+        }
         if (isInTeams()) setStoredUseMsalInTeams(true);
         return r.accessToken;
       }
