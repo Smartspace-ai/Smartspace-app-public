@@ -41,7 +41,8 @@ export function createMsalWebAdapter(): AuthAdapter {
         return r.accessToken;
       } catch (e) {
         ssWarn('auth:web', 'acquireTokenSilent failed', e);
-        if (opts?.silentOnly) throw new Error('Silent token failed');
+        if (opts?.silentOnly && !isInTeams())
+          throw new Error('Silent token failed');
         // Use the same interactive request as sign-in for consistency
         const r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
         if (isInTeams()) setStoredUseMsalInTeams(true);
