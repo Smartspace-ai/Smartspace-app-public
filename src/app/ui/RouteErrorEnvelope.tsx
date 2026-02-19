@@ -1,9 +1,5 @@
 // app/ui/RouteErrorEnvelope.tsx
-import {
-  ErrorComponentProps,
-  useNavigate,
-  useRouterState,
-} from '@tanstack/react-router';
+import { ErrorComponentProps, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
 import { AuthRequiredError } from '@/platform/auth/errors';
@@ -20,10 +16,17 @@ function isAppError(e: unknown): e is AppError {
   );
 }
 
+function isHttp401(e: unknown): boolean {
+  if (!e || typeof e !== 'object' || !('response' in e)) return false;
+  const res = (e as { response?: { status?: number } }).response;
+  return res?.status === 401;
+}
+
 function isAuthError(e: unknown): boolean {
   return (
     e instanceof AuthRequiredError ||
-    (isAppError(e) && e.type === 'Unauthorized')
+    (isAppError(e) && e.type === 'Unauthorized') ||
+    isHttp401(e)
   );
 }
 
@@ -59,32 +62,50 @@ function getErrorMessage(error: unknown): string {
   return 'Something went wrong.';
 }
 
+function getRedirectPath(): string {
+  if (typeof window === 'undefined') return '/workspace';
+  const raw =
+    `${window.location.pathname}${window.location.search}${window.location.hash}`.replace(
+      /^\/login.*/,
+      ''
+    ) || '/workspace';
+  return normalizeRedirectPath(raw, '/workspace');
+}
+
+function goToLogin(navigate: ReturnType<typeof useNavigate>) {
+  const redirectTo = getRedirectPath();
+  navigate({ to: '/login', search: { redirect: redirectTo }, replace: true });
+}
+
 export function RootErrorBoundary({ error, reset }: ErrorComponentProps) {
+  const navigate = useNavigate();
   const message = getErrorMessage(error);
-  return <Envelope title="Oops" message={message} onRetry={reset} />;
+  const authError = isAuthError(error);
+
+  return (
+    <Envelope
+      title="Oops"
+      message={message}
+      onRetry={authError ? undefined : reset}
+      onSignIn={authError ? () => goToLogin(navigate) : undefined}
+    />
+  );
 }
 
 export function ProtectedErrorBoundary({ error, reset }: ErrorComponentProps) {
   const navigate = useNavigate();
-  const location = useRouterState({ select: (s) => s.location });
 
   useEffect(() => {
     if (!isAuthError(error)) return;
-
-    const rawPath =
-      `${location.pathname}${location.search ?? ''}${
-        location.hash ?? ''
-      }`.replace(/^\/login.*/, '') || '/workspace';
-    const redirectTo = normalizeRedirectPath(rawPath, '/workspace');
-    navigate({ to: '/login', search: { redirect: redirectTo }, replace: true });
-  }, [error, location.pathname, location.search, location.hash, navigate]);
+    goToLogin(navigate);
+  }, [error, navigate]);
 
   if (isAuthError(error)) {
     return (
       <Envelope
         title="Oops"
-        message="Redirecting to sign in…"
-        onRetry={undefined}
+        message="You are not signed in or your session expired."
+        onSignIn={() => goToLogin(navigate)}
       />
     );
   }

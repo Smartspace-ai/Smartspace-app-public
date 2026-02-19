@@ -12,8 +12,9 @@ import {
 
 import { isInTeams as detectIsInTeams } from '@/platform/auth/msalConfig';
 import {
-  setRuntimeIsInTeams,
   setRuntimeIsGuestUser,
+  setRuntimeIsInTeams,
+  setRuntimeIsTeamsDesktop,
   setStoredUseMsalInTeams,
 } from '@/platform/auth/runtime';
 import { ssInfo, ssWarn } from '@/platform/log';
@@ -167,14 +168,20 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
           if (cancelled) return;
 
           const ctxLike = ctx as unknown as TeamsContextLike;
+          const clientType = ctxLike.host?.clientType;
+          const isDesktop =
+            clientType === 'desktop' ||
+            String(clientType).toLowerCase() === 'desktop';
           ssInfo('teams', 'Teams getContext success', {
             hasUser: !!ctxLike.user,
-            hostClientType: ctxLike.host?.clientType ?? null,
+            hostClientType: clientType ?? null,
+            isDesktop,
             appHost: ctxLike.app?.host?.name ?? null,
           });
           setTeamsContext(ctx);
           setTeamsUser(ctx.user ?? null);
           setTeamsTheme((ctxLike.app?.theme ?? 'default') as TeamsTheme);
+          setRuntimeIsTeamsDesktop(isDesktop);
 
           const isGuest = isGuestFromContext(ctx);
           setRuntimeIsGuestUser(isGuest);
