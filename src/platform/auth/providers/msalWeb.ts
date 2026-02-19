@@ -9,6 +9,9 @@ import { ssInfo, ssWarn } from '@/platform/log';
 import { setStoredUseMsalInTeams } from '../runtime';
 import { AuthAdapter, GetTokenOptions } from '../types';
 
+/** Shared in-flight popup promise to prevent AADSTS50196 (client request loop). */
+let inFlightPopupPromise: Promise<string> | null = null;
+
 export function createMsalWebAdapter(): AuthAdapter {
   const msalInstance = getMsalInstance();
   async function ensureActive() {
@@ -43,30 +46,35 @@ export function createMsalWebAdapter(): AuthAdapter {
         ssWarn('auth:web', 'acquireTokenSilent failed', e);
         if (opts?.silentOnly && !isInTeams())
           throw new Error('Silent token failed');
-        // Use prompt: 'none' to reuse existing session without showing account picker.
-        // Only use select_account when user must re-authenticate.
-        const account = msalInstance.getActiveAccount();
-        const popupRequest = account
-          ? { ...loginRequest, account }
-          : interactiveLoginRequest;
-        let r;
-        try {
-          r = await msalInstance.acquireTokenPopup(popupRequest);
-        } catch (popupErr) {
-          const needsInteraction =
-            popupErr &&
-            typeof popupErr === 'object' &&
-            'errorCode' in popupErr &&
-            (popupErr.errorCode === 'interaction_required' ||
-              popupErr.errorCode === 'login_required');
-          if (needsInteraction && account) {
-            r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
-          } else {
-            throw popupErr;
+        // Deduplicate: concurrent callers share one popup to avoid AADSTS50196 (client request loop).
+        if (inFlightPopupPromise) return inFlightPopupPromise;
+        inFlightPopupPromise = (async () => {
+          const account = msalInstance.getActiveAccount();
+          const popupRequest = account
+            ? { ...loginRequest, account }
+            : interactiveLoginRequest;
+          let r;
+          try {
+            r = await msalInstance.acquireTokenPopup(popupRequest);
+          } catch (popupErr) {
+            const needsInteraction =
+              popupErr &&
+              typeof popupErr === 'object' &&
+              'errorCode' in popupErr &&
+              (popupErr.errorCode === 'interaction_required' ||
+                popupErr.errorCode === 'login_required');
+            if (needsInteraction && account) {
+              r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
+            } else {
+              throw popupErr;
+            }
           }
-        }
-        if (isInTeams()) setStoredUseMsalInTeams(true);
-        return r.accessToken;
+          if (isInTeams()) setStoredUseMsalInTeams(true);
+          return r.accessToken;
+        })().finally(() => {
+          inFlightPopupPromise = null;
+        });
+        return inFlightPopupPromise;
       }
     },
     async getSession() {
