@@ -1,10 +1,11 @@
 // src/app/AppProviders.tsx
 import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ReactNode } from 'react';
 
-import { AuthProvider, useAuthSession } from '@/platform/auth/session';
+import { AuthProvider, useAuth } from '@/platform/auth/session';
+import { sessionQueryOptions } from '@/platform/auth/sessionQuery';
 import { queryClient } from '@/platform/reactQueryClient';
 import { RealtimeProvider } from '@/platform/realtime/RealtimeProvider';
 
@@ -14,12 +15,12 @@ import { SidebarProvider } from '@/shared/ui/mui-compat/sidebar';
 import { TeamsProvider } from './providers';
 
 function RealtimeBridge({ children }: { children: ReactNode }) {
-  const { adapter, session, loading } = useAuthSession();
-  // you can also derive scopes here if you want a single place
-  const getAccessToken = (scopes?: string[]) => adapter.getAccessToken({ scopes, silentOnly: true });
+  const adapter = useAuth();
+  const { data: session, isLoading } = useQuery(sessionQueryOptions());
+  const getAccessToken = (scopes?: string[]) =>
+    adapter.getAccessToken({ scopes, silentOnly: true });
   // Mount realtime only when a session exists to avoid negotiate loops
-  if (loading) return children;
-  if (!session) return children;
+  if (isLoading || !session) return children;
   return (
     <RealtimeProvider getAccessToken={getAccessToken}>
       {children}

@@ -6,7 +6,24 @@ import { createTeamsNaaAdapter } from './providers/teamsNaa';
 import { getAuthRuntimeState, getStoredUseMsalInTeams } from './runtime';
 import type { AuthAdapter } from './types';
 
-export function createAuthAdapter(): AuthAdapter {
+let cached: { adapter: AuthAdapter; key: string } | null = null;
+
+function adapterKey(): string {
+  const r = getAuthRuntimeState();
+  const force = import.meta.env.VITE_TEAMS_USE_MSAL === 'true';
+  return `${r.isInTeams}-${
+    r.isGuestUser
+  }-${force}-${getStoredUseMsalInTeams()}`;
+}
+
+/**
+ * Returns a singleton AuthAdapter cached by runtime state fingerprint.
+ * When Teams detection or guest status changes, the cached adapter is replaced.
+ */
+export function getAuthAdapter(): AuthAdapter {
+  const key = adapterKey();
+  if (cached?.key === key) return cached.adapter;
+
   const runtime = getAuthRuntimeState();
   const forceMsalInTeams = import.meta.env.VITE_TEAMS_USE_MSAL === 'true';
   const inTeams = runtime.isInTeams === true || isInTeams();
@@ -18,7 +35,7 @@ export function createAuthAdapter(): AuthAdapter {
 
   ssInfoAlways(
     'auth',
-    `createAuthAdapter -> ${useTeamsNaa ? 'teams-naa' : 'web/msal'}`,
+    `getAuthAdapter -> ${useTeamsNaa ? 'teams-naa' : 'web/msal'}`,
     {
       inTeams,
       forceMsalInTeams,
@@ -27,8 +44,15 @@ export function createAuthAdapter(): AuthAdapter {
     }
   );
 
-  return useTeamsNaa ? createTeamsNaaAdapter() : createMsalWebAdapter();
+  const adapter = useTeamsNaa
+    ? createTeamsNaaAdapter()
+    : createMsalWebAdapter();
+  cached = { adapter, key };
+  return adapter;
 }
+
+/** @deprecated Use `getAuthAdapter()` instead. */
+export const createAuthAdapter = getAuthAdapter;
 export * from './msalClient';
 export * from './naaClient';
 export * from './providers/msalWeb';
@@ -37,4 +61,5 @@ export * from './session';
 export * from './runtime';
 export * from './scopes';
 export * from './errors';
+export * from './sessionQuery';
 export * from './types';

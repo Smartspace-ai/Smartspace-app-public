@@ -1,14 +1,15 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import React, {
   createContext,
   useContext,
   useEffect,
   useMemo,
-  useState,
   useSyncExternalStore,
 } from 'react';
 
-import { createAuthAdapter } from './index';
+import { getAuthAdapter } from './index';
 import { getAuthRuntimeState, subscribeAuthRuntime } from './runtime';
+import { SESSION_QUERY_KEY, sessionQueryOptions } from './sessionQuery';
 import type { AuthAdapter } from './types';
 
 const AuthCtx = createContext<AuthAdapter | null>(null);
@@ -19,12 +20,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getAuthRuntimeState,
     getAuthRuntimeState
   );
-  // Recreate adapter when runtime state changes (e.g. guest detection completes)
+  const qc = useQueryClient();
+
+  // Singleton adapter — getAuthAdapter() returns cached instance keyed by runtime state
   const adapter = useMemo(
-    () => createAuthAdapter(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- runtime.isInTeams/isGuestUser trigger re-evaluation of adapter selection
+    () => getAuthAdapter(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runtime.isInTeams/isGuestUser trigger adapter re-evaluation
     [runtime.isInTeams, runtime.isGuestUser]
   );
+
+  // When runtime state changes (Teams detected, guest detected), invalidate session
+  // so it re-fetches with the correct adapter
+  useEffect(() => {
+    qc.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+  }, [runtime.isInTeams, runtime.isGuestUser, qc]);
+
   return <AuthCtx.Provider value={adapter}>{children}</AuthCtx.Provider>;
 }
 
@@ -35,47 +45,24 @@ export function useAuth() {
 }
 
 /**
- * Lightweight session helper on top of the main-branch auth adapter.
- * This keeps the auth implementation aligned with `main` while preserving
- * existing app code that needs a cached session/user display name.
+ * Session state backed by React Query — cached, deduped, and invalidatable.
+ * Replaces the old useEffect-based session fetch.
  */
 export function useAuthSession() {
   const adapter = useAuth();
-  const [session, setSession] = useState<{
-    accountId?: string;
-    displayName?: string;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    adapter
-      .getSession()
-      .then((s) => {
-        if (mounted) setSession(s);
-      })
-      .catch(() => {
-        if (mounted) setSession(null);
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [adapter]);
-
+  const { data: session = null, isLoading: loading } = useQuery(
+    sessionQueryOptions()
+  );
   return { adapter, session, loading };
 }
 
 export function useUserId() {
-  const { session } = useAuthSession();
+  const { data: session } = useQuery(sessionQueryOptions());
   return session?.accountId ?? 'anonymous';
 }
 
 export function useUserDisplayName() {
-  const { session } = useAuthSession();
+  const { data: session } = useQuery(sessionQueryOptions());
   return session?.displayName ?? 'You';
 }
 

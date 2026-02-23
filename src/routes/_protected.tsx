@@ -1,7 +1,11 @@
 // src/routes/_protected.tsx
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
-import { createAuthAdapter } from '@/platform/auth';
+import { getAuthAdapter } from '@/platform/auth';
+import {
+  SESSION_QUERY_KEY,
+  sessionQueryOptions,
+} from '@/platform/auth/sessionQuery';
 import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
 import { ProtectedErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
@@ -11,19 +15,24 @@ export const Route = createFileRoute('/_protected')({
   // Runs on navigation (and on intent prefetch if enabled).
   // If you find redirects during hover annoying, disable preload on links into /_protected.
   errorComponent: ProtectedErrorBoundary,
-  beforeLoad: async ({ location }) => {
-    const auth = createAuthAdapter();
-    const session = await auth.getSession();
+  beforeLoad: async ({ context, location }) => {
     const redirectTo = normalizeRedirectPath(
       formatLocationHref(location),
       '/workspace'
     );
+
+    // Cached check — instant if session was recently verified (React Query staleTime)
+    const session = await context.queryClient.ensureQueryData(
+      sessionQueryOptions()
+    );
     if (!session)
       throw redirect({ to: '/login', search: { redirect: redirectTo } });
+
+    // Token validation (MSAL/NAA have their own caching)
     try {
-      // Ensure we can acquire an access token silently; otherwise redirect to login
-      await auth.getAccessToken({ silentOnly: true });
+      await getAuthAdapter().getAccessToken({ silentOnly: true });
     } catch {
+      context.queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
       throw redirect({ to: '/login', search: { redirect: redirectTo } });
     }
   },
