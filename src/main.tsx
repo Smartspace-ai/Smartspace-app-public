@@ -1,5 +1,9 @@
 // src/main.tsx
-import { EventMessage } from '@azure/msal-browser';
+import {
+  AuthenticationResult,
+  EventMessage,
+  EventType,
+} from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
@@ -90,18 +94,34 @@ if (!msal) {
   msal
     .initialize()
     .then(async () => {
-      // Handle redirect promise to process authentication responses
-      await msal.handleRedirectPromise();
+      // Handle redirect promise to process authentication responses.
+      // IMPORTANT: Use the result to set the correct active account —
+      // with multiple cached accounts, accounts[0] may be stale.
+      const redirectResult = await msal.handleRedirectPromise();
 
-      const accounts = msal.getAllAccounts();
-      if (accounts.length > 0) {
-        msal.setActiveAccount(accounts[0]);
+      if (redirectResult?.account) {
+        // Redirect just completed — use the authenticated account
+        msal.setActiveAccount(redirectResult.account);
+      } else {
+        // Normal page load (no redirect) — pick existing account
+        const accounts = msal.getAllAccounts();
+        if (accounts.length > 0) {
+          msal.setActiveAccount(accounts[0]);
+        }
       }
 
-      msal.addEventCallback((_event: EventMessage) => {
-        const accountsNow = msal.getAllAccounts();
-        if (accountsNow.length > 0) {
-          msal.setActiveAccount(accountsNow[0]);
+      // Update active account only on successful auth events (not every event),
+      // using the event payload to avoid blindly picking accounts[0].
+      msal.addEventCallback((event: EventMessage) => {
+        if (
+          event.eventType === EventType.LOGIN_SUCCESS ||
+          event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS ||
+          event.eventType === EventType.SSO_SILENT_SUCCESS
+        ) {
+          const payload = event.payload as AuthenticationResult | null;
+          if (payload?.account) {
+            msal.setActiveAccount(payload.account);
+          }
         }
       });
 
