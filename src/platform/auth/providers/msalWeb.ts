@@ -11,6 +11,8 @@ import { ssInfo, ssWarn } from '@/platform/log';
 import { setStoredUseMsalInTeams } from '../runtime';
 import { AuthAdapter, GetTokenOptions, SignInOptions } from '../types';
 
+/** Shared in-flight token promise to deduplicate concurrent acquireTokenSilent calls. */
+let inFlightTokenPromise: Promise<string> | null = null;
 /** Shared in-flight popup promise to prevent AADSTS50196 (client request loop). */
 let inFlightPopupPromise: Promise<string> | null = null;
 /** Cooldown after popup: avoid starting another popup for this many ms. */
@@ -38,101 +40,97 @@ export function createMsalWebAdapter(): AuthAdapter {
         await msalInstance.loginPopup(interactiveLoginRequest);
         await ensureActive();
       }
-      try {
-        const account = msalInstance.getActiveAccount();
-        if (!account) throw new Error('No active account');
-        const r = await msalInstance.acquireTokenSilent({
-          ...loginRequest,
-          account,
-          // In Teams iframe, hidden-iframe token renewal is blocked by third-party
-          // cookie restrictions. Limit to cache + refresh-token (both work in any context).
-          ...(isInTeams() && {
-            cacheLookupPolicy: CacheLookupPolicy.AccessTokenAndRefreshToken,
-          }),
-        });
-        if (isInTeams()) setStoredUseMsalInTeams(true);
-        return r.accessToken;
-      } catch (e) {
-        ssWarn('auth:web', 'acquireTokenSilent failed', e);
-        // In Teams, try ssoSilent (hidden iframe — completely invisible) before
-        // giving up on silent auth. Works when the user has an active Azure AD
-        // session but the MSAL token cache is empty/partitioned.
-        if (isInTeams() && opts?.silentOnly) {
+      // Deduplicate: concurrent callers share one token acquisition.
+      if (inFlightTokenPromise) return inFlightTokenPromise;
+
+      inFlightTokenPromise = (async () => {
+        try {
           const account = msalInstance.getActiveAccount();
-          const hint =
-            account?.username ?? msalInstance.getAllAccounts()[0]?.username;
-          if (hint) {
-            try {
-              ssInfo('auth:web', 'trying ssoSilent fallback', {
-                loginHint: hint,
-              });
-              const r = await msalInstance.ssoSilent({
-                ...loginRequest,
-                loginHint: hint,
-              });
-              if (r?.account) msalInstance.setActiveAccount(r.account);
-              setStoredUseMsalInTeams(true);
-              return r.accessToken;
-            } catch (ssoErr) {
-              ssWarn('auth:web', 'ssoSilent fallback failed', ssoErr);
-            }
-          }
-        }
-        if (opts?.silentOnly) throw new Error('Silent token failed');
-        // Cooldown: after a popup, retry silent first (token should be cached). Avoids AADSTS50196 loop.
-        const now = Date.now();
-        if (now < popupCooldownUntil) {
-          await new Promise((r) => setTimeout(r, 500));
-          const account = msalInstance.getActiveAccount();
-          if (account) {
-            try {
-              const r = await msalInstance.acquireTokenSilent({
-                ...loginRequest,
-                account,
-                ...(isInTeams() && {
-                  cacheLookupPolicy:
-                    CacheLookupPolicy.AccessTokenAndRefreshToken,
-                }),
-              });
-              if (isInTeams()) setStoredUseMsalInTeams(true);
-              return r.accessToken;
-            } catch {
-              /* fall through to throw */
-            }
-          }
-          throw new Error('Silent token failed');
-        }
-        // Deduplicate: concurrent callers share one popup.
-        if (inFlightPopupPromise) return inFlightPopupPromise;
-        inFlightPopupPromise = (async () => {
-          const account = msalInstance.getActiveAccount();
-          const popupRequest = account
-            ? { ...loginRequest, account }
-            : interactiveLoginRequest;
-          let r;
-          try {
-            r = await msalInstance.acquireTokenPopup(popupRequest);
-          } catch (popupErr) {
-            const needsInteraction =
-              popupErr &&
-              typeof popupErr === 'object' &&
-              'errorCode' in popupErr &&
-              (popupErr.errorCode === 'interaction_required' ||
-                popupErr.errorCode === 'login_required');
-            if (needsInteraction && account) {
-              r = await msalInstance.acquireTokenPopup(interactiveLoginRequest);
-            } else {
-              throw popupErr;
-            }
-          }
+          if (!account) throw new Error('No active account');
+          const r = await msalInstance.acquireTokenSilent({
+            ...loginRequest,
+            account,
+            // In Teams iframe, hidden-iframe token renewal is blocked by third-party
+            // cookie restrictions. Limit to cache + refresh-token (both work in any context).
+            ...(isInTeams() && {
+              cacheLookupPolicy: CacheLookupPolicy.AccessTokenAndRefreshToken,
+            }),
+          });
           if (isInTeams()) setStoredUseMsalInTeams(true);
-          popupCooldownUntil = Date.now() + POPUP_COOLDOWN_MS;
           return r.accessToken;
-        })().finally(() => {
-          inFlightPopupPromise = null;
-        });
-        return inFlightPopupPromise;
-      }
+        } catch (e) {
+          ssWarn('auth:web', 'acquireTokenSilent failed', e);
+          // In Teams, try ssoSilent (hidden iframe — completely invisible) before
+          // giving up on silent auth. Works when the user has an active Azure AD
+          // session but the MSAL token cache is empty/partitioned.
+          if (isInTeams() && opts?.silentOnly) {
+            const account = msalInstance.getActiveAccount();
+            const hint =
+              account?.username ?? msalInstance.getAllAccounts()[0]?.username;
+            if (hint) {
+              try {
+                ssInfo('auth:web', 'trying ssoSilent fallback', {
+                  loginHint: hint,
+                });
+                const r = await msalInstance.ssoSilent({
+                  ...loginRequest,
+                  loginHint: hint,
+                });
+                if (r?.account) msalInstance.setActiveAccount(r.account);
+                setStoredUseMsalInTeams(true);
+                return r.accessToken;
+              } catch (ssoErr) {
+                ssWarn('auth:web', 'ssoSilent fallback failed', ssoErr);
+              }
+            }
+          }
+          if (opts?.silentOnly) throw new Error('Silent token failed');
+          // Cooldown: after a popup, retry silent first (token should be cached). Avoids AADSTS50196 loop.
+          const now = Date.now();
+          if (now < popupCooldownUntil) {
+            await new Promise((r) => setTimeout(r, 500));
+            const account = msalInstance.getActiveAccount();
+            if (account) {
+              try {
+                const r = await msalInstance.acquireTokenSilent({
+                  ...loginRequest,
+                  account,
+                  ...(isInTeams() && {
+                    cacheLookupPolicy:
+                      CacheLookupPolicy.AccessTokenAndRefreshToken,
+                  }),
+                });
+                if (isInTeams()) setStoredUseMsalInTeams(true);
+                return r.accessToken;
+              } catch {
+                /* fall through to throw */
+              }
+            }
+            throw new Error('Silent token failed');
+          }
+          // Deduplicate: concurrent callers share one popup.
+          if (inFlightPopupPromise) return inFlightPopupPromise;
+          inFlightPopupPromise = (async () => {
+            const account = msalInstance.getActiveAccount();
+            // Use interactive request directly (with account if available) to avoid
+            // a double-popup (prompt:none → fail → prompt:select_account) that triggers AADSTS50196.
+            const popupRequest = account
+              ? { ...interactiveLoginRequest, account }
+              : interactiveLoginRequest;
+            const r = await msalInstance.acquireTokenPopup(popupRequest);
+            if (isInTeams()) setStoredUseMsalInTeams(true);
+            popupCooldownUntil = Date.now() + POPUP_COOLDOWN_MS;
+            return r.accessToken;
+          })().finally(() => {
+            inFlightPopupPromise = null;
+          });
+          return inFlightPopupPromise;
+        }
+      })().finally(() => {
+        inFlightTokenPromise = null;
+      });
+
+      return inFlightTokenPromise;
     },
     async getSession() {
       await ensureActive();
@@ -173,31 +171,19 @@ export function createMsalWebAdapter(): AuthAdapter {
               return;
             }
           } catch (ssoErr) {
-            ssInfo('auth:web', 'ssoSilent failed, trying silent popup', ssoErr);
-          }
-        }
-        // 2) loginPopup with prompt:'none' + loginHint — brief popup flash, auto-closes.
-        if (hint) {
-          try {
-            const silentResult = await msalInstance.loginPopup({
-              ...loginRequest,
-              loginHint: hint,
-            });
-            if (silentResult?.account) {
-              msalInstance.setActiveAccount(silentResult.account);
-              return;
-            }
-          } catch (silentErr) {
             ssInfo(
               'auth:web',
-              'silent loginPopup failed, falling back to interactive',
-              silentErr
+              'ssoSilent failed, falling back to interactive popup',
+              ssoErr
             );
           }
         }
-        // Fall back to interactive popup (account selection)
+        // 2) Interactive popup — skip prompt:none loginPopup to avoid
+        //    extra Azure AD requests that trigger AADSTS50196 (client request loop).
         const popupResult = await msalInstance.loginPopup(
-          interactiveLoginRequest
+          hint
+            ? { ...interactiveLoginRequest, loginHint: hint }
+            : interactiveLoginRequest
         );
         if (popupResult?.account) {
           msalInstance.setActiveAccount(popupResult.account);
