@@ -27,121 +27,58 @@ export function Login({
     teamsContext,
     isInTeams: isInTeamsFromProvider,
   } = useTeams();
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showGenericError, setShowGenericError] = useState(false);
-  const [session, setSession] = useState<{
-    accountId?: string;
-    displayName?: string;
-  } | null>(null);
   const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
-  // Check for existing session on mount
-  useEffect(() => {
-    if (isInTeams() && !isTeamsInitialized) return;
-    const checkSession = async () => {
-      try {
-        ssInfo('login', 'checkSession start', {
-          isInTeams_msalConfig: (() => {
-            try {
-              return isInTeams();
-            } catch {
-              return null;
-            }
-          })(),
-          isTeamsInitialized,
-        });
-        if (isInTeams()) {
-          setIsLoading(true);
-          setShowGenericError(false);
-          setError(null);
-        }
-        const currentSession = await auth.getSession();
-        // Only auto-navigate when we can also acquire a token silently.
-        // Otherwise we can end up in a /login <-> /_protected redirect loop.
-        if (currentSession) {
-          try {
-            await auth.getAccessToken({ silentOnly: true });
-            setSession(currentSession);
-            ssInfo('login', 'session+token OK -> navigate', { to: redirectTo });
-            onNavigate?.(redirectTo);
-            return;
-          } catch (e) {
-            // Treat as not signed in; user needs interactive sign-in.
-            setSession(null);
-            if (isInTeams()) {
-              const msg = e instanceof Error ? e.message : String(e);
-              ssWarn('login', 'token acquisition failed (Teams)', msg);
-              setError(`Teams token acquisition failed: ${msg}`);
-            }
-          }
-        } else {
-          setSession(null);
-          // If we got no session, try to acquire a token anyway so we can surface the real failure.
-          if (isInTeams()) {
-            try {
-              await auth.getAccessToken({ silentOnly: true });
-            } catch (e) {
-              const msg = e instanceof Error ? e.message : String(e);
-              ssWarn(
-                'login',
-                'session missing; token acquisition failed (Teams)',
-                msg
-              );
-              setError(
-                `Teams session missing; token acquisition failed: ${msg}`
-              );
-            }
-          }
-        }
-        if (isInTeams()) {
-          setShowGenericError(true);
-          setError(
-            (prev) => prev ?? 'Unable to sign in with your Teams account.'
-          );
-          setIsLoading(false);
-        }
-      } catch (err) {
-        ssWarn('login', 'checkSession threw', err);
-        // No existing session, continue with login flow
-        if (isInTeams()) {
-          setShowGenericError(true);
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Unable to sign in with your Teams account.'
-          );
-          setIsLoading(false);
-        }
-      }
-    };
-    checkSession();
-  }, [auth, redirectTo, onNavigate, isTeamsInitialized]);
 
-  // Auto-attempt Teams authentication when silent token acquisition fails.
+  // The route beforeLoad already handles "session+token exists → redirect away".
+  // This component only renders when authentication IS needed.
+
+  // Teams auto-login: one attempt after Teams SDK initializes
   useEffect(() => {
     if (
       !isInTeams() ||
       !isTeamsInitialized ||
       isLoading ||
-      hasAttemptedAutoLogin ||
-      session
+      hasAttemptedAutoLogin
     ) {
       return;
     }
 
     setHasAttemptedAutoLogin(true);
     setIsLoading(true);
-    setShowGenericError(false);
     setError(null);
 
+    ssInfo('login', 'auto-attempting Teams sign-in', {
+      isTeamsInitialized,
+      teamsUser: teamsUser ?? null,
+    });
+
     auth
-      .signIn()
-      .then(() => onNavigate?.(redirectTo))
+      .signIn({ loginHint: teamsUser?.userPrincipalName })
+      .then(() => {
+        ssInfo('login', 'Teams auto-login succeeded -> navigate', {
+          to: redirectTo,
+        });
+        onNavigate?.(redirectTo);
+      })
       .catch((err: unknown) => {
         const msg =
           err instanceof Error ? err.message : 'Authentication failed';
+        // interaction_in_progress means another MSAL flow hasn't fully cleared.
+        // Don't show an error or retry (retrying opens a second popup).
+        // Just stop loading so the user can click "Try again" when ready.
+        if (msg.includes('interaction_in_progress')) {
+          ssInfo(
+            'login',
+            'interaction_in_progress — waiting for MSAL to clear'
+          );
+          setIsLoading(false);
+          return;
+        }
+        ssWarn('login', 'Teams auto-login failed', msg);
         setError(msg);
-        setShowGenericError(true);
         setIsLoading(false);
       });
   }, [
@@ -149,46 +86,34 @@ export function Login({
     isTeamsInitialized,
     isLoading,
     hasAttemptedAutoLogin,
-    session,
+    teamsUser,
     redirectTo,
     onNavigate,
   ]);
 
-  // Avoid flashing the login UI if we already have a session
-  if (session) {
-    return null;
-  }
-
   // Fallback manual login for browser or if Teams SSO fails
   const handleManualLogin = async () => {
-    if (session) {
-      onNavigate?.(redirectTo);
-      return;
-    }
+    if (isLoading) return;
 
-    if (isLoading) {
-      return;
-    }
-
-    setShowGenericError(false); // Clear previous errors
     setIsLoading(true);
     setError(null);
 
     try {
-      await auth.signIn();
-      // For web auth (MSAL), signIn() performs a redirect, so we don't navigate here
-      // For Teams auth, the redirect will be handled by the auto-login effect
+      await auth.signIn({ loginHint: teamsUser?.userPrincipalName });
+      // For web auth (MSAL), signIn() performs a redirect, so we don't reach here
+      // For Teams (popup), sign-in succeeded — navigate to the app
+      onNavigate?.(redirectTo);
     } catch (authError: unknown) {
-      // Show generic error on failure
       setError(
         authError instanceof Error ? authError.message : 'Authentication failed'
       );
-      setShowGenericError(true);
       setIsLoading(false);
       // eslint-disable-next-line no-console
       console.error('[Login] Manual login failed:', authError);
     }
   };
+
+  const hasError = !!error;
 
   const getButtonText = () => {
     if (isLoading) {
@@ -202,10 +127,7 @@ export function Login({
       return 'Signing in...';
     }
 
-    if (showGenericError || error) {
-      return 'Try Again';
-    }
-
+    if (hasError) return 'Try Again';
     return 'Sign in';
   };
 
@@ -237,11 +159,9 @@ export function Login({
     );
   };
 
-  // Diagnostics removed for production
-
-  // Prominent Teams error panel content
-  const showTeamsErrorPanel = isInTeams() && (showGenericError || !!error);
-  const canShowDiag = showTeamsErrorPanel; // always show diagnostics when Teams sign-in fails
+  // Teams diagnostics panel — hidden while sign-in popup is open
+  const showTeamsErrorPanel = isInTeams() && hasError && !isLoading;
+  const canShowDiag = showTeamsErrorPanel;
 
   const diag = {
     href: (() => {
@@ -284,7 +204,6 @@ export function Login({
     })(),
     build: {
       mode: import.meta.env.MODE,
-      // Optional: set this in CI for easier “which build is deployed?” checks.
       sha:
         (import.meta.env as unknown as { VITE_BUILD_SHA?: string })
           ?.VITE_BUILD_SHA ?? null,
@@ -324,10 +243,8 @@ export function Login({
     const text = JSON.stringify(payload, null, 2);
     try {
       await navigator.clipboard.writeText(text);
-      // Give lightweight feedback without adding new UI deps
       setError((prev) => prev ?? 'Diagnostics copied to clipboard.');
     } catch {
-      // Clipboard may be blocked in some Teams contexts; fall back to showing text.
       setError(
         (prev) =>
           prev ??
@@ -360,6 +277,13 @@ export function Login({
                   {canShowDiag ? (
                     <div className="mt-2">
                       <div className="flex gap-2 flex-wrap">
+                        <Button
+                          onClick={handleManualLogin}
+                          disabled={isLoading}
+                          className="text-xs"
+                        >
+                          {isLoading ? 'Signing in…' : 'Try again'}
+                        </Button>
                         <Button
                           onClick={enableDebugAndReload}
                           className="text-xs"
@@ -404,10 +328,8 @@ export function Login({
             </Button>
           )}
 
-          {/* Show error message even while loading to surface Teams/MSAL details on mobile */}
-          {(showGenericError || error) && getErrorMessage()}
-
-          {/* Diagnostics removed for production */}
+          {/* Show error message only when not loading (hide while popup is open) */}
+          {hasError && !isLoading && getErrorMessage()}
         </div>
       </div>
     </div>
