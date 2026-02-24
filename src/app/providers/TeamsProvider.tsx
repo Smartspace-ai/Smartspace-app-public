@@ -11,20 +11,10 @@ import {
 } from 'react';
 
 import { isInTeams as detectIsInTeams } from '@/platform/auth/msalConfig';
-import {
-  setRuntimeIsGuestUser,
-  setRuntimeIsInTeams,
-  setStoredUseMsalInTeams,
-} from '@/platform/auth/runtime';
+import { setRuntimeIsInTeams } from '@/platform/auth/runtime';
 import { ssInfo, ssWarn } from '@/platform/log';
 
 type TeamsTheme = 'default' | 'dark' | 'contrast';
-
-function isGuestFromContext(ctx: app.Context): boolean {
-  const upn =
-    (ctx?.user as { userPrincipalName?: string })?.userPrincipalName ?? '';
-  return upn.includes('#EXT#') || upn.includes('#ext#');
-}
 
 type TeamsContextLike = {
   user?: unknown;
@@ -175,12 +165,6 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
           setTeamsContext(ctx);
           setTeamsUser(ctx.user ?? null);
           setTeamsTheme((ctxLike.app?.theme ?? 'default') as TeamsTheme);
-
-          const isGuest = isGuestFromContext(ctx);
-          setRuntimeIsGuestUser(isGuest);
-          if (isGuest) {
-            setStoredUseMsalInTeams(true);
-          }
 
           // theme changes (no unregister API, guard with mounted ref)
           app.registerOnThemeChangeHandler((theme) => {

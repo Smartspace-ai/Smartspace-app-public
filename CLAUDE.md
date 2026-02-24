@@ -72,7 +72,6 @@ Dual-mode auth via `AuthAdapter` interface:
 - **MsalWebAdapter** (`src/platform/auth/providers/msalWeb.ts`) — MSAL popup/redirect for browser and Teams with MSAL flag
 - **TeamsNaaAdapter** (`src/platform/auth/providers/teamsNaa.ts`) — Teams Native App Authentication (SSO)
 - Runtime detection in `src/platform/auth/runtime.ts`; adapter selected in `src/platform/auth/session.tsx`
-- Guest users (UPN contains `#EXT#`) switch to MSAL
 - `VITE_TEAMS_USE_MSAL=true` forces MSAL in Teams (cross-tenant scenarios)
 
 ### API Layer

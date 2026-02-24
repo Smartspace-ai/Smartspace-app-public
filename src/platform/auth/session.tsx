@@ -25,15 +25,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Singleton adapter — getAuthAdapter() returns cached instance keyed by runtime state
   const adapter = useMemo(
     () => getAuthAdapter(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- runtime.isInTeams/isGuestUser trigger adapter re-evaluation
-    [runtime.isInTeams, runtime.isGuestUser]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runtime.isInTeams triggers adapter re-evaluation
+    [runtime.isInTeams]
   );
 
-  // When runtime state changes (Teams detected, guest detected), invalidate session
+  // When runtime state changes (Teams detected), invalidate session
   // so it re-fetches with the correct adapter
   useEffect(() => {
     qc.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
-  }, [runtime.isInTeams, runtime.isGuestUser, qc]);
+  }, [runtime.isInTeams, qc]);
 
   return <AuthCtx.Provider value={adapter}>{children}</AuthCtx.Provider>;
 }
