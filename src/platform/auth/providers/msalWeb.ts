@@ -2,6 +2,7 @@ import { CacheLookupPolicy } from '@azure/msal-browser';
 
 import { getMsalInstance } from '@/platform/auth/msalClient';
 import {
+  handleTrailingSlash,
   interactiveLoginRequest,
   isInTeams,
   loginRequest,
@@ -190,7 +191,10 @@ export function createMsalWebAdapter(): AuthAdapter {
         }
       } else {
         ssInfo('auth:web', 'signIn -> loginRedirect', { redirectUrl });
-        await msalInstance.loginRedirect(interactiveLoginRequest);
+        await msalInstance.loginRedirect({
+          ...interactiveLoginRequest,
+          redirectUri: handleTrailingSlash(window.location.origin),
+        });
       }
     },
     async signOut() {
