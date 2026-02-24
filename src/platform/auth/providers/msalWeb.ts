@@ -7,6 +7,10 @@ import {
   isInTeams,
   loginRequest,
 } from '@/platform/auth/msalConfig';
+import {
+  authenticateViaTeamsSdk,
+  setActiveAccountFromTeamsAuth,
+} from '@/platform/auth/teamsAuthHelper';
 import { ssInfo, ssWarn } from '@/platform/log';
 
 import { setStoredUseMsalInTeams } from '../runtime';
@@ -38,7 +42,12 @@ export function createMsalWebAdapter(): AuthAdapter {
       });
       if (!acct) {
         if (opts?.silentOnly) throw new Error('No active account');
-        await msalInstance.loginPopup(interactiveLoginRequest);
+        if (isInTeams()) {
+          const homeAccountId = await authenticateViaTeamsSdk();
+          setActiveAccountFromTeamsAuth(msalInstance, homeAccountId);
+        } else {
+          await msalInstance.loginPopup(interactiveLoginRequest);
+        }
         await ensureActive();
       }
       // Deduplicate: concurrent callers share one token acquisition.
@@ -112,16 +121,35 @@ export function createMsalWebAdapter(): AuthAdapter {
           // Deduplicate: concurrent callers share one popup.
           if (inFlightPopupPromise) return inFlightPopupPromise;
           inFlightPopupPromise = (async () => {
-            const account = msalInstance.getActiveAccount();
-            // Use interactive request directly (with account if available) to avoid
-            // a double-popup (prompt:none → fail → prompt:select_account) that triggers AADSTS50196.
-            const popupRequest = account
-              ? { ...interactiveLoginRequest, account }
-              : interactiveLoginRequest;
-            const r = await msalInstance.acquireTokenPopup(popupRequest);
-            if (isInTeams()) setStoredUseMsalInTeams(true);
-            popupCooldownUntil = Date.now() + POPUP_COOLDOWN_MS;
-            return r.accessToken;
+            if (isInTeams()) {
+              // Teams SDK popup flow instead of acquireTokenPopup
+              const account = msalInstance.getActiveAccount();
+              const hint = account?.username;
+              const homeAccountId = await authenticateViaTeamsSdk(hint);
+              setActiveAccountFromTeamsAuth(msalInstance, homeAccountId);
+              // After the popup, tokens are cached. Retry silent acquisition.
+              const retryAccount = msalInstance.getActiveAccount();
+              if (!retryAccount)
+                throw new Error('No active account after Teams auth');
+              const r = await msalInstance.acquireTokenSilent({
+                ...loginRequest,
+                account: retryAccount,
+                cacheLookupPolicy: CacheLookupPolicy.AccessTokenAndRefreshToken,
+              });
+              setStoredUseMsalInTeams(true);
+              popupCooldownUntil = Date.now() + POPUP_COOLDOWN_MS;
+              return r.accessToken;
+            } else {
+              const account = msalInstance.getActiveAccount();
+              // Use interactive request directly (with account if available) to avoid
+              // a double-popup (prompt:none → fail → prompt:select_account) that triggers AADSTS50196.
+              const popupRequest = account
+                ? { ...interactiveLoginRequest, account }
+                : interactiveLoginRequest;
+              const r = await msalInstance.acquireTokenPopup(popupRequest);
+              popupCooldownUntil = Date.now() + POPUP_COOLDOWN_MS;
+              return r.accessToken;
+            }
           })().finally(() => {
             inFlightPopupPromise = null;
           });
@@ -153,7 +181,7 @@ export function createMsalWebAdapter(): AuthAdapter {
           opts?.loginHint ??
           msalInstance.getActiveAccount()?.username ??
           msalInstance.getAllAccounts()[0]?.username;
-        ssInfo('auth:web', 'signIn -> loginPopup (Teams iframe)', {
+        ssInfo('auth:web', 'signIn (Teams/MSAL) start', {
           redirectUrl,
           hasLoginHint: !!hint,
         });
@@ -174,21 +202,15 @@ export function createMsalWebAdapter(): AuthAdapter {
           } catch (ssoErr) {
             ssInfo(
               'auth:web',
-              'ssoSilent failed, falling back to interactive popup',
+              'ssoSilent failed, falling back to Teams SDK auth popup',
               ssoErr
             );
           }
         }
-        // 2) Interactive popup — skip prompt:none loginPopup to avoid
-        //    extra Azure AD requests that trigger AADSTS50196 (client request loop).
-        const popupResult = await msalInstance.loginPopup(
-          hint
-            ? { ...interactiveLoginRequest, loginHint: hint }
-            : interactiveLoginRequest
-        );
-        if (popupResult?.account) {
-          msalInstance.setActiveAccount(popupResult.account);
-        }
+        // 2) Teams SDK popup flow — uses authentication.authenticate() which
+        //    opens a Teams-controlled popup (bypasses WebView2 popup blocking).
+        const homeAccountId = await authenticateViaTeamsSdk(hint);
+        setActiveAccountFromTeamsAuth(msalInstance, homeAccountId);
       } else {
         ssInfo('auth:web', 'signIn -> loginRedirect', { redirectUrl });
         await msalInstance.loginRedirect({

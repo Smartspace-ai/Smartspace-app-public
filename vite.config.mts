@@ -89,6 +89,11 @@ export default defineConfig({
       transformMixedEsModules: true,
     },
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        teamsAuthStart: path.resolve(__dirname, 'teams-auth-start.html'),
+        teamsAuthEnd: path.resolve(__dirname, 'teams-auth-end.html'),
+      },
       onwarn(warning, warn) {
         const w = warning as unknown as {
           message?: unknown;

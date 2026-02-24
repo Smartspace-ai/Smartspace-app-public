@@ -66,6 +66,18 @@ export const POPUP_REDIRECT_URI = `${handleTrailingSlash(
   window.location.origin
 )}auth-redirect.html`;
 
+/**
+ * Redirect URI used inside the Teams SDK authentication popup.
+ * After Azure AD authenticates the user, it redirects here where
+ * `handleRedirectPromise()` extracts the auth result and calls
+ * `authentication.notifySuccess()` to close the popup.
+ *
+ * Must be registered as a SPA redirect URI in the Azure AD app registration.
+ */
+export const TEAMS_AUTH_REDIRECT_URI = `${handleTrailingSlash(
+  window.location.origin
+)}teams-auth-end.html`;
+
 // Check if we're running in Teams
 const isInTeams = () => {
   const urlParams = new URLSearchParams(window.location.search);
