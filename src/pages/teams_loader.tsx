@@ -5,6 +5,7 @@ import { Logo } from '@/assets/logo';
 type TeamsLoaderProps = {
   message?: string;
 };
+//
 
 export function TeamsLoader({ message = 'Loading…' }: TeamsLoaderProps) {
   const brand = getBrandConfig();
