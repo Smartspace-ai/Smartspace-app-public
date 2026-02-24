@@ -6,6 +6,8 @@ export type AuthRuntimeError = {
   at: number;
 };
 
+const MSAL_IN_TEAMS_KEY = 'ss_teams_use_msal';
+
 export type AuthRuntimeState = {
   /** `null` until we have any signal; `true` inside Teams, `false` otherwise. */
   isInTeams: boolean | null;
@@ -14,7 +16,10 @@ export type AuthRuntimeState = {
 
 type Listener = () => void;
 
-let state: AuthRuntimeState = { isInTeams: null, lastError: null };
+let state: AuthRuntimeState = {
+  isInTeams: null,
+  lastError: null,
+};
 const listeners = new Set<Listener>();
 
 function emit() {
@@ -36,10 +41,27 @@ export function setRuntimeIsInTeams(isInTeams: boolean) {
   emit();
 }
 
-export function setRuntimeAuthError(error: { source: AuthRuntimeErrorSource; message: string } | null) {
+export function setRuntimeAuthError(
+  error: { source: AuthRuntimeErrorSource; message: string } | null
+) {
   const next = error ? { ...error, at: Date.now() } : null;
   state = { ...state, lastError: next };
   emit();
 }
 
+export function getStoredUseMsalInTeams(): boolean | null {
+  try {
+    const v = localStorage.getItem(MSAL_IN_TEAMS_KEY);
+    return v === '1' ? true : v === '0' ? false : null;
+  } catch {
+    return null;
+  }
+}
 
+export function setStoredUseMsalInTeams(useMsal: boolean) {
+  try {
+    localStorage.setItem(MSAL_IN_TEAMS_KEY, useMsal ? '1' : '0');
+  } catch {
+    /* ignore */
+  }
+}

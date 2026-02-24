@@ -1,26 +1,18 @@
 export type MessageThread = {
   id: string;
-  createdAt: Date | string;
+  createdAt: Date;
   createdBy: string;
   createdByUserId: string;
   isFlowRunning: boolean;
-  lastUpdated: string;
-  lastUpdatedAt: Date | string;
+  lastUpdatedAt: Date;
   lastUpdatedByUserId: string;
   name: string;
   totalMessages: number;
-  favorited?: boolean | null;
-  avatarName?: string | null;
-  workSpaceId?: string | null;
+  favorited: boolean;
+  workSpaceId: string;
 };
 
 export type ThreadsResponse = {
   data: MessageThread[];
   total: number;
 };
-
-
-
-
-
-

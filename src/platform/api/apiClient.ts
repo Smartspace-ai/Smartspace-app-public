@@ -1,11 +1,16 @@
 import axios, { AxiosHeaders } from 'axios';
 
-import { createAuthAdapter } from '@/platform/auth';
 import { AuthRequiredError } from '@/platform/auth/errors';
+import { getAuthAdapter } from '@/platform/auth/index';
 import { isInTeams } from '@/platform/auth/msalConfig';
-import { getAuthRuntimeState, setRuntimeAuthError } from '@/platform/auth/runtime';
+import {
+  getAuthRuntimeState,
+  setRuntimeAuthError,
+} from '@/platform/auth/runtime';
 import { getApiScopes } from '@/platform/auth/scopes';
+import { SESSION_QUERY_KEY } from '@/platform/auth/sessionQuery';
 import { ssInfo, ssWarn } from '@/platform/log';
+import { queryClient } from '@/platform/reactQueryClient';
 
 type SsConfig = {
   Chat_Api_Uri?: unknown;
@@ -26,7 +31,8 @@ function getSsWindow(): SsWindow | null {
 
 function getBaseUrl() {
   const w = getSsWindow();
-  const configBaseUrl = w?.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
+  const configBaseUrl =
+    w?.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
   return configBaseUrl ? configBaseUrl : '';
 }
 
@@ -47,7 +53,7 @@ webApi.interceptors.request.use(async (config) => {
     // ignore
   }
 
-  // Prefer runtime store (set by TeamsProvider) when available. Avoid writing to `window.*` for auth state.
+  // Prefer runtime store (set by TeamsProvider) when available.
   const runtime = getAuthRuntimeState();
   const inTeamsEnvironment = runtime.isInTeams === true || isInTeams();
 
@@ -58,9 +64,9 @@ webApi.interceptors.request.use(async (config) => {
   });
 
   // Unified auth strategy:
-  // - Always attach auth headers via the AuthAdapter
+  // - Always attach auth headers via the singleton AuthAdapter
   // - Never trigger interactive auth in the API layer (silentOnly only)
-  const auth = createAuthAdapter();
+  const auth = getAuthAdapter();
   const scopes = getApiScopes();
   try {
     const token = await auth.getAccessToken({ silentOnly: true, scopes });
@@ -70,14 +76,18 @@ webApi.interceptors.request.use(async (config) => {
     setRuntimeAuthError(null);
   } catch (e) {
     // Record diagnostic signal for UI troubleshooting (Teams login screen reads this)
-    setRuntimeAuthError({ source: 'api', message: String(e instanceof Error ? e.message : e) });
+    setRuntimeAuthError({
+      source: 'api',
+      message: String(e instanceof Error ? e.message : e),
+    });
+    // Invalidate session query so UI reacts to auth failure
+    queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
 
     ssWarn('api', 'silent token attach failed (blocking request)', e);
-    throw (e instanceof AuthRequiredError ? e : new AuthRequiredError());
+    throw e instanceof AuthRequiredError ? e : new AuthRequiredError();
   }
 
   return config;
 });
 
 export { webApi as api };
-

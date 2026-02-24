@@ -1,6 +1,6 @@
 {
-  "appId": "7b9f2f6e-4f5c-4b6c-9b2f-3d1d0a8c7c41",
-  "baseUrl": "https://stpublicui.z8.web.core.windows.net",
-  "appName": "SmartSpace Testing",
-  "version": "1.0.0"
+  "appId": "0fb4d246-796f-41ce-8782-21e7618b8427",
+  "baseUrl": "https://stpublicapp.z8.web.core.windows.net/",
+  "appName": "SmartSpace",
+  "version": "1.2.2"
 }

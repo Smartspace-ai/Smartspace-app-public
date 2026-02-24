@@ -1,5 +1,6 @@
-import { Logo } from '@/assets/logo';
 import { getBrandConfig } from '@/theme/branding';
+
+import { Logo } from '@/assets/logo';
 
 type TeamsLoaderProps = {
   message?: string;

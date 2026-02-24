@@ -14,8 +14,6 @@ import { useThreadsListVm } from '@/ui/threads/ThreadsList.vm';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
-// ✅ the shared VM used by the sidebar ThreadsPanel
-
 export default function ChatBotPage({
   workspaceId,
   threadId,
@@ -23,35 +21,41 @@ export default function ChatBotPage({
   workspaceId: string;
   threadId: string;
 }) {
-  // Workspaces list for initial workspace selection
   const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces();
   const { data: activeWorkspace } = useWorkspace(workspaceId);
+  const { firstThread, isInitialLoading: threadsInitialLoading } =
+    useThreadsListVm({
+      workspaceId,
+      pageSize: 30,
+    });
 
-  // ✅ Shared threads VM (same cache/pagination as sidebar)
-  const {
-    firstThread,
-    isInitialLoading: threadsInitialLoading,
-  } = useThreadsListVm({ workspaceId, pageSize: 30 });
-
-  // Note: routing/redirects are handled in route loaders, not here.
   void workspacesLoading;
   void workspaces;
   void firstThread;
   void threadsInitialLoading;
   void threadId;
 
-  const gradientClasses = useMemo(() => {
-    return getBackgroundGradientClasses({
-      tags: activeWorkspace?.tags,
-      name: activeWorkspace?.name,
-    });
-  }, [activeWorkspace?.tags, activeWorkspace?.name]);
+  const gradientClasses = useMemo(
+    () =>
+      getBackgroundGradientClasses({
+        tags: activeWorkspace?.tags,
+        name: activeWorkspace?.name,
+      }),
+    [activeWorkspace?.tags, activeWorkspace?.name]
+  );
 
   return (
     <>
-      <Stack direction="row" sx={{ height: '100dvh', width: '100vw', overflow: 'hidden', alignItems: 'stretch' }}>
+      <Stack
+        direction="row"
+        sx={{
+          height: '100dvh',
+          width: '100vw',
+          overflow: 'hidden',
+          alignItems: 'stretch',
+        }}
+      >
         <SidebarLeft />
-        {/* Middle column */}
         <Stack
           direction="column"
           data-ss-layer="chat-column"
@@ -65,6 +69,6 @@ export default function ChatBotPage({
         <SidebarRightPanel />
       </Stack>
       <Toaster />
-      </>
+    </>
   );
 }

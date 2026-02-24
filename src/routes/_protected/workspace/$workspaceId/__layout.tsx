@@ -1,12 +1,19 @@
 // routes/_protected/workspace/$workspaceId/__layout.tsx
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 
-import { queryClient } from '@/platform/reactQueryClient';
-import { RouteIdsProvider , useRouteIds } from '@/platform/routing/RouteIdsProvider';
+import {
+  RouteIdsProvider,
+  useRouteIds,
+} from '@/platform/routing/RouteIdsProvider';
 
-import { useWorkspace, workspaceDetailOptions } from '@/domains/workspaces/queries';
+import {
+  useWorkspace,
+  workspaceDetailOptions,
+} from '@/domains/workspaces/queries';
 
+import { PageSkeleton } from '@/ui/feedback/Skeletons';
+import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
@@ -42,13 +49,21 @@ function WorkspaceBodyBackground() {
   return null;
 }
 
-export const Route = createFileRoute('/_protected/workspace/$workspaceId/__layout')({
-  loader: ({ params }) =>
-    queryClient.ensureQueryData(workspaceDetailOptions(params.workspaceId)),
+export const Route = createFileRoute(
+  '/_protected/workspace/$workspaceId/__layout'
+)({
+  loader: ({ params, context }) =>
+    context.queryClient.ensureQueryData(
+      workspaceDetailOptions(params.workspaceId)
+    ),
   component: () => (
     <RouteIdsProvider>
-      <WorkspaceBodyBackground />
-      <Outlet />
+      <PendingThreadsProvider>
+        <WorkspaceBodyBackground />
+        <Suspense fallback={<PageSkeleton />}>
+          <Outlet />
+        </Suspense>
+      </PendingThreadsProvider>
     </RouteIdsProvider>
   ),
 });

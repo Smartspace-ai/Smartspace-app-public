@@ -1,12 +1,20 @@
 import { api } from '@/platform/api';
-import { apiParsed } from '@/platform/apiParsed';
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import { getFlowRunsIdVariablesResponse as flowRunVariablesSchema } from '@/platform/api/generated/chat/zod';
+import { parseOrThrow } from '@/platform/validation';
 
-import { FlowRunVariablesDto } from './dto';
 import { mapFlowRunVariablesDtoToModel } from './mapper';
 
+const chatApi = getSmartSpaceChatAPI();
+
 export async function fetchFlowRunVariables(flowRunId: string) {
-  const dto = await apiParsed.get(FlowRunVariablesDto, `/flowruns/${flowRunId}/variables`);
-  return mapFlowRunVariablesDtoToModel(dto);
+  const response = await chatApi.getFlowRunsIdVariables(flowRunId);
+  const parsed = parseOrThrow(
+    flowRunVariablesSchema,
+    response.data,
+    `GET /flowruns/${flowRunId}/variables`
+  );
+  return mapFlowRunVariablesDtoToModel(parsed);
 }
 
 export async function updateFlowRunVariable(
@@ -14,9 +22,11 @@ export async function updateFlowRunVariable(
   variableName: string,
   value: unknown
 ) {
-  return await api.put(`/flowruns/${flowRunId}/variables/${variableName}`, value, {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return await api.put(
+    `/flowruns/${flowRunId}/variables/${variableName}`,
+    value,
+    {
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
 }
-
-

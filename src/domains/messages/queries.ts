@@ -1,4 +1,9 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import {
+  infiniteQueryOptions,
+  queryOptions,
+  useInfiniteQuery,
+  useQuery,
+} from '@tanstack/react-query';
 
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
@@ -72,13 +77,66 @@ export const messagesListOptions = (
 
 export function useMessages(
   threadId: string,
-  opts?: { take?: number; skip?: number }
+  opts?: { take?: number; skip?: number; skipWhenNewThread?: boolean }
 ) {
   const isDraft = isDraftThreadId(threadId);
+  const skipFetch = opts?.skipWhenNewThread || !threadId || isDraft;
+  const listOpts =
+    opts?.take != null || opts?.skip != null
+      ? { take: opts.take, skip: opts.skip }
+      : undefined;
   return useQuery({
-    ...messagesListOptions(threadId, opts),
-    enabled: !!threadId && !isDraft,
-    // For draft threads, we want a fast, non-loading empty state (no backend fetch).
-    initialData: isDraft ? [] : undefined,
+    ...messagesListOptions(threadId, listOpts),
+    enabled: !opts?.skipWhenNewThread && !!threadId && !isDraft,
+    initialData: skipFetch ? [] : undefined,
+  });
+}
+
+const DEFAULT_MESSAGES_PAGE_SIZE = 50;
+
+/**
+ * Infinite query options for loading older messages (offset-based).
+ * Page 0 = most recent; fetchPreviousPage loads older (page 1, 2, ...).
+ */
+export function messagesInfiniteOptions(
+  threadId: string,
+  pageSize = DEFAULT_MESSAGES_PAGE_SIZE
+) {
+  return infiniteQueryOptions({
+    queryKey: messagesKeys.infinite(threadId),
+    queryFn: async ({ pageParam }: { pageParam: number }) => {
+      const fetched = await fetchMessages(threadId, {
+        take: pageSize,
+        skip: pageParam * pageSize,
+      });
+      return fetched.reverse();
+    },
+    initialPageParam: 0,
+    getNextPageParam: () => undefined,
+    getPreviousPageParam: (
+      firstPage: Message[],
+      _allPages: Message[][],
+      firstPageParam: number
+    ) => (firstPage.length < pageSize ? undefined : firstPageParam + 1),
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Hook for infinite messages (load older via fetchPreviousPage).
+ * Flattens pages so oldest is first; use for prepend/scroll-to-top UX.
+ */
+export function useInfiniteMessages(
+  threadId: string,
+  pageSize = DEFAULT_MESSAGES_PAGE_SIZE,
+  opts?: { skipWhenNewThread?: boolean }
+) {
+  const isDraft = isDraftThreadId(threadId);
+  return useInfiniteQuery({
+    ...messagesInfiniteOptions(threadId, pageSize),
+    enabled: !opts?.skipWhenNewThread && !!threadId && !isDraft,
   });
 }

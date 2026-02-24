@@ -9,16 +9,20 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 import type { MessageThread, ThreadsResponse } from '@/domains/threads';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 
-
 import { Button } from '@/shared/ui/mui-compat/button';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
-import { createDraftThreadId, isDraftThreadId, markDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
+import {
+  createDraftThreadId,
+  isDraftThreadId,
+  markDraftThreadId,
+  unmarkDraftThreadId,
+} from '@/shared/utils/threadId';
 
 type ThreadsListMeta = { workspaceId?: string };
 type ThreadsListKey = readonly unknown[];
 
 function isThreadsListMeta(x: unknown): x is ThreadsListMeta {
-  return !!x && typeof x === 'object' && ('workspaceId' in x);
+  return !!x && typeof x === 'object' && 'workspaceId' in x;
 }
 
 function isThreadsResponse(x: unknown): x is ThreadsResponse {
@@ -27,7 +31,9 @@ function isThreadsResponse(x: unknown): x is ThreadsResponse {
   return Array.isArray(obj.data);
 }
 
-function isInfiniteThreadsResponse(x: unknown): x is { pages: ThreadsResponse[]; pageParams?: unknown[] } {
+function isInfiniteThreadsResponse(
+  x: unknown
+): x is { pages: ThreadsResponse[]; pageParams?: unknown[] } {
   if (!x || typeof x !== 'object') return false;
   const obj = x as Record<string, unknown>;
   return Array.isArray(obj.pages);
@@ -46,7 +52,9 @@ export default function NewThreadButton() {
     let draftId: string | null = null;
 
     const findExistingDraftThreadId = (): string | null => {
-      const listQueries = queryClient.getQueryCache().findAll({ queryKey: threadsKeys.lists() });
+      const listQueries = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: threadsKeys.lists() });
       for (const q of listQueries) {
         const qk = q.queryKey as ThreadsListKey;
         const meta = qk?.[2];
@@ -59,7 +67,9 @@ export default function NewThreadButton() {
         // Infinite query shape: { pages: [{ data, total }, ...] }
         if (isInfiniteThreadsResponse(data)) {
           for (const page of data.pages) {
-            const found = page?.data?.find?.((t: MessageThread) => isDraftThreadId(t.id));
+            const found = page?.data?.find?.((t: MessageThread) =>
+              isDraftThreadId(t.id)
+            );
             if (found) return found.id;
           }
           continue;
@@ -94,7 +104,9 @@ export default function NewThreadButton() {
             if (!pages[0] || !Array.isArray(pages[0].data)) return old;
 
             const first = pages[0];
-            const already = first.data.some((t: MessageThread) => t.id === draft.id);
+            const already = first.data.some(
+              (t: MessageThread) => t.id === draft.id
+            );
             if (already) return old;
 
             pages[0] = { ...first, data: [draft, ...first.data] };
@@ -138,12 +150,17 @@ export default function NewThreadButton() {
           if (!old) return old;
 
           if (isInfiniteThreadsResponse(old)) {
-            const hadAny = old.pages.some((p) => Array.isArray(p?.data) && p.data.some((t) => t.id === draftId));
+            const hadAny = old.pages.some(
+              (p) =>
+                Array.isArray(p?.data) && p.data.some((t) => t.id === draftId)
+            );
             const pages = old.pages.map((p) => {
               if (!p || !Array.isArray(p.data)) return p;
               const next = p.data.filter((t) => t.id !== draftId);
               const total =
-                hadAny && typeof p.total === 'number' ? Math.max(0, p.total - 1) : p.total;
+                hadAny && typeof p.total === 'number'
+                  ? Math.max(0, p.total - 1)
+                  : p.total;
               return next.length === p.data.length
                 ? { ...p, total }
                 : { ...p, data: next, total };
@@ -158,7 +175,10 @@ export default function NewThreadButton() {
             return {
               ...env,
               data: next,
-              total: typeof env.total === 'number' ? Math.max(0, env.total - 1) : env.total,
+              total:
+                typeof env.total === 'number'
+                  ? Math.max(0, env.total - 1)
+                  : env.total,
             } satisfies ThreadsResponse;
           }
 
@@ -190,17 +210,18 @@ export default function NewThreadButton() {
         createdBy: 'me',
         createdByUserId: '',
         isFlowRunning: false,
-        lastUpdated: 'Just now',
         lastUpdatedAt: now,
         lastUpdatedByUserId: '',
         totalMessages: 0,
         favorited: false,
-        avatarName: null,
         workSpaceId: workspaceId,
       };
 
       // Prime detail + list caches so the UI can render immediately.
-      queryClient.setQueryData(threadsKeys.detail(workspaceId, draftId), draftThread);
+      queryClient.setQueryData(
+        threadsKeys.detail(workspaceId, draftId),
+        draftThread
+      );
       upsertDraftIntoListCache(draftThread);
 
       navigate({
@@ -215,8 +236,15 @@ export default function NewThreadButton() {
       if (draftId) {
         removeDraftFromListCache(draftId);
         unmarkDraftThreadId(draftId);
-        queryClient.removeQueries({ queryKey: threadsKeys.detail(workspaceId, draftId), exact: true });
-        navigate({ to: '/workspace/$workspaceId', params: { workspaceId }, replace: true });
+        queryClient.removeQueries({
+          queryKey: threadsKeys.detail(workspaceId, draftId),
+          exact: true,
+        });
+        navigate({
+          to: '/workspace/$workspaceId',
+          params: { workspaceId },
+          replace: true,
+        });
       }
     } finally {
       setIsCreating(false);

@@ -1,23 +1,35 @@
-import { MessageThreadDto, ThreadsResponseDto, TMessageThreadDto, TThreadsResponseDto } from './dto';
+import type { z } from 'zod';
+
+import {
+  getWorkSpacesIdMessageThreadsResponse as threadsListResponseSchema,
+  getWorkspacesWorkspaceIdMessagethreadsIdResponse as threadResponseSchema,
+} from '@/platform/api/generated/chat/zod';
+
+import { parseIsoDate } from '@/shared/utils/parseIsoDate';
+
 import { MessageThread, ThreadsResponse } from './model';
 
+type ThreadsResponseDto = z.infer<typeof threadsListResponseSchema>;
+type ThreadDto = z.infer<typeof threadResponseSchema>;
 
-export function mapThreadDtoToModel(dto: TMessageThreadDto): MessageThread {
-  const parsed = MessageThreadDto.parse(dto);
+export function mapThreadDtoToModel(dto: ThreadDto): MessageThread {
   return {
-    ...parsed,
-    createdAt: parsed.createdAt,
-    lastUpdatedAt: parsed.lastUpdatedAt,
+    id: dto.id,
+    createdAt: parseIsoDate(dto.createdAt, 'createdAt'),
+    createdBy: dto.createdBy ?? '',
+    createdByUserId: dto.createdByUserId,
+    isFlowRunning: dto.isFlowRunning,
+    lastUpdatedAt: parseIsoDate(dto.lastUpdatedAt, 'lastUpdatedAt'),
+    lastUpdatedByUserId: dto.lastUpdatedByUserId,
+    name: dto.name ?? '',
+    totalMessages: dto.totalMessages,
+    favorited: dto.favorited,
+    workSpaceId: dto.workSpaceId,
   };
 }
 
-export function mapThreadsResponseDtoToModel(dto: TThreadsResponseDto): ThreadsResponse {
-  const env = ThreadsResponseDto.parse(dto);
-  return { data: env.data.map(mapThreadDtoToModel), total: env.total };
+export function mapThreadsResponseDtoToModel(
+  dto: ThreadsResponseDto
+): ThreadsResponse {
+  return { data: dto.data.map(mapThreadDtoToModel), total: dto.total };
 }
-
-
-
-
-
-

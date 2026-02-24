@@ -1,21 +1,24 @@
-import { apiParsed } from '@/platform/apiParsed';
-
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
 import {
-  CommentDto,
-  CommentPostResponseDto,
-  CommentsListResponseDto,
-  TCommentDto,
-} from './dto';
+  getMessageThreadsIdCommentsResponse as commentsResponseSchema,
+  postMessageThreadsIdCommentsResponse as commentCreateResponseSchema,
+} from '@/platform/api/generated/chat/zod';
+import { parseOrThrow } from '@/platform/validation';
+
 import { mapCommentDtoToModel, mapCommentsDtoToModels } from './mapper';
 import { Comment, MentionUser } from './model';
 
+const chatApi = getSmartSpaceChatAPI();
+
 // Fetch all comments for a given thread
 export async function fetchComments(threadId: string): Promise<Comment[]> {
-  const dto = await apiParsed.get(
-    CommentsListResponseDto,
-    `/messageThreads/${threadId}/comments`
+  const response = await chatApi.getMessageThreadsIdComments(threadId);
+  const parsed = parseOrThrow(
+    commentsResponseSchema,
+    response.data,
+    `GET /messageThreads/${threadId}/comments`
   );
-  const models = mapCommentsDtoToModels(dto.data as TCommentDto[]);
+  const models = mapCommentsDtoToModels(parsed.data);
   return models.sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
@@ -27,23 +30,15 @@ export async function addComment(
   content: string,
   mentionedUsers: MentionUser[] = []
 ): Promise<Comment> {
-  const dto = await apiParsed.post(
-    CommentPostResponseDto,
-    `/messageThreads/${threadId}/comments`,
-    {
-      content,
-      mentionedUsers: mentionedUsers.map((u) => u.id),
-    }
+  const response = await chatApi.postMessageThreadsIdComments(threadId, {
+    content,
+    mentionedUsers: mentionedUsers.map((u) => u.id),
+  });
+  const parsed = parseOrThrow(
+    commentCreateResponseSchema,
+    response.data,
+    `POST /messageThreads/${threadId}/comments`
   );
-  const normalizedDto: TCommentDto = {
-    ...dto,
-    messageThreadId: dto.messageThreadId ?? threadId,
-    mentionedUsers: (dto.mentionedUsers ?? []).map((u) =>
-      typeof u === 'string'
-        ? { id: u, displayName: '' }
-        : { ...u, displayName: u.displayName ?? '' }
-    ),
-  };
-  const model = mapCommentDtoToModel(normalizedDto);
+  const model = mapCommentDtoToModel({ ...parsed, messageThreadId: threadId });
   return model;
 }

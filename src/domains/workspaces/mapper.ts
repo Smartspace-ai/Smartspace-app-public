@@ -1,12 +1,29 @@
+import type { z } from 'zod';
+
+import {
+  getWorkSpacesIdResponse as workspaceResponseSchema,
+  getWorkSpacesIdUsersResponse as workspaceUsersResponseSchema,
+  getWorkSpacesResponse as workspacesListResponseSchema,
+} from '@/platform/api/generated/chat/zod';
+
 import { getInitials } from '@/shared/utils/initials';
 
-import { TMentionUserDto, TWorkspaceDto } from './dto';
 import { MentionUser, Variables, Workspace } from './model';
+
+type WorkspaceDto = z.infer<typeof workspaceResponseSchema>;
+type WorkspacesListResponseDto = z.infer<typeof workspacesListResponseSchema>;
+type WorkspacesListItemDto = WorkspacesListResponseDto['data'][number];
+type MentionUserDto = z.infer<typeof workspaceUsersResponseSchema>[number];
 
 const toDate = (x: string | Date | null | undefined): Date | undefined =>
   x == null ? undefined : x instanceof Date ? x : new Date(x);
 
 const truthy = (b: unknown): boolean => Boolean(b);
+
+const toAccess = (raw: unknown): 'Read' | 'Write' => {
+  if (raw === 'Write' || raw === 1) return 'Write';
+  return 'Read';
+};
 
 const computeAvatar = (name: string, fallback?: string): string => {
   if (fallback && fallback.trim().length > 0) return fallback;
@@ -16,11 +33,11 @@ const computeAvatar = (name: string, fallback?: string): string => {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
-export function mapMentionUserDtoToModel(dto: TMentionUserDto): MentionUser {
+export function mapMentionUserDtoToModel(dto: MentionUserDto): MentionUser {
   return {
     id: dto.id,
-    displayName: dto.displayName,
-    initials: dto.initials ?? getInitials(dto.displayName ?? ''),
+    displayName: dto.displayName ?? '',
+    initials: getInitials(dto.displayName ?? ''),
   };
 }
 
@@ -37,19 +54,17 @@ export function mapVariablesDtoToModel(dto: unknown): Variables {
         : {};
 
     const accessRaw = v['access'];
-    const access =
-      accessRaw === 'Read' || accessRaw === 'Write' ? accessRaw : 'Read';
-    out[key] = { schema, access };
+    out[key] = { schema, access: toAccess(accessRaw) };
   }
   return out;
 }
 
-export function mapWorkspaceDtoToModel(dto: TWorkspaceDto): Workspace {
+export function mapWorkspaceDtoToModel(dto: WorkspaceDto): Workspace {
   const variables = mapVariablesDtoToModel(dto.variables);
 
   return {
-    id: dto.id,
-    name: dto.name,
+    id: dto.id ?? '',
+    name: dto.name ?? '',
     tags: dto.tags ?? [],
     showSources: dto.showSources ?? undefined,
     dataSpaces: Array.isArray(dto.dataSpaces) ? dto.dataSpaces : undefined,
@@ -75,9 +90,9 @@ export function mapWorkspaceDtoToModel(dto: TWorkspaceDto): Workspace {
     sandBoxThreadId: dto.sandBoxThreadId ?? undefined,
     supportsFiles: dto.supportsFiles ?? undefined,
 
-    avatarName: computeAvatar(dto.name, dto.avatarName ?? undefined),
+    avatarName: computeAvatar(dto.name ?? '', dto.avatarName ?? undefined),
   };
 }
 
-export const mapWorkspacesDtoToModels = (arr: TWorkspaceDto[]) =>
+export const mapWorkspacesDtoToModels = (arr: WorkspacesListItemDto[]) =>
   arr.map(mapWorkspaceDtoToModel);

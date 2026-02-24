@@ -1,6 +1,7 @@
 // Auth
-export { createAuthAdapter } from './auth';
+export { getAuthAdapter, createAuthAdapter } from './auth';
 export { AuthProvider, useAuth, useUserId } from './auth/session';
+export { sessionQueryOptions, SESSION_QUERY_KEY } from './auth/sessionQuery';
 
 // Network
 export { api } from './api'; // typed wrapper: returns data, throws AppError

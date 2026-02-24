@@ -5,7 +5,11 @@ import { setRuntimeAuthError } from '@/platform/auth/runtime';
 import { getClientScopes } from '@/platform/auth/scopes';
 import { ssInfo, ssWarn } from '@/platform/log';
 
-import { AuthAdapter, type GetTokenOptions } from '../types';
+import {
+  AuthAdapter,
+  type GetTokenOptions,
+  type SignInOptions,
+} from '../types';
 
 export function createTeamsNaaAdapter(): AuthAdapter {
   return {
@@ -26,26 +30,9 @@ export function createTeamsNaaAdapter(): AuthAdapter {
             scopeSource: opts?.scopes?.length ? 'callsite' : 'configured',
           }
         );
-        let token: string;
-        try {
-          token = await acquireNaaToken(scopes, {
-            silentOnly: !!opts?.silentOnly,
-          });
-        } catch (error) {
-          const message = String(
-            error instanceof Error ? error.message : error
-          );
-          // First-load race: account cache may not be ready yet; retry once after short delay.
-          if (
-            opts?.silentOnly &&
-            message.toLowerCase().includes('no account')
-          ) {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            token = await acquireNaaToken(scopes, { silentOnly: true });
-          } else {
-            throw error;
-          }
-        }
+        const token = await acquireNaaToken(scopes, {
+          silentOnly: !!opts?.silentOnly,
+        });
         setRuntimeAuthError(null);
         return token;
       } catch (error) {
@@ -100,7 +87,7 @@ export function createTeamsNaaAdapter(): AuthAdapter {
         return null;
       }
     },
-    async signIn() {
+    async signIn(_opts?: SignInOptions) {
       // Teams: interactive token acquisition via popup can be required on some clients.
       // Keep this interactive flow in the auth/login layer (not in the API layer).
       await naaInit();

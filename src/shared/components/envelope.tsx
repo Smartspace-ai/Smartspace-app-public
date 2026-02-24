@@ -5,10 +5,12 @@ export function Envelope({
   title,
   message,
   onRetry,
+  onSignIn,
 }: {
   title: string;
   message: string;
   onRetry?: () => void;
+  onSignIn?: () => void;
 }) {
   return (
     <div className="flex min-h-[40vh] items-center justify-center p-6">
@@ -18,9 +20,18 @@ export function Envelope({
         </div>
         <div className="p-4">
           <p className="text-sm text-muted-foreground">{message}</p>
-          {onRetry ? (
-            <div className="mt-4">
-              <Button size="sm" variant="outline" onClick={onRetry}>Try again</Button>
+          {onRetry || onSignIn ? (
+            <div className="mt-4 flex gap-2">
+              {onSignIn ? (
+                <Button size="sm" onClick={onSignIn}>
+                  Sign in
+                </Button>
+              ) : null}
+              {onRetry ? (
+                <Button size="sm" variant="outline" onClick={onRetry}>
+                  Try again
+                </Button>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -30,5 +41,3 @@ export function Envelope({
 }
 
 export default Envelope;
-
-

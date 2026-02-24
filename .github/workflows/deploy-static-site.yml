@@ -30,6 +30,7 @@ jobs:
             VITE_CLIENT_AUTHORITY
             VITE_CLIENT_SCOPES
             VITE_CHAT_API_URI
+            VITE_TEAMS_USE_MSAL
           )
           for var in "${required_vars[@]}"; do
             if ! grep -q "^$var=" .env; then
@@ -46,6 +47,7 @@ jobs:
       - name: Build your site
         run: |
           npm install
+          npm run -s openapi:sync
           npm run build
 
       - name: Deploy to Azure Storage

@@ -8,7 +8,11 @@ export enum NotificationTypeDto {
 
 export const NotificationDto = z.object({
   id: z.string(),
-  notificationType: z.union([z.nativeEnum(NotificationTypeDto), z.number(), z.string()]),
+  notificationType: z.union([
+    z.nativeEnum(NotificationTypeDto),
+    z.number(),
+    z.string(),
+  ]),
   description: z.string(),
   workSpaceId: z.string().optional().nullable(),
   threadId: z.string().optional().nullable(),
@@ -25,9 +29,6 @@ export const NotificationsEnvelopeDto = z.object({
 });
 
 export type TNotificationDto = z.infer<typeof NotificationDto>;
-export type TNotificationsEnvelopeDto = z.infer<typeof NotificationsEnvelopeDto>;
-
-
-
-
-
+export type TNotificationsEnvelopeDto = z.infer<
+  typeof NotificationsEnvelopeDto
+>;
