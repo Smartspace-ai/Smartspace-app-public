@@ -7,8 +7,8 @@ import {
 } from '@/platform/auth/sessionQuery';
 import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
-import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
 import { ProtectedErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
+import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
 
 export const Route = createFileRoute('/_protected')({
   // Runs on navigation (and on intent prefetch if enabled).
