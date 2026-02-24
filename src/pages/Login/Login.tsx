@@ -1,10 +1,8 @@
-import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
 import { useAuth, useAuthRuntime } from '@/platform/auth/session';
 import { ssInfo, ssWarn } from '@/platform/log';
-import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
 import { useTeams } from '@/app/providers';
 
@@ -14,10 +12,8 @@ import { Logo } from '@/assets/logo';
 
 import styles from './Login.module.scss';
 
-declare const __BUILD_TIME__: string;
-
 export function Login({
-  redirectTo,
+  redirectTo = '/workspace',
   onNavigate,
 }: {
   redirectTo?: string;
@@ -25,7 +21,6 @@ export function Login({
 }) {
   const auth = useAuth();
   const runtime = useAuthRuntime();
-  const navigate = useNavigate();
   const {
     isTeamsInitialized,
     teamsUser,
@@ -282,9 +277,6 @@ export function Login({
                   {canShowDiag ? (
                     <div className="mt-2">
                       <div className="flex gap-2 flex-wrap">
-                        <Button onClick={handleManualLogin} className="text-xs">
-                          Retry sign-in
-                        </Button>
                         <Button
                           onClick={handleManualLogin}
                           disabled={isLoading}
