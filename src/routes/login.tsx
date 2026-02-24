@@ -13,6 +13,9 @@ import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath'
 import { Login } from '@/pages/Login/Login';
 
 export const Route = createFileRoute('/login')({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+    redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
+  }),
   beforeLoad: async ({ context, location }) => {
     // Cached session check via React Query
     const session = await context.queryClient.ensureQueryData(
@@ -47,13 +50,11 @@ export const Route = createFileRoute('/login')({
 });
 
 function LoginRouteComponent() {
-  const search = useSearch({ from: '/login' }) as { redirect?: string };
-  const redirectTo = normalizeRedirectPath(search.redirect, '/workspace');
   const navigate = useNavigate();
+  const { redirect: redirectParam } = useSearch({ from: '/login' });
+  const redirectTo = normalizeRedirectPath(redirectParam, '/workspace');
+
   return (
-    <Login
-      redirectTo={redirectTo}
-      onNavigate={(to) => navigate({ to, replace: true })}
-    />
+    <Login redirectTo={redirectTo} onNavigate={(to) => navigate({ to })} />
   );
 }

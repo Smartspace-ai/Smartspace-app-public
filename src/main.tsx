@@ -75,88 +75,108 @@ declare module '@tanstack/react-router' {
   }
 }
 
-let msal: ReturnType<typeof getMsalInstance> | null = null;
-try {
-  msal = getMsalInstance();
-} catch (e) {
-  // Don't leave users stuck on an infinite splash screen.
+// Popup guard: if this page loaded inside an MSAL popup (window.opener is set),
+// do NOT render the full SPA. The parent window's MSAL instance monitors the
+// popup URL, extracts the auth hash, and closes it. Rendering the SPA here
+// causes the "full app in popup" and "double popup" bugs.
+const isInPopup = (() => {
+  try {
+    return !!window.opener && window.opener !== window;
+  } catch {
+    return false;
+  }
+})();
+
+if (isInPopup) {
   removeBootSplash();
+  const rootEl = document.getElementById('root');
+  if (rootEl) rootEl.textContent = 'Completing sign-in...';
   // eslint-disable-next-line no-console
-  console.error('MSAL config error', e);
-  renderBootstrapError(String((e as Error)?.message ?? e));
-}
-
-if (!msal) {
-  // Config issue already rendered.
-  // eslint-disable-next-line no-console
-  console.warn('MSAL not configured; app bootstrap halted.');
+  console.info('[SmartSpace] Popup context detected; SPA bootstrap skipped.');
 } else {
-  msal
-    .initialize()
-    .then(async () => {
-      // Handle redirect promise to process authentication responses.
-      // IMPORTANT: Use the result to set the correct active account —
-      // with multiple cached accounts, accounts[0] may be stale.
-      const redirectResult = await msal.handleRedirectPromise();
+  let msal: ReturnType<typeof getMsalInstance> | null = null;
+  try {
+    msal = getMsalInstance();
+  } catch (e) {
+    // Don't leave users stuck on an infinite splash screen.
+    removeBootSplash();
+    // eslint-disable-next-line no-console
+    console.error('MSAL config error', e);
+    renderBootstrapError(String((e as Error)?.message ?? e));
+  }
 
-      if (redirectResult?.account) {
-        // Redirect just completed — use the authenticated account
-        msal.setActiveAccount(redirectResult.account);
-      } else {
-        // Normal page load (no redirect) — pick existing account
-        const accounts = msal.getAllAccounts();
-        if (accounts.length > 0) {
-          msal.setActiveAccount(accounts[0]);
-        }
-      }
+  if (!msal) {
+    // Config issue already rendered.
+    // eslint-disable-next-line no-console
+    console.warn('MSAL not configured; app bootstrap halted.');
+  } else {
+    msal
+      .initialize()
+      .then(async () => {
+        // Handle redirect promise to process authentication responses.
+        // IMPORTANT: Use the result to set the correct active account —
+        // with multiple cached accounts, accounts[0] may be stale.
+        const redirectResult = await msal.handleRedirectPromise();
 
-      // Update active account only on successful auth events (not every event),
-      // using the event payload to avoid blindly picking accounts[0].
-      msal.addEventCallback((event: EventMessage) => {
-        if (
-          event.eventType === EventType.LOGIN_SUCCESS ||
-          event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS ||
-          event.eventType === EventType.SSO_SILENT_SUCCESS
-        ) {
-          const payload = event.payload as AuthenticationResult | null;
-          if (payload?.account) {
-            msal.setActiveAccount(payload.account);
+        if (redirectResult?.account) {
+          // Redirect just completed — use the authenticated account
+          msal.setActiveAccount(redirectResult.account);
+        } else {
+          // Normal page load (no redirect) — pick existing account
+          const accounts = msal.getAllAccounts();
+          if (accounts.length > 0) {
+            msal.setActiveAccount(accounts[0]);
           }
         }
+
+        // Update active account only on successful auth events (not every event),
+        // using the event payload to avoid blindly picking accounts[0].
+        msal.addEventCallback((event: EventMessage) => {
+          if (
+            event.eventType === EventType.LOGIN_SUCCESS ||
+            event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS ||
+            event.eventType === EventType.SSO_SILENT_SUCCESS
+          ) {
+            const payload = event.payload as AuthenticationResult | null;
+            if (payload?.account) {
+              msal.setActiveAccount(payload.account);
+            }
+          }
+        });
+
+        const rootElement =
+          (document.getElementById('root') as HTMLElement) ??
+          document.body.appendChild(document.createElement('div'));
+        rootElement.id = 'root';
+
+        removeBootSplash();
+
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(
+          <StrictMode>
+            <ErrorBoundary fallbackRender={fallbackRender}>
+              <MsalProvider instance={msal}>
+                <AppProviders>
+                  <RouterProvider router={router} />
+                  {import.meta.env.DEV ? (
+                    <TanStackRouterDevtools
+                      router={router}
+                      position="bottom-right"
+                    />
+                  ) : null}
+                </AppProviders>
+              </MsalProvider>
+            </ErrorBoundary>
+          </StrictMode>
+        );
+      })
+      .catch((e) => {
+        // Don't leave users stuck on an infinite splash screen.
+        removeBootSplash();
+        // Surface error in console; ErrorBoundary won't catch errors before render.
+        // eslint-disable-next-line no-console
+        console.error('MSAL initialization failed', e);
+        renderBootstrapError(String((e as Error)?.message ?? e));
       });
-
-      const rootElement =
-        (document.getElementById('root') as HTMLElement) ??
-        document.body.appendChild(document.createElement('div'));
-      rootElement.id = 'root';
-
-      removeBootSplash();
-
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(
-        <StrictMode>
-          <ErrorBoundary fallbackRender={fallbackRender}>
-            <MsalProvider instance={msal}>
-              <AppProviders>
-                <RouterProvider router={router} />
-                {import.meta.env.DEV ? (
-                  <TanStackRouterDevtools
-                    router={router}
-                    position="bottom-right"
-                  />
-                ) : null}
-              </AppProviders>
-            </MsalProvider>
-          </ErrorBoundary>
-        </StrictMode>
-      );
-    })
-    .catch((e) => {
-      // Don't leave users stuck on an infinite splash screen.
-      removeBootSplash();
-      // Surface error in console; ErrorBoundary won't catch errors before render.
-      // eslint-disable-next-line no-console
-      console.error('MSAL initialization failed', e);
-      renderBootstrapError(String((e as Error)?.message ?? e));
-    });
+  }
 }

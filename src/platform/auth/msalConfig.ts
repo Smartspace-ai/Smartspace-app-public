@@ -57,6 +57,15 @@ export const handleTrailingSlash = (url: string): string => {
   return url.endsWith('/') ? url : `${url}/`;
 };
 
+/**
+ * Dedicated redirect URI for MSAL popup flows.
+ * Points to a lightweight static page that does NOT load the SPA,
+ * preventing the full app from rendering inside the popup window.
+ */
+export const POPUP_REDIRECT_URI = `${handleTrailingSlash(
+  window.location.origin
+)}auth-redirect.html`;
+
 // Check if we're running in Teams
 const isInTeams = () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -104,6 +113,7 @@ const msalConfig: Configuration = {
 export const loginRequest: PopupRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
   prompt: 'none',
+  redirectUri: POPUP_REDIRECT_URI,
   extraQueryParameters: {
     domain_hint: 'organizations', // Prioritize work/school accounts
   },
@@ -113,6 +123,7 @@ export const loginRequest: PopupRequest = {
 export const interactiveLoginRequest: PopupRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
   prompt: 'select_account',
+  redirectUri: POPUP_REDIRECT_URI,
   extraQueryParameters: {
     domain_hint: 'organizations',
   },
@@ -121,6 +132,7 @@ export const interactiveLoginRequest: PopupRequest = {
 // Teams-specific login request for SSO scenarios
 export const teamsLoginRequest: PopupRequest = {
   scopes: [...CUSTOM_SCOPES, ...GRAPH_SCOPES],
+  redirectUri: POPUP_REDIRECT_URI,
 };
 
 // API endpoints used across the app
