@@ -74,6 +74,70 @@ export const naaInit = () => {
 };
 
 const tokenCache: Record<string, { token: string; exp: number }> = {};
+const TOKEN_CACHE_KEY = 'smartspace.naa.tokenCache';
+let tokenCacheHydrated = false;
+
+const pruneExpiredCache = () => {
+  Object.keys(tokenCache).forEach((key) => {
+    if (isExpired(tokenCache[key].exp)) {
+      delete tokenCache[key];
+    }
+  });
+};
+
+const hydrateTokenCache = () => {
+  if (tokenCacheHydrated) return;
+  tokenCacheHydrated = true;
+  try {
+    const raw = localStorage.getItem(TOKEN_CACHE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as Record<
+      string,
+      { token: string; exp: number }
+    >;
+    Object.entries(parsed).forEach(([key, value]) => {
+      if (
+        !value ||
+        typeof value.token !== 'string' ||
+        typeof value.exp !== 'number'
+      ) {
+        return;
+      }
+      if (!isExpired(value.exp)) {
+        tokenCache[key] = { token: value.token, exp: value.exp };
+      }
+    });
+    pruneExpiredCache();
+  } catch {
+    // Ignore localStorage or JSON failures
+  }
+};
+
+const persistTokenCache = () => {
+  try {
+    pruneExpiredCache();
+    localStorage.setItem(TOKEN_CACHE_KEY, JSON.stringify(tokenCache));
+  } catch {
+    // Ignore localStorage failures (private mode / storage full)
+  }
+};
+
+const getCachedToken = (key: string) => {
+  hydrateTokenCache();
+  const cached = tokenCache[key];
+  if (!cached) return null;
+  if (isExpired(cached.exp)) {
+    delete tokenCache[key];
+    persistTokenCache();
+    return null;
+  }
+  return cached.token;
+};
+
+const setCachedToken = (key: string, token: string, exp: number) => {
+  tokenCache[key] = { token, exp };
+  persistTokenCache();
+};
 const isExpired = (exp: number, skew = 60) =>
   Math.floor(Date.now() / 1000) + skew >= exp;
 
@@ -88,8 +152,8 @@ export const acquireNaaToken = async (
     silentOnly: !!opts?.silentOnly,
   });
   const key = scopes.sort().join(' ');
-  const cached = tokenCache[key];
-  if (cached && !isExpired(cached.exp)) return cached.token;
+  const cachedToken = getCachedToken(key);
+  if (cachedToken) return cachedToken;
 
   const pca = await naaInit();
   const accounts = pca.getAllAccounts();
@@ -105,10 +169,7 @@ export const acquireNaaToken = async (
     const res = await pca.acquireTokenSilent({ account, scopes });
     const token = res.accessToken;
     const exp = JSON.parse(atob(token.split('.')[1])).exp as number | undefined;
-    tokenCache[key] = {
-      token,
-      exp: exp ?? Math.floor(Date.now() / 1000) + 900,
-    };
+    setCachedToken(key, token, exp ?? Math.floor(Date.now() / 1000) + 900);
     ssInfo('auth:naa', 'Silent token acquisition successful');
     return token;
   } catch (error) {
@@ -120,10 +181,7 @@ export const acquireNaaToken = async (
       const exp = JSON.parse(atob(token.split('.')[1])).exp as
         | number
         | undefined;
-      tokenCache[key] = {
-        token,
-        exp: exp ?? Math.floor(Date.now() / 1000) + 900,
-      };
+      setCachedToken(key, token, exp ?? Math.floor(Date.now() / 1000) + 900);
       ssInfo('auth:naa', 'Popup token acquisition successful');
       return token;
     } catch (popupError) {
