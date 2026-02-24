@@ -1,4 +1,5 @@
 // routes/login.tsx
+import { useQueryClient } from '@tanstack/react-query';
 import {
   createFileRoute,
   redirect,
@@ -51,10 +52,19 @@ export const Route = createFileRoute('/login')({
 
 function LoginRouteComponent() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { redirect: redirectParam } = useSearch({ from: '/login' });
   const redirectTo = normalizeRedirectPath(redirectParam, '/workspace');
 
   return (
-    <Login redirectTo={redirectTo} onNavigate={(to) => navigate({ to })} />
+    <Login
+      redirectTo={redirectTo}
+      onNavigate={(to) => {
+        // Clear the cached null session so /_protected's beforeLoad
+        // fetches fresh and finds the newly authenticated account.
+        queryClient.removeQueries({ queryKey: ['auth', 'session'] });
+        navigate({ to });
+      }}
+    />
   );
 }
