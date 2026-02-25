@@ -17,6 +17,10 @@ function RootContent() {
       className="flex flex-col"
       style={{
         minHeight: viewportHeight,
+        paddingTop: 'var(--safe-area-inset-top)',
+        paddingBottom: 'var(--safe-area-inset-bottom)',
+        paddingLeft: 'var(--safe-area-inset-left)',
+        paddingRight: 'var(--safe-area-inset-right)',
         ...(isAndroidTeams && {
           height: viewportHeight,
           position: 'fixed',

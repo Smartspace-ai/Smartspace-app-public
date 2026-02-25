@@ -379,7 +379,7 @@ export default function MessageComposer() {
                   return (
                     <div
                       key={f.key}
-                      className="relative group w-[180px] min-w-[180px] rounded-md border bg-background overflow-hidden"
+                      className="relative group w-[min(180px,calc(50vw-2rem))] min-w-[120px] rounded-md border bg-background overflow-hidden"
                       title={f.name}
                     >
                       <div className="h-[58px] w-full bg-muted/10 flex items-center justify-center overflow-hidden">
@@ -426,7 +426,7 @@ export default function MessageComposer() {
                       {/* Remove single file */}
                       <button
                         type="button"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/90 border opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/90 border opacity-0 group-hover:opacity-100 focus-visible:opacity-100 touch-visible transition-opacity flex items-center justify-center"
                         onClick={() => handleRemoveAttachment(f.key)}
                         aria-label={`Remove ${f.name}`}
                         disabled={isUploadingAttachments}
@@ -533,8 +533,8 @@ export default function MessageComposer() {
             <div
               className="fixed inset-x-0"
               style={{
-                top: '5vh',
-                height: '95vh',
+                top: 'max(env(safe-area-inset-top, 0px), 5vh)',
+                height: 'calc(var(--ss-viewport-height, 95vh) - max(env(safe-area-inset-top, 0px), 5vh))',
                 left: 0,
                 right: 0,
                 zIndex: 1300,

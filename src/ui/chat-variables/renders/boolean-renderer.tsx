@@ -120,7 +120,7 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
           opacity: isDisabled ? 0.6 : 1,
           alignSelf: 'center',
           color: isMobile ? (isChecked ? '#ffffff' : '#374151') : undefined,
-          fontSize: isMobile ? '0.75rem' : undefined,
+          fontSize: isMobile ? '1rem' : undefined,
           fontWeight: isMobile ? 600 : undefined
         }}
       >

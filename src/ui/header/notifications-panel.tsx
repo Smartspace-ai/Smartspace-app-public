@@ -149,7 +149,7 @@ export function NotificationPanel() {
         {isOpen && (
           <motion.div
             id="notification-panel"
-            className="absolute right-0 top-full z-50 mt-1 w-[320px] rounded-lg border bg-background shadow-lg overflow-hidden"
+            className="absolute right-0 top-full z-50 mt-1 w-[min(320px,calc(100vw-2rem))] rounded-lg border bg-background shadow-lg overflow-hidden"
             ref={panelRef}
           >
             <div className="flex items-center justify-between border-b px-3 py-2.5">

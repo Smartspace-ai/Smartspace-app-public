@@ -72,7 +72,7 @@ export function ChatHeader() {
             <>
               <span className="mx-2 text-gray-400">/</span>
               <span
-                className="text-xs font-medium text-neutral-500 truncate max-w-[240px]"
+                className="text-xs font-medium text-neutral-500 truncate max-w-[min(240px,40vw)]"
                 title={activeThread.name}
                 key={`thread-title-${activeThread.id}`} // Force re-render when thread changes
               >

@@ -412,8 +412,8 @@ export const MentionInput = (props: MentionInputProps) => {
           <div
             style={{
               position: 'fixed',
-              top: '5vh',
-              height: '95vh',
+              top: 'max(env(safe-area-inset-top, 0px), 5vh)',
+              height: 'calc(var(--ss-viewport-height, 95vh) - max(env(safe-area-inset-top, 0px), 5vh))',
               left: 0,
               right: 0,
               zIndex: 1300,

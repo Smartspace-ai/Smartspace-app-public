@@ -8,6 +8,8 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 import type { MessageThread } from '@/domains/threads';
 import { useDeleteThread, useSetPin } from '@/domains/threads/mutations';
 
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
+
 type UseThreadItemVmArgs = {
   thread: MessageThread;
   onAfterDelete?: () => void;
@@ -18,8 +20,8 @@ export function useThreadItemVm({
   onAfterDelete,
 }: UseThreadItemVmArgs) {
   const navigate = useNavigate();
-  const { workspaceId: routeWorkspaceId, threadId: routeThreadId } =
-    useRouteIds();
+  const { workspaceId: routeWorkspaceId, threadId: routeThreadId } = useRouteIds();
+  const { isMobile, setOpenMobileLeft } = useSidebar();
   const { mutate: setPin, isPending: isSetPinPending } = useSetPin();
   const { mutateAsync: deleteThread } = useDeleteThread();
 
@@ -32,7 +34,8 @@ export function useThreadItemVm({
       to: '/workspace/$workspaceId/thread/$threadId',
       params: { workspaceId: wsId, threadId: thread.id },
     });
-  }, [navigate, thread]);
+    if (isMobile) setOpenMobileLeft(false);
+  }, [navigate, thread, isMobile, setOpenMobileLeft]);
 
   const togglePin = useCallback(() => {
     setPin({ threadId: thread.id, pin: !thread.pinned });

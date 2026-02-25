@@ -11,7 +11,26 @@
   body {
     @apply text-foreground;
   }
-  
+
+  /* Safe-area inset CSS variables (used by root layout and fullscreen modals) */
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  }
+
+  /* Prevent scroll chaining / pull-to-refresh on main scroll containers */
+  .ss-chat__body,
+  [data-radix-scroll-area-viewport] {
+    overscroll-behavior: contain;
+  }
+
+  /* Prevent double-tap zoom on interactive elements */
+  button, a, input, select, textarea, [role="button"] {
+    touch-action: manipulation;
+  }
+
   /* Android Teams viewport fixes */
   @media screen and (max-width: 1100px) {
     html, body {
@@ -91,6 +110,13 @@
       height: 100%;
       width: 100%;
     }
+  }
+}
+
+/* Make hover-only action buttons visible on touch devices */
+@media (pointer: coarse) {
+  .touch-visible {
+    opacity: 1 !important;
   }
 }
 

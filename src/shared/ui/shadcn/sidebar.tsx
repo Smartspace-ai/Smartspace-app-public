@@ -516,7 +516,7 @@ const SidebarMenuAction = forwardRef<
       ref={ref}
       className={cn(
         'absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground opacity-0 hover:bg-accent hover:text-accent-foreground focus-visible:opacity-100 group-hover:opacity-100',
-        showOnHover && 'opacity-0 group-hover:opacity-100',
+        showOnHover && 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 touch-visible',
         className
       )}
       {...props}

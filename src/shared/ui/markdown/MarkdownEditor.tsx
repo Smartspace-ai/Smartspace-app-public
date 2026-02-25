@@ -881,7 +881,7 @@ function EditorInner({
                 </div>
                 <button
                   type="button"
-                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-background border opacity-0 group-hover:opacity-100"
+                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-background border opacity-0 group-hover:opacity-100 focus-visible:opacity-100 touch-visible"
                   onClick={() =>
                     setAttachments((prev) => prev.filter((_, i) => i !== index))
                   }

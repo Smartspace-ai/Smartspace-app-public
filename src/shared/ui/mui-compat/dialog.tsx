@@ -25,7 +25,7 @@ const Dialog = ({ children, open, onOpenChange }: { children: React.ReactNode; o
         PaperProps={{
           sx: {
             // Match previous approx width of 425px
-            maxWidth: '425px',
+            maxWidth: 'min(425px, calc(100vw - 2rem))',
             width: '100%',
             bgcolor: 'transparent',
             boxShadow: 'none',
