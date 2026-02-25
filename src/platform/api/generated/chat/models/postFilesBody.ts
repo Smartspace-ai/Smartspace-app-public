@@ -6,11 +6,11 @@
  */
 
 export type PostFilesBody = {
-  chunkIndex?: number;
   files?: Blob[];
-  lastChunk?: boolean;
   threadId?: string;
-  totalChunks?: number;
-  uploadId?: string;
   workspaceId?: string;
+  uploadId?: string;
+  chunkIndex?: number;
+  totalChunks?: number;
+  lastChunk?: boolean;
 };

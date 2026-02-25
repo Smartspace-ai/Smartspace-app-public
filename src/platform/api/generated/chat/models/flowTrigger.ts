@@ -8,9 +8,9 @@ import type { DataSourceContainer } from './dataSourceContainer';
 import type { EnumsFlowTriggerType } from './enumsFlowTriggerType';
 
 export interface FlowTrigger {
-  dataSourceContainer: DataSourceContainer;
-  flowId: string;
   id: string;
   inputName: string;
   type: EnumsFlowTriggerType;
+  dataSourceContainer: DataSourceContainer;
+  flowId: string;
 }

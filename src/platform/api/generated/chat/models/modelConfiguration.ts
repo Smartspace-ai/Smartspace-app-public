@@ -4,15 +4,15 @@
  * SmartSpace Chat API
  * OpenAPI spec version: 0.0.0
  */
-import type { EnumsModelRole } from './enumsModelRole';
 import type { ModelModel } from './modelModel';
+import type { EnumsModelRole } from './enumsModelRole';
 
 export interface ModelConfiguration {
-  frequencyPenalty: number;
   model: ModelModel;
-  prePrompt: string;
-  presencePenalty: number;
   role: EnumsModelRole;
-  temperature: number;
   topP: number;
+  temperature: number;
+  presencePenalty: number;
+  frequencyPenalty: number;
+  prePrompt: string;
 }

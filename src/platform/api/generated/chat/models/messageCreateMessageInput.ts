@@ -4,13 +4,13 @@
  * SmartSpace Chat API
  * OpenAPI spec version: 0.0.0
  */
-import type { MessageCreateMessageInputChannels } from './messageCreateMessageInputChannels';
 import type { MessageCreateMessageInputValue } from './messageCreateMessageInputValue';
+import type { MessageCreateMessageInputChannels } from './messageCreateMessageInputChannels';
 
 export interface MessageCreateMessageInput {
-  /** @nullable */
-  channels?: MessageCreateMessageInputChannels;
   name: string;
   /** @nullable */
   value?: MessageCreateMessageInputValue;
+  /** @nullable */
+  channels?: MessageCreateMessageInputChannels;
 }

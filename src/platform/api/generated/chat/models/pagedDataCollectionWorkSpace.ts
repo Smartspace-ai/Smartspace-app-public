@@ -7,6 +7,6 @@
 import type { WorkSpace } from './workSpace';
 
 export interface PagedDataCollectionWorkSpace {
-  data: WorkSpace[];
   total: number;
+  data: WorkSpace[];
 }

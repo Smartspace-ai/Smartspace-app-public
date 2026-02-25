@@ -4,18 +4,18 @@
  * SmartSpace Chat API
  * OpenAPI spec version: 0.0.0
  */
-import type { IntegrationsSmartSpaceAiFlowError } from './integrationsSmartSpaceAiFlowError';
 import type { MessageMessageValue } from './messageMessageValue';
+import type { IntegrationsSmartSpaceAiFlowError } from './integrationsSmartSpaceAiFlowError';
 
 export interface MessageMessage {
-  createdAt: string;
-  /** @nullable */
-  createdBy?: string | null;
-  createdByUserId: string;
-  errors: IntegrationsSmartSpaceAiFlowError[];
-  hasComments: boolean;
   id: string;
+  values: MessageMessageValue[];
   /** @nullable */
   messageThreadId?: string | null;
-  values: MessageMessageValue[];
+  hasComments: boolean;
+  createdAt: string;
+  createdByUserId: string;
+  /** @nullable */
+  createdBy?: string | null;
+  errors: IntegrationsSmartSpaceAiFlowError[];
 }

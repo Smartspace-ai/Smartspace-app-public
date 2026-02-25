@@ -5,18 +5,18 @@
  * OpenAPI spec version: 0.0.0
  */
 import type { EnumsMessageValueType } from './enumsMessageValueType';
-import type { MessageMessageValueChannels } from './messageMessageValueChannels';
 import type { MessageMessageValueValue } from './messageMessageValueValue';
+import type { MessageMessageValueChannels } from './messageMessageValueChannels';
 
 export interface MessageMessageValue {
-  channels: MessageMessageValueChannels;
-  createdAt: string;
-  /** @nullable */
-  createdBy?: string | null;
-  createdByUserId: string;
   id: string;
   name: string;
   type: EnumsMessageValueType;
   /** @nullable */
   value?: MessageMessageValueValue;
+  channels: MessageMessageValueChannels;
+  createdAt: string;
+  createdByUserId: string;
+  /** @nullable */
+  createdBy?: string | null;
 }

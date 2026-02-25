@@ -28,6 +28,7 @@ import type {
   GetWorkspacesWorkspaceIdMessagethreadsIdMessagesParams,
   IntegrationsAzureStorageSasToken,
   MessageCreateMessageInput,
+  MessageMessageCreatorProfileImage,
   MessageMessageRequest,
   MessageThreadMessageThreadSummary,
   ModelModel,
@@ -43,37 +44,16 @@ import type {
 import { apiMutator } from '../../orvalMutator';
 export const getSmartSpaceChatAPI = () => {
   /**
-   * @summary Upload files to be referenced in requests (supports full and chunked uploads)
+   * @summary Retrieve a Shared Access Signature (SAS) for a specific document in a data space, using the dataSpaceId and optional file parameter.
    */
-  const postFiles = (postFilesBody: PostFilesBody) => {
-    const formData = new FormData();
-    if (postFilesBody.chunkIndex !== undefined) {
-      formData.append(`chunkIndex`, postFilesBody.chunkIndex.toString());
-    }
-    if (postFilesBody.files !== undefined) {
-      postFilesBody.files.forEach((value) => formData.append(`files`, value));
-    }
-    if (postFilesBody.lastChunk !== undefined) {
-      formData.append(`lastChunk`, postFilesBody.lastChunk.toString());
-    }
-    if (postFilesBody.threadId !== undefined) {
-      formData.append(`threadId`, postFilesBody.threadId);
-    }
-    if (postFilesBody.totalChunks !== undefined) {
-      formData.append(`totalChunks`, postFilesBody.totalChunks.toString());
-    }
-    if (postFilesBody.uploadId !== undefined) {
-      formData.append(`uploadId`, postFilesBody.uploadId);
-    }
-    if (postFilesBody.workspaceId !== undefined) {
-      formData.append(`workspaceId`, postFilesBody.workspaceId);
-    }
-
-    return apiMutator<File[]>({
-      url: `/Files`,
-      method: 'POST',
-      headers: { 'Content-Type': 'multipart/form-data' },
-      data: formData,
+  const getDataspacesDataSpaceIdDocumentsItemSas = (
+    dataSpaceId: string,
+    params?: GetDataspacesDataSpaceIdDocumentsItemSasParams
+  ) => {
+    return apiMutator<IntegrationsAzureStorageSasToken>({
+      url: `/dataspaces/${dataSpaceId}/documents/item/sas`,
+      method: 'GET',
+      params,
     });
   };
 
@@ -82,6 +62,41 @@ export const getSmartSpaceChatAPI = () => {
    */
   const getFilesId = (id: string, params?: GetFilesIdParams) => {
     return apiMutator<File>({ url: `/Files/${id}`, method: 'GET', params });
+  };
+
+  /**
+   * @summary Upload files to be referenced in requests (supports full and chunked uploads)
+   */
+  const postFiles = (postFilesBody: PostFilesBody) => {
+    const formData = new FormData();
+    if (postFilesBody.files !== undefined) {
+      postFilesBody.files.forEach((value) => formData.append(`files`, value));
+    }
+    if (postFilesBody.threadId !== undefined) {
+      formData.append(`threadId`, postFilesBody.threadId);
+    }
+    if (postFilesBody.workspaceId !== undefined) {
+      formData.append(`workspaceId`, postFilesBody.workspaceId);
+    }
+    if (postFilesBody.uploadId !== undefined) {
+      formData.append(`uploadId`, postFilesBody.uploadId);
+    }
+    if (postFilesBody.chunkIndex !== undefined) {
+      formData.append(`chunkIndex`, postFilesBody.chunkIndex.toString());
+    }
+    if (postFilesBody.totalChunks !== undefined) {
+      formData.append(`totalChunks`, postFilesBody.totalChunks.toString());
+    }
+    if (postFilesBody.lastChunk !== undefined) {
+      formData.append(`lastChunk`, postFilesBody.lastChunk.toString());
+    }
+
+    return apiMutator<File[]>({
+      url: `/Files`,
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data' },
+      data: formData,
+    });
   };
 
   /**
@@ -125,16 +140,79 @@ export const getSmartSpaceChatAPI = () => {
     return apiMutator<void>({
       url: `/FlowRuns/${id}/variables/${variableName}`,
       method: 'PUT',
-      headers: { 'Content-Type': 'application/*+json' },
+      headers: { 'Content-Type': 'application/json' },
       data: putFlowRunsIdVariablesVariableNameBody,
     });
   };
 
   /**
-   * @summary Delete a specific message thread from SmartSpace, using it's ID.
+   * @summary Add a new comment to a message in SmartSpace, using the message's ID and comment details in the request.
    */
-  const deleteMessageThreadsId = (id: string) => {
-    return apiMutator<void>({ url: `/MessageThreads/${id}`, method: 'DELETE' });
+  const postMessagesIdComments = (id: string, createComment: CreateComment) => {
+    return apiMutator<CommentComment>({
+      url: `/Messages/${id}/comments`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createComment,
+    });
+  };
+
+  /**
+   * @summary Retrieve comments attached to a specific message in SmartSpace, using the message's ID, with pagination options 'take' and 'skip'.
+   */
+  const getMessagesIdComments = (
+    id: string,
+    params?: GetMessagesIdCommentsParams
+  ) => {
+    return apiMutator<PagedDataCollectionCommentCommentSummary>({
+      url: `/Messages/${id}/comments`,
+      method: 'GET',
+      params,
+    });
+  };
+
+  /**
+ * @summary Handles the HTTP POST request to create a new message in a thread within SmartSpace.
+This method specifies details like workspace ID, thread ID, and message content in the request.
+ */
+  const postMessages = (messageMessageRequest: MessageMessageRequest) => {
+    return apiMutator<void>({
+      url: `/Messages`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: messageMessageRequest,
+    });
+  };
+
+  const postMessagesIdValues = (
+    id: string,
+    messageCreateMessageInput: MessageCreateMessageInput
+  ) => {
+    return apiMutator<void>({
+      url: `/Messages/${id}/values`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: messageCreateMessageInput,
+    });
+  };
+
+  /**
+   * @summary Remove a specific message from SmartSpace using its ID.
+   */
+  const deleteMessagesId = (id: string) => {
+    return apiMutator<void>({ url: `/Messages/${id}`, method: 'DELETE' });
+  };
+
+  const postWorkspacesWorkspaceIdMessagethreads = (
+    workspaceId: string,
+    createMessageThread: CreateMessageThread
+  ) => {
+    return apiMutator<PagedDataCollectionMessageThreadMessageThreadSummary>({
+      url: `/workspaces/${workspaceId}/messagethreads`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: createMessageThread,
+    });
   };
 
   const getMessageThreadsId = (id: string) => {
@@ -145,43 +223,19 @@ export const getSmartSpaceChatAPI = () => {
   };
 
   /**
-   * @summary Retrieve comments from a specified message thread in SmartSpace, using the thread's ID, with take and skip for pagination control.
+   * @summary Delete a specific message thread from SmartSpace, using it's ID.
    */
-  const getMessageThreadsIdComments = (
-    id: string,
-    params?: GetMessageThreadsIdCommentsParams
+  const deleteMessageThreadsId = (id: string) => {
+    return apiMutator<void>({ url: `/MessageThreads/${id}`, method: 'DELETE' });
+  };
+
+  const getWorkspacesWorkspaceIdMessagethreadsId = (
+    workspaceId: string,
+    id: string
   ) => {
-    return apiMutator<PagedDataCollectionCommentCommentSummary>({
-      url: `/MessageThreads/${id}/comments`,
+    return apiMutator<MessageThreadMessageThreadSummary>({
+      url: `/workspaces/${workspaceId}/messagethreads/${id}`,
       method: 'GET',
-      params,
-    });
-  };
-
-  /**
-   * @summary Submit a new comment to a specific message thread in SmartSpace, identified by the thread's ID, using the provided comment schema.
-   */
-  const postMessageThreadsIdComments = (
-    id: string,
-    createComment: CreateComment
-  ) => {
-    return apiMutator<CommentComment>({
-      url: `/MessageThreads/${id}/comments`,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/*+json' },
-      data: createComment,
-    });
-  };
-
-  /**
-   * @summary Mark a message thread as favorited or not in SmartSpace, using the thread's ID and a boolean value in the request.
-   */
-  const putMessageThreadsIdFavorited = (id: string, boolean: boolean) => {
-    return apiMutator<void>({
-      url: `/MessageThreads/${id}/favorited`,
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/*+json' },
-      data: boolean,
     });
   };
 
@@ -200,6 +254,42 @@ export const getSmartSpaceChatAPI = () => {
   };
 
   /**
+   * @summary Access messages within a specific message thread in SmartSpace, using the thread's ID, along with pagination options take and skip.
+   */
+  const getWorkspacesWorkspaceIdMessagethreadsIdMessages = (
+    workspaceId: string,
+    id: string,
+    params?: GetWorkspacesWorkspaceIdMessagethreadsIdMessagesParams
+  ) => {
+    return apiMutator<PagedDataCollectionMessageMessage>({
+      url: `/workspaces/${workspaceId}/messagethreads/${id}/messages`,
+      method: 'GET',
+      params,
+    });
+  };
+
+  /**
+   * @summary Retrieves messages from a specific message thread along with the profile images of the users who created the messages.
+   */
+  const getMessageThreadsIdMessagecreateduserprofileimages = (id: string) => {
+    return apiMutator<MessageMessageCreatorProfileImage[]>({
+      url: `/MessageThreads/${id}/messagecreateduserprofileimages`,
+      method: 'GET',
+    });
+  };
+
+  /**
+   * @summary Retrieves messages from a specific message thread along with the profile images of the users who created the messages.
+   */
+  const getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimages =
+    (workspaceId: string, id: string) => {
+      return apiMutator<MessageMessageCreatorProfileImage[]>({
+        url: `/workspaces/${workspaceId}/messagethreads/${id}/messagecreateduserprofileimages`,
+        method: 'GET',
+      });
+    };
+
+  /**
    * @summary Update the name of a message thread in SmartSpace, using the thread's ID and providing the new name in the request.
    */
   const putMessageThreadsIdName = (
@@ -209,66 +299,49 @@ export const getSmartSpaceChatAPI = () => {
     return apiMutator<void>({
       url: `/MessageThreads/${id}/name`,
       method: 'PUT',
-      headers: { 'Content-Type': 'application/*+json' },
+      headers: { 'Content-Type': 'application/json' },
       data: putMessageThreadsIdNameBody,
     });
   };
 
   /**
- * @summary Handles the HTTP POST request to create a new message in a thread within SmartSpace.
-This method specifies details like workspace ID, thread ID, and message content in the request.
- */
-  const postMessages = (messageMessageRequest: MessageMessageRequest) => {
+   * @summary Mark a message thread as favorited or not in SmartSpace, using the thread's ID and a boolean value in the request.
+   */
+  const putMessageThreadsIdFavorited = (id: string, boolean: boolean) => {
     return apiMutator<void>({
-      url: `/Messages`,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/*+json' },
-      data: messageMessageRequest,
+      url: `/MessageThreads/${id}/favorited`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data: boolean,
     });
   };
 
   /**
-   * @summary Remove a specific message from SmartSpace using its ID.
+   * @summary Submit a new comment to a specific message thread in SmartSpace, identified by the thread's ID, using the provided comment schema.
    */
-  const deleteMessagesId = (id: string) => {
-    return apiMutator<void>({ url: `/Messages/${id}`, method: 'DELETE' });
-  };
-
-  /**
-   * @summary Retrieve comments attached to a specific message in SmartSpace, using the message's ID, with pagination options 'take' and 'skip'.
-   */
-  const getMessagesIdComments = (
+  const postMessageThreadsIdComments = (
     id: string,
-    params?: GetMessagesIdCommentsParams
+    createComment: CreateComment
   ) => {
-    return apiMutator<PagedDataCollectionCommentCommentSummary>({
-      url: `/Messages/${id}/comments`,
-      method: 'GET',
-      params,
-    });
-  };
-
-  /**
-   * @summary Add a new comment to a message in SmartSpace, using the message's ID and comment details in the request.
-   */
-  const postMessagesIdComments = (id: string, createComment: CreateComment) => {
     return apiMutator<CommentComment>({
-      url: `/Messages/${id}/comments`,
+      url: `/MessageThreads/${id}/comments`,
       method: 'POST',
-      headers: { 'Content-Type': 'application/*+json' },
+      headers: { 'Content-Type': 'application/json' },
       data: createComment,
     });
   };
 
-  const postMessagesIdValues = (
+  /**
+   * @summary Retrieve comments from a specified message thread in SmartSpace, using the thread's ID, with take and skip for pagination control.
+   */
+  const getMessageThreadsIdComments = (
     id: string,
-    messageCreateMessageInput: MessageCreateMessageInput
+    params?: GetMessageThreadsIdCommentsParams
   ) => {
-    return apiMutator<void>({
-      url: `/Messages/${id}/values`,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/*+json' },
-      data: messageCreateMessageInput,
+    return apiMutator<PagedDataCollectionCommentCommentSummary>({
+      url: `/MessageThreads/${id}/comments`,
+      method: 'GET',
+      params,
     });
   };
 
@@ -291,6 +364,13 @@ This method specifies details like workspace ID, thread ID, and message content 
   };
 
   /**
+   * @summary Retrieve detailed information about a specific workspace in SmartSpace, using its ID.
+   */
+  const getWorkSpacesId = (id: string) => {
+    return apiMutator<WorkSpace>({ url: `/WorkSpaces/${id}`, method: 'GET' });
+  };
+
+  /**
    * @summary Fetch a list of all workspaces in SmartSpace, with options for pagination through 'take' and 'skip' query parameters.
    */
   const getWorkSpaces = (params?: GetWorkSpacesParams) => {
@@ -302,13 +382,6 @@ This method specifies details like workspace ID, thread ID, and message content 
   };
 
   /**
-   * @summary Retrieve detailed information about a specific workspace in SmartSpace, using its ID.
-   */
-  const getWorkSpacesId = (id: string) => {
-    return apiMutator<WorkSpace>({ url: `/WorkSpaces/${id}`, method: 'GET' });
-  };
-
-  /**
    * @summary Retrieve the access control details of a specific workspace in SmartSpace, using the workspace's ID, with pagination options take and skip.
    */
   const getWorkSpacesIdAccess = (
@@ -317,6 +390,17 @@ This method specifies details like workspace ID, thread ID, and message content 
   ) => {
     return apiMutator<PagedDataCollectionAccess>({
       url: `/WorkSpaces/${id}/access`,
+      method: 'GET',
+      params,
+    });
+  };
+
+  const getWorkSpacesIdUsers = (
+    id: string,
+    params?: GetWorkSpacesIdUsersParams
+  ) => {
+    return apiMutator<AppUserAppUser[]>({
+      url: `/WorkSpaces/${id}/users`,
       method: 'GET',
       params,
     });
@@ -336,105 +420,54 @@ This method specifies details like workspace ID, thread ID, and message content 
     });
   };
 
-  const getWorkSpacesIdUsers = (
-    id: string,
-    params?: GetWorkSpacesIdUsersParams
-  ) => {
-    return apiMutator<AppUserAppUser[]>({
-      url: `/WorkSpaces/${id}/users`,
-      method: 'GET',
-      params,
-    });
-  };
-
-  /**
-   * @summary Retrieve a Shared Access Signature (SAS) for a specific document in a data space, using the dataSpaceId and optional file parameter.
-   */
-  const getDataspacesDataSpaceIdDocumentsItemSas = (
-    dataSpaceId: string,
-    params?: GetDataspacesDataSpaceIdDocumentsItemSasParams
-  ) => {
-    return apiMutator<IntegrationsAzureStorageSasToken>({
-      url: `/dataspaces/${dataSpaceId}/documents/item/sas`,
-      method: 'GET',
-      params,
-    });
-  };
-
-  const postWorkspacesWorkspaceIdMessagethreads = (
-    workspaceId: string,
-    createMessageThread: CreateMessageThread
-  ) => {
-    return apiMutator<PagedDataCollectionMessageThreadMessageThreadSummary>({
-      url: `/workspaces/${workspaceId}/messagethreads`,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/*+json' },
-      data: createMessageThread,
-    });
-  };
-
-  const getWorkspacesWorkspaceIdMessagethreadsId = (
-    workspaceId: string,
-    id: string
-  ) => {
-    return apiMutator<MessageThreadMessageThreadSummary>({
-      url: `/workspaces/${workspaceId}/messagethreads/${id}`,
-      method: 'GET',
-    });
-  };
-
-  /**
-   * @summary Access messages within a specific message thread in SmartSpace, using the thread's ID, along with pagination options take and skip.
-   */
-  const getWorkspacesWorkspaceIdMessagethreadsIdMessages = (
-    workspaceId: string,
-    id: string,
-    params?: GetWorkspacesWorkspaceIdMessagethreadsIdMessagesParams
-  ) => {
-    return apiMutator<PagedDataCollectionMessageMessage>({
-      url: `/workspaces/${workspaceId}/messagethreads/${id}/messages`,
-      method: 'GET',
-      params,
-    });
-  };
-
   return {
-    postFiles,
+    getDataspacesDataSpaceIdDocumentsItemSas,
     getFilesId,
+    postFiles,
     getFilesIdDownload,
     getFilesIdUri,
     getFlowRunsIdVariables,
     putFlowRunsIdVariablesVariableName,
-    deleteMessageThreadsId,
-    getMessageThreadsId,
-    getMessageThreadsIdComments,
-    postMessageThreadsIdComments,
-    putMessageThreadsIdFavorited,
-    getMessageThreadsIdMessages,
-    putMessageThreadsIdName,
-    postMessages,
-    deleteMessagesId,
-    getMessagesIdComments,
     postMessagesIdComments,
+    getMessagesIdComments,
+    postMessages,
     postMessagesIdValues,
+    deleteMessagesId,
+    postWorkspacesWorkspaceIdMessagethreads,
+    getMessageThreadsId,
+    deleteMessageThreadsId,
+    getWorkspacesWorkspaceIdMessagethreadsId,
+    getMessageThreadsIdMessages,
+    getWorkspacesWorkspaceIdMessagethreadsIdMessages,
+    getMessageThreadsIdMessagecreateduserprofileimages,
+    getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimages,
+    putMessageThreadsIdName,
+    putMessageThreadsIdFavorited,
+    postMessageThreadsIdComments,
+    getMessageThreadsIdComments,
     getModels,
     getModelsId,
-    getWorkSpaces,
     getWorkSpacesId,
+    getWorkSpaces,
     getWorkSpacesIdAccess,
-    getWorkSpacesIdMessageThreads,
     getWorkSpacesIdUsers,
-    getDataspacesDataSpaceIdDocumentsItemSas,
-    postWorkspacesWorkspaceIdMessagethreads,
-    getWorkspacesWorkspaceIdMessagethreadsId,
-    getWorkspacesWorkspaceIdMessagethreadsIdMessages,
+    getWorkSpacesIdMessageThreads,
   };
 };
-export type PostFilesResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['postFiles']>>
+export type GetDataspacesDataSpaceIdDocumentsItemSasResult = NonNullable<
+  Awaited<
+    ReturnType<
+      ReturnType<
+        typeof getSmartSpaceChatAPI
+      >['getDataspacesDataSpaceIdDocumentsItemSas']
+    >
+  >
 >;
 export type GetFilesIdResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getFilesId']>>
+>;
+export type PostFilesResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['postFiles']>>
 >;
 export type GetFilesIdDownloadResult = NonNullable<
   Awaited<
@@ -460,66 +493,6 @@ export type PutFlowRunsIdVariablesVariableNameResult = NonNullable<
     >
   >
 >;
-export type DeleteMessageThreadsIdResult = NonNullable<
-  Awaited<
-    ReturnType<
-      ReturnType<typeof getSmartSpaceChatAPI>['deleteMessageThreadsId']
-    >
-  >
->;
-export type GetMessageThreadsIdResult = NonNullable<
-  Awaited<
-    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getMessageThreadsId']>
-  >
->;
-export type GetMessageThreadsIdCommentsResult = NonNullable<
-  Awaited<
-    ReturnType<
-      ReturnType<typeof getSmartSpaceChatAPI>['getMessageThreadsIdComments']
-    >
-  >
->;
-export type PostMessageThreadsIdCommentsResult = NonNullable<
-  Awaited<
-    ReturnType<
-      ReturnType<typeof getSmartSpaceChatAPI>['postMessageThreadsIdComments']
-    >
-  >
->;
-export type PutMessageThreadsIdFavoritedResult = NonNullable<
-  Awaited<
-    ReturnType<
-      ReturnType<typeof getSmartSpaceChatAPI>['putMessageThreadsIdFavorited']
-    >
-  >
->;
-export type GetMessageThreadsIdMessagesResult = NonNullable<
-  Awaited<
-    ReturnType<
-      ReturnType<typeof getSmartSpaceChatAPI>['getMessageThreadsIdMessages']
-    >
-  >
->;
-export type PutMessageThreadsIdNameResult = NonNullable<
-  Awaited<
-    ReturnType<
-      ReturnType<typeof getSmartSpaceChatAPI>['putMessageThreadsIdName']
-    >
-  >
->;
-export type PostMessagesResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['postMessages']>>
->;
-export type DeleteMessagesIdResult = NonNullable<
-  Awaited<
-    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['deleteMessagesId']>
-  >
->;
-export type GetMessagesIdCommentsResult = NonNullable<
-  Awaited<
-    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getMessagesIdComments']>
-  >
->;
 export type PostMessagesIdCommentsResult = NonNullable<
   Awaited<
     ReturnType<
@@ -527,49 +500,22 @@ export type PostMessagesIdCommentsResult = NonNullable<
     >
   >
 >;
+export type GetMessagesIdCommentsResult = NonNullable<
+  Awaited<
+    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getMessagesIdComments']>
+  >
+>;
+export type PostMessagesResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['postMessages']>>
+>;
 export type PostMessagesIdValuesResult = NonNullable<
   Awaited<
     ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['postMessagesIdValues']>
   >
 >;
-export type GetModelsResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getModels']>>
->;
-export type GetModelsIdResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getModelsId']>>
->;
-export type GetWorkSpacesResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getWorkSpaces']>>
->;
-export type GetWorkSpacesIdResult = NonNullable<
+export type DeleteMessagesIdResult = NonNullable<
   Awaited<
-    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getWorkSpacesId']>
-  >
->;
-export type GetWorkSpacesIdAccessResult = NonNullable<
-  Awaited<
-    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getWorkSpacesIdAccess']>
-  >
->;
-export type GetWorkSpacesIdMessageThreadsResult = NonNullable<
-  Awaited<
-    ReturnType<
-      ReturnType<typeof getSmartSpaceChatAPI>['getWorkSpacesIdMessageThreads']
-    >
-  >
->;
-export type GetWorkSpacesIdUsersResult = NonNullable<
-  Awaited<
-    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getWorkSpacesIdUsers']>
-  >
->;
-export type GetDataspacesDataSpaceIdDocumentsItemSasResult = NonNullable<
-  Awaited<
-    ReturnType<
-      ReturnType<
-        typeof getSmartSpaceChatAPI
-      >['getDataspacesDataSpaceIdDocumentsItemSas']
-    >
+    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['deleteMessagesId']>
   >
 >;
 export type PostWorkspacesWorkspaceIdMessagethreadsResult = NonNullable<
@@ -581,12 +527,31 @@ export type PostWorkspacesWorkspaceIdMessagethreadsResult = NonNullable<
     >
   >
 >;
+export type GetMessageThreadsIdResult = NonNullable<
+  Awaited<
+    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getMessageThreadsId']>
+  >
+>;
+export type DeleteMessageThreadsIdResult = NonNullable<
+  Awaited<
+    ReturnType<
+      ReturnType<typeof getSmartSpaceChatAPI>['deleteMessageThreadsId']
+    >
+  >
+>;
 export type GetWorkspacesWorkspaceIdMessagethreadsIdResult = NonNullable<
   Awaited<
     ReturnType<
       ReturnType<
         typeof getSmartSpaceChatAPI
       >['getWorkspacesWorkspaceIdMessagethreadsId']
+    >
+  >
+>;
+export type GetMessageThreadsIdMessagesResult = NonNullable<
+  Awaited<
+    ReturnType<
+      ReturnType<typeof getSmartSpaceChatAPI>['getMessageThreadsIdMessages']
     >
   >
 >;
@@ -600,3 +565,82 @@ export type GetWorkspacesWorkspaceIdMessagethreadsIdMessagesResult =
       >
     >
   >;
+export type GetMessageThreadsIdMessagecreateduserprofileimagesResult =
+  NonNullable<
+    Awaited<
+      ReturnType<
+        ReturnType<
+          typeof getSmartSpaceChatAPI
+        >['getMessageThreadsIdMessagecreateduserprofileimages']
+      >
+    >
+  >;
+export type GetWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimagesResult =
+  NonNullable<
+    Awaited<
+      ReturnType<
+        ReturnType<
+          typeof getSmartSpaceChatAPI
+        >['getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimages']
+      >
+    >
+  >;
+export type PutMessageThreadsIdNameResult = NonNullable<
+  Awaited<
+    ReturnType<
+      ReturnType<typeof getSmartSpaceChatAPI>['putMessageThreadsIdName']
+    >
+  >
+>;
+export type PutMessageThreadsIdFavoritedResult = NonNullable<
+  Awaited<
+    ReturnType<
+      ReturnType<typeof getSmartSpaceChatAPI>['putMessageThreadsIdFavorited']
+    >
+  >
+>;
+export type PostMessageThreadsIdCommentsResult = NonNullable<
+  Awaited<
+    ReturnType<
+      ReturnType<typeof getSmartSpaceChatAPI>['postMessageThreadsIdComments']
+    >
+  >
+>;
+export type GetMessageThreadsIdCommentsResult = NonNullable<
+  Awaited<
+    ReturnType<
+      ReturnType<typeof getSmartSpaceChatAPI>['getMessageThreadsIdComments']
+    >
+  >
+>;
+export type GetModelsResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getModels']>>
+>;
+export type GetModelsIdResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getModelsId']>>
+>;
+export type GetWorkSpacesIdResult = NonNullable<
+  Awaited<
+    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getWorkSpacesId']>
+  >
+>;
+export type GetWorkSpacesResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getWorkSpaces']>>
+>;
+export type GetWorkSpacesIdAccessResult = NonNullable<
+  Awaited<
+    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getWorkSpacesIdAccess']>
+  >
+>;
+export type GetWorkSpacesIdUsersResult = NonNullable<
+  Awaited<
+    ReturnType<ReturnType<typeof getSmartSpaceChatAPI>['getWorkSpacesIdUsers']>
+  >
+>;
+export type GetWorkSpacesIdMessageThreadsResult = NonNullable<
+  Awaited<
+    ReturnType<
+      ReturnType<typeof getSmartSpaceChatAPI>['getWorkSpacesIdMessageThreads']
+    >
+  >
+>;
