@@ -1,6 +1,6 @@
 {
   "openapi": "3.0.1",
-  "info": { "title": "SmartSpace Chat API", "version": "0.0.0" },
+  "info": { "title": "Chat API", "version": "0.0.0" },
   "paths": {
     "/dataspaces/{dataSpaceId}/documents/item/sas": {
       "get": {
@@ -1437,70 +1437,68 @@
         },
         "additionalProperties": false
       },
-      "Enums.AccessType": {
-        "enum": [1, 2],
-        "type": "integer",
-        "format": "int32"
-      },
+      "Enums.AccessType": { "enum": ["Principal", "Group"], "type": "string" },
       "Enums.AppPrincipalType": {
-        "enum": [0, 1, 2, 3],
-        "type": "integer",
-        "format": "int32"
+        "enum": ["Unknown", "User", "ServicePrincipal", "Internal"],
+        "type": "string"
       },
       "Enums.FlowTriggerType": {
-        "enum": [0, 1],
-        "type": "integer",
-        "format": "int32"
+        "enum": ["Periodic", "Container"],
+        "type": "string"
       },
       "Enums.FlowVariableAccess": {
-        "enum": [0, 1, 2],
-        "type": "integer",
-        "format": "int32"
+        "enum": ["None", "Read", "Write"],
+        "type": "string"
       },
       "Enums.MessageValueType": {
-        "enum": [1, 2],
-        "type": "integer",
-        "format": "int32"
+        "enum": ["Input", "Output"],
+        "type": "string"
       },
       "Enums.ModelDeploymentProviderType": {
-        "enum": [0, 1, 2, 3, 4, 5, 6],
-        "type": "integer",
-        "format": "int32"
+        "enum": [
+          "OpenAi",
+          "AzureOpenAi",
+          "HuggingFace",
+          "Cohere",
+          "Anthropic",
+          "Gemini",
+          "VertexAi"
+        ],
+        "type": "string"
       },
       "Enums.ModelDeploymentStatus": {
-        "enum": [0, 1, 2, 3, 4],
-        "type": "integer",
-        "format": "int32"
+        "enum": ["Deploying", "Ready", "Failed", "Deleting", "Deleted"],
+        "type": "string"
       },
       "Enums.ModelDeploymentStepName": {
-        "enum": [0, 1, 2, 3, 4],
-        "type": "integer",
-        "format": "int32"
+        "enum": [
+          "DeployVNet",
+          "DeployVM",
+          "InstallDependencies",
+          "DownloadModel",
+          "TestModel"
+        ],
+        "type": "string"
       },
       "Enums.ModelPropertyType": {
-        "enum": [0, 1, 2],
-        "type": "integer",
-        "format": "int32"
+        "enum": ["Boolean", "Number", "String"],
+        "type": "string"
       },
       "Enums.ModelRole": {
-        "enum": [0, 1, 2],
-        "type": "integer",
-        "format": "int32"
+        "enum": ["Document", "Agent", "Analyzer"],
+        "type": "string"
       },
       "Enums.NotificationType": {
-        "enum": [0, 1, 2],
-        "type": "integer",
-        "format": "int32"
+        "enum": ["WorkSpaceUpdated", "MessageThreadUpdated", "CommentUpdated"],
+        "type": "string"
       },
       "Enums.VirtualMachineServerType": {
-        "enum": [0, 1],
-        "type": "integer",
-        "format": "int32"
+        "enum": ["TextGenerationInference", "VLlm"],
+        "type": "string"
       },
       "Enums.WorkSpaceOrderBy": {
-        "enum": [0, 1, 2],
-        "type": "integer",
-        "format": "int32"
+        "enum": ["RecentActivity", "Name", "CreatedDate"],
+        "type": "string"
       },
       "File": {
         "required": [

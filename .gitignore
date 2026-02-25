@@ -41,6 +41,9 @@ testem.log
 # Vite/Node may emit a compiled timestamped config next to vite.config.mts on some platforms
 vite.config.mts.timestamp-*.mjs
 
+# Claude Code
+.claude/
+
 # System Files
 .DS_Store
 Thumbs.db
