@@ -4,14 +4,9 @@ import {
   MessageResponseSourceType,
   MessageValueType,
 } from '@/domains/messages/enums';
+import { DateFromApi } from '@/shared/utils/dateFromApi';
 
 import { FileInfoSchema } from '../files/schemas';
-
-const DateFromApi = z.preprocess((v) => {
-  if (v instanceof Date) return v;
-  if (typeof v === 'string' || typeof v === 'number') return new Date(v);
-  return v;
-}, z.date());
 
 // MessageResponseSource schema
 export const MessageResponseSourceSchema = z.object({
