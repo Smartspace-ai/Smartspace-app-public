@@ -142,7 +142,15 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
     setSearchValue('');
   }, []);
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const updateIsMobile = () =>
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 640);
+    updateIsMobile();
+    window.addEventListener('resize', updateIsMobile);
+    return () => window.removeEventListener('resize', updateIsMobile);
+  }, []);
 
   // Get readOnly from uischema (set when access === 'Read')
   const readOnly = (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
