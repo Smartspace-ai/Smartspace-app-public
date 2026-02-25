@@ -8,6 +8,10 @@ const strictZodOptions = {
     body: true,
     response: true,
   },
+  dateTimeOptions: {
+    offset: true,
+    local: true,
+  },
 };
 
 export default defineConfig({
