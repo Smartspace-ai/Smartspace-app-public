@@ -1,5 +1,5 @@
 // src/domains/workspaces/service.ts
-import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import { getChatAPI } from '@/platform/api/generated/chat/api';
 import {
   getWorkSpacesIdResponse as workspaceResponseSchema,
   getWorkSpacesIdUsersResponse as workspaceUsersResponseSchema,
@@ -14,7 +14,7 @@ import {
 } from './mapper';
 import type { MentionUser, Workspace } from './model';
 
-const chatApi = getSmartSpaceChatAPI();
+const chatApi = getChatAPI();
 
 export async function fetchWorkspaces(search?: string): Promise<Workspace[]> {
   const response = await chatApi.getWorkSpaces({ search });
