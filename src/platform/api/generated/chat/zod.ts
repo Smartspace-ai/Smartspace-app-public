@@ -10,984 +10,1824 @@ import zod from 'zod';
  * @summary Retrieve a Shared Access Signature (SAS) for a specific document in a data space, using the dataSpaceId and optional file parameter.
  */
 export const getDataspacesDataSpaceIdDocumentsItemSasParams = zod.strictObject({
-  "dataSpaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the data space.')
-})
+  dataSpaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the data space.'),
+});
 
-export const getDataspacesDataSpaceIdDocumentsItemSasQueryParams = zod.strictObject({
-  "file": zod.string().optional().describe('The optional file parameter.')
-})
+export const getDataspacesDataSpaceIdDocumentsItemSasQueryParams =
+  zod.strictObject({
+    file: zod.string().optional().describe('The optional file parameter.'),
+  });
 
 export const getDataspacesDataSpaceIdDocumentsItemSasResponse = zod.object({
-  "uri": zod.url()
-})
-
+  uri: zod.url(),
+});
 
 /**
  * @summary Get details for a file previously uploaded
  */
 export const getFilesIdParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('File id')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('File id'),
+});
 
 export const getFilesIdQueryParams = zod.strictObject({
-  "threadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).optional().describe('Optional thread ID containing the file'),
-  "workspaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).optional().describe('Optional workspace ID containing the file')
-})
+  threadId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .optional()
+    .describe('Optional thread ID containing the file'),
+  workspaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .optional()
+    .describe('Optional workspace ID containing the file'),
+});
 
 export const getFilesIdResponse = zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "size": zod.number(),
-  "threadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "workspaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "createdByUserId": zod.string(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "modifiedByUserId": zod.string(),
-  "modifiedAt": zod.iso.datetime({"offset":true,"local":true})
-})
-
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  name: zod.string(),
+  size: zod.number(),
+  threadId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .nullish(),
+  workspaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .nullish(),
+  createdByUserId: zod.string(),
+  createdAt: zod.iso.datetime({ offset: true, local: true }),
+  modifiedByUserId: zod.string(),
+  modifiedAt: zod.iso.datetime({ offset: true, local: true }),
+});
 
 /**
  * @summary Upload files to be referenced in requests (supports full and chunked uploads)
  */
 export const postFilesBody = zod.strictObject({
-  "files": zod.array(zod.instanceof(File)).optional(),
-  "threadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).optional(),
-  "workspaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).optional(),
-  "uploadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).optional(),
-  "chunkIndex": zod.number().optional(),
-  "totalChunks": zod.number().optional(),
-  "lastChunk": zod.boolean().optional()
-})
+  files: zod.array(zod.instanceof(File)).optional(),
+  threadId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .optional(),
+  workspaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .optional(),
+  uploadId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .optional(),
+  chunkIndex: zod.number().optional(),
+  totalChunks: zod.number().optional(),
+  lastChunk: zod.boolean().optional(),
+});
 
 export const postFilesResponseItem = zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "size": zod.number(),
-  "threadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "workspaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "createdByUserId": zod.string(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "modifiedByUserId": zod.string(),
-  "modifiedAt": zod.iso.datetime({"offset":true,"local":true})
-})
-export const postFilesResponse = zod.array(postFilesResponseItem)
-
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  name: zod.string(),
+  size: zod.number(),
+  threadId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .nullish(),
+  workspaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .nullish(),
+  createdByUserId: zod.string(),
+  createdAt: zod.iso.datetime({ offset: true, local: true }),
+  modifiedByUserId: zod.string(),
+  modifiedAt: zod.iso.datetime({ offset: true, local: true }),
+});
+export const postFilesResponse = zod.array(postFilesResponseItem);
 
 /**
  * @summary Download a previously uploaded file
  */
 export const getFilesIdDownloadParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('File id')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('File id'),
+});
 
 export const getFilesIdDownloadQueryParams = zod.strictObject({
-  "threadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).optional().describe('Optional thread ID containing the file'),
-  "workspaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).optional().describe('Optional workspace ID containing the file')
-})
-
+  threadId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .optional()
+    .describe('Optional thread ID containing the file'),
+  workspaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .optional()
+    .describe('Optional workspace ID containing the file'),
+});
 
 /**
  * @summary Get URI of a previously uploaded file
  */
 export const getFilesIdUriParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('File id')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('File id'),
+});
 
 export const getFilesIdUriQueryParams = zod.strictObject({
-  "threadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).optional().describe('Optional thread ID containing the file'),
-  "workspaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).optional().describe('Optional workspace ID containing the file')
-})
+  threadId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .optional()
+    .describe('Optional thread ID containing the file'),
+  workspaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .optional()
+    .describe('Optional workspace ID containing the file'),
+});
 
-export const getFilesIdUriResponse = zod.string()
-
+export const getFilesIdUriResponse = zod.string();
 
 export const getFlowRunsIdVariablesParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+});
 
-export const getFlowRunsIdVariablesResponse = zod.record(zod.string(), zod.any())
-
+export const getFlowRunsIdVariablesResponse = zod.record(
+  zod.string(),
+  zod.any()
+);
 
 export const putFlowRunsIdVariablesVariableNameParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "variableName": zod.string()
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  variableName: zod.string(),
+});
 
-export const putFlowRunsIdVariablesVariableNameBody = zod.any()
-
+export const putFlowRunsIdVariablesVariableNameBody = zod.any();
 
 /**
  * @summary Add a new comment to a message in SmartSpace, using the message's ID and comment details in the request.
  */
 export const postMessagesIdCommentsParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the message.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the message.'),
+});
 
 export const postMessagesIdCommentsBody = zod.strictObject({
-  "content": zod.string(),
-  "mentionedUsers": zod.array(zod.string())
-})
+  content: zod.string(),
+  mentionedUsers: zod.array(zod.string()),
+});
 
 export const postMessagesIdCommentsResponse = zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "content": zod.string(),
-  "mentionedUsers": zod.array(zod.string()),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string().nullish(),
-  "createdBy": zod.string().nullish()
-})
-
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  content: zod.string(),
+  mentionedUsers: zod.array(zod.string()),
+  createdAt: zod.iso.datetime({ offset: true, local: true }),
+  createdByUserId: zod.string().nullish(),
+  createdBy: zod.string().nullish(),
+});
 
 /**
  * @summary Retrieve comments attached to a specific message in SmartSpace, using the message's ID, with pagination options 'take' and 'skip'.
  */
 export const getMessagesIdCommentsParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the message.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the message.'),
+});
 
-export const getMessagesIdCommentsQueryTakeDefault = 50;export const getMessagesIdCommentsQuerySkipDefault = 0;
+export const getMessagesIdCommentsQueryTakeDefault = 50;
+export const getMessagesIdCommentsQuerySkipDefault = 0;
 
 export const getMessagesIdCommentsQueryParams = zod.strictObject({
-  "take": zod.number().default(getMessagesIdCommentsQueryTakeDefault).describe('The maximum number of comments to retrieve (default is 50).'),
-  "skip": zod.number().optional().describe('The number of comments to skip (default is 0).')
-})
+  take: zod
+    .number()
+    .default(getMessagesIdCommentsQueryTakeDefault)
+    .describe('The maximum number of comments to retrieve (default is 50).'),
+  skip: zod
+    .number()
+    .optional()
+    .describe('The number of comments to skip (default is 0).'),
+});
 
 export const getMessagesIdCommentsResponse = zod.object({
-  "total": zod.number(),
-  "data": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "content": zod.string(),
-  "mentionedUsers": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string().nullish()
-})),
-  "messageThreadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-}))
-})
-
+  total: zod.number(),
+  data: zod.array(
+    zod.object({
+      id: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+      createdAt: zod.iso.datetime({ offset: true, local: true }),
+      createdByUserId: zod.string(),
+      createdBy: zod.string().nullish(),
+      content: zod.string(),
+      mentionedUsers: zod.array(
+        zod.object({
+          id: zod.string(),
+          name: zod.string().nullish(),
+        })
+      ),
+      messageThreadId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+    })
+  ),
+});
 
 /**
  * @summary Handles the HTTP POST request to create a new message in a thread within SmartSpace.
 This method specifies details like workspace ID, thread ID, and message content in the request.
  */
 export const postMessagesBody = zod.strictObject({
-  "inputs": zod.array(zod.strictObject({
-  "name": zod.string(),
-  "value": zod.any().nullish(),
-  "channels": zod.record(zod.string(), zod.number()).nullish()
-})),
-  "workSpaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "messageThreadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "variables": zod.record(zod.string(), zod.any()).nullish()
-})
-
+  inputs: zod.array(
+    zod.strictObject({
+      name: zod.string(),
+      value: zod.any().nullish(),
+      channels: zod.record(zod.string(), zod.number()).nullish(),
+    })
+  ),
+  workSpaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  messageThreadId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .nullish(),
+  variables: zod.record(zod.string(), zod.any()).nullish(),
+});
 
 export const postMessagesIdValuesParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+});
 
 export const postMessagesIdValuesBody = zod.strictObject({
-  "name": zod.string(),
-  "value": zod.any().nullish(),
-  "channels": zod.record(zod.string(), zod.number()).nullish()
-})
-
+  name: zod.string(),
+  value: zod.any().nullish(),
+  channels: zod.record(zod.string(), zod.number()).nullish(),
+});
 
 /**
  * @summary Remove a specific message from SmartSpace using its ID.
  */
 export const deleteMessagesIdParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the message to delete.')
-})
-
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the message to delete.'),
+});
 
 export const postWorkspacesWorkspaceIdMessagethreadsParams = zod.strictObject({
-  "workspaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-})
+  workspaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+});
 
 export const postWorkspacesWorkspaceIdMessagethreadsBody = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "name": zod.string().nullish()
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .nullish(),
+  name: zod.string().nullish(),
+});
 
 export const postWorkspacesWorkspaceIdMessagethreadsResponse = zod.object({
-  "total": zod.number(),
-  "data": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "workSpaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string().nullish(),
-  "totalMessages": zod.number(),
-  "favorited": zod.boolean(),
-  "isFlowRunning": zod.boolean(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "lastUpdatedAt": zod.iso.datetime({"offset":true,"local":true}),
-  "lastUpdatedByUserId": zod.string(),
-  "lastUpdated": zod.string().nullish()
-}))
-})
-
+  total: zod.number(),
+  data: zod.array(
+    zod.object({
+      id: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+      workSpaceId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+      name: zod.string().nullish(),
+      totalMessages: zod.number(),
+      favorited: zod.boolean(),
+      isFlowRunning: zod.boolean(),
+      createdAt: zod.iso.datetime({ offset: true, local: true }),
+      createdByUserId: zod.string(),
+      createdBy: zod.string().nullish(),
+      lastUpdatedAt: zod.iso.datetime({ offset: true, local: true }),
+      lastUpdatedByUserId: zod.string(),
+      lastUpdated: zod.string().nullish(),
+    })
+  ),
+});
 
 export const getMessageThreadsIdParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+});
 
 export const getMessageThreadsIdResponse = zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "workSpaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string().nullish(),
-  "totalMessages": zod.number(),
-  "favorited": zod.boolean(),
-  "isFlowRunning": zod.boolean(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "lastUpdatedAt": zod.iso.datetime({"offset":true,"local":true}),
-  "lastUpdatedByUserId": zod.string(),
-  "lastUpdated": zod.string().nullish()
-})
-
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  workSpaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  name: zod.string().nullish(),
+  totalMessages: zod.number(),
+  favorited: zod.boolean(),
+  isFlowRunning: zod.boolean(),
+  createdAt: zod.iso.datetime({ offset: true, local: true }),
+  createdByUserId: zod.string(),
+  createdBy: zod.string().nullish(),
+  lastUpdatedAt: zod.iso.datetime({ offset: true, local: true }),
+  lastUpdatedByUserId: zod.string(),
+  lastUpdated: zod.string().nullish(),
+});
 
 /**
  * @summary Delete a specific message thread from SmartSpace, using it's ID.
  */
 export const deleteMessageThreadsIdParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the message thread to delete.')
-})
-
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the message thread to delete.'),
+});
 
 export const getWorkspacesWorkspaceIdMessagethreadsIdParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "workspaceId": zod.string()
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  workspaceId: zod.string(),
+});
 
 export const getWorkspacesWorkspaceIdMessagethreadsIdResponse = zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "workSpaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string().nullish(),
-  "totalMessages": zod.number(),
-  "favorited": zod.boolean(),
-  "isFlowRunning": zod.boolean(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "lastUpdatedAt": zod.iso.datetime({"offset":true,"local":true}),
-  "lastUpdatedByUserId": zod.string(),
-  "lastUpdated": zod.string().nullish()
-})
-
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  workSpaceId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  name: zod.string().nullish(),
+  totalMessages: zod.number(),
+  favorited: zod.boolean(),
+  isFlowRunning: zod.boolean(),
+  createdAt: zod.iso.datetime({ offset: true, local: true }),
+  createdByUserId: zod.string(),
+  createdBy: zod.string().nullish(),
+  lastUpdatedAt: zod.iso.datetime({ offset: true, local: true }),
+  lastUpdatedByUserId: zod.string(),
+  lastUpdated: zod.string().nullish(),
+});
 
 /**
  * @summary Access messages within a specific message thread in SmartSpace, using the thread's ID, along with pagination options take and skip.
  */
 export const getMessageThreadsIdMessagesParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the thread.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the thread.'),
+});
 
-export const getMessageThreadsIdMessagesQueryTakeDefault = 50;export const getMessageThreadsIdMessagesQuerySkipDefault = 0;
+export const getMessageThreadsIdMessagesQueryTakeDefault = 50;
+export const getMessageThreadsIdMessagesQuerySkipDefault = 0;
 
 export const getMessageThreadsIdMessagesQueryParams = zod.strictObject({
-  "take": zod.number().default(getMessageThreadsIdMessagesQueryTakeDefault).describe('The number of messages to retrieve (default: 50).'),
-  "skip": zod.number().optional().describe('The number of messages to skip (default: 0).')
-})
+  take: zod
+    .number()
+    .default(getMessageThreadsIdMessagesQueryTakeDefault)
+    .describe('The number of messages to retrieve (default: 50).'),
+  skip: zod
+    .number()
+    .optional()
+    .describe('The number of messages to skip (default: 0).'),
+});
 
 export const getMessageThreadsIdMessagesResponse = zod.object({
-  "total": zod.number(),
-  "data": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "values": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "type": zod.enum(['Input', 'Output']),
-  "value": zod.any().nullish(),
-  "channels": zod.record(zod.string(), zod.number()),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
-  "createdBy": zod.string().nullish()
-})),
-  "messageThreadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "hasComments": zod.boolean(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "errors": zod.array(zod.object({
-  "message": zod.string().nullish(),
-  "data": zod.any().nullish(),
-  "blockId": zod.string().nullish(),
-  "code": zod.number()
-}))
-}))
-})
-
+  total: zod.number(),
+  data: zod.array(
+    zod.object({
+      id: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+      values: zod.array(
+        zod.object({
+          id: zod
+            .string()
+            .regex(
+              /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+            ),
+          name: zod.string(),
+          type: zod.enum(['Input', 'Output']),
+          value: zod.any().nullish(),
+          channels: zod.record(zod.string(), zod.number()),
+          createdAt: zod.iso.datetime({ offset: true, local: true }),
+          createdByUserId: zod.string(),
+          createdBy: zod.string().nullish(),
+        })
+      ),
+      messageThreadId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        )
+        .nullish(),
+      hasComments: zod.boolean(),
+      createdAt: zod.iso.datetime({ offset: true, local: true }),
+      createdByUserId: zod.string(),
+      createdBy: zod.string().nullish(),
+      errors: zod.array(
+        zod.object({
+          message: zod.string().nullish(),
+          data: zod.any().nullish(),
+          blockId: zod.string().nullish(),
+          code: zod.number(),
+        })
+      ),
+    })
+  ),
+});
 
 /**
  * @summary Access messages within a specific message thread in SmartSpace, using the thread's ID, along with pagination options take and skip.
  */
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the thread.'),
-  "workspaceId": zod.string()
-})
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesParams =
+  zod.strictObject({
+    id: zod
+      .string()
+      .regex(
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+      )
+      .describe('The ID of the thread.'),
+    workspaceId: zod.string(),
+  });
 
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryTakeDefault = 50;export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQuerySkipDefault = 0;
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryTakeDefault = 50;
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQuerySkipDefault = 0;
 
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryParams = zod.strictObject({
-  "take": zod.number().default(getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryTakeDefault).describe('The number of messages to retrieve (default: 50).'),
-  "skip": zod.number().optional().describe('The number of messages to skip (default: 0).')
-})
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryParams =
+  zod.strictObject({
+    take: zod
+      .number()
+      .default(getWorkspacesWorkspaceIdMessagethreadsIdMessagesQueryTakeDefault)
+      .describe('The number of messages to retrieve (default: 50).'),
+    skip: zod
+      .number()
+      .optional()
+      .describe('The number of messages to skip (default: 0).'),
+  });
 
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesResponse = zod.object({
-  "total": zod.number(),
-  "data": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "values": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "type": zod.enum(['Input', 'Output']),
-  "value": zod.any().nullish(),
-  "channels": zod.record(zod.string(), zod.number()),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
-  "createdBy": zod.string().nullish()
-})),
-  "messageThreadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "hasComments": zod.boolean(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "errors": zod.array(zod.object({
-  "message": zod.string().nullish(),
-  "data": zod.any().nullish(),
-  "blockId": zod.string().nullish(),
-  "code": zod.number()
-}))
-}))
-})
-
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagesResponse =
+  zod.object({
+    total: zod.number(),
+    data: zod.array(
+      zod.object({
+        id: zod
+          .string()
+          .regex(
+            /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+          ),
+        values: zod.array(
+          zod.object({
+            id: zod
+              .string()
+              .regex(
+                /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+              ),
+            name: zod.string(),
+            type: zod.enum(['Input', 'Output']),
+            value: zod.any().nullish(),
+            channels: zod.record(zod.string(), zod.number()),
+            createdAt: zod.iso.datetime({ offset: true, local: true }),
+            createdByUserId: zod.string(),
+            createdBy: zod.string().nullish(),
+          })
+        ),
+        messageThreadId: zod
+          .string()
+          .regex(
+            /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+          )
+          .nullish(),
+        hasComments: zod.boolean(),
+        createdAt: zod.iso.datetime({ offset: true, local: true }),
+        createdByUserId: zod.string(),
+        createdBy: zod.string().nullish(),
+        errors: zod.array(
+          zod.object({
+            message: zod.string().nullish(),
+            data: zod.any().nullish(),
+            blockId: zod.string().nullish(),
+            code: zod.number(),
+          })
+        ),
+      })
+    ),
+  });
 
 /**
  * @summary Retrieves messages from a specific message thread along with the profile images of the users who created the messages.
  */
-export const getMessageThreadsIdMessagecreateduserprofileimagesParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The unique identifier of the message thread.')
-})
+export const getMessageThreadsIdMessagecreateduserprofileimagesParams =
+  zod.strictObject({
+    id: zod
+      .string()
+      .regex(
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+      )
+      .describe('The unique identifier of the message thread.'),
+  });
 
-export const getMessageThreadsIdMessagecreateduserprofileimagesResponseItem = zod.object({
-  "userId": zod.string(),
-  "base64StringImage": zod.string().nullish()
-})
-export const getMessageThreadsIdMessagecreateduserprofileimagesResponse = zod.array(getMessageThreadsIdMessagecreateduserprofileimagesResponseItem)
-
+export const getMessageThreadsIdMessagecreateduserprofileimagesResponseItem =
+  zod.object({
+    userId: zod.string(),
+    base64StringImage: zod.string().nullish(),
+  });
+export const getMessageThreadsIdMessagecreateduserprofileimagesResponse =
+  zod.array(getMessageThreadsIdMessagecreateduserprofileimagesResponseItem);
 
 /**
  * @summary Retrieves messages from a specific message thread along with the profile images of the users who created the messages.
  */
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimagesParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The unique identifier of the message thread.'),
-  "workspaceId": zod.string()
-})
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimagesParams =
+  zod.strictObject({
+    id: zod
+      .string()
+      .regex(
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+      )
+      .describe('The unique identifier of the message thread.'),
+    workspaceId: zod.string(),
+  });
 
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimagesResponseItem = zod.object({
-  "userId": zod.string(),
-  "base64StringImage": zod.string().nullish()
-})
-export const getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimagesResponse = zod.array(getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimagesResponseItem)
-
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimagesResponseItem =
+  zod.object({
+    userId: zod.string(),
+    base64StringImage: zod.string().nullish(),
+  });
+export const getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimagesResponse =
+  zod.array(
+    getWorkspacesWorkspaceIdMessagethreadsIdMessagecreateduserprofileimagesResponseItem
+  );
 
 /**
  * @summary Update the name of a message thread in SmartSpace, using the thread's ID and providing the new name in the request.
  */
 export const putMessageThreadsIdNameParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the message thread.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the message thread.'),
+});
 
-export const putMessageThreadsIdNameBody = zod.string()
-
+export const putMessageThreadsIdNameBody = zod.string();
 
 /**
  * @summary Mark a message thread as favorited or not in SmartSpace, using the thread's ID and a boolean value in the request.
  */
 export const putMessageThreadsIdFavoritedParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the chat thread.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the chat thread.'),
+});
 
-export const putMessageThreadsIdFavoritedBody = zod.boolean()
-
+export const putMessageThreadsIdFavoritedBody = zod.boolean();
 
 /**
  * @summary Submit a new comment to a specific message thread in SmartSpace, identified by the thread's ID, using the provided comment schema.
  */
 export const postMessageThreadsIdCommentsParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the message thread.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the message thread.'),
+});
 
 export const postMessageThreadsIdCommentsBody = zod.strictObject({
-  "content": zod.string(),
-  "mentionedUsers": zod.array(zod.string())
-})
+  content: zod.string(),
+  mentionedUsers: zod.array(zod.string()),
+});
 
 export const postMessageThreadsIdCommentsResponse = zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "content": zod.string(),
-  "mentionedUsers": zod.array(zod.string()),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string().nullish(),
-  "createdBy": zod.string().nullish()
-})
-
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  content: zod.string(),
+  mentionedUsers: zod.array(zod.string()),
+  createdAt: zod.iso.datetime({ offset: true, local: true }),
+  createdByUserId: zod.string().nullish(),
+  createdBy: zod.string().nullish(),
+});
 
 /**
  * @summary Retrieve comments from a specified message thread in SmartSpace, using the thread's ID, with take and skip for pagination control.
  */
 export const getMessageThreadsIdCommentsParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the message thread.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the message thread.'),
+});
 
-export const getMessageThreadsIdCommentsQueryTakeDefault = 50;export const getMessageThreadsIdCommentsQuerySkipDefault = 0;
+export const getMessageThreadsIdCommentsQueryTakeDefault = 50;
+export const getMessageThreadsIdCommentsQuerySkipDefault = 0;
 
 export const getMessageThreadsIdCommentsQueryParams = zod.strictObject({
-  "take": zod.number().default(getMessageThreadsIdCommentsQueryTakeDefault).describe('The maximum number of comments to retrieve (default is 50).'),
-  "skip": zod.number().optional().describe('The number of comments to skip (default is 0).')
-})
+  take: zod
+    .number()
+    .default(getMessageThreadsIdCommentsQueryTakeDefault)
+    .describe('The maximum number of comments to retrieve (default is 50).'),
+  skip: zod
+    .number()
+    .optional()
+    .describe('The number of comments to skip (default is 0).'),
+});
 
 export const getMessageThreadsIdCommentsResponse = zod.object({
-  "total": zod.number(),
-  "data": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "content": zod.string(),
-  "mentionedUsers": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string().nullish()
-})),
-  "messageThreadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-}))
-})
-
+  total: zod.number(),
+  data: zod.array(
+    zod.object({
+      id: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+      createdAt: zod.iso.datetime({ offset: true, local: true }),
+      createdByUserId: zod.string(),
+      createdBy: zod.string().nullish(),
+      content: zod.string(),
+      mentionedUsers: zod.array(
+        zod.object({
+          id: zod.string(),
+          name: zod.string().nullish(),
+        })
+      ),
+      messageThreadId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+    })
+  ),
+});
 
 /**
  * @summary Retrieves a list of models.
  */
-export const getModelsQueryTakeDefault = 50;export const getModelsQuerySkipDefault = 0;export const getModelsQuerySearchDefault = "";
+export const getModelsQueryTakeDefault = 50;
+export const getModelsQuerySkipDefault = 0;
+export const getModelsQuerySearchDefault = '';
 
 export const getModelsQueryParams = zod.strictObject({
-  "take": zod.number().default(getModelsQueryTakeDefault).describe('The number of models to retrieve.'),
-  "skip": zod.number().optional().describe('The number of models to skip.'),
-  "search": zod.string().optional().describe('The search term to filter the models.')
-})
+  take: zod
+    .number()
+    .default(getModelsQueryTakeDefault)
+    .describe('The number of models to retrieve.'),
+  skip: zod.number().optional().describe('The number of models to skip.'),
+  search: zod
+    .string()
+    .optional()
+    .describe('The search term to filter the models.'),
+});
 
 export const getModelsResponse = zod.object({
-  "total": zod.number(),
-  "data": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "displayName": zod.string(),
-  "deploymentStatus": zod.enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted']).optional(),
-  "modelDeploymentProviderType": zod.enum(['OpenAi', 'AzureOpenAi', 'HuggingFace', 'Cohere', 'Anthropic', 'Gemini', 'VertexAi']).optional(),
-  "createdByUserId": zod.string().nullish(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "properties": zod.array(zod.object({
-  "name": zod.string(),
-  "type": zod.enum(['Boolean', 'Number', 'String'])
-})),
-  "virtualMachineUrl": zod.string().nullish()
-}))
-})
-
+  total: zod.number(),
+  data: zod.array(
+    zod.object({
+      id: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+      name: zod.string(),
+      displayName: zod.string(),
+      deploymentStatus: zod
+        .enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted'])
+        .optional(),
+      modelDeploymentProviderType: zod
+        .enum([
+          'OpenAi',
+          'AzureOpenAi',
+          'HuggingFace',
+          'Cohere',
+          'Anthropic',
+          'Gemini',
+          'VertexAi',
+        ])
+        .optional(),
+      createdByUserId: zod.string().nullish(),
+      createdAt: zod.iso.datetime({ offset: true, local: true }).nullish(),
+      properties: zod.array(
+        zod.object({
+          name: zod.string(),
+          type: zod.enum(['Boolean', 'Number', 'String']),
+        })
+      ),
+      virtualMachineUrl: zod.string().nullish(),
+    })
+  ),
+});
 
 /**
  * @summary Retrieves a model by its ID.
  */
 export const getModelsIdParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the model to retrieve.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the model to retrieve.'),
+});
 
 export const getModelsIdResponse = zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "displayName": zod.string(),
-  "createdByUserId": zod.string().nullish(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "modelDeploymentProviderType": zod.enum(['OpenAi', 'AzureOpenAi', 'HuggingFace', 'Cohere', 'Anthropic', 'Gemini', 'VertexAi']).optional(),
-  "properties": zod.array(zod.object({
-  "name": zod.string(),
-  "type": zod.enum(['Boolean', 'Number', 'String'])
-})),
-  "deployment": zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "modelName": zod.string(),
-  "providerId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "status": zod.enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted']),
-  "statusMessage": zod.string().nullish(),
-  "statusUpdatedAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "detailedMessage": zod.string().nullish(),
-  "url": zod.string().nullish(),
-  "region": zod.string().nullish(),
-  "vmSize": zod.string().nullish(),
-  "providerDeploymentId": zod.string().nullish(),
-  "virtualMachineServerType": zod.enum(['TextGenerationInference', 'VLlm']).optional(),
-  "virtualMachineUrl": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "dockerFile": zod.string().nullish(),
-  "steps": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.enum(['DeployVNet', 'DeployVM', 'InstallDependencies', 'DownloadModel', 'TestModel']),
-  "index": zod.number(),
-  "message": zod.string(),
-  "progress": zod.number(),
-  "startedAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "finishedAt": zod.iso.datetime({"offset":true,"local":true}).nullish()
-}))
-}).optional()
-})
-
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+  name: zod.string(),
+  displayName: zod.string(),
+  createdByUserId: zod.string().nullish(),
+  createdAt: zod.iso.datetime({ offset: true, local: true }).nullish(),
+  modelDeploymentProviderType: zod
+    .enum([
+      'OpenAi',
+      'AzureOpenAi',
+      'HuggingFace',
+      'Cohere',
+      'Anthropic',
+      'Gemini',
+      'VertexAi',
+    ])
+    .optional(),
+  properties: zod.array(
+    zod.object({
+      name: zod.string(),
+      type: zod.enum(['Boolean', 'Number', 'String']),
+    })
+  ),
+  deployment: zod
+    .object({
+      id: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+      modelName: zod.string(),
+      providerId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        )
+        .nullish(),
+      status: zod.enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted']),
+      statusMessage: zod.string().nullish(),
+      statusUpdatedAt: zod.iso
+        .datetime({ offset: true, local: true })
+        .nullish(),
+      detailedMessage: zod.string().nullish(),
+      url: zod.string().nullish(),
+      region: zod.string().nullish(),
+      vmSize: zod.string().nullish(),
+      providerDeploymentId: zod.string().nullish(),
+      virtualMachineServerType: zod
+        .enum(['TextGenerationInference', 'VLlm'])
+        .optional(),
+      virtualMachineUrl: zod.string().nullish(),
+      createdByUserId: zod.string().nullish(),
+      createdAt: zod.iso.datetime({ offset: true, local: true }).nullish(),
+      dockerFile: zod.string().nullish(),
+      steps: zod.array(
+        zod.object({
+          id: zod
+            .string()
+            .regex(
+              /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+            ),
+          name: zod.enum([
+            'DeployVNet',
+            'DeployVM',
+            'InstallDependencies',
+            'DownloadModel',
+            'TestModel',
+          ]),
+          index: zod.number(),
+          message: zod.string(),
+          progress: zod.number(),
+          startedAt: zod.iso.datetime({ offset: true, local: true }).nullish(),
+          finishedAt: zod.iso.datetime({ offset: true, local: true }).nullish(),
+        })
+      ),
+    })
+    .optional(),
+});
 
 /**
  * @summary Retrieve detailed information about a specific workspace in SmartSpace, using its ID.
  */
 export const getWorkSpacesIdParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the workspace to retrieve.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the workspace to retrieve.'),
+});
 
 export const getWorkSpacesIdResponse = zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "name": zod.string(),
-  "showSources": zod.boolean(),
-  "dataSpaces": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "dataSets": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "dataSpaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "version": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "description": zod.string().nullish(),
-  "properties": zod.array(zod.object({
-  "name": zod.string(),
-  "description": zod.string().nullish(),
-  "isVector": zod.boolean()
-})),
-  "createdByUserId": zod.string(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "modifiedByUserId": zod.string(),
-  "modifiedAt": zod.iso.datetime({"offset":true,"local":true}),
-  "flow": zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "triggers": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "inputName": zod.string(),
-  "type": zod.enum(['Periodic', 'Container']),
-  "dataSourceContainer": zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "path": zod.string(),
-  "dataSourceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-}),
-  "flowId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-})),
-  "activeFlowDefinitionId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "activeFlowDefinition": zod.object({
-  "name": zod.string().nullish(),
-  "inputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish(),
-  "outputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish(),
-  "constants": zod.record(zod.string(), zod.object({
-  "value": zod.any().nullish()
-})).nullish(),
-  "variables": zod.record(zod.string(), zod.object({
-  "access": zod.enum(['None', 'Read', 'Write']),
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish(),
-  "blocks": zod.record(zod.string(), zod.object({
-  "name": zod.string(),
-  "version": zod.string(),
-  "description": zod.string().nullish(),
-  "dynamicPorts": zod.array(zod.string()).nullish(),
-  "constants": zod.array(zod.object({
-  "value": zod.any().nullish(),
-  "target": zod.object({
-  "port": zod.string(),
-  "pin": zod.string()
-})
-})).nullish(),
-  "dynamicInputPins": zod.array(zod.object({
-  "port": zod.string(),
-  "pin": zod.string()
-})).nullish(),
-  "dynamicOutputPins": zod.array(zod.object({
-  "port": zod.string(),
-  "pin": zod.string()
-})).nullish()
-})).nullish(),
-  "connections": zod.array(zod.object({
-  "source": zod.object({
-  "node": zod.string(),
-  "port": zod.string().nullish(),
-  "pin": zod.string().nullish()
-}),
-  "target": zod.object({
-  "node": zod.string(),
-  "port": zod.string().nullish(),
-  "pin": zod.string().nullish()
-})
-})).nullish(),
-  "layout": zod.any().nullish()
-}).optional()
-}).optional()
-})).nullish(),
-  "parentWorkspaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "workspacesInfo": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string()
-})).nullish(),
-  "createdByUserId": zod.string(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "modifiedByUserId": zod.string().nullish(),
-  "modifiedAt": zod.iso.datetime({"offset":true,"local":true}).nullish()
-})),
-  "createdByUserId": zod.string(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "modifiedByUserId": zod.string().nullish(),
-  "modifiedAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "favorited": zod.boolean(),
-  "modelConfigurations": zod.array(zod.object({
-  "model": zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "displayName": zod.string(),
-  "createdByUserId": zod.string().nullish(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "modelDeploymentProviderType": zod.enum(['OpenAi', 'AzureOpenAi', 'HuggingFace', 'Cohere', 'Anthropic', 'Gemini', 'VertexAi']).optional(),
-  "properties": zod.array(zod.object({
-  "name": zod.string(),
-  "type": zod.enum(['Boolean', 'Number', 'String'])
-})),
-  "deployment": zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "modelName": zod.string(),
-  "providerId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "status": zod.enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted']),
-  "statusMessage": zod.string().nullish(),
-  "statusUpdatedAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "detailedMessage": zod.string().nullish(),
-  "url": zod.string().nullish(),
-  "region": zod.string().nullish(),
-  "vmSize": zod.string().nullish(),
-  "providerDeploymentId": zod.string().nullish(),
-  "virtualMachineServerType": zod.enum(['TextGenerationInference', 'VLlm']).optional(),
-  "virtualMachineUrl": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "dockerFile": zod.string().nullish(),
-  "steps": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.enum(['DeployVNet', 'DeployVM', 'InstallDependencies', 'DownloadModel', 'TestModel']),
-  "index": zod.number(),
-  "message": zod.string(),
-  "progress": zod.number(),
-  "startedAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "finishedAt": zod.iso.datetime({"offset":true,"local":true}).nullish()
-}))
-}).optional()
-}),
-  "role": zod.enum(['Document', 'Agent', 'Analyzer']),
-  "topP": zod.number(),
-  "temperature": zod.number(),
-  "presencePenalty": zod.number(),
-  "frequencyPenalty": zod.number(),
-  "prePrompt": zod.string()
-})),
-  "summary": zod.string().nullish(),
-  "firstPrompt": zod.string().nullish(),
-  "outputSchema": zod.string().nullish(),
-  "isPromptAndResponseLoggingEnabled": zod.boolean().nullish(),
-  "inputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})),
-  "variables": zod.record(zod.string(), zod.object({
-  "access": zod.enum(['None', 'Read', 'Write']),
-  "schema": zod.record(zod.string(), zod.any())
-})),
-  "sandBoxThreadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "supportsFiles": zod.boolean().nullish(),
-  "tags": zod.array(zod.string()).nullish()
-})
-
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .nullish(),
+  name: zod.string(),
+  showSources: zod.boolean(),
+  dataSpaces: zod.array(
+    zod.object({
+      id: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+      name: zod.string(),
+      dataSets: zod
+        .array(
+          zod.object({
+            id: zod
+              .string()
+              .regex(
+                /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+              ),
+            name: zod.string(),
+            dataSpaceId: zod
+              .string()
+              .regex(
+                /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+              )
+              .nullish(),
+            version: zod
+              .string()
+              .regex(
+                /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+              )
+              .nullish(),
+            description: zod.string().nullish(),
+            properties: zod.array(
+              zod.object({
+                name: zod.string(),
+                description: zod.string().nullish(),
+                isVector: zod.boolean(),
+              })
+            ),
+            createdByUserId: zod.string(),
+            createdAt: zod.iso.datetime({ offset: true, local: true }),
+            modifiedByUserId: zod.string(),
+            modifiedAt: zod.iso.datetime({ offset: true, local: true }),
+            flow: zod
+              .object({
+                id: zod
+                  .string()
+                  .regex(
+                    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                  ),
+                triggers: zod.array(
+                  zod.object({
+                    id: zod
+                      .string()
+                      .regex(
+                        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                      ),
+                    inputName: zod.string(),
+                    type: zod.enum(['Periodic', 'Container']),
+                    dataSourceContainer: zod.object({
+                      id: zod
+                        .string()
+                        .regex(
+                          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                        ),
+                      name: zod.string(),
+                      path: zod.string(),
+                      dataSourceId: zod
+                        .string()
+                        .regex(
+                          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                        ),
+                    }),
+                    flowId: zod
+                      .string()
+                      .regex(
+                        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                      ),
+                  })
+                ),
+                activeFlowDefinitionId: zod
+                  .string()
+                  .regex(
+                    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                  ),
+                activeFlowDefinition: zod
+                  .object({
+                    name: zod.string().nullish(),
+                    inputs: zod
+                      .record(
+                        zod.string(),
+                        zod.object({
+                          schema: zod.record(zod.string(), zod.any()),
+                        })
+                      )
+                      .nullish(),
+                    outputs: zod
+                      .record(
+                        zod.string(),
+                        zod.object({
+                          schema: zod.record(zod.string(), zod.any()),
+                        })
+                      )
+                      .nullish(),
+                    constants: zod
+                      .record(
+                        zod.string(),
+                        zod.object({
+                          value: zod.any().nullish(),
+                        })
+                      )
+                      .nullish(),
+                    variables: zod
+                      .record(
+                        zod.string(),
+                        zod.object({
+                          access: zod.enum(['None', 'Read', 'Write']),
+                          schema: zod.record(zod.string(), zod.any()),
+                        })
+                      )
+                      .nullish(),
+                    blocks: zod
+                      .record(
+                        zod.string(),
+                        zod.object({
+                          name: zod.string(),
+                          version: zod.string(),
+                          description: zod.string().nullish(),
+                          dynamicPorts: zod.array(zod.string()).nullish(),
+                          constants: zod
+                            .array(
+                              zod.object({
+                                value: zod.any().nullish(),
+                                target: zod.object({
+                                  port: zod.string(),
+                                  pin: zod.string(),
+                                }),
+                              })
+                            )
+                            .nullish(),
+                          dynamicInputPins: zod
+                            .array(
+                              zod.object({
+                                port: zod.string(),
+                                pin: zod.string(),
+                              })
+                            )
+                            .nullish(),
+                          dynamicOutputPins: zod
+                            .array(
+                              zod.object({
+                                port: zod.string(),
+                                pin: zod.string(),
+                              })
+                            )
+                            .nullish(),
+                        })
+                      )
+                      .nullish(),
+                    connections: zod
+                      .array(
+                        zod.object({
+                          source: zod.object({
+                            node: zod.string(),
+                            port: zod.string().nullish(),
+                            pin: zod.string().nullish(),
+                          }),
+                          target: zod.object({
+                            node: zod.string(),
+                            port: zod.string().nullish(),
+                            pin: zod.string().nullish(),
+                          }),
+                        })
+                      )
+                      .nullish(),
+                    layout: zod.any().nullish(),
+                  })
+                  .optional(),
+              })
+              .optional(),
+          })
+        )
+        .nullish(),
+      parentWorkspaceId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        )
+        .nullish(),
+      workspacesInfo: zod
+        .array(
+          zod.object({
+            id: zod
+              .string()
+              .regex(
+                /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+              ),
+            name: zod.string(),
+          })
+        )
+        .nullish(),
+      createdByUserId: zod.string(),
+      createdAt: zod.iso.datetime({ offset: true, local: true }),
+      modifiedByUserId: zod.string().nullish(),
+      modifiedAt: zod.iso.datetime({ offset: true, local: true }).nullish(),
+    })
+  ),
+  createdByUserId: zod.string(),
+  createdAt: zod.iso.datetime({ offset: true, local: true }),
+  modifiedByUserId: zod.string().nullish(),
+  modifiedAt: zod.iso.datetime({ offset: true, local: true }).nullish(),
+  favorited: zod.boolean(),
+  modelConfigurations: zod.array(
+    zod.object({
+      model: zod.object({
+        id: zod
+          .string()
+          .regex(
+            /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+          ),
+        name: zod.string(),
+        displayName: zod.string(),
+        createdByUserId: zod.string().nullish(),
+        createdAt: zod.iso.datetime({ offset: true, local: true }).nullish(),
+        modelDeploymentProviderType: zod
+          .enum([
+            'OpenAi',
+            'AzureOpenAi',
+            'HuggingFace',
+            'Cohere',
+            'Anthropic',
+            'Gemini',
+            'VertexAi',
+          ])
+          .optional(),
+        properties: zod.array(
+          zod.object({
+            name: zod.string(),
+            type: zod.enum(['Boolean', 'Number', 'String']),
+          })
+        ),
+        deployment: zod
+          .object({
+            id: zod
+              .string()
+              .regex(
+                /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+              ),
+            modelName: zod.string(),
+            providerId: zod
+              .string()
+              .regex(
+                /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+              )
+              .nullish(),
+            status: zod.enum([
+              'Deploying',
+              'Ready',
+              'Failed',
+              'Deleting',
+              'Deleted',
+            ]),
+            statusMessage: zod.string().nullish(),
+            statusUpdatedAt: zod.iso
+              .datetime({ offset: true, local: true })
+              .nullish(),
+            detailedMessage: zod.string().nullish(),
+            url: zod.string().nullish(),
+            region: zod.string().nullish(),
+            vmSize: zod.string().nullish(),
+            providerDeploymentId: zod.string().nullish(),
+            virtualMachineServerType: zod
+              .enum(['TextGenerationInference', 'VLlm'])
+              .optional(),
+            virtualMachineUrl: zod.string().nullish(),
+            createdByUserId: zod.string().nullish(),
+            createdAt: zod.iso
+              .datetime({ offset: true, local: true })
+              .nullish(),
+            dockerFile: zod.string().nullish(),
+            steps: zod.array(
+              zod.object({
+                id: zod
+                  .string()
+                  .regex(
+                    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                  ),
+                name: zod.enum([
+                  'DeployVNet',
+                  'DeployVM',
+                  'InstallDependencies',
+                  'DownloadModel',
+                  'TestModel',
+                ]),
+                index: zod.number(),
+                message: zod.string(),
+                progress: zod.number(),
+                startedAt: zod.iso
+                  .datetime({ offset: true, local: true })
+                  .nullish(),
+                finishedAt: zod.iso
+                  .datetime({ offset: true, local: true })
+                  .nullish(),
+              })
+            ),
+          })
+          .optional(),
+      }),
+      role: zod.enum(['Document', 'Agent', 'Analyzer']),
+      topP: zod.number(),
+      temperature: zod.number(),
+      presencePenalty: zod.number(),
+      frequencyPenalty: zod.number(),
+      prePrompt: zod.string(),
+    })
+  ),
+  summary: zod.string().nullish(),
+  firstPrompt: zod.string().nullish(),
+  outputSchema: zod.string().nullish(),
+  isPromptAndResponseLoggingEnabled: zod.boolean().nullish(),
+  inputs: zod.record(
+    zod.string(),
+    zod.object({
+      schema: zod.record(zod.string(), zod.any()),
+    })
+  ),
+  variables: zod.record(
+    zod.string(),
+    zod.object({
+      access: zod.enum(['None', 'Read', 'Write']),
+      schema: zod.record(zod.string(), zod.any()),
+    })
+  ),
+  sandBoxThreadId: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .nullish(),
+  supportsFiles: zod.boolean().nullish(),
+  tags: zod.array(zod.string()).nullish(),
+});
 
 /**
  * @summary Fetch a list of all workspaces in SmartSpace, with options for pagination through 'take' and 'skip' query parameters.
  */
-export const getWorkSpacesQueryTakeDefault = 20;export const getWorkSpacesQuerySkipDefault = 0;
+export const getWorkSpacesQueryTakeDefault = 20;
+export const getWorkSpacesQuerySkipDefault = 0;
 
 export const getWorkSpacesQueryParams = zod.strictObject({
-  "take": zod.number().default(getWorkSpacesQueryTakeDefault).describe('The number of workspaces to retrieve.'),
-  "skip": zod.number().optional().describe('The number of workspaces to skip.'),
-  "search": zod.string().optional().describe('The search term to filter workspaces.'),
-  "orderBy": zod.enum(['RecentActivity', 'Name', 'CreatedDate']).optional().describe('The sort order for the returned workspaces.')
-})
+  take: zod
+    .number()
+    .default(getWorkSpacesQueryTakeDefault)
+    .describe('The number of workspaces to retrieve.'),
+  skip: zod.number().optional().describe('The number of workspaces to skip.'),
+  search: zod
+    .string()
+    .optional()
+    .describe('The search term to filter workspaces.'),
+  orderBy: zod
+    .enum(['RecentActivity', 'Name', 'CreatedDate'])
+    .optional()
+    .describe('The sort order for the returned workspaces.'),
+});
 
 export const getWorkSpacesResponse = zod.object({
-  "total": zod.number(),
-  "data": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "name": zod.string(),
-  "showSources": zod.boolean(),
-  "dataSpaces": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "dataSets": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "dataSpaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "version": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "description": zod.string().nullish(),
-  "properties": zod.array(zod.object({
-  "name": zod.string(),
-  "description": zod.string().nullish(),
-  "isVector": zod.boolean()
-})),
-  "createdByUserId": zod.string(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "modifiedByUserId": zod.string(),
-  "modifiedAt": zod.iso.datetime({"offset":true,"local":true}),
-  "flow": zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "triggers": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "inputName": zod.string(),
-  "type": zod.enum(['Periodic', 'Container']),
-  "dataSourceContainer": zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "path": zod.string(),
-  "dataSourceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-}),
-  "flowId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-})),
-  "activeFlowDefinitionId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "activeFlowDefinition": zod.object({
-  "name": zod.string().nullish(),
-  "inputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish(),
-  "outputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish(),
-  "constants": zod.record(zod.string(), zod.object({
-  "value": zod.any().nullish()
-})).nullish(),
-  "variables": zod.record(zod.string(), zod.object({
-  "access": zod.enum(['None', 'Read', 'Write']),
-  "schema": zod.record(zod.string(), zod.any())
-})).nullish(),
-  "blocks": zod.record(zod.string(), zod.object({
-  "name": zod.string(),
-  "version": zod.string(),
-  "description": zod.string().nullish(),
-  "dynamicPorts": zod.array(zod.string()).nullish(),
-  "constants": zod.array(zod.object({
-  "value": zod.any().nullish(),
-  "target": zod.object({
-  "port": zod.string(),
-  "pin": zod.string()
-})
-})).nullish(),
-  "dynamicInputPins": zod.array(zod.object({
-  "port": zod.string(),
-  "pin": zod.string()
-})).nullish(),
-  "dynamicOutputPins": zod.array(zod.object({
-  "port": zod.string(),
-  "pin": zod.string()
-})).nullish()
-})).nullish(),
-  "connections": zod.array(zod.object({
-  "source": zod.object({
-  "node": zod.string(),
-  "port": zod.string().nullish(),
-  "pin": zod.string().nullish()
-}),
-  "target": zod.object({
-  "node": zod.string(),
-  "port": zod.string().nullish(),
-  "pin": zod.string().nullish()
-})
-})).nullish(),
-  "layout": zod.any().nullish()
-}).optional()
-}).optional()
-})).nullish(),
-  "parentWorkspaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "workspacesInfo": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string()
-})).nullish(),
-  "createdByUserId": zod.string(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "modifiedByUserId": zod.string().nullish(),
-  "modifiedAt": zod.iso.datetime({"offset":true,"local":true}).nullish()
-})),
-  "createdByUserId": zod.string(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "modifiedByUserId": zod.string().nullish(),
-  "modifiedAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "favorited": zod.boolean(),
-  "modelConfigurations": zod.array(zod.object({
-  "model": zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string(),
-  "displayName": zod.string(),
-  "createdByUserId": zod.string().nullish(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "modelDeploymentProviderType": zod.enum(['OpenAi', 'AzureOpenAi', 'HuggingFace', 'Cohere', 'Anthropic', 'Gemini', 'VertexAi']).optional(),
-  "properties": zod.array(zod.object({
-  "name": zod.string(),
-  "type": zod.enum(['Boolean', 'Number', 'String'])
-})),
-  "deployment": zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "modelName": zod.string(),
-  "providerId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "status": zod.enum(['Deploying', 'Ready', 'Failed', 'Deleting', 'Deleted']),
-  "statusMessage": zod.string().nullish(),
-  "statusUpdatedAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "detailedMessage": zod.string().nullish(),
-  "url": zod.string().nullish(),
-  "region": zod.string().nullish(),
-  "vmSize": zod.string().nullish(),
-  "providerDeploymentId": zod.string().nullish(),
-  "virtualMachineServerType": zod.enum(['TextGenerationInference', 'VLlm']).optional(),
-  "virtualMachineUrl": zod.string().nullish(),
-  "createdByUserId": zod.string().nullish(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "dockerFile": zod.string().nullish(),
-  "steps": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.enum(['DeployVNet', 'DeployVM', 'InstallDependencies', 'DownloadModel', 'TestModel']),
-  "index": zod.number(),
-  "message": zod.string(),
-  "progress": zod.number(),
-  "startedAt": zod.iso.datetime({"offset":true,"local":true}).nullish(),
-  "finishedAt": zod.iso.datetime({"offset":true,"local":true}).nullish()
-}))
-}).optional()
-}),
-  "role": zod.enum(['Document', 'Agent', 'Analyzer']),
-  "topP": zod.number(),
-  "temperature": zod.number(),
-  "presencePenalty": zod.number(),
-  "frequencyPenalty": zod.number(),
-  "prePrompt": zod.string()
-})),
-  "summary": zod.string().nullish(),
-  "firstPrompt": zod.string().nullish(),
-  "outputSchema": zod.string().nullish(),
-  "isPromptAndResponseLoggingEnabled": zod.boolean().nullish(),
-  "inputs": zod.record(zod.string(), zod.object({
-  "schema": zod.record(zod.string(), zod.any())
-})),
-  "variables": zod.record(zod.string(), zod.object({
-  "access": zod.enum(['None', 'Read', 'Write']),
-  "schema": zod.record(zod.string(), zod.any())
-})),
-  "sandBoxThreadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "supportsFiles": zod.boolean().nullish(),
-  "tags": zod.array(zod.string()).nullish()
-}))
-})
-
+  total: zod.number(),
+  data: zod.array(
+    zod.object({
+      id: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        )
+        .nullish(),
+      name: zod.string(),
+      showSources: zod.boolean(),
+      dataSpaces: zod.array(
+        zod.object({
+          id: zod
+            .string()
+            .regex(
+              /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+            ),
+          name: zod.string(),
+          dataSets: zod
+            .array(
+              zod.object({
+                id: zod
+                  .string()
+                  .regex(
+                    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                  ),
+                name: zod.string(),
+                dataSpaceId: zod
+                  .string()
+                  .regex(
+                    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                  )
+                  .nullish(),
+                version: zod
+                  .string()
+                  .regex(
+                    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                  )
+                  .nullish(),
+                description: zod.string().nullish(),
+                properties: zod.array(
+                  zod.object({
+                    name: zod.string(),
+                    description: zod.string().nullish(),
+                    isVector: zod.boolean(),
+                  })
+                ),
+                createdByUserId: zod.string(),
+                createdAt: zod.iso.datetime({ offset: true, local: true }),
+                modifiedByUserId: zod.string(),
+                modifiedAt: zod.iso.datetime({ offset: true, local: true }),
+                flow: zod
+                  .object({
+                    id: zod
+                      .string()
+                      .regex(
+                        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                      ),
+                    triggers: zod.array(
+                      zod.object({
+                        id: zod
+                          .string()
+                          .regex(
+                            /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                          ),
+                        inputName: zod.string(),
+                        type: zod.enum(['Periodic', 'Container']),
+                        dataSourceContainer: zod.object({
+                          id: zod
+                            .string()
+                            .regex(
+                              /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                            ),
+                          name: zod.string(),
+                          path: zod.string(),
+                          dataSourceId: zod
+                            .string()
+                            .regex(
+                              /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                            ),
+                        }),
+                        flowId: zod
+                          .string()
+                          .regex(
+                            /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                          ),
+                      })
+                    ),
+                    activeFlowDefinitionId: zod
+                      .string()
+                      .regex(
+                        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                      ),
+                    activeFlowDefinition: zod
+                      .object({
+                        name: zod.string().nullish(),
+                        inputs: zod
+                          .record(
+                            zod.string(),
+                            zod.object({
+                              schema: zod.record(zod.string(), zod.any()),
+                            })
+                          )
+                          .nullish(),
+                        outputs: zod
+                          .record(
+                            zod.string(),
+                            zod.object({
+                              schema: zod.record(zod.string(), zod.any()),
+                            })
+                          )
+                          .nullish(),
+                        constants: zod
+                          .record(
+                            zod.string(),
+                            zod.object({
+                              value: zod.any().nullish(),
+                            })
+                          )
+                          .nullish(),
+                        variables: zod
+                          .record(
+                            zod.string(),
+                            zod.object({
+                              access: zod.enum(['None', 'Read', 'Write']),
+                              schema: zod.record(zod.string(), zod.any()),
+                            })
+                          )
+                          .nullish(),
+                        blocks: zod
+                          .record(
+                            zod.string(),
+                            zod.object({
+                              name: zod.string(),
+                              version: zod.string(),
+                              description: zod.string().nullish(),
+                              dynamicPorts: zod.array(zod.string()).nullish(),
+                              constants: zod
+                                .array(
+                                  zod.object({
+                                    value: zod.any().nullish(),
+                                    target: zod.object({
+                                      port: zod.string(),
+                                      pin: zod.string(),
+                                    }),
+                                  })
+                                )
+                                .nullish(),
+                              dynamicInputPins: zod
+                                .array(
+                                  zod.object({
+                                    port: zod.string(),
+                                    pin: zod.string(),
+                                  })
+                                )
+                                .nullish(),
+                              dynamicOutputPins: zod
+                                .array(
+                                  zod.object({
+                                    port: zod.string(),
+                                    pin: zod.string(),
+                                  })
+                                )
+                                .nullish(),
+                            })
+                          )
+                          .nullish(),
+                        connections: zod
+                          .array(
+                            zod.object({
+                              source: zod.object({
+                                node: zod.string(),
+                                port: zod.string().nullish(),
+                                pin: zod.string().nullish(),
+                              }),
+                              target: zod.object({
+                                node: zod.string(),
+                                port: zod.string().nullish(),
+                                pin: zod.string().nullish(),
+                              }),
+                            })
+                          )
+                          .nullish(),
+                        layout: zod.any().nullish(),
+                      })
+                      .optional(),
+                  })
+                  .optional(),
+              })
+            )
+            .nullish(),
+          parentWorkspaceId: zod
+            .string()
+            .regex(
+              /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+            )
+            .nullish(),
+          workspacesInfo: zod
+            .array(
+              zod.object({
+                id: zod
+                  .string()
+                  .regex(
+                    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                  ),
+                name: zod.string(),
+              })
+            )
+            .nullish(),
+          createdByUserId: zod.string(),
+          createdAt: zod.iso.datetime({ offset: true, local: true }),
+          modifiedByUserId: zod.string().nullish(),
+          modifiedAt: zod.iso.datetime({ offset: true, local: true }).nullish(),
+        })
+      ),
+      createdByUserId: zod.string(),
+      createdAt: zod.iso.datetime({ offset: true, local: true }),
+      modifiedByUserId: zod.string().nullish(),
+      modifiedAt: zod.iso.datetime({ offset: true, local: true }).nullish(),
+      favorited: zod.boolean(),
+      modelConfigurations: zod.array(
+        zod.object({
+          model: zod.object({
+            id: zod
+              .string()
+              .regex(
+                /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+              ),
+            name: zod.string(),
+            displayName: zod.string(),
+            createdByUserId: zod.string().nullish(),
+            createdAt: zod.iso
+              .datetime({ offset: true, local: true })
+              .nullish(),
+            modelDeploymentProviderType: zod
+              .enum([
+                'OpenAi',
+                'AzureOpenAi',
+                'HuggingFace',
+                'Cohere',
+                'Anthropic',
+                'Gemini',
+                'VertexAi',
+              ])
+              .optional(),
+            properties: zod.array(
+              zod.object({
+                name: zod.string(),
+                type: zod.enum(['Boolean', 'Number', 'String']),
+              })
+            ),
+            deployment: zod
+              .object({
+                id: zod
+                  .string()
+                  .regex(
+                    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                  ),
+                modelName: zod.string(),
+                providerId: zod
+                  .string()
+                  .regex(
+                    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                  )
+                  .nullish(),
+                status: zod.enum([
+                  'Deploying',
+                  'Ready',
+                  'Failed',
+                  'Deleting',
+                  'Deleted',
+                ]),
+                statusMessage: zod.string().nullish(),
+                statusUpdatedAt: zod.iso
+                  .datetime({ offset: true, local: true })
+                  .nullish(),
+                detailedMessage: zod.string().nullish(),
+                url: zod.string().nullish(),
+                region: zod.string().nullish(),
+                vmSize: zod.string().nullish(),
+                providerDeploymentId: zod.string().nullish(),
+                virtualMachineServerType: zod
+                  .enum(['TextGenerationInference', 'VLlm'])
+                  .optional(),
+                virtualMachineUrl: zod.string().nullish(),
+                createdByUserId: zod.string().nullish(),
+                createdAt: zod.iso
+                  .datetime({ offset: true, local: true })
+                  .nullish(),
+                dockerFile: zod.string().nullish(),
+                steps: zod.array(
+                  zod.object({
+                    id: zod
+                      .string()
+                      .regex(
+                        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+                      ),
+                    name: zod.enum([
+                      'DeployVNet',
+                      'DeployVM',
+                      'InstallDependencies',
+                      'DownloadModel',
+                      'TestModel',
+                    ]),
+                    index: zod.number(),
+                    message: zod.string(),
+                    progress: zod.number(),
+                    startedAt: zod.iso
+                      .datetime({ offset: true, local: true })
+                      .nullish(),
+                    finishedAt: zod.iso
+                      .datetime({ offset: true, local: true })
+                      .nullish(),
+                  })
+                ),
+              })
+              .optional(),
+          }),
+          role: zod.enum(['Document', 'Agent', 'Analyzer']),
+          topP: zod.number(),
+          temperature: zod.number(),
+          presencePenalty: zod.number(),
+          frequencyPenalty: zod.number(),
+          prePrompt: zod.string(),
+        })
+      ),
+      summary: zod.string().nullish(),
+      firstPrompt: zod.string().nullish(),
+      outputSchema: zod.string().nullish(),
+      isPromptAndResponseLoggingEnabled: zod.boolean().nullish(),
+      inputs: zod.record(
+        zod.string(),
+        zod.object({
+          schema: zod.record(zod.string(), zod.any()),
+        })
+      ),
+      variables: zod.record(
+        zod.string(),
+        zod.object({
+          access: zod.enum(['None', 'Read', 'Write']),
+          schema: zod.record(zod.string(), zod.any()),
+        })
+      ),
+      sandBoxThreadId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        )
+        .nullish(),
+      supportsFiles: zod.boolean().nullish(),
+      tags: zod.array(zod.string()).nullish(),
+    })
+  ),
+});
 
 /**
  * @summary Retrieve the access control details of a specific workspace in SmartSpace, using the workspace's ID, with pagination options take and skip.
  */
 export const getWorkSpacesIdAccessParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the workspace.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the workspace.'),
+});
 
-export const getWorkSpacesIdAccessQueryTakeDefault = 20;export const getWorkSpacesIdAccessQuerySkipDefault = 0;
+export const getWorkSpacesIdAccessQueryTakeDefault = 20;
+export const getWorkSpacesIdAccessQuerySkipDefault = 0;
 
 export const getWorkSpacesIdAccessQueryParams = zod.strictObject({
-  "take": zod.number().default(getWorkSpacesIdAccessQueryTakeDefault).describe('The number of access control details to retrieve.'),
-  "skip": zod.number().optional().describe('The number of access control details to skip.'),
-  "search": zod.string().optional().describe('The search term to filter access controls.')
-})
+  take: zod
+    .number()
+    .default(getWorkSpacesIdAccessQueryTakeDefault)
+    .describe('The number of access control details to retrieve.'),
+  skip: zod
+    .number()
+    .optional()
+    .describe('The number of access control details to skip.'),
+  search: zod
+    .string()
+    .optional()
+    .describe('The search term to filter access controls.'),
+});
 
 export const getWorkSpacesIdAccessResponse = zod.object({
-  "total": zod.number(),
-  "data": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "objectId": zod.string(),
-  "principalType": zod.enum(['Unknown', 'User', 'ServicePrincipal', 'Internal']).optional(),
-  "accessType": zod.enum(['Principal', 'Group']),
-  "displayName": zod.string().nullish(),
-  "userEmailAddress": zod.string().nullish(),
-  "workSpaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "messageId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
-  "messageThreadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish()
-}))
-})
-
+  total: zod.number(),
+  data: zod.array(
+    zod.object({
+      id: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        )
+        .nullish(),
+      objectId: zod.string(),
+      principalType: zod
+        .enum(['Unknown', 'User', 'ServicePrincipal', 'Internal'])
+        .optional(),
+      accessType: zod.enum(['Principal', 'Group']),
+      displayName: zod.string().nullish(),
+      userEmailAddress: zod.string().nullish(),
+      workSpaceId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        )
+        .nullish(),
+      messageId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        )
+        .nullish(),
+      messageThreadId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        )
+        .nullish(),
+    })
+  ),
+});
 
 export const getWorkSpacesIdUsersParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    ),
+});
 
-export const getWorkSpacesIdUsersQueryTakeDefault = 1000;export const getWorkSpacesIdUsersQuerySkipDefault = 0;
+export const getWorkSpacesIdUsersQueryTakeDefault = 1000;
+export const getWorkSpacesIdUsersQuerySkipDefault = 0;
 
 export const getWorkSpacesIdUsersQueryParams = zod.strictObject({
-  "take": zod.number().default(getWorkSpacesIdUsersQueryTakeDefault),
-  "skip": zod.number().optional(),
-  "search": zod.string().optional()
-})
+  take: zod.number().default(getWorkSpacesIdUsersQueryTakeDefault),
+  skip: zod.number().optional(),
+  search: zod.string().optional(),
+});
 
 export const getWorkSpacesIdUsersResponseItem = zod.object({
-  "id": zod.string(),
-  "displayName": zod.string(),
-  "userId": zod.string(),
-  "emailAddress": zod.string().nullish()
-})
-export const getWorkSpacesIdUsersResponse = zod.array(getWorkSpacesIdUsersResponseItem)
-
+  id: zod.string(),
+  displayName: zod.string(),
+  userId: zod.string(),
+  emailAddress: zod.string().nullish(),
+});
+export const getWorkSpacesIdUsersResponse = zod.array(
+  getWorkSpacesIdUsersResponseItem
+);
 
 /**
  * @summary Retrieve all message threads associated with a specific workspace in SmartSpace, identified by workspaceId, with pagination options take and skip.
  */
 export const getWorkSpacesIdMessageThreadsParams = zod.strictObject({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).describe('The ID of the workspace.')
-})
+  id: zod
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+    .describe('The ID of the workspace.'),
+});
 
-export const getWorkSpacesIdMessageThreadsQueryTakeDefault = 50;export const getWorkSpacesIdMessageThreadsQuerySkipDefault = 0;
+export const getWorkSpacesIdMessageThreadsQueryTakeDefault = 50;
+export const getWorkSpacesIdMessageThreadsQuerySkipDefault = 0;
 
 export const getWorkSpacesIdMessageThreadsQueryParams = zod.strictObject({
-  "take": zod.number().default(getWorkSpacesIdMessageThreadsQueryTakeDefault).describe('The number of message threads to retrieve.'),
-  "skip": zod.number().optional().describe('The number of message threads to skip.'),
-  "search": zod.string().optional().describe('The term to filter threads by name or id.')
-})
+  take: zod
+    .number()
+    .default(getWorkSpacesIdMessageThreadsQueryTakeDefault)
+    .describe('The number of message threads to retrieve.'),
+  skip: zod
+    .number()
+    .optional()
+    .describe('The number of message threads to skip.'),
+  search: zod
+    .string()
+    .optional()
+    .describe('The term to filter threads by name or id.'),
+});
 
 export const getWorkSpacesIdMessageThreadsResponse = zod.object({
-  "total": zod.number(),
-  "data": zod.array(zod.object({
-  "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "workSpaceId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
-  "name": zod.string().nullish(),
-  "totalMessages": zod.number(),
-  "favorited": zod.boolean(),
-  "isFlowRunning": zod.boolean(),
-  "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
-  "createdBy": zod.string().nullish(),
-  "lastUpdatedAt": zod.iso.datetime({"offset":true,"local":true}),
-  "lastUpdatedByUserId": zod.string(),
-  "lastUpdated": zod.string().nullish()
-}))
-})
+  total: zod.number(),
+  data: zod.array(
+    zod.object({
+      id: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+      workSpaceId: zod
+        .string()
+        .regex(
+          /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+        ),
+      name: zod.string().nullish(),
+      totalMessages: zod.number(),
+      favorited: zod.boolean(),
+      isFlowRunning: zod.boolean(),
+      createdAt: zod.iso.datetime({ offset: true, local: true }),
+      createdByUserId: zod.string(),
+      createdBy: zod.string().nullish(),
+      lastUpdatedAt: zod.iso.datetime({ offset: true, local: true }),
+      lastUpdatedByUserId: zod.string(),
+      lastUpdated: zod.string().nullish(),
+    })
+  ),
+});

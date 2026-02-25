@@ -6,7 +6,7 @@ const strictZodOptions = {
     query: true,
     header: true,
     body: true,
-    response: true,
+    response: false,
   },
   dateTimeOptions: {
     offset: true,
