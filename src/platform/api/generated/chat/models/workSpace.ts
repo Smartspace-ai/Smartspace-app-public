@@ -11,34 +11,32 @@ import type { WorkSpaceVariables } from './workSpaceVariables';
 
 export interface WorkSpace {
   /** @nullable */
-  avatarName?: string | null;
-  createdAt: string;
-  createdByUserId: string;
+  id?: string | null;
+  name: string;
+  showSources: boolean;
   dataSpaces: DataSpace[];
+  createdByUserId: string;
+  createdAt: string;
+  /** @nullable */
+  modifiedByUserId?: string | null;
+  /** @nullable */
+  modifiedAt?: string | null;
   favorited: boolean;
+  modelConfigurations: ModelConfiguration[];
+  /** @nullable */
+  summary?: string | null;
   /** @nullable */
   firstPrompt?: string | null;
   /** @nullable */
-  id?: string | null;
-  inputs: WorkSpaceInputs;
-  /** @nullable */
-  isPromptAndResponseLoggingEnabled?: boolean | null;
-  modelConfigurations: ModelConfiguration[];
-  /** @nullable */
-  modifiedAt?: string | null;
-  /** @nullable */
-  modifiedByUserId?: string | null;
-  name: string;
-  /** @nullable */
   outputSchema?: string | null;
   /** @nullable */
-  sandBoxThreadId?: string | null;
-  showSources: boolean;
+  isPromptAndResponseLoggingEnabled?: boolean | null;
+  inputs: WorkSpaceInputs;
+  variables: WorkSpaceVariables;
   /** @nullable */
-  summary?: string | null;
+  sandBoxThreadId?: string | null;
   /** @nullable */
   supportsFiles?: boolean | null;
   /** @nullable */
   tags?: string[] | null;
-  variables: WorkSpaceVariables;
 }

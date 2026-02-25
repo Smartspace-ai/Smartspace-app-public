@@ -7,12 +7,12 @@
 import type { CommentMentionedUser } from './commentMentionedUser';
 
 export interface CommentCommentSummary {
-  content: string;
+  id: string;
   createdAt: string;
+  createdByUserId: string;
   /** @nullable */
   createdBy?: string | null;
-  createdByUserId: string;
-  id: string;
+  content: string;
   mentionedUsers: CommentMentionedUser[];
   messageThreadId: string;
 }

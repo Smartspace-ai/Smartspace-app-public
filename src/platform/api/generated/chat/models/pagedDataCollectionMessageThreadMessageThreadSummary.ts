@@ -7,6 +7,6 @@
 import type { MessageThreadMessageThreadSummary } from './messageThreadMessageThreadSummary';
 
 export interface PagedDataCollectionMessageThreadMessageThreadSummary {
-  data: MessageThreadMessageThreadSummary[];
   total: number;
+  data: MessageThreadMessageThreadSummary[];
 }

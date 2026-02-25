@@ -11,6 +11,7 @@ vi.mock('@/platform/log', () => ({
   ssLog: vi.fn(),
   ssDebug: vi.fn(),
   ssInfo: vi.fn(),
+  ssInfoAlways: vi.fn(),
   ssWarn: vi.fn(),
   ssError: vi.fn(),
 }));
@@ -29,12 +30,20 @@ try {
 
 // Mock MSAL/Teams/SignalR related modules to avoid real network/SSO in unit tests
 vi.mock('@/platform/auth/msalClient', () => {
+  const fakeAccount = {
+    homeAccountId: 'test-home-id',
+    environment: 'login.microsoftonline.com',
+    tenantId: 'test-tenant',
+    username: 'test@example.com',
+    localAccountId: 'test-local-id',
+    name: 'Test User',
+  };
   const msalInstance = {
     acquireTokenSilent: vi.fn(async () => ({ accessToken: 'test-token' })),
     loginRedirect: vi.fn(async () => undefined),
     logoutRedirect: vi.fn(async () => undefined),
-    getActiveAccount: vi.fn(() => null),
-    getAllAccounts: vi.fn(() => []),
+    getActiveAccount: vi.fn(() => fakeAccount),
+    getAllAccounts: vi.fn(() => [fakeAccount]),
     setActiveAccount: vi.fn(() => undefined),
   };
   return { getMsalInstance: () => msalInstance };

@@ -9,15 +9,15 @@ import type { EnumsModelDeploymentStatus } from './enumsModelDeploymentStatus';
 import type { ModelIModelProperty } from './modelIModelProperty';
 
 export interface ModelModelSummary {
-  /** @nullable */
-  createdAt?: string | null;
+  id: string;
+  name: string;
+  displayName: string;
+  deploymentStatus?: EnumsModelDeploymentStatus;
+  modelDeploymentProviderType?: EnumsModelDeploymentProviderType;
   /** @nullable */
   createdByUserId?: string | null;
-  deploymentStatus?: EnumsModelDeploymentStatus;
-  displayName: string;
-  id: string;
-  modelDeploymentProviderType?: EnumsModelDeploymentProviderType;
-  name: string;
+  /** @nullable */
+  createdAt?: string | null;
   properties: ModelIModelProperty[];
   /** @nullable */
   virtualMachineUrl?: string | null;

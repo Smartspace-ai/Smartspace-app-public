@@ -8,18 +8,18 @@ import type { DataSetProperty } from './dataSetProperty';
 import type { Flow } from './flow';
 
 export interface DataSet {
-  createdAt: string;
-  createdByUserId: string;
+  id: string;
+  name: string;
   /** @nullable */
   dataSpaceId?: string | null;
   /** @nullable */
-  description?: string | null;
-  flow?: Flow;
-  id: string;
-  modifiedAt: string;
-  modifiedByUserId: string;
-  name: string;
-  properties: DataSetProperty[];
-  /** @nullable */
   version?: string | null;
+  /** @nullable */
+  description?: string | null;
+  properties: DataSetProperty[];
+  createdByUserId: string;
+  createdAt: string;
+  modifiedByUserId: string;
+  modifiedAt: string;
+  flow?: Flow;
 }

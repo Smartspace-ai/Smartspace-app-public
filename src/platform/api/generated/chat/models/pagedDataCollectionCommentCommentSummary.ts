@@ -7,6 +7,6 @@
 import type { CommentCommentSummary } from './commentCommentSummary';
 
 export interface PagedDataCollectionCommentCommentSummary {
-  data: CommentCommentSummary[];
   total: number;
+  data: CommentCommentSummary[];
 }

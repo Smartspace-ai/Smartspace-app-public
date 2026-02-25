@@ -10,9 +10,9 @@ export type EnumsModelDeploymentStatus =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsModelDeploymentStatus = {
-  Deploying: 'Deploying',
-  Ready: 'Ready',
-  Failed: 'Failed',
-  Deleting: 'Deleting',
-  Deleted: 'Deleted',
+  NUMBER_0: 0,
+  NUMBER_1: 1,
+  NUMBER_2: 2,
+  NUMBER_3: 3,
+  NUMBER_4: 4,
 } as const;

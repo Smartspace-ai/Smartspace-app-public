@@ -6,8 +6,8 @@
  */
 
 export interface DataSourceContainer {
-  dataSourceId: string;
   id: string;
   name: string;
   path: string;
+  dataSourceId: string;
 }

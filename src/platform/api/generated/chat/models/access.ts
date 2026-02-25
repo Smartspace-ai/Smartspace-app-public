@@ -8,19 +8,19 @@ import type { EnumsAccessType } from './enumsAccessType';
 import type { EnumsAppPrincipalType } from './enumsAppPrincipalType';
 
 export interface Access {
+  /** @nullable */
+  id?: string | null;
+  objectId: string;
+  principalType?: EnumsAppPrincipalType;
   accessType: EnumsAccessType;
   /** @nullable */
   displayName?: string | null;
   /** @nullable */
-  id?: string | null;
+  userEmailAddress?: string | null;
+  /** @nullable */
+  workSpaceId?: string | null;
   /** @nullable */
   messageId?: string | null;
   /** @nullable */
   messageThreadId?: string | null;
-  objectId: string;
-  principalType?: EnumsAppPrincipalType;
-  /** @nullable */
-  userEmailAddress?: string | null;
-  /** @nullable */
-  workSpaceId?: string | null;
 }

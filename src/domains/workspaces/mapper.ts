@@ -90,7 +90,7 @@ export function mapWorkspaceDtoToModel(dto: WorkspaceDto): Workspace {
     sandBoxThreadId: dto.sandBoxThreadId ?? undefined,
     supportsFiles: dto.supportsFiles ?? undefined,
 
-    avatarName: computeAvatar(dto.name ?? '', dto.avatarName ?? undefined),
+    avatarName: computeAvatar(dto.name ?? ''),
   };
 }
 

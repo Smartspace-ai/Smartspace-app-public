@@ -19,13 +19,15 @@ const toStringEnum = (value: unknown): string =>
 function mapPropertyDtoToModel(
   p: ModelDto['properties'][number] | ModelDetailDto['properties'][number]
 ): Model['properties'][number] {
+  // The API may still return these fields at runtime even though the spec omits them.
+  const ext = p as Record<string, unknown>;
   return {
     name: p.name,
     type: toStringEnum(p.type),
-    defaultValue: p.defaultValue ?? 0,
-    minValue: p.minValue ?? 0,
-    maxValue: p.maxValue ?? 0,
-    step: p.step ?? 0,
+    defaultValue: (ext.defaultValue as number) ?? 0,
+    minValue: (ext.minValue as number) ?? 0,
+    maxValue: (ext.maxValue as number) ?? 0,
+    step: (ext.step as number) ?? 0,
   };
 }
 

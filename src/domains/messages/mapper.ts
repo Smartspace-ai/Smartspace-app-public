@@ -40,7 +40,7 @@ export function mapMessageDtoToModel(dto: MessageDto): Message {
       ? dto.values.map((v) => ({
           id: v.id,
           name: v.name,
-          type: v.type as MessageValueType,
+          type: v.type as unknown as MessageValueType,
           value: v.value,
           channels: normalizeChannels(v.channels ?? {}),
           createdAt: parseIsoDate(v.createdAt, 'values.createdAt'),

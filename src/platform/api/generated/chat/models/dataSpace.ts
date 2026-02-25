@@ -8,18 +8,18 @@ import type { DataSet } from './dataSet';
 import type { WorkSpaceInfo } from './workSpaceInfo';
 
 export interface DataSpace {
-  createdAt: string;
-  createdByUserId: string;
+  id: string;
+  name: string;
   /** @nullable */
   dataSets?: DataSet[] | null;
-  id: string;
-  /** @nullable */
-  modifiedAt?: string | null;
-  /** @nullable */
-  modifiedByUserId?: string | null;
-  name: string;
   /** @nullable */
   parentWorkspaceId?: string | null;
   /** @nullable */
   workspacesInfo?: WorkSpaceInfo[] | null;
+  createdByUserId: string;
+  createdAt: string;
+  /** @nullable */
+  modifiedByUserId?: string | null;
+  /** @nullable */
+  modifiedAt?: string | null;
 }

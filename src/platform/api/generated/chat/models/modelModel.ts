@@ -9,14 +9,14 @@ import type { ModelIModelProperty } from './modelIModelProperty';
 import type { ModelModelDeployment } from './modelModelDeployment';
 
 export interface ModelModel {
-  /** @nullable */
-  createdAt?: string | null;
+  id: string;
+  name: string;
+  displayName: string;
   /** @nullable */
   createdByUserId?: string | null;
-  deployment?: ModelModelDeployment;
-  displayName: string;
-  id: string;
+  /** @nullable */
+  createdAt?: string | null;
   modelDeploymentProviderType?: EnumsModelDeploymentProviderType;
-  name: string;
   properties: ModelIModelProperty[];
+  deployment?: ModelModelDeployment;
 }

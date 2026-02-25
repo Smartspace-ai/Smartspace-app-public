@@ -8,18 +8,18 @@ import type { EnumsNotificationType } from './enumsNotificationType';
 
 export interface NotificationNotification {
   /** @nullable */
-  createdAt?: string | null;
-  /** @nullable */
-  createdBy?: string | null;
-  /** @nullable */
-  description?: string | null;
-  /** @nullable */
-  dismissedAt?: string | null;
-  /** @nullable */
   id?: string | null;
   notificationType: EnumsNotificationType;
   /** @nullable */
-  threadId?: string | null;
+  description?: string | null;
   /** @nullable */
   workSpaceId?: string | null;
+  /** @nullable */
+  threadId?: string | null;
+  /** @nullable */
+  createdBy?: string | null;
+  /** @nullable */
+  createdAt?: string | null;
+  /** @nullable */
+  dismissedAt?: string | null;
 }
