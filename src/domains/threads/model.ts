@@ -8,7 +8,7 @@ export type MessageThread = {
   lastUpdatedByUserId: string;
   name: string;
   totalMessages: number;
-  favorited: boolean;
+  pinned: boolean;
   workSpaceId: string;
 };
 

@@ -40,12 +40,9 @@ export async function fetchThread(workspaceId: string, id: string) {
   return mapThreadDtoToModel(parsed);
 }
 
-// Set favorite status of a message thread
-export async function setFavorite(
-  threadId: string,
-  favorite: boolean
-): Promise<void> {
-  await chatApi.putMessageThreadsIdFavorited(threadId, favorite);
+// Set pin status of a message thread
+export async function setPin(threadId: string, pin: boolean): Promise<void> {
+  await chatApi.putMessageThreadsIdFavorited(threadId, pin);
   return;
 }
 
