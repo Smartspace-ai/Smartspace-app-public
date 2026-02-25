@@ -15,9 +15,7 @@ describe('getInitials', () => {
   });
   it('handles empty/undefined gracefully', () => {
     // @ts-expect-error testing runtime behavior
-    expect(getInitials(undefined)).toBe('');
-    expect(getInitials('')).toBe('');
+    expect(getInitials(undefined)).toBe('?');
+    expect(getInitials('')).toBe('?');
   });
 });
-
-
