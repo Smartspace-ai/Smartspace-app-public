@@ -90,7 +90,7 @@ export function useSetPin() {
 
       return { previousLists, previousDetails };
     },
-    onError: (error, _variables, ctx) => {
+    onError: (error, variables, ctx) => {
       // Roll back optimistic updates
       if (ctx?.previousLists) {
         for (const [key, data] of ctx.previousLists) {
@@ -103,7 +103,9 @@ export function useSetPin() {
         }
       }
       console.error('Failed to set pin:', error);
-      toast.error('Failed to pin thread');
+      toast.error(
+        variables.pin ? 'Failed to pin thread' : 'Failed to unpin thread'
+      );
     },
     onSettled: async () => {
       // Reload lists so server-side ordering/filters reflect the new pin state.
