@@ -213,7 +213,7 @@ export default function NewThreadButton() {
         lastUpdatedAt: now,
         lastUpdatedByUserId: '',
         totalMessages: 0,
-        favorited: false,
+        pinned: false,
         workSpaceId: workspaceId,
       };
 

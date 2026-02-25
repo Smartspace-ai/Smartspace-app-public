@@ -6,18 +6,21 @@ import { toast } from 'sonner';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import type { MessageThread } from '@/domains/threads';
-import { useDeleteThread, useSetFavorite } from '@/domains/threads/mutations';
-
+import { useDeleteThread, useSetPin } from '@/domains/threads/mutations';
 
 type UseThreadItemVmArgs = {
   thread: MessageThread;
   onAfterDelete?: () => void;
 };
 
-export function useThreadItemVm({ thread, onAfterDelete }: UseThreadItemVmArgs) {
+export function useThreadItemVm({
+  thread,
+  onAfterDelete,
+}: UseThreadItemVmArgs) {
   const navigate = useNavigate();
-  const { workspaceId: routeWorkspaceId, threadId: routeThreadId } = useRouteIds();
-  const { mutate: setFavorite, isPending: isSetFavoritePending } = useSetFavorite();
+  const { workspaceId: routeWorkspaceId, threadId: routeThreadId } =
+    useRouteIds();
+  const { mutate: setPin, isPending: isSetPinPending } = useSetPin();
   const { mutateAsync: deleteThread } = useDeleteThread();
 
   const isRunning = thread.isFlowRunning;
@@ -31,9 +34,9 @@ export function useThreadItemVm({ thread, onAfterDelete }: UseThreadItemVmArgs) 
     });
   }, [navigate, thread]);
 
-  const toggleFavorite = useCallback(() => {
-    setFavorite({ threadId: thread.id, favorite: !thread.favorited });
-  }, [setFavorite, thread.id, thread.favorited]);
+  const togglePin = useCallback(() => {
+    setPin({ threadId: thread.id, pin: !thread.pinned });
+  }, [setPin, thread.id, thread.pinned]);
 
   const remove = useCallback(async () => {
     try {
@@ -42,7 +45,11 @@ export function useThreadItemVm({ thread, onAfterDelete }: UseThreadItemVmArgs) 
       if (routeThreadId && thread.id === routeThreadId) {
         const wsId = thread.workSpaceId || routeWorkspaceId;
         if (wsId) {
-          navigate({ to: '/workspace/$workspaceId', params: { workspaceId: wsId }, replace: true });
+          navigate({
+            to: '/workspace/$workspaceId',
+            params: { workspaceId: wsId },
+            replace: true,
+          });
         }
       }
 
@@ -52,16 +59,24 @@ export function useThreadItemVm({ thread, onAfterDelete }: UseThreadItemVmArgs) 
     } catch {
       toast.error('Failed to delete thread');
     }
-  }, [deleteThread, navigate, onAfterDelete, routeThreadId, routeWorkspaceId, thread.id, thread.workSpaceId]);
+  }, [
+    deleteThread,
+    navigate,
+    onAfterDelete,
+    routeThreadId,
+    routeWorkspaceId,
+    thread.id,
+    thread.workSpaceId,
+  ]);
 
   return useMemo(
     () => ({
       goToThread,
-      toggleFavorite,
+      togglePin,
       remove,
       isRunning,
-      isSetFavoritePending,
+      isSetPinPending,
     }),
-    [goToThread, toggleFavorite, remove, isRunning, isSetFavoritePending]
+    [goToThread, togglePin, remove, isRunning, isSetPinPending]
   );
 }
