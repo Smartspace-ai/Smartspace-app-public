@@ -6,9 +6,9 @@
  */
 
 export interface AppUserAppUser {
+  id: string;
   displayName: string;
+  userId: string;
   /** @nullable */
   emailAddress?: string | null;
-  id: string;
-  userId: string;
 }

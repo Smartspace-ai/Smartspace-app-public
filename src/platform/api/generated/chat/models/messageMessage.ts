@@ -8,14 +8,14 @@ import type { IntegrationsSmartSpaceAiFlowError } from './integrationsSmartSpace
 import type { MessageMessageValue } from './messageMessageValue';
 
 export interface MessageMessage {
-  createdAt: string;
-  /** @nullable */
-  createdBy?: string | null;
-  createdByUserId: string;
-  errors: IntegrationsSmartSpaceAiFlowError[];
-  hasComments: boolean;
   id: string;
+  values: MessageMessageValue[];
   /** @nullable */
   messageThreadId?: string | null;
-  values: MessageMessageValue[];
+  hasComments: boolean;
+  createdAt: string;
+  createdByUserId: string;
+  /** @nullable */
+  createdBy?: string | null;
+  errors: IntegrationsSmartSpaceAiFlowError[];
 }

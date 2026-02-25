@@ -8,9 +8,9 @@ import type { MessageCreateMessageInputChannels } from './messageCreateMessageIn
 import type { MessageCreateMessageInputValue } from './messageCreateMessageInputValue';
 
 export interface MessageCreateMessageInput {
-  /** @nullable */
-  channels?: MessageCreateMessageInputChannels;
   name: string;
   /** @nullable */
   value?: MessageCreateMessageInputValue;
+  /** @nullable */
+  channels?: MessageCreateMessageInputChannels;
 }

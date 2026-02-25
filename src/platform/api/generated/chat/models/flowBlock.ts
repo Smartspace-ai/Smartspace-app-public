@@ -8,16 +8,16 @@ import type { FlowsBlockConstant } from './flowsBlockConstant';
 import type { FlowsBlockPinRef } from './flowsBlockPinRef';
 
 export interface FlowBlock {
-  /** @nullable */
-  constants?: FlowsBlockConstant[] | null;
+  name: string;
+  version: string;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  dynamicPorts?: string[] | null;
+  /** @nullable */
+  constants?: FlowsBlockConstant[] | null;
   /** @nullable */
   dynamicInputPins?: FlowsBlockPinRef[] | null;
   /** @nullable */
   dynamicOutputPins?: FlowsBlockPinRef[] | null;
-  /** @nullable */
-  dynamicPorts?: string[] | null;
-  name: string;
-  version: string;
 }

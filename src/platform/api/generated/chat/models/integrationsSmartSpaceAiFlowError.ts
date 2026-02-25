@@ -8,10 +8,10 @@ import type { IntegrationsSmartSpaceAiFlowErrorData } from './integrationsSmartS
 
 export interface IntegrationsSmartSpaceAiFlowError {
   /** @nullable */
-  blockId?: string | null;
-  code: number;
+  message?: string | null;
   /** @nullable */
   data?: IntegrationsSmartSpaceAiFlowErrorData;
   /** @nullable */
-  message?: string | null;
+  blockId?: string | null;
+  code: number;
 }

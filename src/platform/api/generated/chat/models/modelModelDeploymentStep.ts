@@ -7,13 +7,13 @@
 import type { EnumsModelDeploymentStepName } from './enumsModelDeploymentStepName';
 
 export interface ModelModelDeploymentStep {
-  /** @nullable */
-  finishedAt?: string | null;
   id: string;
+  name: EnumsModelDeploymentStepName;
   index: number;
   message: string;
-  name: EnumsModelDeploymentStepName;
   progress: number;
   /** @nullable */
   startedAt?: string | null;
+  /** @nullable */
+  finishedAt?: string | null;
 }

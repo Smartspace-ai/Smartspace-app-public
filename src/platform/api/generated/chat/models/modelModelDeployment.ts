@@ -9,33 +9,33 @@ import type { EnumsVirtualMachineServerType } from './enumsVirtualMachineServerT
 import type { ModelModelDeploymentStep } from './modelModelDeploymentStep';
 
 export interface ModelModelDeployment {
-  /** @nullable */
-  createdAt?: string | null;
-  /** @nullable */
-  createdByUserId?: string | null;
-  /** @nullable */
-  detailedMessage?: string | null;
-  /** @nullable */
-  dockerFile?: string | null;
   id: string;
   modelName: string;
   /** @nullable */
-  providerDeploymentId?: string | null;
-  /** @nullable */
   providerId?: string | null;
-  /** @nullable */
-  region?: string | null;
   status: EnumsModelDeploymentStatus;
   /** @nullable */
   statusMessage?: string | null;
   /** @nullable */
   statusUpdatedAt?: string | null;
-  steps: ModelModelDeploymentStep[];
+  /** @nullable */
+  detailedMessage?: string | null;
   /** @nullable */
   url?: string | null;
+  /** @nullable */
+  region?: string | null;
+  /** @nullable */
+  vmSize?: string | null;
+  /** @nullable */
+  providerDeploymentId?: string | null;
   virtualMachineServerType?: EnumsVirtualMachineServerType;
   /** @nullable */
   virtualMachineUrl?: string | null;
   /** @nullable */
-  vmSize?: string | null;
+  createdByUserId?: string | null;
+  /** @nullable */
+  createdAt?: string | null;
+  /** @nullable */
+  dockerFile?: string | null;
+  steps: ModelModelDeploymentStep[];
 }

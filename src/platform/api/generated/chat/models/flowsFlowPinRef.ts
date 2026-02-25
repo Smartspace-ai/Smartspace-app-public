@@ -8,7 +8,7 @@
 export interface FlowsFlowPinRef {
   node: string;
   /** @nullable */
-  pin?: string | null;
-  /** @nullable */
   port?: string | null;
+  /** @nullable */
+  pin?: string | null;
 }

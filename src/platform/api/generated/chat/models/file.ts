@@ -6,15 +6,15 @@
  */
 
 export interface File {
-  createdAt: string;
-  createdByUserId: string;
   id: string;
-  modifiedAt: string;
-  modifiedByUserId: string;
   name: string;
   size: number;
   /** @nullable */
   threadId?: string | null;
   /** @nullable */
   workspaceId?: string | null;
+  createdByUserId: string;
+  createdAt: string;
+  modifiedByUserId: string;
+  modifiedAt: string;
 }

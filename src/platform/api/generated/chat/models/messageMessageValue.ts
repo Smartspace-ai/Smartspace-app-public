@@ -9,14 +9,14 @@ import type { MessageMessageValueChannels } from './messageMessageValueChannels'
 import type { MessageMessageValueValue } from './messageMessageValueValue';
 
 export interface MessageMessageValue {
-  channels: MessageMessageValueChannels;
-  createdAt: string;
-  /** @nullable */
-  createdBy?: string | null;
-  createdByUserId: string;
   id: string;
   name: string;
   type: EnumsMessageValueType;
   /** @nullable */
   value?: MessageMessageValueValue;
+  channels: MessageMessageValueChannels;
+  createdAt: string;
+  createdByUserId: string;
+  /** @nullable */
+  createdBy?: string | null;
 }

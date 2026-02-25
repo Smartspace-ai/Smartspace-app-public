@@ -6,6 +6,6 @@
  */
 
 export interface FlowsBlockPinRef {
-  pin: string;
   port: string;
+  pin: string;
 }

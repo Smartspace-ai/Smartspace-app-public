@@ -5,9 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export interface DataSetProperty {
-  name: string;
+export interface MessageMessageCreatorProfileImage {
+  userId: string;
   /** @nullable */
-  description?: string | null;
-  isVector: boolean;
+  base64StringImage?: string | null;
 }

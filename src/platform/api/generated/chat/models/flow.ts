@@ -8,8 +8,8 @@ import type { FlowDefinition } from './flowDefinition';
 import type { FlowTrigger } from './flowTrigger';
 
 export interface Flow {
-  activeFlowDefinition?: FlowDefinition;
-  activeFlowDefinitionId: string;
   id: string;
   triggers: FlowTrigger[];
+  activeFlowDefinitionId: string;
+  activeFlowDefinition?: FlowDefinition;
 }

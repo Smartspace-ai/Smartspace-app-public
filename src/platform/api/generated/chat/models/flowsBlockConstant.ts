@@ -8,7 +8,7 @@ import type { FlowsBlockConstantValue } from './flowsBlockConstantValue';
 import type { FlowsBlockPinRef } from './flowsBlockPinRef';
 
 export interface FlowsBlockConstant {
-  target: FlowsBlockPinRef;
   /** @nullable */
   value?: FlowsBlockConstantValue;
+  target: FlowsBlockPinRef;
 }

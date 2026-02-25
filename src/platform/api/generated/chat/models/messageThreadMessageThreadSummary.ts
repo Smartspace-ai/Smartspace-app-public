@@ -6,19 +6,19 @@
  */
 
 export interface MessageThreadMessageThreadSummary {
-  createdAt: string;
-  /** @nullable */
-  createdBy?: string | null;
-  createdByUserId: string;
-  favorited: boolean;
   id: string;
-  isFlowRunning: boolean;
-  /** @nullable */
-  lastUpdated?: string | null;
-  lastUpdatedAt: string;
-  lastUpdatedByUserId: string;
+  workSpaceId: string;
   /** @nullable */
   name?: string | null;
   totalMessages: number;
-  workSpaceId: string;
+  favorited: boolean;
+  isFlowRunning: boolean;
+  createdAt: string;
+  createdByUserId: string;
+  /** @nullable */
+  createdBy?: string | null;
+  lastUpdatedAt: string;
+  lastUpdatedByUserId: string;
+  /** @nullable */
+  lastUpdated?: string | null;
 }

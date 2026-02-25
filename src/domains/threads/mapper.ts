@@ -23,7 +23,7 @@ export function mapThreadDtoToModel(dto: ThreadDto): MessageThread {
     lastUpdatedByUserId: dto.lastUpdatedByUserId,
     name: dto.name ?? '',
     totalMessages: dto.totalMessages,
-    favorited: dto.favorited,
+    pinned: dto.favorited,
     workSpaceId: dto.workSpaceId,
   };
 }

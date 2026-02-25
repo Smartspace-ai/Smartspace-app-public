@@ -7,7 +7,7 @@
 import type { NotificationNotification } from './notificationNotification';
 
 export interface NotificationPagedNotifcations {
-  data: NotificationNotification[];
   total: number;
   totalUnread: number;
+  data: NotificationNotification[];
 }
