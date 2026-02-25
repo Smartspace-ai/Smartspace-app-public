@@ -11,7 +11,7 @@ import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
 
-import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import { getChatAPI } from '@/platform/api/generated/chat/api';
 import { getMsalInstance } from '@/platform/auth/msalClient'; // ✅ new path
 import { queryClient } from '@/platform/reactQueryClient';
 
@@ -62,7 +62,7 @@ const router = createRouter({
   routeTree,
   context: {
     queryClient,
-    api: getSmartSpaceChatAPI(),
+    api: getChatAPI(),
   },
   defaultPreload: 'intent',
   scrollRestoration: true,
