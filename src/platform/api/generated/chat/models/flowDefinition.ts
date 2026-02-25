@@ -14,19 +14,19 @@ import type { FlowDefinitionVariables } from './flowDefinitionVariables';
 
 export interface FlowDefinition {
   /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  inputs?: FlowDefinitionInputs;
+  /** @nullable */
+  outputs?: FlowDefinitionOutputs;
+  /** @nullable */
+  constants?: FlowDefinitionConstants;
+  /** @nullable */
+  variables?: FlowDefinitionVariables;
+  /** @nullable */
   blocks?: FlowDefinitionBlocks;
   /** @nullable */
   connections?: Connection[] | null;
   /** @nullable */
-  constants?: FlowDefinitionConstants;
-  /** @nullable */
-  inputs?: FlowDefinitionInputs;
-  /** @nullable */
   layout?: FlowDefinitionLayout;
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  outputs?: FlowDefinitionOutputs;
-  /** @nullable */
-  variables?: FlowDefinitionVariables;
 }

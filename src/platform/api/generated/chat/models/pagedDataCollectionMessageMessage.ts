@@ -7,6 +7,6 @@
 import type { MessageMessage } from './messageMessage';
 
 export interface PagedDataCollectionMessageMessage {
-  data: MessageMessage[];
   total: number;
+  data: MessageMessage[];
 }

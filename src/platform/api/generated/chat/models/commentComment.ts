@@ -6,12 +6,12 @@
  */
 
 export interface CommentComment {
+  id: string;
   content: string;
+  mentionedUsers: string[];
   createdAt: string;
   /** @nullable */
-  createdBy?: string | null;
-  /** @nullable */
   createdByUserId?: string | null;
-  id: string;
-  mentionedUsers: string[];
+  /** @nullable */
+  createdBy?: string | null;
 }

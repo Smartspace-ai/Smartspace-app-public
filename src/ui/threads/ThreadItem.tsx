@@ -1,5 +1,5 @@
 // src/ui/threads/ThreadItem.tsx
-import { Edit, Loader2, MoreHorizontal, Star, Trash2 } from 'lucide-react';
+import { Edit, Loader2, MoreHorizontal, Pin, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
@@ -30,13 +30,8 @@ export default function ThreadItem({ thread }: Props) {
   const [isMenuOpen, setMenuOpen] = useState(false);
   const isDraft = isDraftThreadId(thread.id);
 
-  const {
-    goToThread,
-    toggleFavorite,
-    remove,
-    isRunning,
-    isSetFavoritePending,
-  } = useThreadItemVm({ thread });
+  const { goToThread, togglePin, remove, isRunning, isSetPinPending } =
+    useThreadItemVm({ thread });
   const { threadId } = useRouteIds();
   const isActive = thread.id === threadId;
 
@@ -83,10 +78,10 @@ export default function ThreadItem({ thread }: Props) {
             <div>{parseDateTimeHuman(thread.lastUpdatedAt)}</div>
           )}
           <div className="flex-grow" />
-          {isSetFavoritePending && !isRunning ? (
+          {isSetPinPending && !isRunning ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : thread.favorited ? (
-            <Star className="h-4 w-4 text-amber-500" />
+          ) : thread.pinned ? (
+            <Pin className="h-4 w-4 text-amber-500" />
           ) : null}
         </div>
       </div>
@@ -111,16 +106,12 @@ export default function ThreadItem({ thread }: Props) {
               className="text-xs py-1.5 px-2 rounded-md"
               onClick={(e) => {
                 e.preventDefault();
-                toggleFavorite();
+                togglePin();
                 setMenuOpen(false);
               }}
             >
-              <Star className="mr-2 h-3.5 w-3.5 text-amber-400" />
-              <span>
-                {thread.favorited
-                  ? 'Remove from favorites'
-                  : 'Add to favorites'}
-              </span>
+              <Pin className="mr-2 h-3.5 w-3.5 text-amber-400" />
+              <span>{thread.pinned ? 'Unpin thread' : 'Pin thread'}</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-xs py-1.5 px-2 rounded-md"

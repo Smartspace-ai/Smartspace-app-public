@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 import type { MessageThread, ThreadsResponse } from './model';
 import { threadsKeys } from './queryKeys';
-import { deleteThread, renameThread, setFavorite } from './service';
+import { deleteThread, renameThread, setPin } from './service';
 
 // Variable update mutation moved to flowruns domain
 
@@ -28,22 +28,22 @@ function isMessageThread(x: unknown): x is MessageThread {
   return typeof obj.id === 'string';
 }
 
-export function useSetFavorite() {
+export function useSetPin() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationKey: threadsKeys.setFavorite(''),
+    mutationKey: threadsKeys.setPin(''),
     mutationFn: async ({
       threadId,
-      favorite,
+      pin,
     }: {
       threadId: string;
-      favorite: boolean;
+      pin: boolean;
     }) => {
-      await setFavorite(threadId, favorite);
+      await setPin(threadId, pin);
     },
     onMutate: async (variables) => {
-      // Ensure "favorited" state updates instantly in any cached thread list/detail views
+      // Ensure "pinned" state updates instantly in any cached thread list/detail views
       // and then we will refetch lists to stay consistent with server sorting/filters.
       await qc.cancelQueries({ queryKey: threadsKeys.lists() });
       await qc.cancelQueries({ queryKey: threadsKeys.details() });
@@ -56,9 +56,7 @@ export function useSetFavorite() {
       });
 
       const patchThread = (t: MessageThread) =>
-        t.id === variables.threadId
-          ? { ...t, favorited: variables.favorite }
-          : t;
+        t.id === variables.threadId ? { ...t, pinned: variables.pin } : t;
 
       qc.setQueriesData({ queryKey: threadsKeys.lists() }, (old) => {
         if (!old) return old;
@@ -92,7 +90,7 @@ export function useSetFavorite() {
 
       return { previousLists, previousDetails };
     },
-    onError: (error, _variables, ctx) => {
+    onError: (error, variables, ctx) => {
       // Roll back optimistic updates
       if (ctx?.previousLists) {
         for (const [key, data] of ctx.previousLists) {
@@ -104,11 +102,13 @@ export function useSetFavorite() {
           qc.setQueryData(key, data);
         }
       }
-      console.error('Failed to set favorite:', error);
-      toast.error('Failed to set favorite');
+      console.error('Failed to set pin:', error);
+      toast.error(
+        variables.pin ? 'Failed to pin thread' : 'Failed to unpin thread'
+      );
     },
     onSettled: async () => {
-      // Reload lists so server-side ordering/filters reflect the new favorite state.
+      // Reload lists so server-side ordering/filters reflect the new pin state.
       await qc.invalidateQueries({ queryKey: threadsKeys.lists() });
       await qc.invalidateQueries({ queryKey: threadsKeys.details() });
     },

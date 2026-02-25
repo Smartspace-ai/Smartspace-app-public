@@ -76,6 +76,7 @@ export * from './messageCreateMessageInput';
 export * from './messageCreateMessageInputChannels';
 export * from './messageCreateMessageInputValue';
 export * from './messageMessage';
+export * from './messageMessageCreatorProfileImage';
 export * from './messageMessageRequest';
 export * from './messageMessageRequestVariables';
 export * from './messageMessageValue';

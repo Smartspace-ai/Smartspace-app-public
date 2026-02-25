@@ -7,6 +7,6 @@
 import type { ModelModelSummary } from './modelModelSummary';
 
 export interface PagedDataCollectionModelModelSummary {
-  data: ModelModelSummary[];
   total: number;
+  data: ModelModelSummary[];
 }

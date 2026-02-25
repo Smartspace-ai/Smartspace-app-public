@@ -10,6 +10,6 @@ export type EnumsMessageValueType =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsMessageValueType = {
-  Input: 'Input',
-  Output: 'Output',
+  NUMBER_1: 1,
+  NUMBER_2: 2,
 } as const;

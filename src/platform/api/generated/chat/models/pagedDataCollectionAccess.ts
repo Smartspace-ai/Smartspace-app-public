@@ -7,6 +7,6 @@
 import type { Access } from './access';
 
 export interface PagedDataCollectionAccess {
-  data: Access[];
   total: number;
+  data: Access[];
 }

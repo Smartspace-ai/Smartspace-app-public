@@ -13,8 +13,8 @@ export const threadsKeys = {
     [...threadsKeys.details(), { workspaceId, threadId }] as const,
 
   mutations: () => [...threadsKeys.all, 'mutations'] as const,
-  setFavorite: (threadId: string) =>
-    [...threadsKeys.mutations(), 'setFavorite', { threadId }] as const,
+  setPin: (threadId: string) =>
+    [...threadsKeys.mutations(), 'setPin', { threadId }] as const,
   renameThread: (threadId: string) =>
     [...threadsKeys.mutations(), 'renameThread', { threadId }] as const,
   deleteThread: (threadId: string) =>

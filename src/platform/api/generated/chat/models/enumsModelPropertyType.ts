@@ -10,7 +10,7 @@ export type EnumsModelPropertyType =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsModelPropertyType = {
-  Boolean: 'Boolean',
-  Number: 'Number',
-  String: 'String',
+  NUMBER_0: 0,
+  NUMBER_1: 1,
+  NUMBER_2: 2,
 } as const;

@@ -9,9 +9,9 @@ import type { MessageMessageRequestVariables } from './messageMessageRequestVari
 
 export interface MessageMessageRequest {
   inputs: MessageCreateMessageInput[];
+  workSpaceId: string;
   /** @nullable */
   messageThreadId?: string | null;
   /** @nullable */
   variables?: MessageMessageRequestVariables;
-  workSpaceId: string;
 }
