@@ -4,8 +4,8 @@
  * SmartSpace Chat API
  * OpenAPI spec version: 0.0.0
  */
-import type { MessageMessageValue } from './messageMessageValue';
 import type { IntegrationsSmartSpaceAiFlowError } from './integrationsSmartSpaceAiFlowError';
+import type { MessageMessageValue } from './messageMessageValue';
 
 export interface MessageMessage {
   id: string;

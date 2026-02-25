@@ -4,8 +4,8 @@
  * SmartSpace Chat API
  * OpenAPI spec version: 0.0.0
  */
-import type { ModelModel } from './modelModel';
 import type { EnumsModelRole } from './enumsModelRole';
+import type { ModelModel } from './modelModel';
 
 export interface ModelConfiguration {
   model: ModelModel;

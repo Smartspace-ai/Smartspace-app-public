@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 import type { EnumsMessageValueType } from './enumsMessageValueType';
-import type { MessageMessageValueValue } from './messageMessageValueValue';
 import type { MessageMessageValueChannels } from './messageMessageValueChannels';
+import type { MessageMessageValueValue } from './messageMessageValueValue';
 
 export interface MessageMessageValue {
   id: string;
