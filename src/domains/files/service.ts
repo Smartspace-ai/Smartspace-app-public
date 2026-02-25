@@ -1,5 +1,5 @@
 import { api } from '@/platform/api';
-import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import { getChatAPI } from '@/platform/api/generated/chat/api';
 import {
   getFilesIdResponse as fileInfoResponseSchema,
   postFilesResponse as filesResponseSchema,
@@ -11,7 +11,7 @@ import type { FileInfo, FileScope } from './model';
 
 export const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
 
-const chatApi = getSmartSpaceChatAPI();
+const chatApi = getChatAPI();
 
 const uploadFileInChunks = async (
   file: File,
