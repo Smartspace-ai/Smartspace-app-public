@@ -1,4 +1,4 @@
-import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import { getChatAPI } from '@/platform/api/generated/chat/api';
 import {
   getMessageThreadsIdCommentsResponse as commentsResponseSchema,
   postMessageThreadsIdCommentsResponse as commentCreateResponseSchema,
@@ -8,7 +8,7 @@ import { parseOrThrow } from '@/platform/validation';
 import { mapCommentDtoToModel, mapCommentsDtoToModels } from './mapper';
 import { Comment, MentionUser } from './model';
 
-const chatApi = getSmartSpaceChatAPI();
+const chatApi = getChatAPI();
 
 // Fetch all comments for a given thread
 export async function fetchComments(threadId: string): Promise<Comment[]> {
