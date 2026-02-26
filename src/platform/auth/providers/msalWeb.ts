@@ -24,6 +24,52 @@ let inFlightPopupPromise: Promise<string> | null = null;
 const POPUP_COOLDOWN_MS = 8000;
 let popupCooldownUntil = 0;
 
+/**
+ * Fallback token received directly from the Teams auth popup.
+ *
+ * On Teams Mobile, localStorage is partitioned between the main app and the
+ * popup WebView, so MSAL's acquireTokenSilent() cannot find the popup's cached
+ * tokens. This fallback bridges that gap: the popup returns the token via
+ * notifySuccess, and we store it here for use when silent acquisition fails.
+ */
+let popupFallbackToken: {
+  homeAccountId: string;
+  accessToken: string;
+  expiresOn: Date | null;
+} | null = null;
+
+function setPopupFallbackToken(
+  homeAccountId: string,
+  accessToken: string | undefined,
+  expiresOnIso: string | undefined
+): void {
+  if (!accessToken) {
+    popupFallbackToken = null;
+    return;
+  }
+  const expiresOn = expiresOnIso ? new Date(expiresOnIso) : null;
+  popupFallbackToken = { homeAccountId, accessToken, expiresOn };
+  ssInfo('auth:web', 'Popup fallback token stored', {
+    homeAccountId,
+    hasExpiresOn: !!expiresOn,
+  });
+}
+
+function consumePopupFallbackToken(): string | null {
+  if (!popupFallbackToken) return null;
+  const { accessToken, expiresOn } = popupFallbackToken;
+
+  // Check expiry with a 60-second buffer
+  if (expiresOn && expiresOn.getTime() - 60_000 <= Date.now()) {
+    ssInfo('auth:web', 'Popup fallback token expired, clearing');
+    popupFallbackToken = null;
+    return null;
+  }
+
+  ssInfo('auth:web', 'Using popup fallback token');
+  return accessToken;
+}
+
 export function createMsalWebAdapter(): AuthAdapter {
   const msalInstance = getMsalInstance();
   async function ensureActive() {
@@ -41,10 +87,19 @@ export function createMsalWebAdapter(): AuthAdapter {
         silentOnly: !!opts?.silentOnly,
       });
       if (!acct) {
-        if (opts?.silentOnly) throw new Error('No active account');
+        if (opts?.silentOnly) {
+          const fallback = consumePopupFallbackToken();
+          if (fallback) return fallback;
+          throw new Error('No active account');
+        }
         if (isInTeams()) {
-          const homeAccountId = await authenticateViaTeamsSdk();
-          setActiveAccountFromTeamsAuth(msalInstance, homeAccountId);
+          const result = await authenticateViaTeamsSdk();
+          setActiveAccountFromTeamsAuth(msalInstance, result.homeAccountId);
+          setPopupFallbackToken(
+            result.homeAccountId,
+            result.accessToken,
+            result.expiresOn
+          );
         } else {
           await msalInstance.loginPopup(interactiveLoginRequest);
         }
@@ -70,6 +125,14 @@ export function createMsalWebAdapter(): AuthAdapter {
           return r.accessToken;
         } catch (e) {
           ssWarn('auth:web', 'acquireTokenSilent failed', e);
+
+          // Check popup fallback token (Teams Mobile — partitioned localStorage).
+          const fallback = consumePopupFallbackToken();
+          if (fallback) {
+            if (isInTeams()) setStoredUseMsalInTeams(true);
+            return fallback;
+          }
+
           // In Teams, try ssoSilent (hidden iframe — completely invisible) before
           // giving up on silent auth. Works when the user has an active Azure AD
           // session but the MSAL token cache is empty/partitioned.
@@ -125,20 +188,46 @@ export function createMsalWebAdapter(): AuthAdapter {
               // Teams SDK popup flow instead of acquireTokenPopup
               const account = msalInstance.getActiveAccount();
               const hint = account?.username;
-              const homeAccountId = await authenticateViaTeamsSdk(hint);
-              setActiveAccountFromTeamsAuth(msalInstance, homeAccountId);
-              // After the popup, tokens are cached. Retry silent acquisition.
+              const result = await authenticateViaTeamsSdk(hint);
+              setActiveAccountFromTeamsAuth(msalInstance, result.homeAccountId);
+              setPopupFallbackToken(
+                result.homeAccountId,
+                result.accessToken,
+                result.expiresOn
+              );
+
+              // Try silent acquisition (works on Desktop where cache is shared).
               const retryAccount = msalInstance.getActiveAccount();
-              if (!retryAccount)
-                throw new Error('No active account after Teams auth');
-              const r = await msalInstance.acquireTokenSilent({
-                ...loginRequest,
-                account: retryAccount,
-                cacheLookupPolicy: CacheLookupPolicy.AccessTokenAndRefreshToken,
-              });
-              setStoredUseMsalInTeams(true);
-              popupCooldownUntil = Date.now() + POPUP_COOLDOWN_MS;
-              return r.accessToken;
+              if (retryAccount) {
+                try {
+                  const r = await msalInstance.acquireTokenSilent({
+                    ...loginRequest,
+                    account: retryAccount,
+                    cacheLookupPolicy:
+                      CacheLookupPolicy.AccessTokenAndRefreshToken,
+                  });
+                  setStoredUseMsalInTeams(true);
+                  popupCooldownUntil = Date.now() + POPUP_COOLDOWN_MS;
+                  return r.accessToken;
+                } catch (silentErr) {
+                  ssWarn(
+                    'auth:web',
+                    'acquireTokenSilent after popup failed',
+                    silentErr
+                  );
+                }
+              }
+
+              // Fallback: use the token returned directly from the popup.
+              // Primary path on Teams Mobile (partitioned localStorage).
+              const popupToken = consumePopupFallbackToken();
+              if (popupToken) {
+                setStoredUseMsalInTeams(true);
+                popupCooldownUntil = Date.now() + POPUP_COOLDOWN_MS;
+                return popupToken;
+              }
+
+              throw new Error('No token available after Teams auth popup');
             } else {
               const account = msalInstance.getActiveAccount();
               // Use interactive request directly (with account if available) to avoid
@@ -165,10 +254,18 @@ export function createMsalWebAdapter(): AuthAdapter {
       await ensureActive();
       const a =
         msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
-      ssInfo('auth:web', 'getSession', { hasSession: !!a });
-      return a
-        ? { accountId: a.homeAccountId, displayName: a.name ?? undefined }
-        : null;
+      ssInfo('auth:web', 'getSession', {
+        hasSession: !!a,
+        hasFallback: !!popupFallbackToken,
+      });
+      if (a) {
+        return { accountId: a.homeAccountId, displayName: a.name ?? undefined };
+      }
+      // Fallback: popup token available but MSAL cache is partitioned (Teams Mobile).
+      if (popupFallbackToken) {
+        return { accountId: popupFallbackToken.homeAccountId };
+      }
+      return null;
     },
     async signIn(opts?: SignInOptions) {
       const redirectUrl =
@@ -209,8 +306,13 @@ export function createMsalWebAdapter(): AuthAdapter {
         }
         // 2) Teams SDK popup flow — uses authentication.authenticate() which
         //    opens a Teams-controlled popup (bypasses WebView2 popup blocking).
-        const homeAccountId = await authenticateViaTeamsSdk(hint);
-        setActiveAccountFromTeamsAuth(msalInstance, homeAccountId);
+        const result = await authenticateViaTeamsSdk(hint);
+        setActiveAccountFromTeamsAuth(msalInstance, result.homeAccountId);
+        setPopupFallbackToken(
+          result.homeAccountId,
+          result.accessToken,
+          result.expiresOn
+        );
       } else {
         ssInfo('auth:web', 'signIn -> loginRedirect', { redirectUrl });
         await msalInstance.loginRedirect({
