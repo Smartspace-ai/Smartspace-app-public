@@ -5,8 +5,6 @@ import {
   getModelsResponse as modelsResponseSchema,
 } from '@/platform/api/generated/chat/zod';
 
-import { parseIsoDate } from '@/shared/utils/parseIsoDate';
-
 import { Model } from './model';
 
 type ModelsResponseDto = z.infer<typeof modelsResponseSchema>;
@@ -41,9 +39,7 @@ export function mapModelDtoToModel(dto: ModelDto | ModelDetailDto): Model {
     ),
     modelDeploymentProviderType: toStringEnum(dto.modelDeploymentProviderType),
     createdByUserId: dto.createdByUserId ?? '',
-    createdAt: dto.createdAt
-      ? parseIsoDate(dto.createdAt, 'createdAt').toISOString()
-      : '',
+    createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(0),
     properties: dto.properties.map(mapPropertyDtoToModel),
     virtualMachineUrl:
       ('virtualMachineUrl' in dto

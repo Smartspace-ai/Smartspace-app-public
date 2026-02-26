@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { DateFromApi } from '@/shared/utils/dateFromApi';
+
 export enum NotificationType {
   WorkSpaceUpdated = 0,
   MessageThreadUpdated = 1,
@@ -57,8 +59,7 @@ export const NotificationSchema = z.preprocess((input) => {
   workSpaceId: z.string().optional().nullable(),
   threadId: z.string().optional().nullable(),
   createdBy: z.string(),
-  createdAt: z.union([z.string(), z.date()])
-    .transform((v) => (v instanceof Date ? v : new Date(v))),
+  createdAt: DateFromApi,
   dismissedAt: z.string().nullable().optional(),
   avatar: z.string().nullable().optional(),
 }).strict());

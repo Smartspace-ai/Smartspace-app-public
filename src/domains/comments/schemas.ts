@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { DateFromApi } from '@/shared/utils/dateFromApi';
+
 export const MentionUserSchema = z.preprocess((input) => {
   if (!input || typeof input !== 'object') return input;
   const obj = input as Record<string, unknown>;
@@ -25,7 +27,7 @@ export const MentionUserSchema = z.preprocess((input) => {
 
 export const CommentSchema = z.object({
   id: z.string(),
-  createdAt: z.union([z.date(), z.string()]),
+  createdAt: DateFromApi,
   createdByUserId: z.string(),
   createdBy: z.string(),
   content: z.string(),
