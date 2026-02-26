@@ -14,13 +14,7 @@ export type Model = {
   deploymentStatus: string;
   modelDeploymentProviderType: string;
   createdByUserId: string;
-  createdAt: string;
+  createdAt: Date;
   properties: ModelProperty[];
   virtualMachineUrl: string | null;
 };
-
-
-
-
-
-
