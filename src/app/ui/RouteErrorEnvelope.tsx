@@ -3,6 +3,7 @@ import { ErrorComponentProps, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
 import { AuthRequiredError } from '@/platform/auth/errors';
+import { isInTeams } from '@/platform/auth/msalConfig';
 import type { AppError } from '@/platform/envelopes';
 import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
@@ -62,6 +63,40 @@ function getErrorMessage(error: unknown): string {
   return 'Something went wrong.';
 }
 
+function getErrorDetail(error: unknown): string | null {
+  if (!isInTeams()) return null;
+  try {
+    const parts: string[] = [];
+    const name = error instanceof Error ? error.name : '';
+    const message = error instanceof Error ? error.message : String(error);
+    if (name) parts.push(name);
+    if (message) parts.push(message);
+
+    // Extract Axios request details when available
+    if (error && typeof error === 'object' && 'config' in error) {
+      const config = (error as Record<string, unknown>).config as
+        | Record<string, unknown>
+        | undefined;
+      if (config) {
+        parts.push(
+          `URL: ${String(config.baseURL ?? '')}${String(config.url ?? '')}`
+        );
+        parts.push(
+          `Method: ${String(config.method ?? 'unknown').toUpperCase()}`
+        );
+        const headers = config.headers as Record<string, unknown> | undefined;
+        parts.push(`Has Auth: ${!!headers?.Authorization}`);
+      }
+    }
+
+    const stack = error instanceof Error ? error.stack : undefined;
+    if (stack) parts.push(stack);
+    return parts.length > 0 ? parts.join('\n') : null;
+  } catch {
+    return null;
+  }
+}
+
 function getRedirectPath(): string {
   if (typeof window === 'undefined') return '/workspace';
   const raw =
@@ -81,14 +116,22 @@ export function RootErrorBoundary({ error, reset }: ErrorComponentProps) {
   const navigate = useNavigate();
   const message = getErrorMessage(error);
   const authError = isAuthError(error);
+  const detail = getErrorDetail(error);
 
   return (
-    <Envelope
-      title="Oops"
-      message={message}
-      onRetry={authError ? undefined : reset}
-      onSignIn={authError ? () => goToLogin(navigate) : undefined}
-    />
+    <>
+      <Envelope
+        title="Oops"
+        message={message}
+        onRetry={authError ? undefined : reset}
+        onSignIn={authError ? () => goToLogin(navigate) : undefined}
+      />
+      {detail ? (
+        <pre className="mx-auto mt-2 max-w-lg whitespace-pre-wrap break-words text-xs text-red-800/80 p-3 bg-red-50 rounded border border-red-200 overflow-auto max-h-60">
+          {detail}
+        </pre>
+      ) : null}
+    </>
   );
 }
 
