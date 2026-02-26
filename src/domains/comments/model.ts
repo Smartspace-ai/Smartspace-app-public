@@ -6,7 +6,7 @@ export type MentionUser = {
 
 export type Comment = {
   id: string;
-  createdAt: Date | string;
+  createdAt: Date;
   createdByUserId: string;
   createdBy: string;
   content: string;

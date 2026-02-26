@@ -15,9 +15,6 @@ type WorkspacesListResponseDto = z.infer<typeof workspacesListResponseSchema>;
 type WorkspacesListItemDto = WorkspacesListResponseDto['data'][number];
 type MentionUserDto = z.infer<typeof workspaceUsersResponseSchema>[number];
 
-const toDate = (x: string | Date | null | undefined): Date | undefined =>
-  x == null ? undefined : x instanceof Date ? x : new Date(x);
-
 const truthy = (b: unknown): boolean => Boolean(b);
 
 const toAccess = (raw: unknown): 'Read' | 'Write' => {
@@ -70,10 +67,10 @@ export function mapWorkspaceDtoToModel(dto: WorkspaceDto): Workspace {
     dataSpaces: Array.isArray(dto.dataSpaces) ? dto.dataSpaces : undefined,
 
     createdByUserId: dto.createdByUserId ?? undefined,
-    createdAt: toDate(dto.createdAt),
+    createdAt: dto.createdAt != null ? new Date(dto.createdAt) : undefined,
 
     modifiedByUserId: dto.modifiedByUserId ?? undefined,
-    modifiedAt: toDate(dto.modifiedAt),
+    modifiedAt: dto.modifiedAt != null ? new Date(dto.modifiedAt) : undefined,
 
     favorited: truthy(dto.favorited),
 
