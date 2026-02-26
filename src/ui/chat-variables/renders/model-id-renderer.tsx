@@ -1,12 +1,22 @@
-import type { ControlElement, ControlProps, JsonSchema7 } from '@jsonforms/core';
+import type {
+  ControlElement,
+  ControlProps,
+  JsonSchema7,
+} from '@jsonforms/core';
 import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Autocomplete, TextField } from '@mui/material';
+import MuiDialog from '@mui/material/Dialog';
+import MuiDialogContent from '@mui/material/DialogContent';
 import type { AutocompleteInputChangeReason } from '@mui/material/useAutocomplete';
 import { Loader2 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/shared/ui/mui-compat/dialog';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { llmModelIcons } from '../../../assets/providers';
 import { useModels } from '../../../domains/models/queries';
@@ -15,23 +25,45 @@ import type { Model } from '../../../domains/models/schemas';
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
 // Helper function to get provider logo/icon
-const getProviderInfo = (providerType: string): { iconSrc: string | null; bgColor: string; textColor: string } => {
+const getProviderInfo = (
+  providerType: string
+): { iconSrc: string | null; bgColor: string; textColor: string } => {
   const provider = providerType?.toLowerCase() || '';
-  
+
   switch (provider) {
     case 'anthropic':
-      return { iconSrc: llmModelIcons.Anthropic, bgColor: 'transparent', textColor: '#FFFFFF' };
+      return {
+        iconSrc: llmModelIcons.Anthropic,
+        bgColor: 'transparent',
+        textColor: '#FFFFFF',
+      };
     case 'openai':
-      return { iconSrc: llmModelIcons.OpenAi, bgColor: 'transparent', textColor: '#FFFFFF' };
+      return {
+        iconSrc: llmModelIcons.OpenAi,
+        bgColor: 'transparent',
+        textColor: '#FFFFFF',
+      };
     case 'azureopenai':
     case 'azure':
-      return { iconSrc: llmModelIcons.AzureOpenAi, bgColor: 'transparent', textColor: '#FFFFFF' };
+      return {
+        iconSrc: llmModelIcons.AzureOpenAi,
+        bgColor: 'transparent',
+        textColor: '#FFFFFF',
+      };
     case 'google':
     case 'gemini':
     case 'googlegemini':
-      return { iconSrc: llmModelIcons.GoogleGemini, bgColor: 'transparent', textColor: '#FFFFFF' };
+      return {
+        iconSrc: llmModelIcons.GoogleGemini,
+        bgColor: 'transparent',
+        textColor: '#FFFFFF',
+      };
     case 'huggingface':
-      return { iconSrc: llmModelIcons.HuggingFace, bgColor: 'transparent', textColor: '#FFFFFF' };
+      return {
+        iconSrc: llmModelIcons.HuggingFace,
+        bgColor: 'transparent',
+        textColor: '#FFFFFF',
+      };
     default:
       return { iconSrc: null, bgColor: 'transparent', textColor: '#6B7280' };
   }
@@ -46,23 +78,25 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
   description,
   errors,
   required,
-  uischema
+  uischema,
 }) => {
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
+
   // Debounce search to prevent excessive API calls
   useEffect(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    
+
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedSearchValue(searchValue);
     }, 300);
-    
+
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -72,13 +106,15 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
 
   // Use debounced search value directly, only search when there's actual input
   const searchTerm = useMemo(() => {
-    return debouncedSearchValue && debouncedSearchValue.length > 0 ? debouncedSearchValue : undefined;
+    return debouncedSearchValue && debouncedSearchValue.length > 0
+      ? debouncedSearchValue
+      : undefined;
   }, [debouncedSearchValue]);
-  
+
   // Fetch models with search functionality
-  const { data: modelsData, isLoading } = useModels({ 
+  const { data: modelsData, isLoading } = useModels({
     search: searchTerm,
-    take: 1000 
+    take: 1000,
   });
   const [listModels, setListModels] = useState<Model[]>([]);
   useEffect(() => {
@@ -95,7 +131,7 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
   }, [modelsData?.data]);
 
   const selectedModel =
-    (typeof data === 'string' && data && listModels.length)
+    typeof data === 'string' && data && listModels.length
       ? listModels.find((model) => model.id === data)
       : null;
 
@@ -113,24 +149,34 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
     return '';
   }, [searchValue, selectedModel]);
 
-  const handleModelChange = useCallback((_event: React.SyntheticEvent | null, newValue: Model | null) => {
-    if (newValue) {
-      handleChange(path, newValue.id);
-    } else {
-      handleChange(path, undefined);
-    }
-    // Clear search when selection is made
-    setSearchValue('');
-    setDebouncedSearchValue('');
-    setIsOpen(false);
-  }, [handleChange, path, setIsOpen]);
+  const handleModelChange = useCallback(
+    (_event: React.SyntheticEvent | null, newValue: Model | null) => {
+      if (newValue) {
+        handleChange(path, newValue.id);
+      } else {
+        handleChange(path, undefined);
+      }
+      // Clear search when selection is made
+      setSearchValue('');
+      setDebouncedSearchValue('');
+      setIsOpen(false);
+    },
+    [handleChange, path, setIsOpen]
+  );
 
-  const handleInputChange = useCallback((_event: React.SyntheticEvent, newInputValue: string, reason: AutocompleteInputChangeReason) => {
-    // Only update search value when user is typing, not when selecting
-    if (reason === 'input') {
-      setSearchValue(newInputValue);
-    }
-  }, []);
+  const handleInputChange = useCallback(
+    (
+      _event: React.SyntheticEvent,
+      newInputValue: string,
+      reason: AutocompleteInputChangeReason
+    ) => {
+      // Only update search value when user is typing, not when selecting
+      if (reason === 'input') {
+        setSearchValue(newInputValue);
+      }
+    },
+    []
+  );
 
   const handleOpen = useCallback(() => {
     setIsOpen(true);
@@ -142,46 +188,82 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
     setSearchValue('');
   }, []);
 
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth <= 640
+  );
 
   useEffect(() => {
     const updateIsMobile = () =>
       setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 640);
-    updateIsMobile();
     window.addEventListener('resize', updateIsMobile);
     return () => window.removeEventListener('resize', updateIsMobile);
   }, []);
 
   // Get readOnly from uischema (set when access === 'Read')
-  const readOnly = (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
+  const readOnly =
+    (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
 
   if (isMobile) {
-    const providerInfo = selectedModel ? getProviderInfo(selectedModel.modelDeploymentProviderType || '') : null;
+    const providerInfo = selectedModel
+      ? getProviderInfo(selectedModel.modelDeploymentProviderType || '')
+      : null;
     return (
       <div className="w-full flex justify-center">
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <button
-              type="button"
-              disabled={isDisabled}
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 bg-accent text-foreground/90 hover:bg-accent/80 transition-colors"
-              style={{ width: 'fit-content', maxWidth: '100%' }}
-            >
-              {providerInfo?.iconSrc && (
-                <img src={providerInfo.iconSrc} alt="Provider" className="h-4 w-4" />
-              )}
-              <span className="text-sm truncate">
-                {selectedModel ? (selectedModel.displayName || selectedModel.name) : (label || 'Select model')}
-              </span>
-            </button>
-          </DialogTrigger>
-          <DialogContent hideClose onOpenAutoFocus={(e) => e.preventDefault()} className="p-0 w-[90vw] max-w-sm sm:max-w-sm h-[70vh] flex flex-col gap-0 data-[state=open]:animate-none data-[state=closed]:animate-none">
-            <DialogTitle className="sr-only">Select a model</DialogTitle>
+        <button
+          type="button"
+          disabled={isDisabled}
+          onClick={() => setIsOpen(true)}
+          className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 bg-accent text-foreground/90 hover:bg-accent/80 transition-colors"
+          style={{ width: 'fit-content', maxWidth: '100%' }}
+        >
+          {providerInfo?.iconSrc && (
+            <img
+              src={providerInfo.iconSrc}
+              alt="Provider"
+              className="h-4 w-4"
+            />
+          )}
+          <span className="text-sm truncate">
+            {selectedModel
+              ? selectedModel.displayName || selectedModel.name
+              : label || 'Select model'}
+          </span>
+        </button>
+
+        <MuiDialog
+          open={isOpen}
+          onClose={() => setIsOpen(false)}
+          maxWidth={false}
+          slotProps={{
+            backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.5)' } },
+          }}
+          PaperProps={{
+            sx: {
+              width: '90vw',
+              maxWidth: '384px',
+              height: '70vh',
+              m: 0,
+              p: 0,
+              borderRadius: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+            },
+          }}
+        >
+          <MuiDialogContent
+            sx={{
+              p: 0,
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
             <div className="flex flex-col h-full w-full">
               <div className="flex-1 overflow-y-auto w-full max-w-[360px] mx-auto">
                 {isLoading && listModels.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+                  <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   </div>
                 )}
@@ -193,13 +275,23 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
                         className="w-full text-left px-3 py-2 hover:bg-accent cursor-pointer"
                         onClick={() => handleModelChange(null, option)}
                       >
-                      <div className="flex items-center gap-2">
-                        {(() => {
-                          const icon = getProviderInfo(option.modelDeploymentProviderType || '').iconSrc;
-                          return icon ? <img src={icon} alt="Provider" className="h-4 w-4" /> : null;
-                        })()}
-                        <span className="text-sm">{option.displayName || option.name}</span>
-                      </div>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const icon = getProviderInfo(
+                              option.modelDeploymentProviderType || ''
+                            ).iconSrc;
+                            return icon ? (
+                              <img
+                                src={icon}
+                                alt="Provider"
+                                className="h-4 w-4"
+                              />
+                            ) : null;
+                          })()}
+                          <span className="text-sm">
+                            {option.displayName || option.name}
+                          </span>
+                        </div>
                       </button>
                     </li>
                   ))}
@@ -208,7 +300,9 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
               <div className="px-2 py-1 border-t bg-background flex justify-center">
                 <TextField
                   value={searchValue}
-                  onChange={(e) => setSearchValue((e.target as HTMLInputElement).value)}
+                  onChange={(e) =>
+                    setSearchValue((e.target as HTMLInputElement).value)
+                  }
                   placeholder="Search models..."
                   size="small"
                   className="w-full max-w-[360px] m-0"
@@ -216,8 +310,8 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
                 />
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          </MuiDialogContent>
+        </MuiDialog>
       </div>
     );
   }
@@ -247,7 +341,11 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
       noOptionsText={
         <div className="flex flex-col items-center py-4 text-gray-500">
           <div className="text-sm">
-            {isLoading ? "Loading models..." : (searchValue ? "No models found" : "Start typing to search models...")}
+            {isLoading
+              ? 'Loading models...'
+              : searchValue
+              ? 'No models found'
+              : 'Start typing to search models...'}
           </div>
           {searchValue && !isLoading && (
             <div className="text-xs mt-1 opacity-75">
@@ -257,8 +355,10 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
         </div>
       }
       renderInput={(params) => {
-        const providerInfo = selectedModel ? getProviderInfo(selectedModel.modelDeploymentProviderType || '') : null;
-        
+        const providerInfo = selectedModel
+          ? getProviderInfo(selectedModel.modelDeploymentProviderType || '')
+          : null;
+
         return (
           <TextField
             {...params}
@@ -319,7 +419,7 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
             InputProps={{
               ...params.InputProps,
               startAdornment: providerInfo?.iconSrc ? (
-                <div 
+                <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -329,11 +429,11 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
                     borderRadius: '4px',
                     backgroundColor: providerInfo.bgColor,
                     marginRight: '8px',
-                    flexShrink: 0
+                    flexShrink: 0,
                   }}
                 >
-                  <img 
-                    src={providerInfo.iconSrc} 
+                  <img
+                    src={providerInfo.iconSrc}
                     alt="Provider logo"
                     style={{
                       width: 20,
@@ -360,17 +460,19 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
         );
       }}
       renderOption={(props, option) => {
-        const providerInfo = getProviderInfo(option.modelDeploymentProviderType || '');
-        
+        const providerInfo = getProviderInfo(
+          option.modelDeploymentProviderType || ''
+        );
+
         return (
-          <li 
-            {...props} 
+          <li
+            {...props}
             key={option.id}
             className="!px-4 !py-3 hover:!bg-gray-50 cursor-pointer transition-colors duration-150 border-b border-gray-50 last:border-b-0"
           >
             <div className="flex items-center space-x-3">
               {/* Provider Logo */}
-              <div 
+              <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -379,12 +481,12 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
                   height: '24px',
                   borderRadius: '6px',
                   backgroundColor: providerInfo.bgColor,
-                  flexShrink: 0
+                  flexShrink: 0,
                 }}
               >
                 {providerInfo.iconSrc ? (
-                  <img 
-                    src={providerInfo.iconSrc} 
+                  <img
+                    src={providerInfo.iconSrc}
                     alt="Provider logo"
                     style={{
                       width: 20,
@@ -395,10 +497,16 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
                     }}
                   />
                 ) : (
-                  <span role="img" aria-label="Provider" style={{ color: providerInfo.textColor, fontSize: '12px' }}>⚡</span>
+                  <span
+                    role="img"
+                    aria-label="Provider"
+                    style={{ color: providerInfo.textColor, fontSize: '12px' }}
+                  >
+                    ⚡
+                  </span>
                 )}
               </div>
-              
+
               {/* Model Info */}
               <div className="flex flex-col space-y-1 flex-1">
                 <div className="flex items-center justify-between">
@@ -422,7 +530,8 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
       sx={{
         '& .MuiAutocomplete-paper': {
           borderRadius: '8px',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          boxShadow:
+            '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
           border: '1px solid #e5e7eb',
           marginTop: '4px',
           '& .MuiAutocomplete-listbox': {
@@ -475,26 +584,34 @@ export const modelIdRendererTester = rankWith(
     }
 
     // Extract the property path from the scope (e.g., "#/properties/Model" -> "Model")
-    const propertyPath = (uischema as ControlElement).scope.replace('#/properties/', '');
-    
+    const propertyPath = (uischema as ControlElement).scope.replace(
+      '#/properties/',
+      ''
+    );
+
     // Get the individual field schema from the root schema
-    const fieldSchema = (schema as JsonSchema7 | undefined)?.properties?.[propertyPath] as JsonSchema7 | undefined;
-    
+    const fieldSchema = (schema as JsonSchema7 | undefined)?.properties?.[
+      propertyPath
+    ] as JsonSchema7 | undefined;
+
     if (!fieldSchema) {
       return false;
     }
 
     // Check if this field has the ModelId indicators
     const hasModelSelector =
-      (typeof fieldSchema === 'object' &&
-        fieldSchema &&
-        (fieldSchema as unknown as Record<string, unknown>)['x-model-selector'] === true);
+      typeof fieldSchema === 'object' &&
+      fieldSchema &&
+      (fieldSchema as unknown as Record<string, unknown>)[
+        'x-model-selector'
+      ] === true;
     const hasModelIdTitle = fieldSchema.title === 'ModelId';
     const result = hasModelIdTitle || hasModelSelector;
-    
+
     return result;
   }
 );
 
 // Export the wrapped component
-export const ModelIdRendererControl = withJsonFormsControlProps(ModelIdRenderer); 
+export const ModelIdRendererControl =
+  withJsonFormsControlProps(ModelIdRenderer);
