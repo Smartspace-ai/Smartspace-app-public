@@ -36,10 +36,7 @@ export function mapNotificationDtoToModel(dto: TNotificationDto): Notification {
     workSpaceId: parsed.workSpaceId ?? undefined,
     threadId: parsed.threadId ?? undefined,
     createdBy: parsed.createdBy,
-    createdAt:
-      parsed.createdAt instanceof Date
-        ? parsed.createdAt
-        : new Date(parsed.createdAt),
+    createdAt: parsed.createdAt,
     dismissedAt: parsed.dismissedAt ?? undefined,
     avatar: parsed.avatar ?? undefined,
   };

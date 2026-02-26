@@ -24,7 +24,7 @@ describe('models service', () => {
           deploymentStatus: 'Ready',
           modelDeploymentProviderType: 'OpenAi',
           createdByUserId: 'u',
-          createdAt: '2024',
+          createdAt: '2024-06-01T12:00:00Z',
           properties: [],
           virtualMachineUrl: null,
         },
@@ -45,7 +45,7 @@ describe('models service', () => {
       displayName: 'B',
       modelDeploymentProviderType: 'OpenAi',
       createdByUserId: 'u',
-      createdAt: '2024',
+      createdAt: '2024-06-01T12:00:00Z',
       properties: [],
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
