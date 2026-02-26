@@ -37,7 +37,7 @@ export default function Root() {
 }
 // routes/__root.tsx
 export const Route = createRootRouteWithContext<RouterContext>()({
-  pendingMs: 250,
+  pendingMs: 0,
   pendingComponent: () => <TeamsLoaderPage message="Loading…" />,
   component: Root,
   errorComponent: RootErrorBoundary,
