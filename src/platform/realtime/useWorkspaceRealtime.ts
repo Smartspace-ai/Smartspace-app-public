@@ -1,7 +1,7 @@
 // src/platform/realtime/useWorkspaceRealtime.ts
 import { useEffect } from 'react';
 
-import { useRealtime } from './RealtimeProvider';
+import { useOptionalRealtime } from './RealtimeProvider';
 
 type Handlers = {
   onThreadUpdate?: (threadId: string) => void;
@@ -9,11 +9,23 @@ type Handlers = {
   onCommentsUpdate?: (threadId: string) => void;
 };
 
-export function useWorkspaceRealtime(workspaceId?: string, handlers: Handlers = {}) {
-  const { connection, subscribeToGroup, unsubscribeFromGroup } = useRealtime();
+export function useWorkspaceRealtime(
+  workspaceId?: string,
+  handlers: Handlers = {}
+) {
+  const ctx = useOptionalRealtime();
+  const connection = ctx?.connection;
+  const subscribeToGroup = ctx?.subscribeToGroup;
+  const unsubscribeFromGroup = ctx?.unsubscribeFromGroup;
 
   useEffect(() => {
-    if (!workspaceId || !connection) return;
+    if (
+      !workspaceId ||
+      !connection ||
+      !subscribeToGroup ||
+      !unsubscribeFromGroup
+    )
+      return;
 
     // join workspace group
     subscribeToGroup(workspaceId);
@@ -24,7 +36,9 @@ export function useWorkspaceRealtime(workspaceId?: string, handlers: Handlers = 
     const onThreadDeleted = (t: { id: string } & Record<string, unknown>) => {
       handlers.onThreadDeleted?.(t.id);
     };
-    const onCommentsUpdate = (c: { messageThreadId: string } & Record<string, unknown>) => {
+    const onCommentsUpdate = (
+      c: { messageThreadId: string } & Record<string, unknown>
+    ) => {
       handlers.onCommentsUpdate?.(c.messageThreadId);
     };
 
@@ -38,5 +52,11 @@ export function useWorkspaceRealtime(workspaceId?: string, handlers: Handlers = 
       connection.off('ReceiveThreadDeleted', onThreadDeleted);
       connection.off('ReceiveCommentsUpdate', onCommentsUpdate);
     };
-  }, [workspaceId, connection, subscribeToGroup, unsubscribeFromGroup, handlers]);
+  }, [
+    workspaceId,
+    connection,
+    subscribeToGroup,
+    unsubscribeFromGroup,
+    handlers,
+  ]);
 }
