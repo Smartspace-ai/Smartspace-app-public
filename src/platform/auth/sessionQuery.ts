@@ -13,7 +13,7 @@ export function sessionQueryOptions() {
     },
     staleTime: 5 * 60_000, // 5 min — session doesn't change often
     gcTime: 10 * 60_000, // 10 min
-    retry: false, // auth failures should not retry
+    retry: 1, // Retry once — absorbs transient MSAL cache delays on Teams Desktop
     refetchOnWindowFocus: true, // re-check session on tab focus
   });
 }

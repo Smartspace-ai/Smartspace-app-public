@@ -34,20 +34,36 @@ export function createTeamsNaaAdapter(): AuthAdapter {
     const hint = active?.username ?? all[0]?.username;
 
     ssInfo('auth:teams', 'NAA fallback -> Teams SDK auth popup');
-    const homeAccountId = await authenticateViaTeamsSdk(hint);
-    setActiveAccountFromTeamsAuth(msalInstance, homeAccountId);
+    const result = await authenticateViaTeamsSdk(hint);
+    setActiveAccountFromTeamsAuth(msalInstance, result.homeAccountId);
 
     // After the popup, tokens are cached in localStorage. Acquire silently.
     const account = msalInstance.getActiveAccount();
-    if (!account) throw new Error('No active account after Teams auth');
+    if (!account) {
+      // On Mobile, the MSAL cache may be partitioned. Use popup token directly.
+      if (result.accessToken) {
+        ssInfo('auth:teams', 'NAA MSAL fallback using popup token directly');
+        return result.accessToken;
+      }
+      throw new Error('No active account after Teams auth');
+    }
 
-    const r = await msalInstance.acquireTokenSilent({
-      ...loginRequest,
-      scopes,
-      account,
-      cacheLookupPolicy: CacheLookupPolicy.AccessTokenAndRefreshToken,
-    });
-    return r.accessToken;
+    try {
+      const r = await msalInstance.acquireTokenSilent({
+        ...loginRequest,
+        scopes,
+        account,
+        cacheLookupPolicy: CacheLookupPolicy.AccessTokenAndRefreshToken,
+      });
+      return r.accessToken;
+    } catch (silentErr) {
+      ssWarn('auth:teams', 'NAA MSAL fallback silent failed', silentErr);
+      if (result.accessToken) {
+        ssInfo('auth:teams', 'NAA MSAL fallback using popup token directly');
+        return result.accessToken;
+      }
+      throw silentErr;
+    }
   }
 
   return {
