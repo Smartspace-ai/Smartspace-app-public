@@ -39,11 +39,25 @@ describe('DateFromApi', () => {
     expect(result.getTime()).toBe(ts);
   });
 
-  it('rejects null', () => {
-    expect(() => DateFromApi.parse(null)).toThrow();
+  it('coerces null to epoch (Date(0))', () => {
+    const result = DateFromApi.parse(null);
+    expect(result).toBeInstanceOf(Date);
+    expect(result.getTime()).toBe(0);
   });
 
   it('rejects undefined', () => {
     expect(() => DateFromApi.parse(undefined)).toThrow();
+  });
+
+  it('rejects empty string', () => {
+    expect(() => DateFromApi.parse('')).toThrow();
+  });
+
+  it('rejects invalid date string', () => {
+    expect(() => DateFromApi.parse('not-a-date')).toThrow();
+  });
+
+  it('rejects NaN', () => {
+    expect(() => DateFromApi.parse(NaN)).toThrow();
   });
 });
