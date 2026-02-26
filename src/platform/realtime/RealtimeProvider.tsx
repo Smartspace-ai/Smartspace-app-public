@@ -1,7 +1,19 @@
 // src/platform/realtime/RealtimeProvider.tsx
-import { HttpTransportType, HubConnection, HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
+  HttpTransportType,
+  HubConnection,
+  HubConnectionBuilder,
+  HubConnectionState,
+} from '@microsoft/signalr';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
 } from 'react';
 
 import { parseScopes } from '@/platform/auth/scopes';
@@ -16,9 +28,13 @@ type RealtimeCtx = {
 const Ctx = createContext<RealtimeCtx | null>(null);
 export const useRealtime = () => {
   const ctx = useContext(Ctx);
-  if (!ctx) throw new Error('useRealtime must be used within <RealtimeProvider>');
+  if (!ctx)
+    throw new Error('useRealtime must be used within <RealtimeProvider>');
   return ctx;
 };
+
+/** Returns the realtime context or `null` when outside `<RealtimeProvider>`. */
+export const useOptionalRealtime = () => useContext(Ctx);
 
 export type RealtimeProviderProps = {
   children: ReactNode;
@@ -45,7 +61,7 @@ const defaultBaseUrl = () => {
       return import.meta.env.VITE_CHAT_API_URI;
     }
   })();
-  return (typeof cfg === 'string' && cfg.length) ? cfg : '';
+  return typeof cfg === 'string' && cfg.length ? cfg : '';
 };
 
 export function RealtimeProvider({
@@ -79,7 +95,11 @@ export function RealtimeProvider({
   }, [connection, isConnected]);
 
   const invokeWithRetry = useCallback(
-    async (method: 'joinGroup' | 'leaveGroup', groupName: string, attempt = 0): Promise<void> => {
+    async (
+      method: 'joinGroup' | 'leaveGroup',
+      groupName: string,
+      attempt = 0
+    ): Promise<void> => {
       if (!connection || !isConnected()) {
         return; // lifecycle will re-join
       }
@@ -88,7 +108,7 @@ export function RealtimeProvider({
       } catch (err) {
         if (attempt < 3) {
           const delay = 300 * Math.pow(2, attempt) + Math.random() * 100;
-          await new Promise(r => setTimeout(r, delay));
+          await new Promise((r) => setTimeout(r, delay));
           return invokeWithRetry(method, groupName, attempt + 1);
         }
         // eslint-disable-next-line no-console
@@ -98,34 +118,49 @@ export function RealtimeProvider({
     [connection, isConnected]
   );
 
-  const subscribeToGroup = useCallback(async (name: string) => {
-    desiredGroups.current.add(name);
-    await invokeWithRetry('joinGroup', name);
-  }, [invokeWithRetry]);
+  const subscribeToGroup = useCallback(
+    async (name: string) => {
+      desiredGroups.current.add(name);
+      await invokeWithRetry('joinGroup', name);
+    },
+    [invokeWithRetry]
+  );
 
-  const unsubscribeFromGroup = useCallback(async (name: string) => {
-    desiredGroups.current.delete(name);
-    await invokeWithRetry('leaveGroup', name);
-  }, [invokeWithRetry]);
+  const unsubscribeFromGroup = useCallback(
+    async (name: string) => {
+      desiredGroups.current.delete(name);
+      await invokeWithRetry('leaveGroup', name);
+    },
+    [invokeWithRetry]
+  );
 
   // build/start connection once
   useEffect(() => {
     if (!hubUrl) return;
     // Guard: avoid negotiating against a relative path when no baseUrl is configured
-    const hasValidBaseUrl = typeof baseUrl === 'string' && /^https?:\/\//i.test(baseUrl);
+    const hasValidBaseUrl =
+      typeof baseUrl === 'string' && /^https?:\/\//i.test(baseUrl);
     if (!hasValidBaseUrl) {
-      console.warn('[Realtime] Skipping connection: no valid baseUrl configured');
+      console.warn(
+        '[Realtime] Skipping connection: no valid baseUrl configured'
+      );
       return;
     }
 
-    const builder = new HubConnectionBuilder().withUrl(hubUrl, {
-      accessTokenFactory: async () => {
-        try { return await getAccessToken(scopes); } catch { return ''; }
-      },
-      ...(webSocketsOnly
-        ? { transport: HttpTransportType.WebSockets, skipNegotiation: true }
-        : {}),
-    }).withAutomaticReconnect();
+    const builder = new HubConnectionBuilder()
+      .withUrl(hubUrl, {
+        accessTokenFactory: async () => {
+          try {
+            return await getAccessToken(scopes);
+          } catch {
+            return '';
+          }
+        },
+        ...(webSocketsOnly
+          ? { transport: HttpTransportType.WebSockets, skipNegotiation: true }
+          : {}),
+      })
+      .withAutomaticReconnect();
 
     const conn = builder.build();
 
@@ -143,11 +178,14 @@ export function RealtimeProvider({
     conn.onreconnected(rejoin);
 
     // start
-    startPromise.current = conn.start()
-      .catch(err => {
+    startPromise.current = conn
+      .start()
+      .catch((err) => {
         console.error('Error starting realtime connection', err);
       })
-      .finally(() => { startPromise.current = null; });
+      .finally(() => {
+        startPromise.current = null;
+      });
     setConnection(conn);
 
     return () => {
@@ -156,15 +194,18 @@ export function RealtimeProvider({
         console.error('Error stopping connection');
       });
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hubUrl, getAccessToken, webSocketsOnly, JSON.stringify(scopes)]);
 
-  const value = useMemo<RealtimeCtx>(() => ({
-    connection,
-    subscribeToGroup,
-    unsubscribeFromGroup,
-    ensureConnected,
-  }), [connection, subscribeToGroup, unsubscribeFromGroup, ensureConnected]);
+  const value = useMemo<RealtimeCtx>(
+    () => ({
+      connection,
+      subscribeToGroup,
+      unsubscribeFromGroup,
+      ensureConnected,
+    }),
+    [connection, subscribeToGroup, unsubscribeFromGroup, ensureConnected]
+  );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
