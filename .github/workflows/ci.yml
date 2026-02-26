@@ -28,12 +28,8 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: OpenAPI sync (chat)
-        env:
-          OPENAPI_STORAGE_CONNECTION_STRING: ${{ secrets.OPENAPI_STORAGE_CONNECTION_STRING }}
-          OPENAPI_CONTAINER: openapi
-          OPENAPI_BASELINE_PREFIX: develop
-        run: npm run -s openapi:sync
+      - name: OpenAPI generate (chat)
+        run: npm run -s openapi:generate
 
       - name: Lint
         run: npm run -s lint:all
