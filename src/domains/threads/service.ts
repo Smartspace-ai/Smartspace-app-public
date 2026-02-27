@@ -1,4 +1,4 @@
-import { getChatAPI } from '@/platform/api/generated/chat/api';
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
 import {
   getWorkSpacesIdMessageThreadsResponse as threadsListResponseSchema,
   getWorkspacesWorkspaceIdMessagethreadsIdResponse as threadResponseSchema,
@@ -8,7 +8,7 @@ import { parseOrThrow } from '@/platform/validation';
 
 import { mapThreadDtoToModel, mapThreadsResponseDtoToModel } from './mapper';
 
-const chatApi = getChatAPI();
+const chatApi = getSmartSpaceChatAPI();
 
 // Fetch threads for a given workspace
 export async function fetchThreads(

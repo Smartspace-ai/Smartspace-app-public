@@ -1,7 +1,7 @@
 import { Subject } from 'rxjs';
 
 import { api } from '@/platform/api';
-import { getChatAPI } from '@/platform/api/generated/chat/api';
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
 import { getMessageThreadsIdMessagesResponse as messagesResponseSchema } from '@/platform/api/generated/chat/zod';
 import { parseOrThrow } from '@/platform/validation';
 
@@ -10,7 +10,7 @@ import { FileInfo } from '@/domains/files';
 import { mapMessageDtoToModel, mapMessagesDtoToModels } from './mapper';
 import type { Message, MessageContentItem } from './model';
 
-const chatApi = getChatAPI();
+const chatApi = getSmartSpaceChatAPI();
 
 // Fetch all messages in a given message thread
 export async function fetchMessages(
