@@ -1,11 +1,11 @@
 import { api } from '@/platform/api';
-import { getChatAPI } from '@/platform/api/generated/chat/api';
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
 import { getFlowRunsIdVariablesResponse as flowRunVariablesSchema } from '@/platform/api/generated/chat/zod';
 import { parseOrThrow } from '@/platform/validation';
 
 import { mapFlowRunVariablesDtoToModel } from './mapper';
 
-const chatApi = getChatAPI();
+const chatApi = getSmartSpaceChatAPI();
 
 export async function fetchFlowRunVariables(flowRunId: string) {
   const response = await chatApi.getFlowRunsIdVariables(flowRunId);
