@@ -1,0 +1,67 @@
+name: CI Dispatch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    if: ${{ secrets.CI_APP_ID != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CI_APP_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: Smartspace-ai
+          repositories: ci-workflows
+
+      - name: Dispatch PR checks
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          curl -sS --fail-with-body -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/Smartspace-ai/ci-workflows/dispatches" \
+            -d '{
+              "event_type": "web_pr_check",
+              "client_payload": {
+                "repo": "Smartspace-ai/Smartspace-app-public",
+                "pr_number": ${{ github.event.pull_request.number }},
+                "head_sha": "${{ github.event.pull_request.head.sha }}",
+                "base_branch": "${{ github.event.pull_request.base.ref }}"
+              }
+            }'
+
+      - name: Dispatch merge notification
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          curl -sS --fail-with-body -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/Smartspace-ai/ci-workflows/dispatches" \
+            -d '{
+              "event_type": "public_merge_to_develop",
+              "client_payload": {
+                "repo": "Smartspace-ai/Smartspace-app-public",
+                "sha": "${{ github.sha }}",
+                "ref": "${{ github.ref }}"
+              }
+            }'
