@@ -1,0 +1,158 @@
+trigger:
+  branches:
+    include:
+      - dev
+      - master
+
+variables:
+  - group: smartspace
+
+jobs:
+# DEV JOB
+- job: DeployDev
+  displayName: 'Deploy to Dev Storage (AU)'
+  condition: eq(variables['Build.SourceBranchName'], 'dev')
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+    - checkout: self
+    - task: Bash@3
+      displayName: 'Prepare .env.au'
+      inputs:
+        targetType: 'inline'
+        script: |
+          cp .env.au .env
+          echo "Contents of .env for DEV:"
+          cat .env
+    - task: Bash@3
+      displayName: 'Install & Build (DEV)'
+      inputs:
+        targetType: 'inline'
+        script: |
+          npm install
+          npm run build
+    - task: azureCLI@2
+      displayName: 'Deploy to Dev Storage'
+      inputs:
+        azureSubscription: 'NC SmartSpace Corporate (7a11d49a-389d-4898-b756-7c896ab685bf)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az storage blob upload-batch \
+            --destination '$web' \
+            --source ./dist/smartspace \
+            --connection-string "$(dev-azure-storage-connection-string)" \
+            --overwrite true
+
+# AU PROD JOB
+- job: DeployAU
+  displayName: 'Deploy to Prod Storage (AU)'
+  condition: eq(variables['Build.SourceBranchName'], 'master')
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+    - checkout: self
+    - task: Bash@3
+      displayName: 'Prepare .env.au'
+      inputs:
+        targetType: 'inline'
+        script: |
+          cp .env.au .env
+          echo "Contents of .env for AU:"
+          cat .env
+          cp ./public/favicon-au.ico ./public/favicon.ico
+    - task: Bash@3
+      displayName: 'Install & Build (AU)'
+      inputs:
+        targetType: 'inline'
+        script: |
+          npm install
+          npm run build
+    - task: azureCLI@2
+      displayName: 'Deploy to AU Storage'
+      inputs:
+        azureSubscription: 'NC SmartSpace Corporate (7a11d49a-389d-4898-b756-7c896ab685bf)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az storage blob upload-batch \
+            --destination '$web' \
+            --source ./dist/smartspace \
+            --connection-string "$(prod-azure-storage-connection-string)" \
+            --overwrite true
+
+# UK PROD JOB
+- job: DeployUK
+  displayName: 'Deploy to Prod Storage (UK)'
+  condition: eq(variables['Build.SourceBranchName'], 'master')
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+    - checkout: self
+    - task: Bash@3
+      displayName: 'Prepare .env.uk'
+      inputs:
+        targetType: 'inline'
+        script: |
+          cp .env.uk .env
+          echo "Contents of .env for UK:"
+          cat .env
+          cp ./public/favicon-uk.ico ./public/favicon.ico
+
+    - task: Bash@3
+      displayName: 'Install & Build (UK)'
+      inputs:
+        targetType: 'inline'
+        script: |
+          npm install
+          npm run build
+    - task: azureCLI@2
+      displayName: 'Deploy to UK Storage'
+      inputs:
+        azureSubscription: 'NC SmartSpace Corporate (7a11d49a-389d-4898-b756-7c896ab685bf)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az storage blob upload-batch \
+            --destination '$web' \
+            --source ./dist/smartspace \
+            --connection-string "$(prod-uk-azure-storage-connection-string)" \
+            --overwrite true
+
+# CA PROD JOB
+- job: DeployCA
+  displayName: 'Deploy to Prod Storage (CA)'
+  condition: eq(variables['Build.SourceBranchName'], 'master')
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+    - checkout: self
+    - task: Bash@3
+      displayName: 'Prepare .env.ca'
+      inputs:
+        targetType: 'inline'
+        script: |
+          cp .env.ca .env
+          echo "Contents of .env for CA:"
+          cat .env
+          cp ./public/favicon-ca.ico ./public/favicon.ico
+
+    - task: Bash@3
+      displayName: 'Install & Build (CA)'
+      inputs:
+        targetType: 'inline'
+        script: |
+          npm install
+          npm run build
+    - task: azureCLI@2
+      displayName: 'Deploy to CA Storage'
+      inputs:
+        azureSubscription: 'NC SmartSpace Corporate (7a11d49a-389d-4898-b756-7c896ab685bf)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az storage blob upload-batch \
+            --destination '$web' \
+            --source ./dist/smartspace \
+            --connection-string "$(prod-ca-azure-storage-connection-string)" \
+            --overwrite true
