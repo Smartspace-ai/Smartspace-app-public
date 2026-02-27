@@ -37,7 +37,7 @@ jobs:
             -H "Authorization: Bearer $GH_TOKEN" \
             "https://api.github.com/repos/Smartspace-ai/ci-workflows/dispatches" \
             -d '{
-              "event_type": "public_pr_check",
+              "event_type": "web_pr_check",
               "client_payload": {
                 "repo": "Smartspace-ai/Smartspace-app-public",
                 "pr_number": ${{ github.event.pull_request.number }},
