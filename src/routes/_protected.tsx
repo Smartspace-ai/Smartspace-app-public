@@ -8,13 +8,20 @@ import {
 } from '@/platform/auth/sessionQuery';
 import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
+
 import { ProtectedErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
 import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
+
+import { workspacesListOptions } from '@/domains/workspaces/queries';
+
+import TeamsLoaderPage from '@/pages/teams_loader';
 
 export const Route = createFileRoute('/_protected')({
   // Runs on navigation (and on intent prefetch if enabled).
   // If you find redirects during hover annoying, disable preload on links into /_protected.
   errorComponent: ProtectedErrorBoundary,
+  pendingMs: 0,
+  pendingComponent: () => <TeamsLoaderPage message="Signing in…" />,
   beforeLoad: async ({ context, location }) => {
     const redirectTo = normalizeRedirectPath(
       formatLocationHref(location),
@@ -35,6 +42,10 @@ export const Route = createFileRoute('/_protected')({
       context.queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
       throw redirect({ to: '/login', search: { redirect: redirectTo } });
     }
+
+    // Start loading workspaces in the background so they're cached
+    // by the time /workspace/ loader runs (reduces sequential waterfall)
+    context.queryClient.prefetchQuery(workspacesListOptions());
   },
 
   component: () => (
