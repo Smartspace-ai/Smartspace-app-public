@@ -23,12 +23,7 @@ export function TeamsLoader({ message = 'Loading…' }: TeamsLoaderProps) {
               <Logo />
             )}
           </div>
-          <div className="text-center">
-            <div className="text-sm font-medium">{brand.name}</div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              Preparing your workspace…
-            </div>
-          </div>
+          <div className="text-sm font-medium">{brand.name}</div>
           <div className="flex items-center gap-3 text-muted-foreground">
             <span className="text-sm">{message}</span>
             <span className="flex items-center gap-1" aria-hidden="true">
