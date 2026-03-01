@@ -1,14 +1,15 @@
+import { ChatZod } from '@smartspace-ai/api-client';
 import type { z } from 'zod';
-
-import {
-  getWorkSpacesIdResponse as workspaceResponseSchema,
-  getWorkSpacesIdUsersResponse as workspaceUsersResponseSchema,
-  getWorkSpacesResponse as workspacesListResponseSchema,
-} from '@/platform/api/generated/chat/zod';
 
 import { getInitials } from '@/shared/utils/initials';
 
 import { MentionUser, Variables, Workspace } from './model';
+
+const {
+  getWorkSpacesIdResponse: workspaceResponseSchema,
+  getWorkSpacesIdUsersResponse: workspaceUsersResponseSchema,
+  getWorkSpacesResponse: workspacesListResponseSchema,
+} = ChatZod;
 
 type WorkspaceDto = z.infer<typeof workspaceResponseSchema>;
 type WorkspacesListResponseDto = z.infer<typeof workspacesListResponseSchema>;

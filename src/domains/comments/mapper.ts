@@ -1,11 +1,12 @@
+import { ChatZod } from '@smartspace-ai/api-client';
 import type { z } from 'zod';
 
-import {
-  getMessageThreadsIdCommentsResponse as commentsResponseSchema,
-  postMessageThreadsIdCommentsResponse as commentCreateResponseSchema,
-} from '@/platform/api/generated/chat/zod';
-
 import { Comment, MentionUser } from './model';
+
+const {
+  getMessageThreadsIdCommentsResponse: commentsResponseSchema,
+  postMessageThreadsIdCommentsResponse: commentCreateResponseSchema,
+} = ChatZod;
 
 type CommentsResponseDto = z.infer<typeof commentsResponseSchema>;
 type CommentDto = CommentsResponseDto['data'][number];

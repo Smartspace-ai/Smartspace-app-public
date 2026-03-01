@@ -1,11 +1,12 @@
+import { ChatZod } from '@smartspace-ai/api-client';
 import type { z } from 'zod';
 
-import {
-  getWorkSpacesIdMessageThreadsResponse as threadsListResponseSchema,
-  getWorkspacesWorkspaceIdMessagethreadsIdResponse as threadResponseSchema,
-} from '@/platform/api/generated/chat/zod';
-
 import { MessageThread, ThreadsResponse } from './model';
+
+const {
+  getWorkSpacesIdMessageThreadsResponse: threadsListResponseSchema,
+  getWorkspacesWorkspaceIdMessagethreadsIdResponse: threadResponseSchema,
+} = ChatZod;
 
 type ThreadsResponseDto = z.infer<typeof threadsListResponseSchema>;
 type ThreadDto = z.infer<typeof threadResponseSchema>;
