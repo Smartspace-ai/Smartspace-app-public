@@ -16,10 +16,14 @@ import {
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { Button } from '@/shared/ui/mui-compat/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/mui-compat/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/shared/ui/mui-compat/sheet';
 import { TooltipProvider } from '@/shared/ui/mui-compat/tooltip';
 import { cn } from '@/shared/utils/utils';
-
 
 const SIDEBAR_COOKIE_NAME = 'sidebar';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
@@ -177,7 +181,10 @@ const SidebarProvider = forwardRef<
       if (!vv) return;
       const update = () => {
         // Useful for mobile layouts (esp. on-screen keyboard); consumers can use var(--ss-viewport-height)
-        document.documentElement.style.setProperty('--ss-viewport-height', `${vv.height}px`);
+        document.documentElement.style.setProperty(
+          '--ss-viewport-height',
+          `${vv.height}px`
+        );
       };
       update();
       vv.addEventListener('resize', update);
@@ -185,11 +192,13 @@ const SidebarProvider = forwardRef<
       return () => {
         vv.removeEventListener('resize', update);
         vv.removeEventListener('scroll', update);
-        try { document.documentElement.style.removeProperty('--ss-viewport-height'); } catch { /* ignore */ }
+        try {
+          document.documentElement.style.removeProperty('--ss-viewport-height');
+        } catch {
+          /* ignore */
+        }
       };
     }, [isMobile, openMobileLeft, openMobileRight]);
-
-    
 
     useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
@@ -335,9 +344,13 @@ const Sidebar = forwardRef<
             className="p-0 bg-sidebar text-sidebar-foreground"
           >
             <SheetHeader>
-              <SheetTitle className="sr-only">{side === 'left' ? 'Left sidebar' : 'Right sidebar'}</SheetTitle>
+              <SheetTitle className="sr-only">
+                {side === 'left' ? 'Left sidebar' : 'Right sidebar'}
+              </SheetTitle>
             </SheetHeader>
-            <div className="flex h-full w-full flex-col min-h-0">{children}</div>
+            <div className="flex h-full w-full flex-col min-h-0">
+              {children}
+            </div>
           </SheetContent>
         </Sheet>
       );
@@ -712,6 +725,5 @@ export {
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
-  SidebarTrigger
+  SidebarTrigger,
 };
-

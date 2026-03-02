@@ -1,15 +1,15 @@
-import MuiCheckbox from "@mui/material/Checkbox"
-import * as React from "react"
+import MuiCheckbox from '@mui/material/Checkbox';
+import * as React from 'react';
 
-import { cn } from "@/shared/utils/utils"
+import { cn } from '@/shared/utils/utils';
 
-type CheckboxProps = React.ComponentPropsWithoutRef<typeof MuiCheckbox>
+type CheckboxProps = React.ComponentPropsWithoutRef<typeof MuiCheckbox>;
 
 const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
   ({ className, ...props }, ref) => (
     <MuiCheckbox
       ref={ref as unknown as React.ForwardedRef<HTMLButtonElement>}
-      className={cn("h-4 w-4 p-0", className)}
+      className={cn('h-4 w-4 p-0', className)}
       disableRipple
       sx={{
         width: 16,
@@ -28,8 +28,7 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
       {...props}
     />
   )
-)
-Checkbox.displayName = "Checkbox"
+);
+Checkbox.displayName = 'Checkbox';
 
-export { Checkbox }
-
+export { Checkbox };

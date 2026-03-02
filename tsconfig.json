@@ -19,7 +19,6 @@
       "@/hooks/*": ["./src/hooks/*"],
       "@/shared/ui/mui-compat/*": ["./src/shared/ui/mui-compat/*"],
       "@/theme/*": ["./src/theme/*"]
-      
     },
     "composite": true,
     "jsx": "react-jsx",

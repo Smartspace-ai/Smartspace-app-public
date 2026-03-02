@@ -8,24 +8,19 @@ import { useTeams } from '@/app/providers';
 
 import { useActiveUser } from '@/domains/users/use-active-user';
 
-
+import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
 import {
-    Avatar,
-    AvatarFallback,
-} from '@/shared/ui/mui-compat/avatar';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/shared/ui/mui-compat/dropdown-menu';
 import { SidebarHeader } from '@/shared/ui/mui-compat/sidebar';
 import { getInitials } from '@/shared/utils/initials';
 
 import { Logo } from '@/assets/logo';
-
 
 export default function SidebarUserHeader() {
   const { isInTeams } = useTeams();

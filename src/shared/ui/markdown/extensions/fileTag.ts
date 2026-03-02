@@ -1,6 +1,6 @@
-import type { Node } from '@milkdown/prose/model'
-import type { NodeParserSpec, NodeSerializerSpec } from '@milkdown/transformer'
-import { $node } from '@milkdown/utils'
+import type { Node } from '@milkdown/prose/model';
+import type { NodeParserSpec, NodeSerializerSpec } from '@milkdown/transformer';
+import { $node } from '@milkdown/utils';
 
 // Lightweight inline "file tag" node, e.g. [[file:123|Spec.docx]]
 // - Renders as a styled <span>
@@ -18,7 +18,7 @@ export const fileTag = $node('fileTag', () => ({
   },
   // Render to DOM (what the editor shows)
   toDOM: (node: Node) => {
-    const { id, label } = node.attrs as { id: string; label: string }
+    const { id, label } = node.attrs as { id: string; label: string };
     return [
       'span',
       {
@@ -29,18 +29,18 @@ export const fileTag = $node('fileTag', () => ({
         spellcheck: 'false',
       },
       label || `file:${id}`,
-    ]
+    ];
   },
   // Parse from DOM (when pasting HTML or loading saved HTML)
   parseDOM: [
     {
       tag: 'span[data-file-tag]',
       getAttrs: (dom: HTMLElement) => {
-        const el = dom as HTMLElement
+        const el = dom as HTMLElement;
         return {
           id: el.getAttribute('data-id') ?? '',
           label: el.innerText ?? '',
-        }
+        };
       },
     },
   ],
@@ -48,24 +48,27 @@ export const fileTag = $node('fileTag', () => ({
   parseMarkdown: {
     match: (n) => n.type === 'fileTag',
     runner: (state, node, type) => {
-      const raw = (node as unknown as { value?: string; id?: string; label?: string })
-      let id = raw.id
-      let label = raw.label
+      const raw = node as unknown as {
+        value?: string;
+        id?: string;
+        label?: string;
+      };
+      let id = raw.id;
+      let label = raw.label;
       if (!id && typeof raw.value === 'string') {
-        const [maybeId, maybeLabel] = raw.value.split('|')
-        id = maybeId
-        label = maybeLabel
+        const [maybeId, maybeLabel] = raw.value.split('|');
+        id = maybeId;
+        label = maybeLabel;
       }
-      state.openNode(type, { id: id ?? '', label: label ?? '' })
-      state.closeNode()
+      state.openNode(type, { id: id ?? '', label: label ?? '' });
+      state.closeNode();
     },
   } as NodeParserSpec,
   toMarkdown: {
     match: (node) => node.type.name === 'fileTag',
     runner: (state, node) => {
-      const { id, label } = node.attrs as { id: string; label: string }
-      state.addNode('fileTag', undefined, `${id}|${label}`)
+      const { id, label } = node.attrs as { id: string; label: string };
+      state.addNode('fileTag', undefined, `${id}|${label}`);
     },
   } as NodeSerializerSpec,
-}))
-
+}));

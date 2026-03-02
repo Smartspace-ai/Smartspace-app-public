@@ -56,6 +56,7 @@ Before starting, ensure you have:
 
 1. **Open** `teams/config.json`
 2. **Update the configuration:**
+
    ```json
    {
      "appId": "generate-a-unique-guid-for-your-teams-app",
@@ -76,6 +77,7 @@ Before starting, ensure you have:
 ### 7. Build the Teams App Package
 
 1. **Run the build command:**
+
    ```bash
    npm run build:teams
    ```
@@ -108,6 +110,7 @@ After installation, verify the integration:
 **🔴 Consent Required Error (AADSTS65001)**
 
 If you see this error in Teams:
+
 ```
 Error getting msal token:InteractionRequiredAuthError: consent_required: AADSTS65001: The user or administrator has not consented to use the application
 ```
@@ -115,23 +118,27 @@ Error getting msal token:InteractionRequiredAuthError: consent_required: AADSTS6
 **Solution Options:**
 
 1. **Teams Authentication Popup (Automatic):**
+
    - The app is configured to automatically show a Teams-native authentication popup
    - This should appear when you first try to use the app in Teams
    - The popup will ask for the necessary permissions
    - If the popup doesn't appear, try refreshing the Teams app
 
 2. **Admin Consent (Recommended):**
+
    - Go to your Azure AD app registration
    - Navigate to `API permissions`
    - Click `Grant admin consent for [Your Organization]`
    - This provides consent for all users in your organization
 
 3. **Individual User Consent:**
+
    - Have users access your SmartSpace app in a regular browser first (outside Teams)
    - Complete the login flow there to grant initial consent
    - Then they can use the app in Teams
 
 4. **Pre-authorize the Application:**
+
    - In your SmartSpace backend's Azure AD app registration
    - Go to `Expose an API` → `Authorized client applications`
    - Add your Teams app's Client ID as an authorized application
@@ -142,16 +149,19 @@ Error getting msal token:InteractionRequiredAuthError: consent_required: AADSTS6
    - The `webApplicationInfo` section should match your Azure AD app configuration
 
 **Authentication Errors:**
+
 - Verify the Application ID URI format in step 3
 - Ensure the redirect URI matches your deployed URL exactly
 - Check that admin consent has been granted for API permissions
 
 **App Not Loading:**
+
 - Confirm the `baseUrl` in `teams/config.json` is correct and accessible
 - Verify your SmartSpace backend is running and accessible
 - Check the Teams app manifest for any validation errors
 
 **Build Failures:**
+
 - Ensure `VITE_CLIENT_ID` is set in your `.env` file
 - Verify Node.js version is 20 or higher
 - Check that all required files are present in the `teams/` directory

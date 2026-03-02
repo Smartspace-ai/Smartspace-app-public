@@ -54,7 +54,10 @@ export function ThreadRenameModal({ isOpen, onClose, thread }: Props) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !pending && !open && onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => !pending && !open && onClose()}
+    >
       <DialogContent className="sm:max-w-[420px] p-5">
         <DialogHeader>
           <DialogTitle className="font-medium">Rename Thread</DialogTitle>
@@ -63,7 +66,9 @@ export function ThreadRenameModal({ isOpen, onClose, thread }: Props) {
         <form onSubmit={handleSubmit}>
           <div className="grid gap-3 py-2">
             <div className="grid gap-2">
-              <Label htmlFor="thread-name" className="font-medium">Thread Name</Label>
+              <Label htmlFor="thread-name" className="font-medium">
+                Thread Name
+              </Label>
               <Input
                 id="thread-name"
                 ref={inputRef}
@@ -99,5 +104,3 @@ export function ThreadRenameModal({ isOpen, onClose, thread }: Props) {
     </Dialog>
   );
 }
-
-

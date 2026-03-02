@@ -6,13 +6,23 @@ import { Workspace } from '@/domains/workspaces/model';
 
 import { CircleInitials } from '@/shared/components/circle-initials';
 import { Button } from '@/shared/ui/mui-compat/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/mui-compat/popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/shared/ui/mui-compat/popover';
 
 import { getTagChipClasses } from '@/theme/tag-styles';
 
 import { useWorkspaceSwitcherVm } from './WorkspaceSwitcher.vm';
 
-function TagChips({ tags, className }: { tags?: string[]; className?: string }) {
+function TagChips({
+  tags,
+  className,
+}: {
+  tags?: string[];
+  className?: string;
+}) {
   const list = (tags ?? []).filter(Boolean);
   if (!list.length) return null;
 
@@ -22,7 +32,10 @@ function TagChips({ tags, className }: { tags?: string[]; className?: string }) 
         const v = (t || '').toString();
         const cls = getTagChipClasses(v);
         return (
-          <span key={`${v}-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}>
+          <span
+            key={`${v}-${i}`}
+            className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}
+          >
             {v}
           </span>
         );
@@ -36,30 +49,38 @@ export function WorkspaceSwitcher() {
 
   const buttonLabel = vm.activeError
     ? 'Failed to load workspace'
-    : (vm.activeWorkspaceName ?? vm.activeWorkspace?.name)
-      ? (vm.activeWorkspaceName ?? vm.activeWorkspace?.name ?? '—')
-      : vm.activeLoading
-        ? 'Loading workspace…'
-        : '—';
+    : vm.activeWorkspaceName ?? vm.activeWorkspace?.name
+    ? vm.activeWorkspaceName ?? vm.activeWorkspace?.name ?? '—'
+    : vm.activeLoading
+    ? 'Loading workspace…'
+    : '—';
 
   const buttonClassName = [
     'w-full justify-between text-xs h-9 border rounded-lg px-3 shadow-sm hover:shadow-md transition-shadow',
-    vm.activeError ? 'border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/10' : '',
+    vm.activeError
+      ? 'border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/10'
+      : '',
     vm.activeLoading ? 'opacity-90' : '',
-  ].join(' ').trim();
+  ]
+    .join(' ')
+    .trim();
 
   return (
     <div className="px-4 pt-3 pb-2">
-      <div className="text-xs font-medium text-gray-500 mb-1.5 uppercase">Workspace</div>
+      <div className="text-xs font-medium text-gray-500 mb-1.5 uppercase">
+        Workspace
+      </div>
       <Popover open={vm.open} onOpenChange={vm.setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             className={buttonClassName}
-            onClick={() => vm.setOpen(prev => !prev)}
+            onClick={() => vm.setOpen((prev) => !prev)}
             aria-busy={vm.activeLoading}
             aria-invalid={!!vm.activeError}
-            title={vm.activeError ? 'Active workspace failed to load' : undefined}
+            title={
+              vm.activeError ? 'Active workspace failed to load' : undefined
+            }
           >
             <div className="flex items-center gap-2 overflow-hidden w-full">
               {vm.open ? (
@@ -67,27 +88,38 @@ export function WorkspaceSwitcher() {
                   ref={vm.inputRef}
                   type="text"
                   value={vm.searchTerm}
-                  onChange={e => vm.setSearchTerm(e.target.value)}
+                  onChange={(e) => vm.setSearchTerm(e.target.value)}
                   placeholder="Search workspaces..."
                   className="truncate font-medium bg-transparent outline-none border-none p-0 m-0 text-xs w-full"
                   style={{ fontSize: 16, WebkitTextSizeAdjust: '100%' }}
-                  onClick={e => e.stopPropagation()}
-                  onKeyDown={e => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
                 />
               ) : (
                 <span className="truncate font-medium flex items-center gap-1">
                   {buttonLabel}
-                  <TagChips tags={vm.activeWorkspaceTags} className="flex items-center gap-1 flex-wrap" />
+                  <TagChips
+                    tags={vm.activeWorkspaceTags}
+                    className="flex items-center gap-1 flex-wrap"
+                  />
                 </span>
               )}
             </div>
-            <ChevronDown className={vm.activeError ? 'h-3.5 w-3.5 text-destructive' : 'h-3.5 w-3.5 text-gray-400'} />
+            <ChevronDown
+              className={
+                vm.activeError
+                  ? 'h-3.5 w-3.5 text-destructive'
+                  : 'h-3.5 w-3.5 text-gray-400'
+              }
+            />
           </Button>
         </PopoverTrigger>
 
         <PopoverContent className="rounded-lg p-0 border w-full min-w-[260px] max-h-120 overflow-auto">
           {vm.error ? (
-            <div className="px-3 py-6 text-center text-destructive text-xs">Couldn’t load workspaces</div>
+            <div className="px-3 py-6 text-center text-destructive text-xs">
+              Couldn’t load workspaces
+            </div>
           ) : vm.isLoading ? (
             <div className="p-2">
               <Skeleton className="h-8 w-full mb-2 rounded-md" />
@@ -106,22 +138,32 @@ export function WorkspaceSwitcher() {
                   {vm.searchTerm ? (
                     <>
                       <div className="mb-1">No workspaces found</div>
-                      <div className="text-gray-400">Try a different search term</div>
+                      <div className="text-gray-400">
+                        Try a different search term
+                      </div>
                     </>
                   ) : (
                     <>
                       <div className="mb-1">No workspaces available</div>
-                      <div className="text-gray-400">Contact your administrator</div>
+                      <div className="text-gray-400">
+                        Contact your administrator
+                      </div>
                     </>
                   )}
                 </div>
               ) : (
-                vm.workspaces.map(ws => (
+                vm.workspaces.map((ws) => (
                   <WorkspaceRow
                     key={ws.id}
                     workspace={ws}
                     isActive={vm.activeWorkspaceId === ws.id}
-                    onSelect={() => vm.onSelectWorkspace({ id: ws.id, name: ws.name, tags: ws.tags ?? [] })}
+                    onSelect={() =>
+                      vm.onSelectWorkspace({
+                        id: ws.id,
+                        name: ws.name,
+                        tags: ws.tags ?? [],
+                      })
+                    }
                   />
                 ))
               )}
@@ -156,11 +198,18 @@ function WorkspaceRow({ workspace, isActive, onSelect }: RowProps) {
     >
       <div className="flex items-center gap-2 w-full">
         <CircleInitials
-          className={isActive ? 'bg-primary/80 text-[hsl(var(--primary-foreground))]' : 'bg-gray-200'}
+          className={
+            isActive
+              ? 'bg-primary/80 text-[hsl(var(--primary-foreground))]'
+              : 'bg-gray-200'
+          }
           text={workspace.name || ''}
         />
         <span className="font-medium">{workspace.name}</span>
-        <TagChips tags={workspace.tags} className="ml-auto flex items-center gap-1" />
+        <TagChips
+          tags={workspace.tags}
+          className="ml-auto flex items-center gap-1"
+        />
       </div>
     </div>
   );

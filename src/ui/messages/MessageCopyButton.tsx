@@ -5,7 +5,6 @@ import { MessageContentItem } from '@/domains/messages';
 
 import { Button } from '@/shared/ui/mui-compat/button';
 
-
 enum CopyState {
   IDLE = 'idle',
   SUCCESS = 'success',
@@ -13,7 +12,11 @@ enum CopyState {
 
 const RESET_DELAY = 1000;
 
-export function ChatMessageCopyButton({ content }:{ content:MessageContentItem[]}) {
+export function ChatMessageCopyButton({
+  content,
+}: {
+  content: MessageContentItem[];
+}) {
   const [state, setState] = useState<CopyState>(CopyState.IDLE);
 
   const handleCopy = async () => {

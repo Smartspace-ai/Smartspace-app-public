@@ -6,13 +6,9 @@ import { useSendMessage } from '@/domains/messages/mutations';
 import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
-
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 import { isDraftThreadId } from '@/shared/utils/threadId';
-
-
-
 
 /** Public shape exported to the UI component */
 export type MessageComposerVm = ReturnType<typeof useMessageComposerVm>;
@@ -48,7 +44,12 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     const nothingToSend = !newMessage.trim() && !props.hasAttachments;
     const flowBlocked = !!thread?.isFlowRunning;
     return isUploadingFiles || flowBlocked || nothingToSend;
-  }, [isUploadingFiles, thread?.isFlowRunning, newMessage, props.hasAttachments]);
+  }, [
+    isUploadingFiles,
+    thread?.isFlowRunning,
+    newMessage,
+    props.hasAttachments,
+  ]);
 
   // Send message
   const sendMessage = useSendMessage();
@@ -58,8 +59,15 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     const contentList = newMessage.trim()
       ? [{ text: newMessage.trim(), image: undefined }]
       : undefined;
-    const vars = variables && Object.keys(variables).length > 0 ? variables : undefined;
-    sendMessage.mutate({ workspaceId, threadId, contentList, files, variables: vars });
+    const vars =
+      variables && Object.keys(variables).length > 0 ? variables : undefined;
+    sendMessage.mutate({
+      workspaceId,
+      threadId,
+      contentList,
+      files,
+      variables: vars,
+    });
     setNewMessage('');
   };
   /** Unified "Send" */
@@ -68,9 +76,13 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     internalSend(files);
   };
 
-  const handleSendMessage = (files?: { id: string; name: string }[]) => sendNow(files);
+  const handleSendMessage = (files?: { id: string; name: string }[]) =>
+    sendNow(files);
 
-  const handleKeyDown = (e: React.KeyboardEvent, files?: { id: string; name: string }[]) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent,
+    files?: { id: string; name: string }[]
+  ) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (!sendDisabled) sendNow(files);
@@ -108,6 +120,5 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
 
     // derived
     sendDisabled,
-
   };
 }

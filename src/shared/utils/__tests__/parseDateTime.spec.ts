@@ -1,6 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { parseDateTime, parseDateTimeHuman } from '@/shared/utils/parseDateTime';
+import {
+  parseDateTime,
+  parseDateTimeHuman,
+} from '@/shared/utils/parseDateTime';
 
 describe('parseDateTime', () => {
   it('returns unix seconds with custom format X independent of timezone', () => {
@@ -34,5 +37,3 @@ describe('parseDateTimeHuman', () => {
     expect(human).toMatch(/ago|in/);
   });
 });
-
-

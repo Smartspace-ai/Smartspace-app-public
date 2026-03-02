@@ -5,24 +5,21 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 import { FileInfo } from '@/domains/files';
 import { useFileMutations } from '@/domains/files/mutations';
 
-
 import { Button } from '@/shared/ui/mui-compat/button';
 
-export function ChatMessageFileDownload({
-  file
-}: {file: FileInfo}) {
+export function ChatMessageFileDownload({ file }: { file: FileInfo }) {
   const { workspaceId, threadId } = useRouteIds();
-  const { downloadFileMutation } = useFileMutations({workspaceId, threadId});
+  const { downloadFileMutation } = useFileMutations({ workspaceId, threadId });
 
   const getIcon = () => {
-    if  (downloadFileMutation.isPending) {
-        return <Loader2 className="h-4 w-4 animate-spin" />;
+    if (downloadFileMutation.isPending) {
+      return <Loader2 className="h-4 w-4 animate-spin" />;
     } else if (downloadFileMutation.isSuccess) {
-        return <Check className="h-4 w-4 text-green-500" />;
+      return <Check className="h-4 w-4 text-green-500" />;
     } else if (downloadFileMutation.isError) {
-        return <X className="h-4 w-4 text-red-500" />;
+      return <X className="h-4 w-4 text-red-500" />;
     } else {
-        return <Download className="h-4 w-4" />;
+      return <Download className="h-4 w-4" />;
     }
   };
 

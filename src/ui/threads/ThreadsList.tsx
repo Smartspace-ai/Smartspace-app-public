@@ -35,8 +35,12 @@ function EmptyThreadsState() {
       <div className="rounded-full bg-gray-100 p-3 mb-3">
         <MessageSquare className="h-6 w-6 text-gray-400" />
       </div>
-      <h3 className="text-sm font-medium text-gray-900 mb-1">No threads found</h3>
-      <p className="text-xs text-gray-500 mb-4">Create a new thread to get started</p>
+      <h3 className="text-sm font-medium text-gray-900 mb-1">
+        No threads found
+      </h3>
+      <p className="text-xs text-gray-500 mb-4">
+        Create a new thread to get started
+      </p>
     </div>
   );
 }
@@ -47,8 +51,12 @@ function ThreadsErrorState() {
       <div className="rounded-full bg-destructive/10 p-3 mb-3">
         <AlertTriangle className="h-6 w-6 text-destructive" />
       </div>
-      <h3 className="text-sm font-medium text-gray-900 mb-1">Failed to load threads</h3>
-      <p className="text-xs text-gray-500 mb-4">Please check your connection and try again.</p>
+      <h3 className="text-sm font-medium text-gray-900 mb-1">
+        Failed to load threads
+      </h3>
+      <p className="text-xs text-gray-500 mb-4">
+        Please check your connection and try again.
+      </p>
     </div>
   );
 }
@@ -75,8 +83,7 @@ export default function ThreadsList() {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } =
-    useThreadsListVm({ workspaceId, pageSize: 30 });
+  } = useThreadsListVm({ workspaceId, pageSize: 30 });
 
   if (isInitialLoading) return <ThreadsLoadingSkeleton />;
   const hasError = !!(isError || error);
@@ -85,31 +92,30 @@ export default function ThreadsList() {
 
   return (
     <>
-    <div className="sticky top-0 z-10 border-t border-b">
-      <div className="flex items-center justify-between px-4 py-3">
-        <h2 className="text-xs text-gray-500 font-medium tracking-wide">
-          CHAT THREADS
-        </h2>
-      </div>
-    </div>
-    <Virtuoso
-      data={threads}
-      overscan={200}
-      endReached={() => {
-        if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-      }}
-      components={{
-        Header: () => (hasError ? <ThreadsInlineErrorBanner /> : null),
-      }}
-      itemContent={(index, thread) => (
-        <div className="px-3 pb-1">
-          <ThreadItem thread={thread} />
+      <div className="sticky top-0 z-10 border-t border-b">
+        <div className="flex items-center justify-between px-4 py-3">
+          <h2 className="text-xs text-gray-500 font-medium tracking-wide">
+            CHAT THREADS
+          </h2>
         </div>
-      )}
-      className="pt-2"
-      style={{ height: '100%', width: '100%' }}
-    />
+      </div>
+      <Virtuoso
+        data={threads}
+        overscan={200}
+        endReached={() => {
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+        }}
+        components={{
+          Header: () => (hasError ? <ThreadsInlineErrorBanner /> : null),
+        }}
+        itemContent={(index, thread) => (
+          <div className="px-3 pb-1">
+            <ThreadItem thread={thread} />
+          </div>
+        )}
+        className="pt-2"
+        style={{ height: '100%', width: '100%' }}
+      />
     </>
   );
 }
-  

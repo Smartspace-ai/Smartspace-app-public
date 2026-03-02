@@ -5,14 +5,12 @@ import { useInfiniteThreads } from '@/domains/threads';
 
 import { isDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
 
-
 type Options = {
   workspaceId: string;
   pageSize?: number;
 };
 
-export function useThreadsListVm({workspaceId,  pageSize = 30 }: Options) {
-
+export function useThreadsListVm({ workspaceId, pageSize = 30 }: Options) {
   const {
     data,
     error,
@@ -24,7 +22,10 @@ export function useThreadsListVm({workspaceId,  pageSize = 30 }: Options) {
     fetchNextPage,
     refetch,
   } = useInfiniteThreads(workspaceId, { pageSize });
-  const threads = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
+  const threads = useMemo(
+    () => data?.pages.flatMap((page) => page.data) ?? [],
+    [data]
+  );
   const isInitialLoading = !workspaceId || isPending || (isFetching && !data);
   const firstThread = threads[0] ?? null;
 

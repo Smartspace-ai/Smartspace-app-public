@@ -1,21 +1,21 @@
-import MuiSwitch from "@mui/material/Switch"
-import * as React from "react"
+import MuiSwitch from '@mui/material/Switch';
+import * as React from 'react';
 
-import { cn } from "@/shared/utils/utils"
+import { cn } from '@/shared/utils/utils';
 
 type SwitchProps = React.ComponentPropsWithoutRef<typeof MuiSwitch> & {
-  onCheckedChange?: (checked: boolean) => void
-}
+  onCheckedChange?: (checked: boolean) => void;
+};
 
 const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
   ({ className, onCheckedChange, onChange, ...props }, ref) => (
     <MuiSwitch
       ref={ref as unknown as React.ForwardedRef<HTMLButtonElement>}
-      className={cn("inline-flex h-6 w-11", className)}
+      className={cn('inline-flex h-6 w-11', className)}
       disableRipple
       onChange={(e, checked) => {
-        onCheckedChange?.(checked)
-        onChange?.(e, checked)
+        onCheckedChange?.(checked);
+        onChange?.(e, checked);
       }}
       sx={{
         width: 44,
@@ -51,8 +51,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
       {...props}
     />
   )
-)
-Switch.displayName = "Switch"
+);
+Switch.displayName = 'Switch';
 
-export { Switch }
-
+export { Switch };

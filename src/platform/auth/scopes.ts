@@ -22,7 +22,11 @@ export function parseScopes(raw: unknown): string[] {
 
 /** Returns raw client scopes from runtime config (preferred) or Vite env. */
 export function getClientScopesRaw(): unknown {
-  return getSsWindow()?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
+  return (
+    getSsWindow()?.ssconfig?.Client_Scopes ??
+    import.meta.env.VITE_CLIENT_SCOPES ??
+    ''
+  );
 }
 
 /** Returns parsed client scopes, optionally overridden by a callsite raw value. */
@@ -36,8 +40,6 @@ export function getClientScopes(rawOverride?: unknown): string[] {
  */
 export function getApiScopes(rawOverride?: unknown): string[] {
   return getClientScopes(rawOverride).filter(
-    (s) => s && !s.includes('smartspaceapi.config.access'),
+    (s) => s && !s.includes('smartspaceapi.config.access')
   );
 }
-
-

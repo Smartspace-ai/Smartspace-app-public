@@ -16,5 +16,3 @@ describe('cn', () => {
     expect(cn('text-sm', 'text-lg')).toBe('text-lg');
   });
 });
-
-

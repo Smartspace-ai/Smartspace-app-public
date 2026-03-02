@@ -1,16 +1,13 @@
 // src/ui/chat-variables/utils/diff.ts
 import type { WorkspaceLike } from '../types';
 
-
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-
 function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (Number.isNaN(a) && Number.isNaN(b)) return true;
-
 
   // arrays
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -20,7 +17,6 @@ function deepEqual(a: unknown, b: unknown): boolean {
     }
     return true;
   }
-
 
   // objects
   if (isObject(a) && isObject(b)) {
@@ -34,50 +30,46 @@ function deepEqual(a: unknown, b: unknown): boolean {
     return true;
   }
 
-
   return false;
 }
 
-
 export function hasAnyChanges(
-workspace: WorkspaceLike,
-originalData: Record<string, unknown>,
-nextData: Record<string, unknown>
+  workspace: WorkspaceLike,
+  originalData: Record<string, unknown>,
+  nextData: Record<string, unknown>
 ): boolean {
-const keys = Object.keys(workspace.variables || {});
-for (const k of keys) {
-const o = originalData?.[k];
-const n = nextData?.[k];
-if (!deepEqual(o, n)) return true;
+  const keys = Object.keys(workspace.variables || {});
+  for (const k of keys) {
+    const o = originalData?.[k];
+    const n = nextData?.[k];
+    if (!deepEqual(o, n)) return true;
+  }
+  return false;
 }
-return false;
-}
-
 
 export function getChangedVariables(
-workspace: WorkspaceLike,
-originalData: Record<string, unknown>,
-nextData: Record<string, unknown>
+  workspace: WorkspaceLike,
+  originalData: Record<string, unknown>,
+  nextData: Record<string, unknown>
 ): Record<string, unknown> {
-const out: Record<string, unknown> = {};
-const keys = Object.keys(workspace.variables || {});
-for (const k of keys) {
-const o = originalData?.[k];
-const n = nextData?.[k];
-if (!deepEqual(o, n)) {
-out[k] = n; // send the current UI value; wrapping (if needed) happens elsewhere
+  const out: Record<string, unknown> = {};
+  const keys = Object.keys(workspace.variables || {});
+  for (const k of keys) {
+    const o = originalData?.[k];
+    const n = nextData?.[k];
+    if (!deepEqual(o, n)) {
+      out[k] = n; // send the current UI value; wrapping (if needed) happens elsewhere
+    }
+  }
+  return out;
 }
-}
-return out;
-}
-
 
 export function getCurrentVariables(
-workspace: WorkspaceLike,
-currentData: Record<string, unknown>
+  workspace: WorkspaceLike,
+  currentData: Record<string, unknown>
 ): Record<string, unknown> {
-const out: Record<string, unknown> = {};
-const keys = Object.keys(workspace.variables || {});
-for (const k of keys) out[k] = currentData?.[k];
-return out;
+  const out: Record<string, unknown> = {};
+  const keys = Object.keys(workspace.variables || {});
+  for (const k of keys) out[k] = currentData?.[k];
+  return out;
 }

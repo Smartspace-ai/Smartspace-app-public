@@ -4,5 +4,4 @@ export const Route = createFileRoute('/')({
   component: () => {
     return <Navigate to="/workspace" replace />;
   },
-})
-
+});

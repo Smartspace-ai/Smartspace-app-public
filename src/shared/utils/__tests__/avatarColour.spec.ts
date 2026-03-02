@@ -14,5 +14,3 @@ describe('getAvatarColour', () => {
     expect(a).toEqual(b);
   });
 });
-
-

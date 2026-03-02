@@ -10,8 +10,11 @@ import { commentsKeys } from '@/domains/comments/queryKeys';
 import { messagesKeys } from '@/domains/messages/queryKeys';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 import type { Workspace } from '@/domains/workspaces/model';
-import { useWorkspace, useWorkspaces, workspaceDetailOptions } from '@/domains/workspaces/queries';
-
+import {
+  useWorkspace,
+  useWorkspaces,
+  workspaceDetailOptions,
+} from '@/domains/workspaces/queries';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
@@ -21,7 +24,10 @@ export function useWorkspaceSwitcherVm() {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [debounced, setDebounced] = useState('');
-  const [pendingWorkspace, setPendingWorkspace] = useState<Pick<Workspace, 'id' | 'name' | 'tags'> | null>(null);
+  const [pendingWorkspace, setPendingWorkspace] = useState<Pick<
+    Workspace,
+    'id' | 'name' | 'tags'
+  > | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { workspaceId } = useRouteIds();
@@ -64,7 +70,8 @@ export function useWorkspaceSwitcherVm() {
     return () => clearTimeout(id);
   }, [open]);
 
-  const isSwitchingWorkspace = !!pendingWorkspace && pendingWorkspace.id !== workspaceId;
+  const isSwitchingWorkspace =
+    !!pendingWorkspace && pendingWorkspace.id !== workspaceId;
   const selectedWorkspaceId = pendingWorkspace?.id ?? workspaceId;
   const selectedWorkspaceName = pendingWorkspace?.name ?? activeWorkspace?.name;
   const selectedWorkspaceTags = pendingWorkspace?.tags ?? activeWorkspace?.tags;
@@ -74,7 +81,9 @@ export function useWorkspaceSwitcherVm() {
     if (workspaceId === pendingWorkspace.id) setPendingWorkspace(null);
   }, [workspaceId, pendingWorkspace]);
 
-  const onSelectWorkspace = async (ws: Pick<Workspace, 'id' | 'name' | 'tags'>) => {
+  const onSelectWorkspace = async (
+    ws: Pick<Workspace, 'id' | 'name' | 'tags'>
+  ) => {
     const id = ws?.id;
     if (!id) return;
     if (id === workspaceId) {
@@ -90,16 +99,19 @@ export function useWorkspaceSwitcherVm() {
 
     // Seed the active-workspace query cache immediately from the dropdown list item,
     // so header + dropdown reflect the new workspace without waiting for a refetch.
-    queryClient.setQueryData(workspaceDetailOptions(id).queryKey, (old: Workspace | undefined) => {
-      const base: Partial<Workspace> = old ?? {};
-      return {
-        ...base,
-        ...ws,
-        id,
-        name: ws.name,
-        tags: ws.tags ?? old?.tags ?? [],
-      } as Workspace;
-    });
+    queryClient.setQueryData(
+      workspaceDetailOptions(id).queryKey,
+      (old: Workspace | undefined) => {
+        const base: Partial<Workspace> = old ?? {};
+        return {
+          ...base,
+          ...ws,
+          id,
+          name: ws.name,
+          tags: ws.tags ?? old?.tags ?? [],
+        } as Workspace;
+      }
+    );
 
     // Immediately clear list/detail caches so the UI shows loading states instead
     // of stale threads/messages/comments from the previous workspace.
@@ -116,7 +128,11 @@ export function useWorkspaceSwitcherVm() {
     // Compatibility: some older invalidations used a raw comments key
     queryClient.removeQueries({ queryKey: ['comments'] });
 
-    navigate({ to: '/workspace/$workspaceId', params: { workspaceId: id }, replace: true });
+    navigate({
+      to: '/workspace/$workspaceId',
+      params: { workspaceId: id },
+      replace: true,
+    });
     setOpen(false);
     setSearchTerm('');
     if (isMobile) setOpenMobileLeft(false);

@@ -3,15 +3,11 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 import { FileInfo } from '@/domains/files';
 import { useFileMutations } from '@/domains/files/mutations';
 
-
 import { Button } from '@/shared/ui/mui-compat/button';
 
-
-export const ChatMessageAttachmentList = ({
-  files,
-}:{files: FileInfo[]}) => {
+export const ChatMessageAttachmentList = ({ files }: { files: FileInfo[] }) => {
   const { workspaceId, threadId } = useRouteIds();
-  const { downloadFileMutation } = useFileMutations({workspaceId, threadId});
+  const { downloadFileMutation } = useFileMutations({ workspaceId, threadId });
 
   return (
     <div>

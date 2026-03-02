@@ -3,7 +3,10 @@ import { useEffect, useState } from 'react';
 const MOBILE_BREAKPOINT = 1100;
 
 export function useIsMobile() {
-  const getIsMobile = () => (typeof window !== 'undefined' ? window.innerWidth < MOBILE_BREAKPOINT : false);
+  const getIsMobile = () =>
+    typeof window !== 'undefined'
+      ? window.innerWidth < MOBILE_BREAKPOINT
+      : false;
   const [isMobile, setIsMobile] = useState<boolean>(getIsMobile());
 
   // Listen for window size changes

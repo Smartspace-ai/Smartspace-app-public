@@ -8,7 +8,10 @@ import { messagesKeys } from '@/domains/messages/queryKeys';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 
 export function useWorkspaceSubscriptions() {
-  const match = useMatch({ from: '/_protected/workspace/$workspaceId/thread/$threadId', shouldThrow: false });
+  const match = useMatch({
+    from: '/_protected/workspace/$workspaceId/thread/$threadId',
+    shouldThrow: false,
+  });
   const workspaceId = match?.params?.workspaceId;
   const threadId = match?.params?.threadId;
   const qc = useQueryClient();
@@ -18,7 +21,7 @@ export function useWorkspaceSubscriptions() {
     onThreadUpdate: (id) => {
       if (!workspaceId) return;
       qc.invalidateQueries({ queryKey: threadsKeys.list(workspaceId) });
-      qc.invalidateQueries({ queryKey: threadsKeys.detail(workspaceId,id) });
+      qc.invalidateQueries({ queryKey: threadsKeys.detail(workspaceId, id) });
       qc.invalidateQueries({ queryKey: messagesKeys.list(id) });
     },
     onThreadDeleted: (id) => {

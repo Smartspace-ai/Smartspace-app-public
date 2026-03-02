@@ -1,5 +1,14 @@
-
-import { ChevronUp, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Presentation } from 'lucide-react';
+import {
+  ChevronUp,
+  FileArchive,
+  FileAudio,
+  FileCode,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
+  FileVideo,
+  Presentation,
+} from 'lucide-react';
 import { useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
@@ -7,7 +16,6 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 import { useFileMutations } from '@/domains/files/mutations';
 import { MessageResponseSourceType } from '@/domains/messages/enums';
 // Keeping this component generic; adjust type if needed in the future
-
 
 import { cn } from '@/shared/utils/utils';
 
@@ -25,12 +33,18 @@ const getFileIcon = (fileName: string) => {
   const extension = fileName.split('.').pop()?.toLowerCase();
 
   // Image files
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension || '')) {
+  if (
+    ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(
+      extension || ''
+    )
+  ) {
     return FileImage;
   }
 
   // Video files
-  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(extension || '')) {
+  if (
+    ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(extension || '')
+  ) {
     return FileVideo;
   }
 
@@ -45,7 +59,25 @@ const getFileIcon = (fileName: string) => {
   }
 
   // Code files
-  if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'cs', 'php', 'html', 'css', 'json', 'xml', 'md'].includes(extension || '')) {
+  if (
+    [
+      'js',
+      'ts',
+      'jsx',
+      'tsx',
+      'py',
+      'java',
+      'cpp',
+      'c',
+      'cs',
+      'php',
+      'html',
+      'css',
+      'json',
+      'xml',
+      'md',
+    ].includes(extension || '')
+  ) {
     return FileCode;
   }
 
@@ -65,7 +97,9 @@ const getFileIcon = (fileName: string) => {
 
 export function ChatMessageSources({
   sources,
-}: { sources: MessageResponseSource[] }) {
+}: {
+  sources: MessageResponseSource[];
+}) {
   const { workspaceId, threadId } = useRouteIds();
   const { downloadFileMutation } = useFileMutations({ workspaceId, threadId });
   const [isExpanded, setIsExpanded] = useState(true);

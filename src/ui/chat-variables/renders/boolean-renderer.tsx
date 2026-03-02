@@ -33,16 +33,28 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
 
   // Build styles that differ by mobile/non-mobile
   const dims = useMemo(
-    () => (isMobile
-      ? { w: undefined as string | undefined, h: '28px', pad: '2px 10px', knobSize: 0 }
-      : { w: '44px', h: '24px', pad: undefined as string | undefined, knobSize: 20 }),
+    () =>
+      isMobile
+        ? {
+            w: undefined as string | undefined,
+            h: '28px',
+            pad: '2px 10px',
+            knobSize: 0,
+          }
+        : {
+            w: '44px',
+            h: '24px',
+            pad: undefined as string | undefined,
+            knobSize: 20,
+          },
     [isMobile]
   );
 
   if (!visible) return null;
 
   // Read-only if ui schema set access: 'Read'
-  const readOnly = (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
+  const readOnly =
+    (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
 
   const hasError = !!errors && errors.length > 0;
@@ -56,7 +68,7 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
         flexDirection: 'row',
         alignItems: 'center',
         minHeight: isMobile ? '36px' : '40px',
-        gap: isMobile ? 6 : 8
+        gap: isMobile ? 6 : 8,
       }}
     >
       {/* Label (hidden on mobile; the button gets aria-label) */}
@@ -70,14 +82,18 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
             cursor: isDisabled ? 'not-allowed' : 'pointer',
             userSelect: 'none',
             marginBottom: 0,
-            lineHeight: '24px'
+            lineHeight: '24px',
           }}
-          onKeyDown={!isDisabled ? (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onToggle();
-            }
-          } : undefined}
+          onKeyDown={
+            !isDisabled
+              ? (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onToggle();
+                  }
+                }
+              : undefined
+          }
           tabIndex={isDisabled ? -1 : 0}
         >
           {label}
@@ -99,7 +115,11 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
         // Blur the element after *pointer* interactions so the ring doesn't linger.
         onPointerUp={(e: React.PointerEvent<HTMLButtonElement>) => {
           // Keep keyboard focus visible for accessibility; only blur on pointer
-          if (e.pointerType === 'mouse' || e.pointerType === 'touch' || e.pointerType === 'pen') {
+          if (
+            e.pointerType === 'mouse' ||
+            e.pointerType === 'touch' ||
+            e.pointerType === 'pen'
+          ) {
             (e.currentTarget as HTMLButtonElement).blur();
           }
         }}
@@ -121,7 +141,7 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
           alignSelf: 'center',
           color: isMobile ? (isChecked ? '#ffffff' : '#374151') : undefined,
           fontSize: isMobile ? '0.75rem' : undefined,
-          fontWeight: isMobile ? 600 : undefined
+          fontWeight: isMobile ? 600 : undefined,
         }}
       >
         {/* Knob for desktop */}
@@ -137,7 +157,7 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
               borderRadius: '50%',
               backgroundColor: '#ffffff',
               transition: 'left 0.2s ease-in-out',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
             }}
           />
         )}
@@ -147,7 +167,7 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
             style={{
               padding: '0 2px',
               lineHeight: 1,
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
             }}
           >
             {label}
@@ -161,7 +181,7 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
           style={{
             color: '#6b7280',
             fontSize: '0.75rem',
-            marginTop: isMobile ? '2px' : '4px'
+            marginTop: isMobile ? '2px' : '4px',
           }}
         >
           {description}
@@ -173,7 +193,7 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
           style={{
             color: '#ef4444',
             fontSize: '0.75rem',
-            marginTop: isMobile ? '2px' : '4px'
+            marginTop: isMobile ? '2px' : '4px',
           }}
         >
           {errors}
@@ -184,15 +204,15 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
 };
 
 // Match boolean fields
-export const booleanRendererTester = rankWith(
-  40,
-  (uischema, schema) => {
-    if (uischema.type !== 'Control') return false;
-    const scope = (uischema as ControlElement).scope;
-    const propertyPath = scope.replace('#/properties/', '');
-    const fieldSchema = (schema as JsonSchema7 | undefined)?.properties?.[propertyPath] as JsonSchema7 | undefined;
-    return fieldSchema?.type === 'boolean';
-  }
-);
+export const booleanRendererTester = rankWith(40, (uischema, schema) => {
+  if (uischema.type !== 'Control') return false;
+  const scope = (uischema as ControlElement).scope;
+  const propertyPath = scope.replace('#/properties/', '');
+  const fieldSchema = (schema as JsonSchema7 | undefined)?.properties?.[
+    propertyPath
+  ] as JsonSchema7 | undefined;
+  return fieldSchema?.type === 'boolean';
+});
 
-export const BooleanRendererControl = withJsonFormsControlProps(BooleanRenderer);
+export const BooleanRendererControl =
+  withJsonFormsControlProps(BooleanRenderer);

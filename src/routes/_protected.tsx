@@ -8,7 +8,6 @@ import {
 } from '@/platform/auth/sessionQuery';
 import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
-
 import { ProtectedErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
 import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
 
