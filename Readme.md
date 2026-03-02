@@ -1,7 +1,7 @@
 # SmartSpace Chat UI
 
 > **Template Repository:**
-> 
+>
 > This repository is intended as a starting point for clients who want to build their own customized chat UI for Smartspace. The recommended workflow is to **fork this repository**, then white label and customize it to fit your organization's branding and requirements. Once customized, you can deploy your version and connect it to your own Smartspace backend.
 
 A modern, customizable chat interface built with React 18.3, utilizing [shadcn UI](https://ui.shadcn.com/) components and [Tailwind CSS](https://tailwindcss.com/) for styling. This project is designed to integrate seamlessly with [smartspace.ai](https://smartspace.ai).
@@ -76,6 +76,31 @@ In the project directory, you can run the following scripts:
   # or
   yarn start
   ```
+
+### Dev tunnels (optional)
+
+If you need a public URL to your local dev server (e.g. for Teams manifests / callbacks), you can use **Microsoft Dev Tunnels** (via the `devtunnel` CLI) instead of ngrok.
+
+- **Start the app (no tunnel):**
+
+  ```bash
+  npm run start:local
+  # or
+  npm run start:dev
+  ```
+
+- **Start the tunnel (separate command):**
+
+  ```bash
+  npm run start:tunnel
+  # or
+  npm run start:tunnel:dev
+  ```
+
+- **Env vars** (in `.env.local` / `.env.dev`):
+
+  - `PUBLIC_ORIGIN`: the tunnel URL (hostname is used by Vite `server.allowedHosts`)
+  - `TUNNEL_ID` (optional, recommended): existing tunnel id to reuse (stable URL), e.g. `puzzled-chair-8bzd2hr.aue`
 
 - **Build the application for production:**
 

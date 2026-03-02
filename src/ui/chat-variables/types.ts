@@ -2,7 +2,8 @@ export type AccessLevel = 'Read' | 'Write';
 
 export interface VariableConfig {
   access: AccessLevel;
-  schema: any; // JSON Schema
+  // JSON Schema for this variable (JSONForms compatible)
+  schema: import('@jsonforms/core').JsonSchema7;
 }
 
 export interface WorkspaceLike {
@@ -17,7 +18,7 @@ export interface ChatVariablesFormProps {
 export interface ChatVariablesFormRef {
   // kept for compatibility; not strictly needed in this minimal version
   hasChanges: () => boolean;
-  getChangedVariables: () => Record<string, any>;
-  getCurrentVariables: () => Record<string, any>;
+  getChangedVariables: () => Record<string, unknown>;
+  getCurrentVariables: () => Record<string, unknown>;
   saveChangedVariables: () => Promise<void>;
 }

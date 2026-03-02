@@ -1,5 +1,3 @@
-import { OrderBy } from '@/enums/workspace';
-
 // Centralized public UI config for name/ordering decisions
 
 export const DEFAULT_CHATBOT_NAME = 'Chatbot';
@@ -16,8 +14,7 @@ export function getChatbotName(workspaceName?: string): string {
 }
 
 // Default sort to use when fetching workspaces in the public UI
-export const DEFAULT_WORKSPACES_ORDER: OrderBy = OrderBy.Name; 
-// OrderBy.RecentActivity;
-// OrderBy.CreatedDate;
+// Values: 'Name' | 'CreatedDate' | 'RecentActivity'
+export const DEFAULT_WORKSPACES_ORDER = 'Name' as const;
 
 

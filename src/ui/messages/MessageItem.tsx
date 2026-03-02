@@ -1,0 +1,292 @@
+// src/ui/messages/MessageList/MessageItem.tsx
+
+import { FC, ReactNode } from 'react';
+
+// domains
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+
+import { FileInfo } from '@/domains/files';
+import { Message, MessageContentItem } from '@/domains/messages';
+import { MessageValueType } from '@/domains/messages/enums';
+import { getMessageErrorText } from '@/domains/messages/errors';
+import { useAddInputToMessage } from '@/domains/messages/mutations';
+
+// local UI
+import { MessageBubble } from './MessageBubble';
+import type { MessageResponseSource } from './MessageSources';
+
+interface MessageItemProps {
+  message: Message;
+}
+
+/** shallow-enough equality for small channel maps like { stream: 0 } */
+function channelsEqual(
+  a: Record<string, number> = {},
+  b: Record<string, number> = {}
+) {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const k of aKeys) {
+    if (a[k] !== b[k]) return false;
+  }
+  return true;
+}
+
+/** push value(s) into content items, normalizing shapes */
+function pushContent(items: MessageContentItem[], value: unknown) {
+  if (value == null) return;
+  if (typeof value === 'string') {
+    items.push({ text: value });
+    return;
+  }
+  if (Array.isArray(value)) {
+    // assume already MessageContentItem[]
+    items.push(...(value as MessageContentItem[]));
+    return;
+  }
+  if (typeof value === 'object') {
+    const v = value as Record<string, unknown>;
+    const text = typeof v.text === 'string' ? v.text : undefined;
+    const imageRaw = v.image;
+    const image =
+      imageRaw &&
+      typeof imageRaw === 'object' &&
+      typeof (imageRaw as Record<string, unknown>).id === 'string' &&
+      typeof (imageRaw as Record<string, unknown>).name === 'string'
+        ? (imageRaw as { id: string; name: string })
+        : undefined;
+
+    if (text !== undefined || image !== undefined) {
+      items.push({
+        ...(text !== undefined ? { text } : {}),
+        ...(image ? { image } : {}),
+      });
+      return;
+    }
+    items.push({ text: JSON.stringify(value) });
+    return;
+  }
+  items.push({ text: String(value) });
+}
+
+function isMessageResponseSource(x: unknown): x is MessageResponseSource {
+  if (!x || typeof x !== 'object') return false;
+  const obj = x as Record<string, unknown>;
+  return typeof obj.index === 'number' && typeof obj.sourceType === 'string';
+}
+
+function coerceSources(x: unknown): MessageResponseSource[] {
+  if (!Array.isArray(x)) return [];
+  return x.filter(isMessageResponseSource);
+}
+
+export const MessageItem: FC<MessageItemProps> = ({ message }) => {
+  const { threadId } = useRouteIds();
+  const { addInputToMessageMutation } = useAddInputToMessage();
+
+  const onSubmitUserForm =
+    (messageId: string) => (name: string, value: unknown) => {
+      if (!threadId || !messageId) return;
+      addInputToMessageMutation.mutate({
+        threadId,
+        messageId,
+        name,
+        value,
+        channels: {},
+      });
+    };
+
+  const safeTime = (d: Date) => {
+    const t = d.getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
+
+  // sort without mutating original
+  const values = (message.values ?? [])
+    .slice()
+    .sort((a, b) => safeTime(a.createdAt) - safeTime(b.createdAt));
+
+  const bubbles: ReactNode[] = [];
+
+  // current aggregation group
+  let groupContent: MessageContentItem[] = [];
+  let groupSources: MessageResponseSource[] = [];
+  let groupFiles: FileInfo[] = [];
+  let groupType: MessageValueType = MessageValueType.INPUT;
+  let lastCreatedAt: Date = message.createdAt;
+  let lastCreatedBy = '';
+
+  // whether we have a pending group that hasn't been flushed to bubbles
+  let groupOpen = false;
+  let keyCounter = 0;
+
+  const flush = (nextType: MessageValueType) => {
+    bubbles.push(
+      <MessageBubble
+        key={`bubble-${message.id ?? 'msg'}-${keyCounter++}`}
+        createdBy={lastCreatedBy}
+        createdAt={lastCreatedAt}
+        type={groupType}
+        content={groupContent}
+        files={groupFiles}
+        sources={groupSources}
+        userOutput={null}
+        userInput={null}
+      />
+    );
+    groupContent = [];
+    groupFiles = [];
+    groupSources = [];
+    groupType = nextType;
+    groupOpen = false;
+  };
+
+  for (const v of values) {
+    // If the value's type changes and there's a pending group → flush first
+    if (groupOpen && groupType !== v.type) {
+      flush(v.type);
+    }
+
+    groupType = v.type;
+    const name = v.name.toLowerCase();
+
+    switch (name) {
+      case 'variables': {
+        // Do not display message variables payloads
+        continue;
+      }
+      case 'prompt':
+      case 'response':
+      case 'content': {
+        // These start a “fresh” content section
+        if (groupContent.length > 0) flush(v.type);
+
+        if (v.value == null) {
+          pushContent(groupContent, {
+            text: `<span style="color:red">🐞 Failed to generate response</span>`,
+          });
+        } else if (
+          name === 'response' &&
+          typeof v.value === 'object' &&
+          v.value !== null &&
+          'content' in (v.value as Record<string, unknown>)
+        ) {
+          const resp = v.value as Record<string, unknown>;
+          pushContent(groupContent, resp.content);
+          groupSources = coerceSources(resp.sources);
+        } else {
+          pushContent(groupContent, v.value);
+        }
+
+        groupOpen = true;
+        break;
+      }
+
+      case '_user': {
+        // user interaction packets are rendered as their own bubble
+        // try to find the matching INPUT user value in the same channel map
+        if (v.type !== MessageValueType.INPUT) {
+          const userInput = values.find(
+            (u) =>
+              u.name === '_user' &&
+              u.type === MessageValueType.INPUT &&
+              channelsEqual(u.channels, v.channels)
+          );
+
+          bubbles.push(
+            <MessageBubble
+              key={`user-${message.id ?? 'msg'}-${keyCounter++}`}
+              createdBy={v.createdBy}
+              createdAt={v.createdAt}
+              type={v.type}
+              content={[
+                {
+                  text:
+                    typeof (v.value as Record<string, unknown> | null)
+                      ?.message === 'string'
+                      ? String((v.value as Record<string, unknown>).message)
+                      : '',
+                },
+              ]}
+              files={[]}
+              sources={[]}
+              userOutput={
+                v.value && typeof v.value === 'object'
+                  ? (v.value as unknown as { message: string; schema: unknown })
+                  : null
+              }
+              userInput={userInput?.value}
+              onSubmitUserForm={onSubmitUserForm(message.id ?? '')}
+            />
+          );
+        }
+        // do not mark groupOpen; this stands alone
+        break;
+      }
+
+      case 'files': {
+        groupFiles = Array.isArray(v.value)
+          ? (v.value as FileInfo[])
+          : [v.value as FileInfo];
+        groupOpen = true;
+        break;
+      }
+
+      case 'sources': {
+        groupSources = coerceSources(v.value);
+        groupOpen = true;
+        break;
+      }
+
+      default: {
+        // any other named value: append to current content,
+        // but if we already have content from previous, keep grouping by type
+        pushContent(groupContent, v.value);
+        groupOpen = true;
+        break;
+      }
+    }
+
+    lastCreatedAt = v.createdAt;
+    lastCreatedBy = v.createdBy;
+  }
+
+  // Final pending group
+  if (groupOpen) {
+    bubbles.push(
+      <MessageBubble
+        key={`bubble-final-${message.id ?? 'msg'}-${keyCounter++}`}
+        createdBy={lastCreatedBy}
+        createdAt={lastCreatedAt}
+        type={groupType}
+        content={groupContent}
+        files={groupFiles}
+        sources={groupSources}
+        userOutput={null}
+        userInput={null}
+      />
+    );
+  }
+
+  // Domain errors → system bubbles at the end
+  for (const error of message.errors ?? []) {
+    bubbles.push(
+      <MessageBubble
+        key={`error-${message.id ?? 'msg'}-${error.code}`}
+        createdBy="Chatbot"
+        createdAt={message.createdAt}
+        type={MessageValueType.OUTPUT}
+        content={[{ text: getMessageErrorText(error.code) }]}
+        files={[]}
+        sources={[]}
+        userOutput={null}
+        userInput={null}
+      />
+    );
+  }
+
+  return bubbles;
+};
+
+export default MessageItem;

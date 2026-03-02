@@ -1,16 +1,21 @@
 // src/routes/__root.tsx
-import AppProviders from '@/app/app'
-import { useTeamsViewport } from '@/hooks/use-teams-viewport'
-import TeamsLoader from '@/pages/teams_loader'
-import { Outlet, createRootRoute } from '@tanstack/react-router'
+import { Outlet, createRootRouteWithContext } from '@tanstack/react-router';
+
+import type { RouterContext } from '@/platform/router/context';
+
+import { RootErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
+
+import TeamsLoaderPage from '@/pages/teams_loader';
+
+import { useTeamsViewport } from '@/hooks/useTeamsViewport';
 
 function RootContent() {
-  const { viewportHeight, isAndroidTeams } = useTeamsViewport()
-  
+  const { viewportHeight, isAndroidTeams } = useTeamsViewport();
+
   return (
-    <div 
-      className="flex flex-col" 
-      style={{ 
+    <div
+      className="flex flex-col"
+      style={{
         minHeight: viewportHeight,
         ...(isAndroidTeams && {
           height: viewportHeight,
@@ -19,24 +24,21 @@ function RootContent() {
           left: 0,
           right: 0,
           bottom: 0,
-        })
+        }),
       }}
     >
       <Outlet />
     </div>
-  )
+  );
 }
 
 export default function Root() {
-  return (
-    <AppProviders>
-      <RootContent />
-    </AppProviders>
-  )
+  return <RootContent />;
 }
-
-export const Route = createRootRoute({
+// routes/__root.tsx
+export const Route = createRootRouteWithContext<RouterContext>()({
   pendingMs: 0,
-  pendingComponent: () => <TeamsLoader message="Loading…" />,
+  pendingComponent: () => <TeamsLoaderPage message="Loading…" />,
   component: Root,
-})
+  errorComponent: RootErrorBoundary,
+});

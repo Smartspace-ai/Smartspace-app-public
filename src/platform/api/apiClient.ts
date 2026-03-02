@@ -1,13 +1,38 @@
-import { msalInstance } from '@/platform/auth/msalClient';
-import { interactiveLoginRequest, isInTeams } from '@/platform/auth/msalConfig';
-import { acquireNaaToken } from '@/platform/auth/naaClient';
-import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import axios from 'axios';
+import axios, { AxiosHeaders } from 'axios';
+
+import { AuthRequiredError } from '@/platform/auth/errors';
+import { getAuthAdapter } from '@/platform/auth/index';
+import { isInTeams } from '@/platform/auth/msalConfig';
+import {
+  getAuthRuntimeState,
+  setRuntimeAuthError,
+} from '@/platform/auth/runtime';
+import { getApiScopes } from '@/platform/auth/scopes';
+import { SESSION_QUERY_KEY } from '@/platform/auth/sessionQuery';
+import { ssInfo, ssWarn } from '@/platform/log';
+import { queryClient } from '@/platform/reactQueryClient';
+
+type SsConfig = {
+  Chat_Api_Uri?: unknown;
+  Client_Scopes?: unknown;
+};
+
+type SsWindow = Window & {
+  ssconfig?: SsConfig;
+};
+
+function getSsWindow(): SsWindow | null {
+  try {
+    return window as unknown as SsWindow;
+  } catch {
+    return null;
+  }
+}
 
 function getBaseUrl() {
+  const w = getSsWindow();
   const configBaseUrl =
-    (window as any)?.ssconfig?.Chat_Api_Uri ||
-    import.meta.env.VITE_CHAT_API_URI;
+    w?.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
   return configBaseUrl ? configBaseUrl : '';
 }
 
@@ -28,56 +53,41 @@ webApi.interceptors.request.use(async (config) => {
     // ignore
   }
 
-  const inTeamsEnvironment =
-    ((window as any)?.__teamsState?.isInTeams === true) || isInTeams();
+  // Prefer runtime store (set by TeamsProvider) when available.
+  const runtime = getAuthRuntimeState();
+  const inTeamsEnvironment = runtime.isInTeams === true || isInTeams();
 
-  // Teams: use NAA to get delegated API token (no fallback)
-  if (inTeamsEnvironment) {
-    try {
-      const raw = (window as any)?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
-      const scopes = String(raw)
-        .split(/[ ,]+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const token = await acquireNaaToken(scopes);
-      if (token) config.headers.Authorization = `Bearer ${token}`;
-    } catch {
-      // Leave request unauthenticated on failure
-    }
-    return config;
-  }
+  ssInfo('api', `request -> ${inTeamsEnvironment ? 'teams' : 'web'}`, {
+    method: (config.method ?? 'get').toUpperCase(),
+    url: config.url ?? null,
+    baseURL: config.baseURL ?? null,
+  });
 
-  // Web (non-Teams): use MSAL
-  const rawScopes = (window as any)?.ssconfig?.Client_Scopes ?? import.meta.env.VITE_CLIENT_SCOPES ?? '';
-  const scopes = String(rawScopes)
-    .split(/[ ,]+/)
-    .map((s) => s.trim())
-    .filter((s) => s && !s.includes('smartspaceapi.config.access'));
-
-  const request = { scopes };
-
+  // Unified auth strategy:
+  // - Always attach auth headers via the singleton AuthAdapter
+  // - Never trigger interactive auth in the API layer (silentOnly only)
+  const auth = getAuthAdapter();
+  const scopes = getApiScopes();
   try {
-    const response = await msalInstance.acquireTokenSilent(request);
+    const token = await auth.getAccessToken({ silentOnly: true, scopes });
+    const headers = AxiosHeaders.from(config.headers);
+    headers.set('Authorization', `Bearer ${token}`);
+    config.headers = headers;
+    setRuntimeAuthError(null);
+  } catch (e) {
+    // Record diagnostic signal for UI troubleshooting (Teams login screen reads this)
+    setRuntimeAuthError({
+      source: 'api',
+      message: String(e instanceof Error ? e.message : e),
+    });
+    // Invalidate session query so UI reacts to auth failure
+    queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
 
-    // ✅ safer way of accessing token
-    const accessToken =
-      (response && 'accessToken' in response && response.accessToken) || null;
-
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-  } catch (error) {
-    if (error instanceof InteractionRequiredAuthError) {
-      try {
-        await msalInstance.loginRedirect(interactiveLoginRequest);
-      } catch {
-        // ignore
-      }
-    }
+    ssWarn('api', 'silent token attach failed (blocking request)', e);
+    throw e instanceof AuthRequiredError ? e : new AuthRequiredError();
   }
 
   return config;
 });
 
 export { webApi as api };
-

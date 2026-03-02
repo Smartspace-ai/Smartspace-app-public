@@ -34,6 +34,16 @@ yarn-error.log
 testem.log
 /typings
 
+# local caches / TS incremental build artifacts
+.eslintcache
+*.tsbuildinfo
+
+# Vite/Node may emit a compiled timestamped config next to vite.config.mts on some platforms
+vite.config.mts.timestamp-*.mjs
+
+# Claude Code
+.claude/
+
 # System Files
 .DS_Store
 Thumbs.db
@@ -44,13 +54,13 @@ Thumbs.db
 # env files
 .env*
 
-# !*.env
 !*.env.develop
 !*.env.example
 
-#/teams/*.zip
-#/teams/manifest.json
 /teams/*
 
-.cursor\rules\nx-rules.mdc
-.github\instructions\nx.instructions.md
+# OpenAPI generated client (spec is committed, generated code is not)
+/src/platform/api/generated/
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
