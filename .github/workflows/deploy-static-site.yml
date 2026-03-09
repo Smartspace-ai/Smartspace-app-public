@@ -46,6 +46,7 @@ jobs:
       - name: Build your site
         run: |
           npm install
+          npx nx reset
           npm run build
 
       - name: Deploy to Azure Storage
