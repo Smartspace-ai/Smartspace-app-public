@@ -34,7 +34,7 @@ jobs:
       inputs:
         targetType: 'inline'
         script: |
-          npm ci
+          npm install
     - task: Bash@3
       displayName: 'Build (DEV)'
       inputs:
@@ -82,7 +82,7 @@ jobs:
       inputs:
         targetType: 'inline'
         script: |
-          npm ci
+          npm install
     - task: Bash@3
       displayName: 'Build (AU)'
       inputs:
@@ -130,7 +130,7 @@ jobs:
       inputs:
         targetType: 'inline'
         script: |
-          npm ci
+          npm install
     - task: Bash@3
       displayName: 'Build (UK)'
       inputs:
@@ -178,7 +178,7 @@ jobs:
       inputs:
         targetType: 'inline'
         script: |
-          npm ci
+          npm install
     - task: Bash@3
       displayName: 'Build (CA)'
       inputs:
