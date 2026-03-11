@@ -12,10 +12,15 @@ jobs:
 - job: DeployDev
   displayName: 'Deploy to Dev Storage (AU)'
   condition: eq(variables['Build.SourceBranchName'], 'dev')
+  timeoutInMinutes: 15
   pool:
     vmImage: 'ubuntu-latest'
   steps:
     - checkout: self
+    - task: UseNode@1
+      displayName: 'Setup Node 20'
+      inputs:
+        version: '20.x'
     - task: Bash@3
       displayName: 'Prepare .env.au'
       inputs:
@@ -25,11 +30,17 @@ jobs:
           echo "Contents of .env for DEV:"
           cat .env
     - task: Bash@3
-      displayName: 'Install & Build (DEV)'
+      displayName: 'Install dependencies'
       inputs:
         targetType: 'inline'
         script: |
-          npm install
+          npm ci
+    - task: Bash@3
+      displayName: 'Build (DEV)'
+      inputs:
+        targetType: 'inline'
+        script: |
+          npx nx reset
           npm run build
     - task: azureCLI@2
       displayName: 'Deploy to Dev Storage'
@@ -48,10 +59,15 @@ jobs:
 - job: DeployAU
   displayName: 'Deploy to Prod Storage (AU)'
   condition: eq(variables['Build.SourceBranchName'], 'master')
+  timeoutInMinutes: 15
   pool:
     vmImage: 'ubuntu-latest'
   steps:
     - checkout: self
+    - task: UseNode@1
+      displayName: 'Setup Node 20'
+      inputs:
+        version: '20.x'
     - task: Bash@3
       displayName: 'Prepare .env.au'
       inputs:
@@ -62,11 +78,17 @@ jobs:
           cat .env
           cp ./public/favicon-au.ico ./public/favicon.ico
     - task: Bash@3
-      displayName: 'Install & Build (AU)'
+      displayName: 'Install dependencies'
       inputs:
         targetType: 'inline'
         script: |
-          npm install
+          npm ci
+    - task: Bash@3
+      displayName: 'Build (AU)'
+      inputs:
+        targetType: 'inline'
+        script: |
+          npx nx reset
           npm run build
     - task: azureCLI@2
       displayName: 'Deploy to AU Storage'
@@ -85,10 +107,15 @@ jobs:
 - job: DeployUK
   displayName: 'Deploy to Prod Storage (UK)'
   condition: eq(variables['Build.SourceBranchName'], 'master')
+  timeoutInMinutes: 15
   pool:
     vmImage: 'ubuntu-latest'
   steps:
     - checkout: self
+    - task: UseNode@1
+      displayName: 'Setup Node 20'
+      inputs:
+        version: '20.x'
     - task: Bash@3
       displayName: 'Prepare .env.uk'
       inputs:
@@ -98,13 +125,18 @@ jobs:
           echo "Contents of .env for UK:"
           cat .env
           cp ./public/favicon-uk.ico ./public/favicon.ico
-
     - task: Bash@3
-      displayName: 'Install & Build (UK)'
+      displayName: 'Install dependencies'
       inputs:
         targetType: 'inline'
         script: |
-          npm install
+          npm ci
+    - task: Bash@3
+      displayName: 'Build (UK)'
+      inputs:
+        targetType: 'inline'
+        script: |
+          npx nx reset
           npm run build
     - task: azureCLI@2
       displayName: 'Deploy to UK Storage'
@@ -123,10 +155,15 @@ jobs:
 - job: DeployCA
   displayName: 'Deploy to Prod Storage (CA)'
   condition: eq(variables['Build.SourceBranchName'], 'master')
+  timeoutInMinutes: 15
   pool:
     vmImage: 'ubuntu-latest'
   steps:
     - checkout: self
+    - task: UseNode@1
+      displayName: 'Setup Node 20'
+      inputs:
+        version: '20.x'
     - task: Bash@3
       displayName: 'Prepare .env.ca'
       inputs:
@@ -136,13 +173,18 @@ jobs:
           echo "Contents of .env for CA:"
           cat .env
           cp ./public/favicon-ca.ico ./public/favicon.ico
-
     - task: Bash@3
-      displayName: 'Install & Build (CA)'
+      displayName: 'Install dependencies'
       inputs:
         targetType: 'inline'
         script: |
-          npm install
+          npm ci
+    - task: Bash@3
+      displayName: 'Build (CA)'
+      inputs:
+        targetType: 'inline'
+        script: |
+          npx nx reset
           npm run build
     - task: azureCLI@2
       displayName: 'Deploy to CA Storage'
