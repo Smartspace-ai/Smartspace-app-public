@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DateFromApi } from '@/shared/utils/dateFromApi';
+import { DateFromApi, utcDate } from '@/shared/utils/dateFromApi';
 
 describe('DateFromApi', () => {
   it('passes through Date objects unchanged', () => {
@@ -14,10 +14,10 @@ describe('DateFromApi', () => {
     expect(result.toISOString()).toBe('2024-06-01T12:00:00.000Z');
   });
 
-  it('parses ISO string without timezone suffix', () => {
+  it('parses ISO string without timezone suffix as UTC', () => {
     const result = DateFromApi.parse('2024-06-01T12:00:00');
     expect(result).toBeInstanceOf(Date);
-    expect(Number.isNaN(result.getTime())).toBe(false);
+    expect(result.toISOString()).toBe('2024-06-01T12:00:00.000Z');
   });
 
   it('parses ISO string with offset', () => {
@@ -26,10 +26,10 @@ describe('DateFromApi', () => {
     expect(result.toISOString()).toBe('2024-06-01T12:00:00.000Z');
   });
 
-  it('parses .NET 7-digit fractional seconds', () => {
+  it('parses .NET 7-digit fractional seconds without Z as UTC', () => {
     const result = DateFromApi.parse('2024-06-01T12:00:00.1234567');
     expect(result).toBeInstanceOf(Date);
-    expect(Number.isNaN(result.getTime())).toBe(false);
+    expect(result.toISOString()).toBe('2024-06-01T12:00:00.123Z');
   });
 
   it('parses numeric timestamp', () => {
@@ -59,5 +59,27 @@ describe('DateFromApi', () => {
 
   it('rejects NaN', () => {
     expect(() => DateFromApi.parse(NaN)).toThrow();
+  });
+});
+
+describe('utcDate', () => {
+  it('appends Z to timezone-less string', () => {
+    const result = utcDate('2024-06-01T12:00:00');
+    expect(result.toISOString()).toBe('2024-06-01T12:00:00.000Z');
+  });
+
+  it('does not double-append Z', () => {
+    const result = utcDate('2024-06-01T12:00:00Z');
+    expect(result.toISOString()).toBe('2024-06-01T12:00:00.000Z');
+  });
+
+  it('preserves offset strings', () => {
+    const result = utcDate('2024-06-01T12:00:00+05:00');
+    expect(result.toISOString()).toBe('2024-06-01T07:00:00.000Z');
+  });
+
+  it('passes through Date objects', () => {
+    const d = new Date('2024-06-01T12:00:00Z');
+    expect(utcDate(d).getTime()).toBe(d.getTime());
   });
 });
