@@ -49,6 +49,7 @@
     "@milkdown/plugin-listener": "^7.16.0",
     "@milkdown/plugin-slash": "^7.16.0",
     "@milkdown/preset-commonmark": "^7.16.0",
+    "@milkdown/preset-gfm": "^7.19.0",
     "@milkdown/prose": "^7.16.0",
     "@milkdown/react": "^7.16.0",
     "@milkdown/utils": "^7.16.0",

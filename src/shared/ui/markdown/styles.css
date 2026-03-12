@@ -95,6 +95,54 @@
   margin-top: 0;
 }
 
+/* ── GFM: Task list checkboxes ── */
+.md-editor .ProseMirror ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.md-editor .ProseMirror ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+
+.md-editor .ProseMirror ul[data-type='taskList'] li > label {
+  flex-shrink: 0;
+  margin-top: 0.25em;
+}
+
+.md-editor .ProseMirror ul[data-type='taskList'] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── GFM: Strikethrough ── */
+.md-editor .ProseMirror del,
+.md-editor .ProseMirror s {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
+/* ── GFM: Tables ── */
+.md-editor .ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5em 0;
+}
+
+.md-editor .ProseMirror th,
+.md-editor .ProseMirror td {
+  border: 1px solid var(--border, #e5e7eb);
+  padding: 0.4em 0.8em;
+  text-align: left;
+}
+
+.md-editor .ProseMirror th {
+  background: var(--muted, #f5f5f5);
+  font-weight: 600;
+}
+
 /* Mention (placeholder) – tweak as desired */
 .mention {
   background: #f0f9ff;

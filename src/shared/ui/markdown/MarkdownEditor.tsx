@@ -8,6 +8,7 @@ import {
 import { clipboard } from '@milkdown/plugin-clipboard';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { commonmark } from '@milkdown/preset-commonmark';
+import { gfm } from '@milkdown/preset-gfm';
 import { Slice } from '@milkdown/prose/model';
 import type { Node as PMNode } from '@milkdown/prose/model';
 import type { EditorView } from '@milkdown/prose/view';
@@ -28,6 +29,7 @@ import { createPortal } from 'react-dom';
 // Note: Mention plugin is not published under @milkdown/plugin-mention on npm.
 // This setup is ready to add a mention-like plugin later if desired.
 import { fileTag } from './extensions/fileTag';
+import { markExitPlugin } from './extensions/markExit';
 import { mention } from './extensions/mention';
 import { ssImageNode, ssImageView } from './extensions/ssImage';
 import './styles.css';
@@ -358,8 +360,10 @@ function EditorInner({
           });
         })
         .use(commonmark)
+        .use(gfm)
         .use(clipboard)
         .use(listener)
+        .use(markExitPlugin)
         .use(fileTag)
         .use(ssImageNode)
         .use(ssImageView)
