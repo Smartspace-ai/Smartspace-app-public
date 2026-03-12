@@ -285,6 +285,14 @@ export default function MessageComposer() {
     previewUrlsRef.current = {};
   };
 
+  // Re-focus the editor after it remounts (editorKey changes on send).
+  useEffect(() => {
+    if (editorKey === 0) return; // skip initial mount
+    // Small delay to let the new Milkdown instance mount and populate the ref.
+    const id = window.setTimeout(() => editorRef.current?.focus(), 50);
+    return () => window.clearTimeout(id);
+  }, [editorKey]);
+
   const handleSendMessageAndClear = () => {
     if (sendDisabled) return;
     handleSendMessage(uploadedAttachments);
