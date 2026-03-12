@@ -224,6 +224,9 @@ function EditorInner({
   const mentionQueryRef = useRef('');
   const mentionFromPosRef = useRef<number | null>(null);
   const mentionOpenRef = useRef(false);
+  // When the user presses Escape, suppress re-opening until the cursor moves or
+  // the `@` position changes (i.e. a new mention session starts).
+  const mentionDismissedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     mentionQueryRef.current = mentionQuery;
@@ -668,6 +671,8 @@ function EditorInner({
             }
           }
           if (e.key === 'Escape') {
+            e.preventDefault();
+            mentionDismissedAtRef.current = mentionFromPosRef.current;
             setMentionOpen(false);
             return;
           }
@@ -943,11 +948,22 @@ function EditorInner({
       return;
     }
     const spaceCount = (after.match(/ /g) ?? []).length;
+    // Allow a single space so users can type "First Last" in the mention query.
+    // Close the dropdown once they type a second space (or any newline/tab).
     if (spaceCount > 1) {
       if (mentionOpen) setMentionOpen(false);
       return;
     }
     const absoluteFrom = windowStart + at;
+
+    // If the user dismissed this mention session with Escape, don't reopen
+    // until the `@` position changes (i.e. a new mention is started).
+    if (mentionDismissedAtRef.current === absoluteFrom) {
+      return;
+    }
+    // Clear the dismissed marker when a new session starts.
+    mentionDismissedAtRef.current = null;
+
     const coords = view.coordsAtPos(from);
     setMentionCoords({
       left: coords.left,
