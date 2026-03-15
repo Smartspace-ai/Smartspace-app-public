@@ -14,6 +14,7 @@ import { useAddInputToMessage } from '@/domains/messages/mutations';
 // local UI
 import { MessageBubble } from './MessageBubble';
 import type { MessageResponseSource } from './MessageSources';
+import { MessageStatus } from './MessageStatus';
 
 interface MessageItemProps {
   message: Message;
@@ -121,6 +122,9 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
   let groupOpen = false;
   let keyCounter = 0;
 
+  // transient status: only the last status is kept, cleared when content follows
+  let lastStatusNode: ReactNode | null = null;
+
   const flush = (nextType: MessageValueType) => {
     bubbles.push(
       <MessageBubble
@@ -156,9 +160,20 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
         // Do not display message variables payloads
         continue;
       }
+      case 'status': {
+        if (groupOpen) flush(v.type);
+        lastStatusNode = (
+          <MessageStatus
+            key={`status-${message.id ?? 'msg'}-${keyCounter++}`}
+            text={String(v.value ?? '')}
+          />
+        );
+        continue;
+      }
       case 'prompt':
       case 'response':
       case 'content': {
+        lastStatusNode = null;
         // These start a “fresh” content section
         if (groupContent.length > 0) flush(v.type);
 
@@ -240,6 +255,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
       }
 
       default: {
+        lastStatusNode = null;
         // any other named value: append to current content,
         // but if we already have content from previous, keep grouping by type
         pushContent(groupContent, v.value);
@@ -267,6 +283,11 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
         userInput={null}
       />
     );
+  }
+
+  // Show the last status indicator if no content followed it
+  if (lastStatusNode) {
+    bubbles.push(lastStatusNode);
   }
 
   // Domain errors → system bubbles at the end

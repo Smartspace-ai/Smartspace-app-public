@@ -2,6 +2,8 @@ import type { z } from 'zod';
 
 import { getMessageThreadsIdMessagesResponse as messagesResponseSchema } from '@/platform/api/generated/chat/zod';
 
+import { utcDate } from '@/shared/utils/dateFromApi';
+
 import { MessageValueType } from './enums';
 import { Message } from './model';
 
@@ -27,7 +29,7 @@ const normalizeChannels = (
 export function mapMessageDtoToModel(dto: MessageDto): Message {
   return {
     id: dto.id ?? undefined,
-    createdAt: new Date(dto.createdAt),
+    createdAt: utcDate(dto.createdAt),
     createdBy: dto.createdBy ?? undefined,
     hasComments: dto.hasComments ?? false,
     createdByUserId: dto.createdByUserId ?? undefined,
@@ -40,7 +42,7 @@ export function mapMessageDtoToModel(dto: MessageDto): Message {
           type: v.type as unknown as MessageValueType,
           value: v.value,
           channels: normalizeChannels(v.channels ?? {}),
-          createdAt: new Date(v.createdAt),
+          createdAt: utcDate(v.createdAt),
           createdBy: v.createdBy ?? '',
           createdByUserId: v.createdByUserId ?? undefined,
         }))
