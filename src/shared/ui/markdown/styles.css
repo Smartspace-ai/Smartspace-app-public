@@ -61,6 +61,13 @@
   --md-pad-h: 0px;
 }
 
+/* Links (autolinked bare URLs and markdown-syntax links) */
+.md-editor .ProseMirror a {
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* Custom inline file-tag */
 .file-tag {
   display: inline-block;

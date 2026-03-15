@@ -27,6 +27,7 @@ import { createPortal } from 'react-dom';
 
 // Note: Mention plugin is not published under @milkdown/plugin-mention on npm.
 // This setup is ready to add a mention-like plugin later if desired.
+import { autolink } from './extensions/autolink';
 import { fileTag } from './extensions/fileTag';
 import { mention } from './extensions/mention';
 import { ssImageNode, ssImageView } from './extensions/ssImage';
@@ -360,6 +361,7 @@ function EditorInner({
         .use(commonmark)
         .use(clipboard)
         .use(listener)
+        .use(autolink)
         .use(fileTag)
         .use(ssImageNode)
         .use(ssImageView)
@@ -632,6 +634,17 @@ function EditorInner({
       className={`md-editor${!isEditable ? ' md-editor--readonly' : ''}${
         className ? ` ${className}` : ''
       }`}
+      onClick={(e) => {
+        // Make links clickable in read-only mode (autolinked and markdown links)
+        if (!isEditable) {
+          const target = e.target as HTMLElement;
+          const anchor = target.closest('a');
+          if (anchor?.href) {
+            e.preventDefault();
+            window.open(anchor.href, '_blank', 'noopener');
+          }
+        }
+      }}
       onKeyDown={(e) => {
         if (
           mentionOpen &&
