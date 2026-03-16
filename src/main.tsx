@@ -49,11 +49,13 @@ function renderBootstrapError(message: string) {
   }
 }
 
-function fallbackRender({ error }: { error: Error }) {
+function fallbackRender({ error }: { error: unknown }) {
+  const message =
+    error instanceof Error ? error.message : 'An unexpected error occurred';
   return (
     <div role="alert">
       <p>Something went wrong:</p>
-      <pre style={{ color: 'red' }}>{error.message}</pre>
+      <pre style={{ color: 'red' }}>{message}</pre>
     </div>
   );
 }
