@@ -77,13 +77,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// Popup guard: if this page loaded inside an MSAL popup (window.opener is set),
-// do NOT render the full SPA. The parent window's MSAL instance monitors the
-// popup URL, extracts the auth hash, and closes it. Rendering the SPA here
-// causes the "full app in popup" and "double popup" bugs.
+// Popup guard: if this page loaded inside an MSAL popup (window.opener is set
+// AND the URL contains an auth response hash), do NOT render the full SPA.
+// The parent window's MSAL instance monitors the popup URL, extracts the auth
+// hash, and closes it. Rendering the SPA here causes the "full app in popup"
+// and "double popup" bugs.
+// We require an auth hash so that normal window.open(...) links (e.g. from the
+// admin portal) don't accidentally skip the entire app.
 const isInPopup = (() => {
   try {
-    return !!window.opener && window.opener !== window;
+    const hasOpener = !!window.opener && window.opener !== window;
+    const hasAuthHash =
+      window.location.hash.includes('code=') ||
+      window.location.hash.includes('error=');
+    return hasOpener && hasAuthHash;
   } catch {
     return false;
   }
