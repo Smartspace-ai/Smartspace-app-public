@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type EnumsModelRole =
-  (typeof EnumsModelRole)[keyof typeof EnumsModelRole];
+export type EnumsModelRole = typeof EnumsModelRole[keyof typeof EnumsModelRole];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsModelRole = {

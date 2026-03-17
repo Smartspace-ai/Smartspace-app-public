@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type EnumsFlowTriggerType =
-  (typeof EnumsFlowTriggerType)[keyof typeof EnumsFlowTriggerType];
+export type EnumsFlowTriggerType = typeof EnumsFlowTriggerType[keyof typeof EnumsFlowTriggerType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsFlowTriggerType = {

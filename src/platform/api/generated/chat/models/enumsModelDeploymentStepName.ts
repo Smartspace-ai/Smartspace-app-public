@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type EnumsModelDeploymentStepName =
-  (typeof EnumsModelDeploymentStepName)[keyof typeof EnumsModelDeploymentStepName];
+export type EnumsModelDeploymentStepName = typeof EnumsModelDeploymentStepName[keyof typeof EnumsModelDeploymentStepName];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsModelDeploymentStepName = {

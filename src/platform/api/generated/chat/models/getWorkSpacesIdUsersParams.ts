@@ -6,7 +6,7 @@
  */
 
 export type GetWorkSpacesIdUsersParams = {
-  take?: number;
-  skip?: number;
-  search?: string;
+take?: number;
+skip?: number;
+search?: string;
 };

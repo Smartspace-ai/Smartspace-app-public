@@ -9,4 +9,4 @@ import type { FlowBlock } from './flowBlock';
 /**
  * @nullable
  */
-export type FlowDefinitionBlocks = { [key: string]: FlowBlock } | null;
+export type FlowDefinitionBlocks = {[key: string]: FlowBlock} | null;

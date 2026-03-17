@@ -8,6 +8,4 @@
 /**
  * @nullable
  */
-export type MessageCreateMessageInputChannels = {
-  [key: string]: number;
-} | null;
+export type MessageCreateMessageInputChannels = {[key: string]: number} | null;

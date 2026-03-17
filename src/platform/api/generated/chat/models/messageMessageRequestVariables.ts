@@ -8,4 +8,4 @@
 /**
  * @nullable
  */
-export type MessageMessageRequestVariables = { [key: string]: unknown } | null;
+export type MessageMessageRequestVariables = {[key: string]: unknown} | null;

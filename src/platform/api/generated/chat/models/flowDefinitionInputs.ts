@@ -9,4 +9,4 @@ import type { FlowInput } from './flowInput';
 /**
  * @nullable
  */
-export type FlowDefinitionInputs = { [key: string]: FlowInput } | null;
+export type FlowDefinitionInputs = {[key: string]: FlowInput} | null;

@@ -6,16 +6,16 @@
  */
 
 export type GetModelsParams = {
-  /**
-   * The number of models to retrieve.
-   */
-  take?: number;
-  /**
-   * The number of models to skip.
-   */
-  skip?: number;
-  /**
-   * The search term to filter the models.
-   */
-  search?: string;
+/**
+ * The number of models to retrieve.
+ */
+take?: number;
+/**
+ * The number of models to skip.
+ */
+skip?: number;
+/**
+ * The search term to filter the models.
+ */
+search?: string;
 };

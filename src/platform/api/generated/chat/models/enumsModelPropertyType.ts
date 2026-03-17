@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type EnumsModelPropertyType =
-  (typeof EnumsModelPropertyType)[keyof typeof EnumsModelPropertyType];
+export type EnumsModelPropertyType = typeof EnumsModelPropertyType[keyof typeof EnumsModelPropertyType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsModelPropertyType = {
