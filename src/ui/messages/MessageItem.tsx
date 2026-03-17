@@ -12,7 +12,7 @@ import { getMessageErrorText } from '@/domains/messages/errors';
 import { useAddInputToMessage } from '@/domains/messages/mutations';
 import { useWorkspace } from '@/domains/workspaces';
 
-import { useWorkspaceNameAsChatbotName } from '@/theme/branding';
+import { getChatbotName } from '@/theme/public-config';
 
 // local UI
 import { MessageBubble } from './MessageBubble';
@@ -87,9 +87,8 @@ function coerceSources(x: unknown): MessageResponseSource[] {
 
 export const MessageItem: FC<MessageItemProps> = ({ message }) => {
   const { workspaceId, threadId } = useRouteIds();
-  const useWsName = useWorkspaceNameAsChatbotName();
   const { data: workspace } = useWorkspace(workspaceId);
-  const chatbotName = (useWsName && workspace?.name) || 'Chatbot';
+  const chatbotName = getChatbotName(workspace?.name);
   const { addInputToMessageMutation } = useAddInputToMessage();
 
   const onSubmitUserForm =
