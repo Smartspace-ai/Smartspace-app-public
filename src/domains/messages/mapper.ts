@@ -34,7 +34,11 @@ export function mapMessageDtoToModel(dto: MessageDto): Message {
     hasComments: dto.hasComments ?? false,
     createdByUserId: dto.createdByUserId ?? undefined,
     messageThreadId: dto.messageThreadId ?? undefined,
-    errors: dto.errors ?? undefined,
+    errors:
+      dto.errors?.map((e) => ({
+        ...e,
+        data: e.data as string | null | undefined,
+      })) ?? undefined,
     values: dto.values
       ? dto.values.map((v) => ({
           id: v.id,
