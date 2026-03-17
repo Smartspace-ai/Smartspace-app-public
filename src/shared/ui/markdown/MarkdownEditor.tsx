@@ -5,6 +5,7 @@ import {
   editorViewOptionsCtx,
   rootCtx,
 } from '@milkdown/core';
+import { history } from '@milkdown/kit/plugin/history';
 import { clipboard } from '@milkdown/plugin-clipboard';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { commonmark } from '@milkdown/preset-commonmark';
@@ -362,6 +363,7 @@ function EditorInner({
           });
         })
         .use(commonmark)
+        .use(history)
         .use(clipboard)
         .use(listener)
         .use(autolink)
