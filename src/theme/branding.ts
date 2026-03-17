@@ -73,18 +73,3 @@ export function getBrandConfig(): BrandConfig {
 
   return { name, logoUrl };
 }
-
-/**
- * Whether bot messages should display the workspace name instead of "Chatbot".
- *
- * Controlled via `window.ssconfig.Use_Workspace_Name_As_Chatbot_Name` (string "true"/"false")
- * or `VITE_USE_WORKSPACE_NAME_AS_CHATBOT_NAME` env var. Defaults to false.
- */
-export function useWorkspaceNameAsChatbotName(): boolean {
-  const cfg = readSsConfigKey(['Use_Workspace_Name_As_Chatbot_Name']);
-  if (cfg !== null) return cfg === 'true';
-  const env = (
-    import.meta as unknown as { env?: Record<string, string | undefined> }
-  ).env?.VITE_USE_WORKSPACE_NAME_AS_CHATBOT_NAME;
-  return env === 'true';
-}

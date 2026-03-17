@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
+import { ensureDraftThread } from '@/domains/threads';
 import { threadsListOptions } from '@/domains/threads/queries';
 
 import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
@@ -20,7 +21,16 @@ export const Route = createFileRoute('/_protected/workspace/$workspaceId/')({
         replace: true,
       });
     }
-    return null;
+    // No threads — auto-create a draft thread so the user lands in a ready-to-chat state.
+    const { draftId } = ensureDraftThread(
+      params.workspaceId,
+      context.queryClient
+    );
+    throw redirect({
+      to: '/workspace/$workspaceId/thread/$threadId',
+      params: { workspaceId: params.workspaceId, threadId: draftId },
+      replace: true,
+    });
   },
   component: WorkspaceIndexRouteComponent,
 });

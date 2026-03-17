@@ -327,6 +327,7 @@ export default function MessageComposer() {
           } transition-[max-width] duration-300 ease-in-out`}
         >
           <ChatVariablesForm
+            key={`${workspaceId}-${threadId}`}
             workspace={workspace}
             threadId={threadId}
             setVariables={setVariables}
