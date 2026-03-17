@@ -352,7 +352,9 @@ export default function MessageComposer() {
             ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
             : ''
         } bg-background ${
-          isMobile ? '' : 'rounded-md border shadow-sm'
+          isMobile
+            ? ''
+            : 'rounded-md border shadow-sm overflow-hidden focus-within:ring-1 focus-within:ring-ring/50 focus-within:ring-offset-0'
         } transition-[max-width] duration-300 ease-in-out`}
       >
         {attachments.length > 0 && (
