@@ -5,8 +5,8 @@ import {
   editorViewOptionsCtx,
   rootCtx,
 } from '@milkdown/core';
+import { history } from '@milkdown/kit/plugin/history';
 import { clipboard } from '@milkdown/plugin-clipboard';
-import { history } from '@milkdown/plugin-history';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { commonmark } from '@milkdown/preset-commonmark';
 import { Slice } from '@milkdown/prose/model';
