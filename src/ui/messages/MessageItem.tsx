@@ -10,6 +10,9 @@ import { Message, MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 import { getMessageErrorText } from '@/domains/messages/errors';
 import { useAddInputToMessage } from '@/domains/messages/mutations';
+import { useWorkspace } from '@/domains/workspaces';
+
+import { useWorkspaceNameAsChatbotName } from '@/theme/branding';
 
 // local UI
 import { MessageBubble } from './MessageBubble';
@@ -83,7 +86,10 @@ function coerceSources(x: unknown): MessageResponseSource[] {
 }
 
 export const MessageItem: FC<MessageItemProps> = ({ message }) => {
-  const { threadId } = useRouteIds();
+  const { workspaceId, threadId } = useRouteIds();
+  const useWsName = useWorkspaceNameAsChatbotName();
+  const { data: workspace } = useWorkspace(workspaceId);
+  const chatbotName = (useWsName && workspace?.name) || 'Chatbot';
   const { addInputToMessageMutation } = useAddInputToMessage();
 
   const onSubmitUserForm =
@@ -135,6 +141,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
         content={groupContent}
         files={groupFiles}
         sources={groupSources}
+        chatbotName={chatbotName}
         userOutput={null}
         userInput={null}
       />
@@ -231,6 +238,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
                   ? (v.value as unknown as { message: string; schema: unknown })
                   : null
               }
+              chatbotName={chatbotName}
               userInput={userInput?.value}
               onSubmitUserForm={onSubmitUserForm(message.id ?? '')}
             />
@@ -295,12 +303,13 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
     bubbles.push(
       <MessageBubble
         key={`error-${message.id ?? 'msg'}-${error.code}`}
-        createdBy="Chatbot"
+        createdBy={chatbotName}
         createdAt={message.createdAt}
         type={MessageValueType.OUTPUT}
         content={[{ text: getMessageErrorText(error.code) }]}
         files={[]}
         sources={[]}
+        chatbotName={chatbotName}
         userOutput={null}
         userInput={null}
       />

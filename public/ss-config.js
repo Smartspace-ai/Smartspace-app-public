@@ -7,4 +7,5 @@ window.ssconfig = {
   Teams_Sso_Resource: undefined,
   Brand_Name: undefined,
   Brand_Logo_Uri: undefined,
+  Use_Workspace_Name_As_Chatbot_Name: undefined,
 };
