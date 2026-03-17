@@ -5,6 +5,8 @@ import {
   postMessageThreadsIdCommentsResponse as commentCreateResponseSchema,
 } from '@/platform/api/generated/chat/zod';
 
+import { utcDate } from '@/shared/utils/dateFromApi';
+
 import { Comment, MentionUser } from './model';
 
 type CommentsResponseDto = z.infer<typeof commentsResponseSchema>;
@@ -30,7 +32,7 @@ export function mapCommentDtoToModel(
 ): Comment {
   return {
     id: dto.id,
-    createdAt: new Date(dto.createdAt),
+    createdAt: utcDate(dto.createdAt),
     createdByUserId: dto.createdByUserId ?? '',
     createdBy: dto.createdBy ?? '',
     content: dto.content,

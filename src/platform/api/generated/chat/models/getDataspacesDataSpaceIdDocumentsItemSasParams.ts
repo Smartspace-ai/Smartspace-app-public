@@ -6,8 +6,8 @@
  */
 
 export type GetDataspacesDataSpaceIdDocumentsItemSasParams = {
-  /**
-   * The optional file parameter.
-   */
-  file?: string;
+/**
+ * The optional file parameter.
+ */
+file?: string;
 };

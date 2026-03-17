@@ -6,16 +6,16 @@
  */
 
 export type GetWorkSpacesIdMessageThreadsParams = {
-  /**
-   * The number of message threads to retrieve.
-   */
-  take?: number;
-  /**
-   * The number of message threads to skip.
-   */
-  skip?: number;
-  /**
-   * The term to filter threads by name or id.
-   */
-  search?: string;
+/**
+ * The number of message threads to retrieve.
+ */
+take?: number;
+/**
+ * The number of message threads to skip.
+ */
+skip?: number;
+/**
+ * The term to filter threads by name or id.
+ */
+search?: string;
 };

@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type EnumsModelDeploymentStatus =
-  (typeof EnumsModelDeploymentStatus)[keyof typeof EnumsModelDeploymentStatus];
+export type EnumsModelDeploymentStatus = typeof EnumsModelDeploymentStatus[keyof typeof EnumsModelDeploymentStatus];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsModelDeploymentStatus = {

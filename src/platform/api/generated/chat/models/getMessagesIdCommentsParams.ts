@@ -6,12 +6,12 @@
  */
 
 export type GetMessagesIdCommentsParams = {
-  /**
-   * The maximum number of comments to retrieve (default is 50).
-   */
-  take?: number;
-  /**
-   * The number of comments to skip (default is 0).
-   */
-  skip?: number;
+/**
+ * The maximum number of comments to retrieve (default is 50).
+ */
+take?: number;
+/**
+ * The number of comments to skip (default is 0).
+ */
+skip?: number;
 };

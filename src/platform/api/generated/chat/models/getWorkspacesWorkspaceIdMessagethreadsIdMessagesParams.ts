@@ -6,12 +6,12 @@
  */
 
 export type GetWorkspacesWorkspaceIdMessagethreadsIdMessagesParams = {
-  /**
-   * The number of messages to retrieve (default: 50).
-   */
-  take?: number;
-  /**
-   * The number of messages to skip (default: 0).
-   */
-  skip?: number;
+/**
+ * The number of messages to retrieve (default: 50).
+ */
+take?: number;
+/**
+ * The number of messages to skip (default: 0).
+ */
+skip?: number;
 };

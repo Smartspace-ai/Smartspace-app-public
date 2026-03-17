@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type EnumsFlowVariableAccess =
-  (typeof EnumsFlowVariableAccess)[keyof typeof EnumsFlowVariableAccess];
+export type EnumsFlowVariableAccess = typeof EnumsFlowVariableAccess[keyof typeof EnumsFlowVariableAccess];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsFlowVariableAccess = {

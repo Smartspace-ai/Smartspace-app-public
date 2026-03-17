@@ -7,10 +7,12 @@
 
 export interface File {
   createdAt: string;
-  createdByUserId: string;
+  /** @nullable */
+  createdByUserId?: string | null;
   id: string;
   modifiedAt: string;
-  modifiedByUserId: string;
+  /** @nullable */
+  modifiedByUserId?: string | null;
   name: string;
   size: number;
   /** @nullable */

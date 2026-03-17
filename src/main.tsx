@@ -13,20 +13,13 @@ import { ErrorBoundary } from 'react-error-boundary';
 
 import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
 import { getMsalInstance } from '@/platform/auth/msalClient'; // ✅ new path
+import { removeSplash } from '@/platform/boot/removeSplash';
 import { queryClient } from '@/platform/reactQueryClient';
 
 import AppProviders from '@/app/AppProviders';
 
 import { NotFoundPage } from '@/routes/__root.notFound';
 import { routeTree } from '@/routeTree.gen';
-
-function removeBootSplash() {
-  try {
-    document.getElementById('ss-boot-splash')?.remove();
-  } catch {
-    // ignore DOM failures
-  }
-}
 
 function renderBootstrapError(message: string) {
   try {
@@ -49,11 +42,14 @@ function renderBootstrapError(message: string) {
   }
 }
 
-function fallbackRender({ error }: { error: Error }) {
+function fallbackRender({ error }: { error: unknown }) {
+  removeSplash();
+  const message =
+    error instanceof Error ? error.message : 'An unexpected error occurred';
   return (
     <div role="alert">
       <p>Something went wrong:</p>
-      <pre style={{ color: 'red' }}>{error.message}</pre>
+      <pre style={{ color: 'red' }}>{message}</pre>
     </div>
   );
 }
@@ -75,20 +71,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// Popup guard: if this page loaded inside an MSAL popup (window.opener is set),
-// do NOT render the full SPA. The parent window's MSAL instance monitors the
-// popup URL, extracts the auth hash, and closes it. Rendering the SPA here
-// causes the "full app in popup" and "double popup" bugs.
+// Popup guard: if this page loaded inside an MSAL popup (window.opener is set
+// AND the URL contains an auth response hash), do NOT render the full SPA.
+// The parent window's MSAL instance monitors the popup URL, extracts the auth
+// hash, and closes it. Rendering the SPA here causes the "full app in popup"
+// and "double popup" bugs.
+// We require an auth hash so that normal window.open(...) links (e.g. from the
+// admin portal) don't accidentally skip the entire app.
 const isInPopup = (() => {
   try {
-    return !!window.opener && window.opener !== window;
+    const hasOpener = !!window.opener && window.opener !== window;
+    const hasAuthHash =
+      window.location.hash.includes('code=') ||
+      window.location.hash.includes('error=');
+    return hasOpener && hasAuthHash;
   } catch {
     return false;
   }
 })();
 
 if (isInPopup) {
-  removeBootSplash();
+  removeSplash();
   const rootEl = document.getElementById('root');
   if (rootEl) rootEl.textContent = 'Completing sign-in...';
   // eslint-disable-next-line no-console
@@ -99,7 +102,7 @@ if (isInPopup) {
     msal = getMsalInstance();
   } catch (e) {
     // Don't leave users stuck on an infinite splash screen.
-    removeBootSplash();
+    removeSplash();
     // eslint-disable-next-line no-console
     console.error('MSAL config error', e);
     renderBootstrapError(String((e as Error)?.message ?? e));
@@ -149,8 +152,6 @@ if (isInPopup) {
           document.body.appendChild(document.createElement('div'));
         rootElement.id = 'root';
 
-        removeBootSplash();
-
         const root = ReactDOM.createRoot(rootElement);
         root.render(
           <StrictMode>
@@ -172,7 +173,7 @@ if (isInPopup) {
       })
       .catch((e) => {
         // Don't leave users stuck on an infinite splash screen.
-        removeBootSplash();
+        removeSplash();
         // Surface error in console; ErrorBoundary won't catch errors before render.
         // eslint-disable-next-line no-console
         console.error('MSAL initialization failed', e);

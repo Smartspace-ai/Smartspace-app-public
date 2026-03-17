@@ -9,4 +9,4 @@ import type { FlowVariable } from './flowVariable';
 /**
  * @nullable
  */
-export type FlowDefinitionVariables = { [key: string]: FlowVariable } | null;
+export type FlowDefinitionVariables = {[key: string]: FlowVariable} | null;

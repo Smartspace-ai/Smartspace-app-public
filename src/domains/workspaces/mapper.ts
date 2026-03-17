@@ -6,6 +6,7 @@ import {
   getWorkSpacesResponse as workspacesListResponseSchema,
 } from '@/platform/api/generated/chat/zod';
 
+import { utcDate } from '@/shared/utils/dateFromApi';
 import { getInitials } from '@/shared/utils/initials';
 
 import { MentionUser, Variables, Workspace } from './model';
@@ -67,10 +68,10 @@ export function mapWorkspaceDtoToModel(dto: WorkspaceDto): Workspace {
     dataSpaces: Array.isArray(dto.dataSpaces) ? dto.dataSpaces : undefined,
 
     createdByUserId: dto.createdByUserId ?? undefined,
-    createdAt: dto.createdAt != null ? new Date(dto.createdAt) : undefined,
+    createdAt: dto.createdAt != null ? utcDate(dto.createdAt) : undefined,
 
     modifiedByUserId: dto.modifiedByUserId ?? undefined,
-    modifiedAt: dto.modifiedAt != null ? new Date(dto.modifiedAt) : undefined,
+    modifiedAt: dto.modifiedAt != null ? utcDate(dto.modifiedAt) : undefined,
 
     favorited: truthy(dto.favorited),
 

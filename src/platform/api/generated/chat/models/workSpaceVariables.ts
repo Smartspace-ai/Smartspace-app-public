@@ -6,4 +6,4 @@
  */
 import type { FlowVariable } from './flowVariable';
 
-export type WorkSpaceVariables = { [key: string]: FlowVariable };
+export type WorkSpaceVariables = {[key: string]: FlowVariable};

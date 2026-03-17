@@ -6,12 +6,12 @@
  */
 
 export type GetFilesIdDownloadParams = {
-  /**
-   * Optional thread ID containing the file
-   */
-  threadId?: string;
-  /**
-   * Optional workspace ID containing the file
-   */
-  workspaceId?: string;
+/**
+ * Optional thread ID containing the file
+ */
+threadId?: string;
+/**
+ * Optional workspace ID containing the file
+ */
+workspaceId?: string;
 };

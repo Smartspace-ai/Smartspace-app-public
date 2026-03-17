@@ -9,4 +9,4 @@ import type { FlowConstant } from './flowConstant';
 /**
  * @nullable
  */
-export type FlowDefinitionConstants = { [key: string]: FlowConstant } | null;
+export type FlowDefinitionConstants = {[key: string]: FlowConstant} | null;

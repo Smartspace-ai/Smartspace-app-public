@@ -20,8 +20,10 @@ import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import {
   Avatar as SsAvatar,
   AvatarFallback as SsAvatarFallback,
+  AvatarImage as SsAvatarImage,
 } from '@/shared/ui/mui-compat/avatar';
 import { getInitials } from '@/shared/utils/initials';
+import { getUserPhotoUrl } from '@/shared/utils/userPhoto';
 
 interface MentionInputProps {
   value: { plain: string; withMentions: string };
@@ -319,9 +321,14 @@ export const MentionInput = (props: MentionInputProps) => {
             >
               <ListItemAvatar>
                 <SsAvatar className="h-8 w-8">
-                  <SsAvatarFallback className="text-xs font-medium">
-                    {getInitials(user.displayName)}
-                  </SsAvatarFallback>
+                  <SsAvatarImage
+                    src={getUserPhotoUrl(user.id)}
+                    alt={user.displayName}
+                  >
+                    <SsAvatarFallback className="text-xs font-medium">
+                      {getInitials(user.displayName)}
+                    </SsAvatarFallback>
+                  </SsAvatarImage>
                 </SsAvatar>
               </ListItemAvatar>
               <ListItemText primary={user.displayName} />

@@ -6,16 +6,16 @@
  */
 
 export type GetWorkSpacesIdAccessParams = {
-  /**
-   * The number of access control details to retrieve.
-   */
-  take?: number;
-  /**
-   * The number of access control details to skip.
-   */
-  skip?: number;
-  /**
-   * The search term to filter access controls.
-   */
-  search?: string;
+/**
+ * The number of access control details to retrieve.
+ */
+take?: number;
+/**
+ * The number of access control details to skip.
+ */
+skip?: number;
+/**
+ * The search term to filter access controls.
+ */
+search?: string;
 };

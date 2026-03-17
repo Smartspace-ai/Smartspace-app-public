@@ -8,24 +8,24 @@ import { useTeams } from '@/app/providers';
 
 import { useActiveUser } from '@/domains/users/use-active-user';
 
-
 import {
-    Avatar,
-    AvatarFallback,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
 } from '@/shared/ui/mui-compat/avatar';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/shared/ui/mui-compat/dropdown-menu';
 import { SidebarHeader } from '@/shared/ui/mui-compat/sidebar';
 import { getInitials } from '@/shared/utils/initials';
+import { getUserPhotoUrl } from '@/shared/utils/userPhoto';
 
 import { Logo } from '@/assets/logo';
-
 
 export default function SidebarUserHeader() {
   const { isInTeams } = useTeams();
@@ -51,9 +51,14 @@ export default function SidebarUserHeader() {
           <DropdownMenuTrigger asChild>
             <div className="cursor-pointer">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs">
-                  {getInitials(activeUser.name)}
-                </AvatarFallback>
+                <AvatarImage
+                  src={getUserPhotoUrl(activeUser.id)}
+                  alt={activeUser.name}
+                >
+                  <AvatarFallback className="text-xs">
+                    {getInitials(activeUser.name)}
+                  </AvatarFallback>
+                </AvatarImage>
               </Avatar>
             </div>
           </DropdownMenuTrigger>
@@ -61,9 +66,14 @@ export default function SidebarUserHeader() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex items-center gap-3">
                 <Avatar className="h-9 w-9">
-                  <AvatarFallback className="text-xs">
-                    {getInitials(activeUser.name)}
-                  </AvatarFallback>
+                  <AvatarImage
+                    src={getUserPhotoUrl(activeUser.id)}
+                    alt={activeUser.name}
+                  >
+                    <AvatarFallback className="text-xs">
+                      {getInitials(activeUser.name)}
+                    </AvatarFallback>
+                  </AvatarImage>
                 </Avatar>
                 <div>
                   <p className="text-sm font-medium leading-none mb-1">

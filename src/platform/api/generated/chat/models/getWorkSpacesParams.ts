@@ -7,20 +7,20 @@
 import type { EnumsWorkSpaceOrderBy } from './enumsWorkSpaceOrderBy';
 
 export type GetWorkSpacesParams = {
-  /**
-   * The number of workspaces to retrieve.
-   */
-  take?: number;
-  /**
-   * The number of workspaces to skip.
-   */
-  skip?: number;
-  /**
-   * The search term to filter workspaces.
-   */
-  search?: string;
-  /**
-   * The sort order for the returned workspaces.
-   */
-  orderBy?: EnumsWorkSpaceOrderBy;
+/**
+ * The number of workspaces to retrieve.
+ */
+take?: number;
+/**
+ * The number of workspaces to skip.
+ */
+skip?: number;
+/**
+ * The search term to filter workspaces.
+ */
+search?: string;
+/**
+ * The sort order for the returned workspaces.
+ */
+orderBy?: EnumsWorkSpaceOrderBy;
 };

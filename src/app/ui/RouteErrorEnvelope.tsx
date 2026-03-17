@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 
 import { AuthRequiredError } from '@/platform/auth/errors';
 import { isInTeams } from '@/platform/auth/msalConfig';
+import { removeSplash } from '@/platform/boot/removeSplash';
 import type { AppError } from '@/platform/envelopes';
 import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
@@ -113,6 +114,7 @@ function goToLogin(navigate: ReturnType<typeof useNavigate>) {
 }
 
 export function RootErrorBoundary({ error, reset }: ErrorComponentProps) {
+  removeSplash();
   const navigate = useNavigate();
   const message = getErrorMessage(error);
   const authError = isAuthError(error);
