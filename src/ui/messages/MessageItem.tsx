@@ -286,6 +286,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
         content={groupContent}
         files={groupFiles}
         sources={groupSources}
+        chatbotName={chatbotName}
         userOutput={null}
         userInput={null}
       />

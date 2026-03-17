@@ -6,10 +6,7 @@ import { useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import {
-  ensureDraftThread,
-  removeDraftThread,
-} from '@/domains/threads/draftThread';
+import { ensureDraftThread, removeDraftThread } from '@/domains/threads';
 
 import { Button } from '@/shared/ui/mui-compat/button';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';

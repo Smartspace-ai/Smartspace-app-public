@@ -2,17 +2,13 @@
 
 export const DEFAULT_CHATBOT_NAME = 'Chatbot';
 
-// If true, prefer workspace name; otherwise use DEFAULT_CHATBOT_NAME
+// Set to false to always show DEFAULT_CHATBOT_NAME instead of the workspace name
 export const USE_WORKSPACE_NAME_AS_CHATBOT_NAME = true;
-// export const USE_WORKSPACE_NAME_AS_CHATBOT_NAME = false;
 
 export function getChatbotName(workspaceName?: string): string {
-  if (USE_WORKSPACE_NAME_AS_CHATBOT_NAME && workspaceName?.trim()) {
-    return workspaceName;
+  const trimmed = workspaceName?.trim();
+  if (USE_WORKSPACE_NAME_AS_CHATBOT_NAME && trimmed) {
+    return trimmed;
   }
   return DEFAULT_CHATBOT_NAME;
 }
-
-// Default sort to use when fetching workspaces in the public UI
-// Values: 'Name' | 'CreatedDate' | 'RecentActivity'
-export const DEFAULT_WORKSPACES_ORDER = 'Name' as const;

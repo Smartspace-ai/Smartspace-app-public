@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { ensureDraftThread } from '@/domains/threads/draftThread';
+import { ensureDraftThread } from '@/domains/threads';
 import { threadsListOptions } from '@/domains/threads/queries';
 
 import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
