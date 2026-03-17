@@ -6,4 +6,4 @@
  */
 import type { FlowInput } from './flowInput';
 
-export type WorkSpaceInputs = { [key: string]: FlowInput };
+export type WorkSpaceInputs = {[key: string]: FlowInput};

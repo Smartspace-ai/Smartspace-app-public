@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type FlowVariableSchema = { [key: string]: unknown };
+export type FlowVariableSchema = {[key: string]: unknown};

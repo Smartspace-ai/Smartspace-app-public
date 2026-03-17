@@ -21,10 +21,10 @@ export const postFilesBody = zod.strictObject({
 
 export const postFilesResponseItem = zod.object({
   "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
+  "createdByUserId": zod.string().nullish(),
   "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
   "modifiedAt": zod.iso.datetime({"offset":true,"local":true}),
-  "modifiedByUserId": zod.string(),
+  "modifiedByUserId": zod.string().nullish(),
   "name": zod.string(),
   "size": zod.number(),
   "threadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),
@@ -47,10 +47,10 @@ export const getFilesIdQueryParams = zod.strictObject({
 
 export const getFilesIdResponse = zod.object({
   "createdAt": zod.iso.datetime({"offset":true,"local":true}),
-  "createdByUserId": zod.string(),
+  "createdByUserId": zod.string().nullish(),
   "id": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/),
   "modifiedAt": zod.iso.datetime({"offset":true,"local":true}),
-  "modifiedByUserId": zod.string(),
+  "modifiedByUserId": zod.string().nullish(),
   "name": zod.string(),
   "size": zod.number(),
   "threadId": zod.string().regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/).nullish(),

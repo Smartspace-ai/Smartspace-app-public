@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type GetFlowRunsIdVariables200One = { [key: string]: unknown };
+export type GetFlowRunsIdVariables200One = {[key: string]: unknown};

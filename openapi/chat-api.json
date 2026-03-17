@@ -263,10 +263,10 @@
         "additionalProperties": false,
         "properties": {
           "createdAt": { "format": "date-time", "type": "string" },
-          "createdByUserId": { "type": "string" },
+          "createdByUserId": { "nullable": true, "type": "string" },
           "id": { "format": "uuid", "type": "string" },
           "modifiedAt": { "format": "date-time", "type": "string" },
-          "modifiedByUserId": { "type": "string" },
+          "modifiedByUserId": { "nullable": true, "type": "string" },
           "name": { "type": "string" },
           "size": { "format": "int64", "type": "integer" },
           "threadId": { "format": "uuid", "nullable": true, "type": "string" },
@@ -278,10 +278,8 @@
         },
         "required": [
           "createdAt",
-          "createdByUserId",
           "id",
           "modifiedAt",
-          "modifiedByUserId",
           "name",
           "size"
         ],

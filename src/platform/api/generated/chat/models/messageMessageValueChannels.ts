@@ -5,4 +5,4 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type MessageMessageValueChannels = { [key: string]: number };
+export type MessageMessageValueChannels = {[key: string]: number};

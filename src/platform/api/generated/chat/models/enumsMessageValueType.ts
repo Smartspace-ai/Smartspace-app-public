@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type EnumsMessageValueType =
-  (typeof EnumsMessageValueType)[keyof typeof EnumsMessageValueType];
+export type EnumsMessageValueType = typeof EnumsMessageValueType[keyof typeof EnumsMessageValueType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsMessageValueType = {

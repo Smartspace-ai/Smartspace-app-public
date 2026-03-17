@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0.0.0
  */
 
-export type EnumsAppPrincipalType =
-  (typeof EnumsAppPrincipalType)[keyof typeof EnumsAppPrincipalType];
+export type EnumsAppPrincipalType = typeof EnumsAppPrincipalType[keyof typeof EnumsAppPrincipalType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const EnumsAppPrincipalType = {
