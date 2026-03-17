@@ -1,27 +1,24 @@
 // src/routes/_protected.tsx
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import { useEffect } from 'react';
 
 import { getAuthAdapter } from '@/platform/auth';
 import {
   SESSION_QUERY_KEY,
   sessionQueryOptions,
 } from '@/platform/auth/sessionQuery';
+import { removeSplash } from '@/platform/boot/removeSplash';
 import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
-
 
 import { ProtectedErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
 import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
 
 import { workspacesListOptions } from '@/domains/workspaces/queries';
 
-import TeamsLoaderPage from '@/pages/teams_loader';
-
 export const Route = createFileRoute('/_protected')({
   // Runs on navigation (and on intent prefetch if enabled).
   // If you find redirects during hover annoying, disable preload on links into /_protected.
   errorComponent: ProtectedErrorBoundary,
-  pendingMs: 0,
-  pendingComponent: () => <TeamsLoaderPage message="Signing in…" />,
   beforeLoad: async ({ context, location }) => {
     const redirectTo = normalizeRedirectPath(
       formatLocationHref(location),
@@ -48,14 +45,20 @@ export const Route = createFileRoute('/_protected')({
     context.queryClient.prefetchQuery(workspacesListOptions());
   },
 
-  component: () => (
+  component: ProtectedLayout,
+});
+
+function ProtectedLayout() {
+  useEffect(() => {
+    removeSplash();
+  }, []);
+  return (
     <>
-      {/* Global top progress bar for route transitions (with a small delay to avoid flicker) */}
       <RouteProgressBar />
       <Outlet />
     </>
-  ),
-});
+  );
+}
 
 function formatLocationHref(location: {
   href?: unknown;

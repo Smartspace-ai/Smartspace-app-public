@@ -1,10 +1,16 @@
 import { Link, createFileRoute } from '@tanstack/react-router';
+import { useEffect } from 'react';
+
+import { removeSplash } from '@/platform/boot/removeSplash';
 
 export const Route = createFileRoute('/__root/notFound')({
   component: RouteComponent,
 });
 
 export function NotFoundPage(_props: { data?: unknown }) {
+  useEffect(() => {
+    removeSplash();
+  }, []);
   return (
     <div className="p-6">
       <h1 className="text-xl font-semibold mb-2">Page not found</h1>

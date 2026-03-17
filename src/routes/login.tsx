@@ -6,9 +6,11 @@ import {
   useNavigate,
   useSearch,
 } from '@tanstack/react-router';
+import { useEffect } from 'react';
 
 import { getAuthAdapter } from '@/platform/auth';
 import { sessionQueryOptions } from '@/platform/auth/sessionQuery';
+import { removeSplash } from '@/platform/boot/removeSplash';
 import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath';
 
 import { Login } from '@/pages/Login/Login';
@@ -51,6 +53,9 @@ export const Route = createFileRoute('/login')({
 });
 
 function LoginRouteComponent() {
+  useEffect(() => {
+    removeSplash();
+  }, []);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { redirect: redirectParam } = useSearch({ from: '/login' });
