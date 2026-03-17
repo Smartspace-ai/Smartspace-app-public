@@ -122,6 +122,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
   let groupType: MessageValueType = MessageValueType.INPUT;
   let lastCreatedAt: Date = message.createdAt;
   let lastCreatedBy = '';
+  let lastCreatedByUserId: string | null | undefined = message.createdByUserId;
 
   // whether we have a pending group that hasn't been flushed to bubbles
   let groupOpen = false;
@@ -135,6 +136,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
       <MessageBubble
         key={`bubble-${message.id ?? 'msg'}-${keyCounter++}`}
         createdBy={lastCreatedBy}
+        createdByUserId={lastCreatedByUserId}
         createdAt={lastCreatedAt}
         type={groupType}
         content={groupContent}
@@ -219,6 +221,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
             <MessageBubble
               key={`user-${message.id ?? 'msg'}-${keyCounter++}`}
               createdBy={v.createdBy}
+              createdByUserId={v.createdByUserId}
               createdAt={v.createdAt}
               type={v.type}
               content={[
@@ -273,6 +276,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
 
     lastCreatedAt = v.createdAt;
     lastCreatedBy = v.createdBy;
+    lastCreatedByUserId = v.createdByUserId;
   }
 
   // Final pending group
@@ -281,6 +285,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
       <MessageBubble
         key={`bubble-final-${message.id ?? 'msg'}-${keyCounter++}`}
         createdBy={lastCreatedBy}
+        createdByUserId={lastCreatedByUserId}
         createdAt={lastCreatedAt}
         type={groupType}
         content={groupContent}
