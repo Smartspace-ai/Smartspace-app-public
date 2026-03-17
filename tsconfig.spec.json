@@ -13,8 +13,7 @@
     ]
   },
   "include": [
-    "vite.configm.ts",
-    "vitest.config.ts",
+    "vite.config.mts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "src/**/*.test.tsx",
@@ -24,5 +23,9 @@
     "src/**/*.test.jsx",
     "src/**/*.spec.jsx",
     "src/**/*.d.ts"
+  ]
+  ,
+  "references": [
+    { "path": "./tsconfig.app.json" }
   ]
 }

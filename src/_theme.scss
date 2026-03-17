@@ -5,13 +5,15 @@
 // 3. https://javisperez.github.io/tailwindcolorshades
 // 4. https://ui.shadcn.com/colors
 
+@use 'sass:color';
+
 // Primary input color
 $primary-hex: #6443f4;
 
 // Extract HSL from HEX
-$hue: hue($primary-hex);
-$saturation: saturation($primary-hex);
-$lightness: lightness($primary-hex);
+$hue: color.channel($primary-hex, "hue", $space: hsl);
+$saturation: color.channel($primary-hex, "saturation", $space: hsl);
+$lightness: color.channel($primary-hex, "lightness", $space: hsl);
 
 // Helper to produce "H S% L%" string
 @function hsl-token($h, $s, $l) {

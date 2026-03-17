@@ -77,6 +77,30 @@ In the project directory, you can run the following scripts:
   yarn start
   ```
 
+### Dev tunnels (optional)
+
+If you need a public URL to your local dev server (e.g. for Teams manifests / callbacks), you can use **Microsoft Dev Tunnels** (via the `devtunnel` CLI) instead of ngrok.
+
+- **Start the app (no tunnel):**
+
+  ```bash
+  npm run start:local
+  # or
+  npm run start:dev
+  ```
+
+- **Start the tunnel (separate command):**
+
+  ```bash
+  npm run start:tunnel
+  # or
+  npm run start:tunnel:dev
+  ```
+
+- **Env vars** (in `.env.local` / `.env.dev`):
+  - `PUBLIC_ORIGIN`: the tunnel URL (hostname is used by Vite `server.allowedHosts`)
+  - `TUNNEL_ID` (optional, recommended): existing tunnel id to reuse (stable URL), e.g. `puzzled-chair-8bzd2hr.aue`
+
 - **Build the application for production:**
 
   ```bash

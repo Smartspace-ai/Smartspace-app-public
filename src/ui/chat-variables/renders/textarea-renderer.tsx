@@ -1,14 +1,21 @@
-import { ControlProps, RankedTester, rankWith } from '@jsonforms/core';
+import type {
+  ControlElement,
+  ControlProps,
+  JsonSchema7,
+  RankedTester,
+} from '@jsonforms/core';
+import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import React, { useCallback, useEffect, useRef } from 'react';
 
-interface TextareaRendererProps extends ControlProps {
-  data: any;
-  handleChange: (path: string, value: any) => void;
-  path: string;
-}
+type AccessUiSchema = { access?: 'Read' | 'Write' };
+type TextareaUiOptions = {
+  placeholder?: string;
+  minRows?: number;
+  maxRows?: number;
+};
 
-const TextareaRenderer: React.FC<TextareaRendererProps> = ({
+const TextareaRenderer: React.FC<ControlProps> = ({
   data,
   handleChange,
   path,
@@ -18,7 +25,8 @@ const TextareaRenderer: React.FC<TextareaRendererProps> = ({
   schema,
   uischema,
   visible,
-  enabled
+  enabled,
+  required,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -37,50 +45,65 @@ const TextareaRenderer: React.FC<TextareaRendererProps> = ({
     autoResize();
   }, [data, autoResize]);
 
-  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = event.target.value;
-    handleChange(path, newValue);
-    
-    // Trigger auto-resize after state update
-    setTimeout(autoResize, 0);
-  }, [handleChange, path, autoResize]);
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const newValue = event.target.value;
+      handleChange(path, newValue);
+
+      // Trigger auto-resize after state update
+      setTimeout(autoResize, 0);
+    },
+    [handleChange, path, autoResize]
+  );
 
   if (!visible) {
     return null;
   }
 
   // Get readOnly from uischema (set when access === 'Read')
-  const readOnly = (uischema as any)?.access === 'Read';
+  const readOnly =
+    (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
   const hasError = errors && errors.length > 0;
 
   // Get textarea-specific options from schema
-  const textareaOptions = (schema as any)['ui:textarea'] || {};
-  const placeholder = textareaOptions.placeholder || schema.description || `Enter ${label?.toLowerCase() || 'text'}...`;
+  const textareaOptions =
+    ((schema as unknown as Record<string, unknown>)['ui:textarea'] as
+      | TextareaUiOptions
+      | undefined) ?? {};
+  const placeholder =
+    textareaOptions.placeholder ||
+    (schema as JsonSchema7 | undefined)?.description ||
+    `Enter ${label?.toLowerCase() || 'text'}...`;
   const minRows = textareaOptions.minRows || 3;
-  const maxRows = textareaOptions.maxRows || 12;
 
   return (
-    <div style={{ marginBottom: '1rem' }}>
+    <div className="ss-jsonforms-field ss-jsonforms-textarea">
       {label && (
-        <label style={{ 
-          display: 'block', 
-          color: hasError ? '#ef4444' : '#475569', 
-          fontSize: '0.875rem', 
-          fontWeight: 500, 
-          marginBottom: '0.375rem' 
-        }}>
+        <label
+          style={{
+            display: 'block',
+            color: hasError ? '#ef4444' : '#475569',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            marginBottom: '0.375rem',
+          }}
+        >
           {label}
-          {schema.required && <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>}
+          {required && (
+            <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>
+          )}
         </label>
       )}
-      
+
       {description && (
-        <div style={{ 
-          color: '#6b7280', 
-          fontSize: '0.75rem', 
-          marginBottom: '0.5rem' 
-        }}>
+        <div
+          style={{
+            color: '#6b7280',
+            fontSize: '0.75rem',
+            marginBottom: '0.5rem',
+          }}
+        >
           {description}
         </div>
       )}
@@ -106,9 +129,10 @@ const TextareaRenderer: React.FC<TextareaRendererProps> = ({
           backgroundColor: isDisabled ? '#f9fafb' : '#ffffff',
           color: isDisabled ? '#9ca3af' : '#111827',
           outline: 'none',
-          transition: 'border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+          transition:
+            'border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
           boxShadow: hasError ? '0 0 0 1px #ef4444' : 'none',
-          WebkitTextSizeAdjust: '100%'
+          WebkitTextSizeAdjust: '100%',
         }}
         onFocus={(e) => {
           if (!hasError) {
@@ -125,11 +149,13 @@ const TextareaRenderer: React.FC<TextareaRendererProps> = ({
       />
 
       {hasError && (
-        <div style={{ 
-          color: '#ef4444', 
-          fontSize: '0.75rem', 
-          marginTop: '0.25rem' 
-        }}>
+        <div
+          style={{
+            color: '#ef4444',
+            fontSize: '0.75rem',
+            marginTop: '0.25rem',
+          }}
+        >
           {errors}
         </div>
       )}
@@ -142,36 +168,44 @@ export const textareaRendererTester: RankedTester = rankWith(
   30, // Higher priority than material renderers (20) but lower than specialized ones (100)
   (uischema, schema) => {
     // Check if this is a Control element
-    if (uischema.type !== 'Control' || !(uischema as any).scope) {
+    if (uischema.type !== 'Control') {
       return false;
     }
 
     // Extract the property path from the scope
-    const propertyPath = (uischema as any).scope.replace('#/properties/', '');
-    const fieldSchema = schema?.properties?.[propertyPath];
-    
+    const propertyPath = (uischema as ControlElement).scope.replace(
+      '#/properties/',
+      ''
+    );
+    const fieldSchema = (schema as JsonSchema7 | undefined)?.properties?.[
+      propertyPath
+    ] as JsonSchema7 | undefined;
+
     if (!fieldSchema || fieldSchema.type !== 'string') {
       return false;
     }
 
     // Explicit single-line indicators - use single line input
-    const hasExplicitSingleLine = (
-      (fieldSchema as any)['ui:widget'] === 'text' ||
-      (fieldSchema as any)['ui:widget'] === 'input' ||
+    const widget = (fieldSchema as unknown as Record<string, unknown>)[
+      'ui:widget'
+    ];
+    const hasExplicitSingleLine =
+      widget === 'text' ||
+      widget === 'input' ||
       fieldSchema.format === 'email' ||
       fieldSchema.format === 'uri' ||
       fieldSchema.format === 'password' ||
       fieldSchema.format === 'uuid' ||
-      fieldSchema.enum // dropdown/select fields
-    );
+      fieldSchema.enum; // dropdown/select fields
 
     if (hasExplicitSingleLine) {
       return false;
     }
 
     // Very short maxLength suggests single line (about 1 line = ~60 characters)
-    const hasVeryShortMaxLength = fieldSchema.maxLength && fieldSchema.maxLength < 60;
-    
+    const hasVeryShortMaxLength =
+      fieldSchema.maxLength && fieldSchema.maxLength < 60;
+
     if (hasVeryShortMaxLength) {
       return false;
     }
@@ -186,4 +220,5 @@ export const textareaRendererTester: RankedTester = rankWith(
 );
 
 // Enhanced component with JsonForms integration
-export const TextareaRendererControl = withJsonFormsControlProps(TextareaRenderer); 
+export const TextareaRendererControl =
+  withJsonFormsControlProps(TextareaRenderer);

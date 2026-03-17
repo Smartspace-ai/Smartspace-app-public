@@ -5,7 +5,7 @@ interface LogoProps {
 }
 export const Logo: React.FC<LogoProps> = ({ className }) => {
   return (
-    <svg width="100%" height="41px" viewBox="0 0 296 43" version="1.1">
+    <svg width="100%" height="41px" viewBox="0 0 296 43" version="1.1" className={className}>
       <title>SmartspaceAi-purple</title>
       <g>
         <g id="SmartspaceAi-purple" transform="translate(0.000000, 0.000000)">
