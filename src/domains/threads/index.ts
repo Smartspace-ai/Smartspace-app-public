@@ -1,3 +1,4 @@
+export { ensureDraftThread, removeDraftThread } from './draftThread';
 export type { MessageThread, ThreadsResponse } from './model';
 export * from './mutations';
 export {
