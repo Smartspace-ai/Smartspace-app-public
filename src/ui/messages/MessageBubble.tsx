@@ -13,9 +13,14 @@ import { MessageValueType } from '@/domains/messages/enums';
 import { cells, renderers } from '@/ui/chat-variables/renders';
 
 import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
-import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/shared/ui/mui-compat/avatar';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parseDateTime';
+import { getUserPhotoUrl } from '@/shared/utils/userPhoto';
 import { cn } from '@/shared/utils/utils';
 
 import { ChatMessageCopyButton } from './MessageCopyButton';
@@ -38,6 +43,7 @@ export interface MessageBubbleProps {
   userOutput: UserOutputPayload | null;
   userInput?: unknown;
   files: FileInfo[];
+  createdByUserId?: string | null;
   chatbotName?: string;
   onSubmitUserForm?: (name: string, value: unknown) => void;
 }
@@ -50,6 +56,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
     content,
     sources,
     files,
+    createdByUserId,
     chatbotName = 'Chatbot',
     userOutput,
     userInput,
@@ -83,9 +90,20 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
       >
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7 mt-0.5">
-            <AvatarFallback className="text-xs">
-              {getInitials(isBotResponse ? chatbotName : createdBy)}
-            </AvatarFallback>
+            {!isBotResponse && createdByUserId ? (
+              <AvatarImage
+                src={getUserPhotoUrl(createdByUserId)}
+                alt={createdBy}
+              >
+                <AvatarFallback className="text-xs">
+                  {getInitials(createdBy)}
+                </AvatarFallback>
+              </AvatarImage>
+            ) : (
+              <AvatarFallback className="text-xs">
+                {getInitials(isBotResponse ? chatbotName : createdBy)}
+              </AvatarFallback>
+            )}
           </Avatar>
           <div className="flex flex-col">
             <span className="text-xs font-medium">
