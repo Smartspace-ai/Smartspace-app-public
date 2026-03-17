@@ -243,7 +243,7 @@ export function SidebarRight() {
           <form onSubmit={handleAddComment}>
             {isMobile ? (
               // Wrapper to allow absolutely positioned controls inside the editor
-              <div className="relative overflow-visible rounded-lg border bg-card p-2">
+              <div className="relative overflow-hidden rounded-lg border bg-card p-2 focus-within:ring-1 focus-within:ring-ring/50 focus-within:ring-offset-0">
                 <MarkdownEditor
                   ref={editorRef}
                   value={threadComment.plain}
@@ -289,7 +289,7 @@ export function SidebarRight() {
                 </UIButton>
               </div>
             ) : (
-              <div className="relative overflow-visible rounded-lg border bg-card p-2">
+              <div className="relative overflow-hidden rounded-lg border bg-card p-2 focus-within:ring-1 focus-within:ring-ring/50 focus-within:ring-offset-0">
                 <MarkdownEditor
                   ref={editorRef}
                   value={threadComment.plain}
