@@ -5,8 +5,6 @@ import type { RouterContext } from '@/platform/router/context';
 
 import { RootErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
 
-import TeamsLoaderPage from '@/pages/teams_loader';
-
 import { useTeamsViewport } from '@/hooks/useTeamsViewport';
 
 function RootContent() {
@@ -37,8 +35,6 @@ export default function Root() {
 }
 // routes/__root.tsx
 export const Route = createRootRouteWithContext<RouterContext>()({
-  pendingMs: 0,
-  pendingComponent: () => <TeamsLoaderPage message="Loading…" />,
   component: Root,
   errorComponent: RootErrorBoundary,
 });
