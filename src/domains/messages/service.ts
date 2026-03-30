@@ -74,8 +74,9 @@ export async function addInputToMessage({
   return result;
 }
 
-// Post a new user message to a thread (supports content + files + variables)
-export async function postMessage({
+// Post a new user message to a thread (supports content + files + variables).
+// Returns a Subject synchronously so the caller can subscribe *before* data arrives.
+export function postMessage({
   workSpaceId,
   threadId,
   contentList,
@@ -87,7 +88,7 @@ export async function postMessage({
   contentList?: MessageContentItem[];
   files?: FileInfo[];
   variables?: Record<string, unknown>;
-}): Promise<Subject<Message>> {
+}): Subject<Message> {
   const inputs: Array<{ name: string; value: unknown }> = [];
 
   if (contentList?.length) {
@@ -117,8 +118,8 @@ export async function postMessage({
 
   const observable = new Subject<Message>();
 
-  try {
-    await api.post(`/messages`, payload, {
+  api
+    .post(`/messages`, payload, {
       headers: { Accept: 'text/event-stream' },
       responseType: 'stream',
       onDownloadProgress: (e) => {
@@ -140,11 +141,13 @@ export async function postMessage({
           // likely partial frame, ignore
         }
       },
+    })
+    .then(() => {
+      observable.complete();
+    })
+    .catch((error) => {
+      observable.error(error);
     });
-    observable.complete();
-  } catch (error) {
-    observable.error(error);
-  }
 
   return observable;
 }
