@@ -12,6 +12,16 @@ import type { Message, MessageContentItem } from './model';
 
 const chatApi = getSmartSpaceChatAPI();
 
+/** Backend sends null createdByUserId on system-generated values; Zod schema requires string. */
+function coerceMessageDto(raw: Record<string, unknown>): void {
+  if (raw.createdByUserId == null) raw.createdByUserId = '';
+  if (Array.isArray(raw.values)) {
+    for (const v of raw.values as Record<string, unknown>[]) {
+      if (v.createdByUserId == null) v.createdByUserId = '';
+    }
+  }
+}
+
 // Fetch all messages in a given message thread
 export async function fetchMessages(
   threadId: string,
@@ -44,10 +54,11 @@ export async function addInputToMessage({
     `/messages/${messageId}/values`,
     { name, value, channels },
     {
+      adapter: 'xhr',
       headers: { Accept: 'text/event-stream' },
-      responseType: 'stream',
       onDownloadProgress: (event) => {
-        const raw = String(event.event.currentTarget.response || '');
+        const xhr = event.event?.currentTarget as XMLHttpRequest | undefined;
+        const raw = String(xhr?.response ?? '');
         // Split by server-sent event message delimiter and normalize "data:" prefix
         const chunks = raw
           .split('\n\n')
@@ -58,6 +69,7 @@ export async function addInputToMessage({
         if (!dataLine) return;
         try {
           const parsed = JSON.parse(dataLine);
+          coerceMessageDto(parsed);
           const dto = messagesResponseSchema.shape.data.element.parse(parsed);
           result = mapMessageDtoToModel(dto);
         } catch (error) {
@@ -74,8 +86,9 @@ export async function addInputToMessage({
   return result;
 }
 
-// Post a new user message to a thread (supports content + files + variables)
-export async function postMessage({
+// Post a new user message to a thread (supports content + files + variables).
+// Returns a Subject synchronously so the caller can subscribe *before* data arrives.
+export function postMessage({
   workSpaceId,
   threadId,
   contentList,
@@ -87,7 +100,7 @@ export async function postMessage({
   contentList?: MessageContentItem[];
   files?: FileInfo[];
   variables?: Record<string, unknown>;
-}): Promise<Subject<Message>> {
+}): Subject<Message> {
   const inputs: Array<{ name: string; value: unknown }> = [];
 
   if (contentList?.length) {
@@ -117,12 +130,20 @@ export async function postMessage({
 
   const observable = new Subject<Message>();
 
-  try {
-    await api.post(`/messages`, payload, {
+  api
+    .post(`/messages`, payload, {
+      adapter: 'xhr',
       headers: { Accept: 'text/event-stream' },
-      responseType: 'stream',
       onDownloadProgress: (e) => {
-        const raw = String(e.event.currentTarget.response || '');
+        const xhr = e.event?.currentTarget as XMLHttpRequest | undefined;
+        const raw = String(xhr?.response ?? '');
+        // eslint-disable-next-line no-console
+        console.log(
+          '[SSE] onDownloadProgress fired, raw length:',
+          raw.length,
+          'xhr exists:',
+          !!xhr
+        );
         const chunks = raw
           .split('\n\n')
           .map((c) => c.trim())
@@ -133,18 +154,33 @@ export async function postMessage({
         if (!dataLine) return;
         try {
           const parsed = JSON.parse(dataLine);
+          coerceMessageDto(parsed);
           const dto = messagesResponseSchema.shape.data.element.parse(parsed);
           const parsedMessage = mapMessageDtoToModel(dto);
+          // eslint-disable-next-line no-console
+          console.log(
+            '[SSE] emitting message:',
+            parsedMessage.id,
+            'values:',
+            parsedMessage.values?.map((v) => v.name)
+          );
           observable.next(parsedMessage);
-        } catch {
-          // likely partial frame, ignore
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn('[SSE] parse failed:', err);
         }
       },
+    })
+    .then(() => {
+      // eslint-disable-next-line no-console
+      console.log('[SSE] stream complete');
+      observable.complete();
+    })
+    .catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error('[SSE] stream error:', error);
+      observable.error(error);
     });
-    observable.complete();
-  } catch (error) {
-    observable.error(error);
-  }
 
   return observable;
 }
