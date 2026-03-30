@@ -12,6 +12,16 @@ import type { Message, MessageContentItem } from './model';
 
 const chatApi = getSmartSpaceChatAPI();
 
+/** Backend sends null createdByUserId on system-generated values; Zod schema requires string. */
+function coerceMessageDto(raw: Record<string, unknown>): void {
+  if (raw.createdByUserId == null) raw.createdByUserId = '';
+  if (Array.isArray(raw.values)) {
+    for (const v of raw.values as Record<string, unknown>[]) {
+      if (v.createdByUserId == null) v.createdByUserId = '';
+    }
+  }
+}
+
 // Fetch all messages in a given message thread
 export async function fetchMessages(
   threadId: string,
@@ -59,6 +69,7 @@ export async function addInputToMessage({
         if (!dataLine) return;
         try {
           const parsed = JSON.parse(dataLine);
+          coerceMessageDto(parsed);
           const dto = messagesResponseSchema.shape.data.element.parse(parsed);
           result = mapMessageDtoToModel(dto);
         } catch (error) {
@@ -143,6 +154,7 @@ export function postMessage({
         if (!dataLine) return;
         try {
           const parsed = JSON.parse(dataLine);
+          coerceMessageDto(parsed);
           const dto = messagesResponseSchema.shape.data.element.parse(parsed);
           const parsedMessage = mapMessageDtoToModel(dto);
           // eslint-disable-next-line no-console
