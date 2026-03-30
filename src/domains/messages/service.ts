@@ -44,10 +44,11 @@ export async function addInputToMessage({
     `/messages/${messageId}/values`,
     { name, value, channels },
     {
+      adapter: 'xhr',
       headers: { Accept: 'text/event-stream' },
-      responseType: 'stream',
       onDownloadProgress: (event) => {
-        const raw = String(event.event.currentTarget.response || '');
+        const xhr = event.event?.currentTarget as XMLHttpRequest | undefined;
+        const raw = String(xhr?.response ?? '');
         // Split by server-sent event message delimiter and normalize "data:" prefix
         const chunks = raw
           .split('\n\n')
@@ -120,10 +121,11 @@ export function postMessage({
 
   api
     .post(`/messages`, payload, {
+      adapter: 'xhr',
       headers: { Accept: 'text/event-stream' },
-      responseType: 'stream',
       onDownloadProgress: (e) => {
-        const raw = String(e.event.currentTarget.response || '');
+        const xhr = e.event?.currentTarget as XMLHttpRequest | undefined;
+        const raw = String(xhr?.response ?? '');
         const chunks = raw
           .split('\n\n')
           .map((c) => c.trim())
