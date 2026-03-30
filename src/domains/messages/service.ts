@@ -126,6 +126,13 @@ export function postMessage({
       onDownloadProgress: (e) => {
         const xhr = e.event?.currentTarget as XMLHttpRequest | undefined;
         const raw = String(xhr?.response ?? '');
+        // eslint-disable-next-line no-console
+        console.log(
+          '[SSE] onDownloadProgress fired, raw length:',
+          raw.length,
+          'xhr exists:',
+          !!xhr
+        );
         const chunks = raw
           .split('\n\n')
           .map((c) => c.trim())
@@ -138,16 +145,28 @@ export function postMessage({
           const parsed = JSON.parse(dataLine);
           const dto = messagesResponseSchema.shape.data.element.parse(parsed);
           const parsedMessage = mapMessageDtoToModel(dto);
+          // eslint-disable-next-line no-console
+          console.log(
+            '[SSE] emitting message:',
+            parsedMessage.id,
+            'values:',
+            parsedMessage.values?.map((v) => v.name)
+          );
           observable.next(parsedMessage);
-        } catch {
-          // likely partial frame, ignore
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn('[SSE] parse failed:', err);
         }
       },
     })
     .then(() => {
+      // eslint-disable-next-line no-console
+      console.log('[SSE] stream complete');
       observable.complete();
     })
     .catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error('[SSE] stream error:', error);
       observable.error(error);
     });
 
