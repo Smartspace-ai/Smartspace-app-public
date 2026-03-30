@@ -107,8 +107,8 @@ export function useSendMessage() {
       // cancel in-flight refetches for this list
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
-      // start server call (streaming Subject)
-      const subject = await postMessage({
+      // start server call (returns Subject synchronously so we subscribe before data arrives)
+      const subject = postMessage({
         workSpaceId: workspaceId,
         threadId,
         contentList,
