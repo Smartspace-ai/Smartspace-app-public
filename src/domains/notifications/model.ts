@@ -15,9 +15,3 @@ export type Notification = {
   dismissedAt?: string | null;
   avatar?: string | null;
 };
-
-
-
-
-
-
