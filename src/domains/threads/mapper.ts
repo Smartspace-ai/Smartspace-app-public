@@ -1,6 +1,8 @@
 import { ChatZod } from '@smartspace-ai/api-client';
 import type { z } from 'zod';
 
+import { utcDate } from '@/shared/utils/dateFromApi';
+
 import { MessageThread, ThreadsResponse } from './model';
 
 const {
@@ -14,11 +16,11 @@ type ThreadDto = z.infer<typeof threadResponseSchema>;
 export function mapThreadDtoToModel(dto: ThreadDto): MessageThread {
   return {
     id: dto.id,
-    createdAt: new Date(dto.createdAt),
+    createdAt: utcDate(dto.createdAt),
     createdBy: dto.createdBy ?? '',
     createdByUserId: dto.createdByUserId,
     isFlowRunning: dto.isFlowRunning,
-    lastUpdatedAt: new Date(dto.lastUpdatedAt),
+    lastUpdatedAt: utcDate(dto.lastUpdatedAt),
     lastUpdatedByUserId: dto.lastUpdatedByUserId,
     name: dto.name ?? '',
     totalMessages: dto.totalMessages,

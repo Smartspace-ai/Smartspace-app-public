@@ -10,10 +10,14 @@ import { Message, MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 import { getMessageErrorText } from '@/domains/messages/errors';
 import { useAddInputToMessage } from '@/domains/messages/mutations';
+import { useWorkspace } from '@/domains/workspaces';
+
+import { getChatbotName } from '@/theme/public-config';
 
 // local UI
 import { MessageBubble } from './MessageBubble';
 import type { MessageResponseSource } from './MessageSources';
+import { MessageStatus } from './MessageStatus';
 
 interface MessageItemProps {
   message: Message;
@@ -82,7 +86,9 @@ function coerceSources(x: unknown): MessageResponseSource[] {
 }
 
 export const MessageItem: FC<MessageItemProps> = ({ message }) => {
-  const { threadId } = useRouteIds();
+  const { workspaceId, threadId } = useRouteIds();
+  const { data: workspace } = useWorkspace(workspaceId);
+  const chatbotName = getChatbotName(workspace?.name);
   const { addInputToMessageMutation } = useAddInputToMessage();
 
   const onSubmitUserForm =
@@ -116,21 +122,27 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
   let groupType: MessageValueType = MessageValueType.INPUT;
   let lastCreatedAt: Date = message.createdAt;
   let lastCreatedBy = '';
+  let lastCreatedByUserId: string | null | undefined = message.createdByUserId;
 
   // whether we have a pending group that hasn't been flushed to bubbles
   let groupOpen = false;
   let keyCounter = 0;
+
+  // transient status: only the last status is kept, cleared when content follows
+  let lastStatusNode: ReactNode | null = null;
 
   const flush = (nextType: MessageValueType) => {
     bubbles.push(
       <MessageBubble
         key={`bubble-${message.id ?? 'msg'}-${keyCounter++}`}
         createdBy={lastCreatedBy}
+        createdByUserId={lastCreatedByUserId}
         createdAt={lastCreatedAt}
         type={groupType}
         content={groupContent}
         files={groupFiles}
         sources={groupSources}
+        chatbotName={chatbotName}
         userOutput={null}
         userInput={null}
       />
@@ -156,9 +168,20 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
         // Do not display message variables payloads
         continue;
       }
+      case 'status': {
+        if (groupOpen) flush(v.type);
+        lastStatusNode = (
+          <MessageStatus
+            key={`status-${message.id ?? 'msg'}-${keyCounter++}`}
+            text={String(v.value ?? '')}
+          />
+        );
+        continue;
+      }
       case 'prompt':
       case 'response':
       case 'content': {
+        lastStatusNode = null;
         // These start a “fresh” content section
         if (groupContent.length > 0) flush(v.type);
 
@@ -198,6 +221,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
             <MessageBubble
               key={`user-${message.id ?? 'msg'}-${keyCounter++}`}
               createdBy={v.createdBy}
+              createdByUserId={v.createdByUserId}
               createdAt={v.createdAt}
               type={v.type}
               content={[
@@ -216,6 +240,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
                   ? (v.value as unknown as { message: string; schema: unknown })
                   : null
               }
+              chatbotName={chatbotName}
               userInput={userInput?.value}
               onSubmitUserForm={onSubmitUserForm(message.id ?? '')}
             />
@@ -240,6 +265,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
       }
 
       default: {
+        lastStatusNode = null;
         // any other named value: append to current content,
         // but if we already have content from previous, keep grouping by type
         pushContent(groupContent, v.value);
@@ -250,6 +276,7 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
 
     lastCreatedAt = v.createdAt;
     lastCreatedBy = v.createdBy;
+    lastCreatedByUserId = v.createdByUserId;
   }
 
   // Final pending group
@@ -258,15 +285,22 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
       <MessageBubble
         key={`bubble-final-${message.id ?? 'msg'}-${keyCounter++}`}
         createdBy={lastCreatedBy}
+        createdByUserId={lastCreatedByUserId}
         createdAt={lastCreatedAt}
         type={groupType}
         content={groupContent}
         files={groupFiles}
         sources={groupSources}
+        chatbotName={chatbotName}
         userOutput={null}
         userInput={null}
       />
     );
+  }
+
+  // Show the last status indicator if no content followed it
+  if (lastStatusNode) {
+    bubbles.push(lastStatusNode);
   }
 
   // Domain errors → system bubbles at the end
@@ -274,12 +308,13 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
     bubbles.push(
       <MessageBubble
         key={`error-${message.id ?? 'msg'}-${error.code}`}
-        createdBy="Chatbot"
+        createdBy={chatbotName}
         createdAt={message.createdAt}
         type={MessageValueType.OUTPUT}
         content={[{ text: getMessageErrorText(error.code) }]}
         files={[]}
         sources={[]}
+        chatbotName={chatbotName}
         userOutput={null}
         userInput={null}
       />

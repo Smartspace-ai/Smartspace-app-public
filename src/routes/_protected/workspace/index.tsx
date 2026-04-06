@@ -3,11 +3,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { workspacesListOptions } from '@/domains/workspaces/queries';
 
-import TeamsLoaderPage from '@/pages/teams_loader';
-
 export const Route = createFileRoute('/_protected/workspace/')({
-  pendingMs: 0,
-  pendingComponent: () => <TeamsLoaderPage message="Loading workspaces…" />,
   loader: async ({ context }) => {
     const list = await context.queryClient.ensureQueryData(
       workspacesListOptions()

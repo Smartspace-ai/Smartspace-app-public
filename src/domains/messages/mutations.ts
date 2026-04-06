@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 
 import { FileInfo } from '@/domains/files';
+import { threadsKeys } from '@/domains/threads/queryKeys';
 
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
@@ -96,11 +97,18 @@ export function useSendMessage() {
         optimistic,
       ]);
 
+      // Optimistically mark thread as running so the loading indicator shows immediately
+      qc.setQueryData(
+        threadsKeys.detail(workspaceId, threadId),
+        (old: unknown) =>
+          old && typeof old === 'object' ? { ...old, isFlowRunning: true } : old
+      );
+
       // cancel in-flight refetches for this list
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
-      // start server call (streaming Subject)
-      const subject = await postMessage({
+      // start server call (returns Subject synchronously so we subscribe before data arrives)
+      const subject = postMessage({
         workSpaceId: workspaceId,
         threadId,
         contentList,
@@ -133,6 +141,14 @@ export function useSendMessage() {
           qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
             old.filter((x) => !x.optimistic)
           );
+          // rollback optimistic isFlowRunning
+          qc.setQueryData(
+            threadsKeys.detail(workspaceId, threadId),
+            (old: unknown) =>
+              old && typeof old === 'object'
+                ? { ...old, isFlowRunning: false }
+                : old
+          );
           toast.error('There was an error posting your message');
           sub.unsubscribe();
         },
@@ -147,6 +163,10 @@ export function useSendMessage() {
                 (k[2] as { workspaceId?: string })?.workspaceId === workspaceId
               );
             },
+          });
+          // Refetch thread detail so isFlowRunning reflects server state
+          qc.invalidateQueries({
+            queryKey: threadsKeys.detail(workspaceId, threadId),
           });
         },
       });

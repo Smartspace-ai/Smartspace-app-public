@@ -1,6 +1,8 @@
 import { ChatZod } from '@smartspace-ai/api-client';
 import type { z } from 'zod';
 
+import { utcDate } from '@/shared/utils/dateFromApi';
+
 import { Model } from './model';
 
 const {
@@ -40,7 +42,7 @@ export function mapModelDtoToModel(dto: ModelDto | ModelDetailDto): Model {
     ),
     modelDeploymentProviderType: toStringEnum(dto.modelDeploymentProviderType),
     createdByUserId: dto.createdByUserId ?? '',
-    createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(0),
+    createdAt: dto.createdAt ? utcDate(dto.createdAt) : new Date(0),
     properties: dto.properties.map(mapPropertyDtoToModel),
     virtualMachineUrl:
       ('virtualMachineUrl' in dto

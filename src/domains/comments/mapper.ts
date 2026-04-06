@@ -1,6 +1,8 @@
 import { ChatZod } from '@smartspace-ai/api-client';
 import type { z } from 'zod';
 
+import { utcDate } from '@/shared/utils/dateFromApi';
+
 import { Comment, MentionUser } from './model';
 
 const {
@@ -31,7 +33,7 @@ export function mapCommentDtoToModel(
 ): Comment {
   return {
     id: dto.id,
-    createdAt: new Date(dto.createdAt),
+    createdAt: utcDate(dto.createdAt),
     createdByUserId: dto.createdByUserId ?? '',
     createdBy: dto.createdBy ?? '',
     content: dto.content,

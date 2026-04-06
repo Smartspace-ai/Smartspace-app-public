@@ -5,6 +5,7 @@ import {
   editorViewOptionsCtx,
   rootCtx,
 } from '@milkdown/core';
+import { history } from '@milkdown/kit/plugin/history';
 import { clipboard } from '@milkdown/plugin-clipboard';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { commonmark } from '@milkdown/preset-commonmark';
@@ -27,6 +28,7 @@ import { createPortal } from 'react-dom';
 
 // Note: Mention plugin is not published under @milkdown/plugin-mention on npm.
 // This setup is ready to add a mention-like plugin later if desired.
+import { autolink } from './extensions/autolink';
 import { fileTag } from './extensions/fileTag';
 import { mention } from './extensions/mention';
 import { ssImageNode, ssImageView } from './extensions/ssImage';
@@ -224,6 +226,9 @@ function EditorInner({
   const mentionQueryRef = useRef('');
   const mentionFromPosRef = useRef<number | null>(null);
   const mentionOpenRef = useRef(false);
+  // When the user presses Escape, suppress re-opening until the cursor moves or
+  // the `@` position changes (i.e. a new mention session starts).
+  const mentionDismissedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     mentionQueryRef.current = mentionQuery;
@@ -358,8 +363,10 @@ function EditorInner({
           });
         })
         .use(commonmark)
+        .use(history)
         .use(clipboard)
         .use(listener)
+        .use(autolink)
         .use(fileTag)
         .use(ssImageNode)
         .use(ssImageView)
@@ -632,6 +639,17 @@ function EditorInner({
       className={`md-editor${!isEditable ? ' md-editor--readonly' : ''}${
         className ? ` ${className}` : ''
       }`}
+      onClick={(e) => {
+        // Make links clickable in read-only mode (autolinked and markdown links)
+        if (!isEditable) {
+          const target = e.target as HTMLElement;
+          const anchor = target.closest('a');
+          if (anchor?.href) {
+            e.preventDefault();
+            window.open(anchor.href, '_blank', 'noopener');
+          }
+        }
+      }}
       onKeyDown={(e) => {
         if (
           mentionOpen &&
@@ -668,6 +686,8 @@ function EditorInner({
             }
           }
           if (e.key === 'Escape') {
+            e.preventDefault();
+            mentionDismissedAtRef.current = mentionFromPosRef.current;
             setMentionOpen(false);
             return;
           }
@@ -943,11 +963,22 @@ function EditorInner({
       return;
     }
     const spaceCount = (after.match(/ /g) ?? []).length;
+    // Allow a single space so users can type "First Last" in the mention query.
+    // Close the dropdown once they type a second space (or any newline/tab).
     if (spaceCount > 1) {
       if (mentionOpen) setMentionOpen(false);
       return;
     }
     const absoluteFrom = windowStart + at;
+
+    // If the user dismissed this mention session with Escape, don't reopen
+    // until the `@` position changes (i.e. a new mention is started).
+    if (mentionDismissedAtRef.current === absoluteFrom) {
+      return;
+    }
+    // Clear the dismissed marker when a new session starts.
+    mentionDismissedAtRef.current = null;
+
     const coords = view.coordsAtPos(from);
     setMentionCoords({
       left: coords.left,

@@ -68,7 +68,7 @@ describe('messages service', () => {
       }
     );
 
-    const obs = await postMessage({ workSpaceId: 'w', threadId: 't1' });
+    const obs = postMessage({ workSpaceId: 'w', threadId: 't1' });
 
     // now simulate streaming frames after subscription
     const chunk = JSON.stringify({

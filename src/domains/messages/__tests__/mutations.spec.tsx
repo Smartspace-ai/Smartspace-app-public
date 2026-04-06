@@ -8,7 +8,10 @@ vi.mock('@/platform/auth/session', () => ({
   useUserDisplayName: () => 'Test User',
 }));
 
-import { useAddInputToMessage, useSendMessage } from '@/domains/messages/mutations';
+import {
+  useAddInputToMessage,
+  useSendMessage,
+} from '@/domains/messages/mutations';
 import { messagesKeys } from '@/domains/messages/queryKeys';
 import * as service from '@/domains/messages/service';
 
@@ -19,11 +22,19 @@ describe('messages mutations', () => {
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
 
-    const subject = { subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })) } as any;
-    const spy = vi.spyOn(service, 'postMessage').mockResolvedValueOnce(subject);
+    const subject = {
+      subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })),
+    } as any;
+    const spy = vi.spyOn(service, 'postMessage').mockReturnValueOnce(subject);
 
     const { result } = renderHook(() => useSendMessage(), { wrapper });
-    await result.current.mutateAsync({ workspaceId: 'w', threadId: 't', contentList: [], files: [], variables: {} });
+    await result.current.mutateAsync({
+      workspaceId: 'w',
+      threadId: 't',
+      contentList: [],
+      files: [],
+      variables: {},
+    });
     const data = client.getQueryData<any[]>(messagesKeys.list('t')) || [];
     expect(data.some((m) => m.optimistic)).toBe(true);
     expect(subject.subscribe).toHaveBeenCalled();
@@ -37,18 +48,39 @@ describe('messages mutations', () => {
     );
 
     // seed cache with one message
-    client.setQueryData(messagesKeys.list('t1'), [{ id: 'm1', values: [] }] as any);
+    client.setQueryData(messagesKeys.list('t1'), [
+      { id: 'm1', values: [] },
+    ] as any);
 
-    const returned = { id: 'm1', values: [{ id: 'v', name: 'x', type: 'INPUT', value: 'y', channels: {}, createdAt: new Date(), createdBy: 'me' }] } as any;
-    const spy = vi.spyOn(service, 'addInputToMessage').mockResolvedValueOnce(returned);
+    const returned = {
+      id: 'm1',
+      values: [
+        {
+          id: 'v',
+          name: 'x',
+          type: 'INPUT',
+          value: 'y',
+          channels: {},
+          createdAt: new Date(),
+          createdBy: 'me',
+        },
+      ],
+    } as any;
+    const spy = vi
+      .spyOn(service, 'addInputToMessage')
+      .mockResolvedValueOnce(returned);
 
     const { result } = renderHook(() => useAddInputToMessage(), { wrapper });
-    await result.current.addInputToMessageMutation.mutateAsync({ threadId: 't1', messageId: 'm1', name: 'x', value: 'y', channels: {} });
+    await result.current.addInputToMessageMutation.mutateAsync({
+      threadId: 't1',
+      messageId: 'm1',
+      name: 'x',
+      value: 'y',
+      channels: {},
+    });
 
     const data = client.getQueryData<any[]>(messagesKeys.list('t1')) || [];
     expect(data[0].values?.length).toBeGreaterThan(0);
     spy.mockRestore();
   });
 });
-
-
