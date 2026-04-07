@@ -1,0 +1,7 @@
+{
+  "name": "web-pipeline",
+  "engineVersion": "v0.20.3",
+  "sdk": {
+    "source": "typescript"
+  }
+}
