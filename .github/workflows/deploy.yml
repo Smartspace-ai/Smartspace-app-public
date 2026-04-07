@@ -1,0 +1,54 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+        description: GitHub environment name (dev or production)
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate .env
+        uses: dagger/dagger-for-github@v7
+        with:
+          version: "0.20.3"
+          verb: call
+          module: ./ci
+          args: >-
+            check-env
+            --source=.
+
+      - name: Build
+        uses: dagger/dagger-for-github@v7
+        with:
+          version: "0.20.3"
+          verb: call
+          module: ./ci
+          args: >-
+            build
+            --source=.
+            export --path=./dist/smartspace
+
+      - name: Deploy to Azure Storage
+        uses: azure/CLI@v2
+        with:
+          azcliversion: 2.67.0
+          inlineScript: |
+            az storage blob upload-batch \
+              --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+              --source ./dist/smartspace \
+              --destination '$web' \
+              --overwrite true
