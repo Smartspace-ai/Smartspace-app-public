@@ -11,6 +11,8 @@ const NODE_IMAGE = 'node:20-slim';
 const WORK_DIR = '/work';
 const DIST_DIR = '/work/dist/smartspace';
 
+// SECURITY: These must remain hardcoded — they are interpolated into shell
+// commands in checkEnv(). Never source these from external input.
 const REQUIRED_ENV_VARS = [
   'VITE_CLIENT_ID',
   'VITE_CLIENT_AUTHORITY',

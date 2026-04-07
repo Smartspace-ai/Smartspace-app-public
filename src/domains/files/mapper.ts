@@ -19,7 +19,3 @@ export function mapFileInfoDtoToModel(
     name: dto.name,
   };
 }
-
-export const mapFileInfosDtoToModels = (
-  arr: Array<FileInfoDto | FileInfoItemDto>
-) => arr.map(mapFileInfoDtoToModel);
