@@ -1,12 +1,11 @@
-name: Deploy static site to Azure Storage
+name: Deploy to production
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: deploy-production
   cancel-in-progress: false
 
 permissions:
@@ -16,18 +15,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: smartspace
+    environment: production
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Check that AZURE_STORAGE_CONNECTION_STRING secret exists
-        run: |
-          if [ -z "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" ]; then
-            echo "::error::AZURE_STORAGE_CONNECTION_STRING secret is not set!"
-            exit 1
-          fi
 
       - name: Check .env for required variables
         run: |
