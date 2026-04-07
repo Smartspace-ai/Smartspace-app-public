@@ -10,23 +10,35 @@ import {
 
 const NODE_IMAGE = 'node:20-slim';
 
+const REQUIRED_ENV_VARS = [
+  'VITE_CLIENT_ID',
+  'VITE_CLIENT_AUTHORITY',
+  'VITE_CLIENT_SCOPES',
+  'VITE_CHAT_API_URI',
+  'VITE_TEAMS_USE_MSAL',
+];
+
 @object()
 class WebPipeline {
   /**
-   * Run the full quality gate: lint, typecheck, test, build.
+   * Run lint, typecheck, and test in parallel, then build.
    */
   @func()
   async qualityCheck(
     source: Directory,
     ghPackageToken: Secret
   ): Promise<string> {
-    const ctr = this.nodeContainer(source, ghPackageToken)
-      .withExec(['npm', 'run', '-s', 'lint:all'])
-      .withExec(['npm', 'run', '-s', 'typecheck'])
-      .withExec(['npm', 'run', '-s', 'test'])
-      .withExec(['npm', 'run', '-s', 'build']);
+    const base = this.nodeContainer(source, ghPackageToken);
 
-    return ctr.stdout();
+    const [lint, typecheck, test] = await Promise.all([
+      base.withExec(['npm', 'run', '-s', 'lint:all']).stdout(),
+      base.withExec(['npm', 'run', '-s', 'typecheck']).stdout(),
+      base.withExec(['npm', 'run', '-s', 'test']).stdout(),
+    ]);
+
+    const build = await base.withExec(['npm', 'run', '-s', 'build']).stdout();
+
+    return [lint, typecheck, test, build].join('\n');
   }
 
   /**
@@ -42,6 +54,36 @@ class WebPipeline {
     ]);
 
     return ctr.directory('/work/dist/smartspace');
+  }
+
+  /**
+   * Validate that .env contains all required variables with non-empty values.
+   */
+  @func()
+  @check()
+  async checkEnv(source: Directory): Promise<string> {
+    const checks = REQUIRED_ENV_VARS.map(
+      (v) => `
+      if ! grep -q "^${v}=" .env; then
+        echo "FAIL: .env does not contain ${v}" && FAILED=1
+      elif [ -z "$(grep "^${v}=" .env | cut -d'=' -f2-)" ]; then
+        echo "FAIL: ${v} in .env is empty" && FAILED=1
+      fi`
+    ).join('');
+
+    return dag
+      .container()
+      .from(NODE_IMAGE)
+      .withDirectory('/work', source)
+      .withWorkdir('/work')
+      .withExec([
+        'sh',
+        '-c',
+        `FAILED=0${checks}
+      if [ "$FAILED" = "1" ]; then exit 1; fi
+      echo "All required .env variables present."`,
+      ])
+      .stdout();
   }
 
   // ---------------------------------------------------------------------------
