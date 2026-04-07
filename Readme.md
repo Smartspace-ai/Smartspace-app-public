@@ -1,7 +1,7 @@
 # SmartSpace Chat UI
 
 > **Template Repository:**
->
+> 
 > This repository is intended as a starting point for clients who want to build their own customized chat UI for Smartspace. The recommended workflow is to **fork this repository**, then white label and customize it to fit your organization's branding and requirements. Once customized, you can deploy your version and connect it to your own Smartspace backend.
 
 A modern, customizable chat interface built with React 18.3, utilizing [shadcn UI](https://ui.shadcn.com/) components and [Tailwind CSS](https://tailwindcss.com/) for styling. This project is designed to integrate seamlessly with [smartspace.ai](https://smartspace.ai).
@@ -49,19 +49,6 @@ Ensure you have the following installed:
    # or
    yarn install
    ```
-
-### GitHub Packages Authentication
-
-This project depends on `@smartspace-ai/api-client`, published to [GitHub Packages](https://github.com/orgs/Smartspace-ai/packages).
-
-- **Public stable releases** work out of the box — no extra setup needed.
-- **Pre-release versions** (auto-published per backend PR) require a GitHub Personal Access Token with the `read:packages` scope. Add it to your **user-level** `~/.npmrc`:
-
-  ```
-  //npm.pkg.github.com/:_authToken=YOUR_GITHUB_PAT
-  ```
-
-  > To create a PAT: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → generate with `read:packages` scope.
 
 ### Configuration
 
@@ -111,7 +98,6 @@ If you need a public URL to your local dev server (e.g. for Teams manifests / ca
   ```
 
 - **Env vars** (in `.env.local` / `.env.dev`):
-
   - `PUBLIC_ORIGIN`: the tunnel URL (hostname is used by Vite `server.allowedHosts`)
   - `TUNNEL_ID` (optional, recommended): existing tunnel id to reuse (stable URL), e.g. `puzzled-chair-8bzd2hr.aue`
 

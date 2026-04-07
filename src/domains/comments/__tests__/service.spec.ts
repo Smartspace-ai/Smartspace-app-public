@@ -1,28 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { mockGetComments, mockPostComments } = vi.hoisted(() => ({
-  mockGetComments: vi.fn(),
-  mockPostComments: vi.fn(),
-}));
+import { apiMutator } from '@/platform/api/orvalMutator';
 
-vi.mock('@smartspace-ai/api-client', () => ({
-  ChatApi: {
-    getSmartSpaceChatAPI: () => ({
-      getMessageThreadsIdComments: mockGetComments,
-      postMessageThreadsIdComments: mockPostComments,
-    }),
-  },
-  ChatZod: {
-    getMessageThreadsIdCommentsResponse: {},
-    postMessageThreadsIdCommentsResponse: {},
-  },
-  AXIOS_INSTANCE: {},
+import { addComment, fetchComments } from '@/domains/comments/service';
+
+vi.mock('@/platform/api/orvalMutator', () => ({
+  apiMutator: vi.fn(),
 }));
 vi.mock('@/platform/validation', () => ({
   parseOrThrow: vi.fn((_schema: unknown, data: unknown) => data),
 }));
 
-import { addComment, fetchComments } from '@/domains/comments/service';
+const mockedMutator = vi.mocked(apiMutator);
 
 describe('comments service', () => {
   it('fetchComments returns sorted mapped list', async () => {
@@ -44,7 +33,8 @@ describe('comments service', () => {
       mentionedUsers: [],
       messageThreadId: 't',
     };
-    mockGetComments.mockResolvedValueOnce({ data: { data: [c2, c1] } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockedMutator.mockResolvedValueOnce({ data: { data: [c2, c1] } } as any);
     const res = await fetchComments('t');
     expect(res.map((x) => x.id)).toEqual(['1', '2']);
   });
@@ -59,7 +49,8 @@ describe('comments service', () => {
       mentionedUsers: [],
       messageThreadId: 't',
     };
-    mockPostComments.mockResolvedValueOnce({ data: dto });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockedMutator.mockResolvedValueOnce({ data: dto } as any);
     const res = await addComment('t', 'c', []);
     expect(res.id).toBe('3');
     expect(res.messageThreadId).toBe('t');

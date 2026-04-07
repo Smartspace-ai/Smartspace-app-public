@@ -5,15 +5,14 @@ import {
   EventType,
 } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
-import { ChatApi } from '@smartspace-ai/api-client';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
 
-import { configureApiClient } from '@/platform/api/configureApiClient';
-import { getMsalInstance } from '@/platform/auth/msalClient';
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import { getMsalInstance } from '@/platform/auth/msalClient'; // ✅ new path
 import { removeSplash } from '@/platform/boot/removeSplash';
 import { queryClient } from '@/platform/reactQueryClient';
 
@@ -55,13 +54,11 @@ function fallbackRender({ error }: { error: unknown }) {
   );
 }
 
-configureApiClient();
-
 const router = createRouter({
   routeTree,
   context: {
     queryClient,
-    api: ChatApi.getSmartSpaceChatAPI(),
+    api: getSmartSpaceChatAPI(),
   },
   defaultPreload: 'intent',
   scrollRestoration: true,

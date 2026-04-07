@@ -1,15 +1,14 @@
-import { ChatApi, ChatZod } from '@smartspace-ai/api-client';
-
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import {
+  getMessageThreadsIdCommentsResponse as commentsResponseSchema,
+  postMessageThreadsIdCommentsResponse as commentCreateResponseSchema,
+} from '@/platform/api/generated/chat/zod';
 import { parseOrThrow } from '@/platform/validation';
 
 import { mapCommentDtoToModel, mapCommentsDtoToModels } from './mapper';
 import { Comment, MentionUser } from './model';
 
-const {
-  getMessageThreadsIdCommentsResponse: commentsResponseSchema,
-  postMessageThreadsIdCommentsResponse: commentCreateResponseSchema,
-} = ChatZod;
-const chatApi = ChatApi.getSmartSpaceChatAPI();
+const chatApi = getSmartSpaceChatAPI();
 
 // Fetch all comments for a given thread
 export async function fetchComments(threadId: string): Promise<Comment[]> {

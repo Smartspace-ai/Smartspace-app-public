@@ -1,36 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { api } from '@/platform/api';
+import { apiMutator } from '@/platform/api/orvalMutator';
 
-const { mockGetMessages, mockMessageElementParse } = vi.hoisted(() => ({
-  mockGetMessages: vi.fn(),
-  mockMessageElementParse: vi.fn((data: unknown) => data),
-}));
+import { fetchMessages, postMessage } from '@/domains/messages';
 
-vi.mock('@smartspace-ai/api-client', () => ({
-  ChatApi: {
-    getSmartSpaceChatAPI: () => ({
-      getMessageThreadsIdMessages: mockGetMessages,
-    }),
-  },
-  ChatZod: {
-    getMessageThreadsIdMessagesResponse: {
-      shape: {
-        data: {
-          element: {
-            parse: mockMessageElementParse,
-          },
-        },
-      },
-    },
-  },
-  AXIOS_INSTANCE: {},
+vi.mock('@/platform/api/orvalMutator', () => ({
+  apiMutator: vi.fn(),
 }));
 vi.mock('@/platform/validation', () => ({
   parseOrThrow: vi.fn((_schema: unknown, data: unknown) => data),
 }));
 
-import { fetchMessages, postMessage } from '@/domains/messages';
+const mockedMutator = vi.mocked(apiMutator);
 
 type ProgressEventLike = { event: { currentTarget: { response: string } } };
 
@@ -49,7 +31,8 @@ describe('messages service', () => {
         },
       ],
     };
-    mockGetMessages.mockResolvedValueOnce({ data: envelope });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockedMutator.mockResolvedValueOnce({ data: envelope } as any);
     const res = await fetchMessages('t1');
     expect(res.length).toBe(1);
     expect(res[0].id).toBe('m1');
