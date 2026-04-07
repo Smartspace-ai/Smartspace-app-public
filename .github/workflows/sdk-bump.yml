@@ -1,0 +1,41 @@
+# Auto-bump @smartspace/api-client when a new SDK version is published.
+# Triggered via repository_dispatch from Smartspace-app-api SDK publish workflows.
+
+name: Bump SDK version
+
+on:
+  repository_dispatch:
+    types: [sdk-published]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    name: Bump api-client to ${{ github.event.client_payload.version }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.target_branch }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update SDK version
+        run: npm install @smartspace/api-client@${{ github.event.client_payload.version }} --save-exact
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/sdk-bump-${{ github.event.client_payload.version }}
+          base: ${{ github.event.client_payload.target_branch }}
+          title: "chore: bump api-client to ${{ github.event.client_payload.version }}"
+          commit-message: "chore: bump api-client to ${{ github.event.client_payload.version }}"
+          body: |
+            Automated SDK version bump triggered by `@smartspace/api-client@${{ github.event.client_payload.version }}` publish.

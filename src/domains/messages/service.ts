@@ -1,4 +1,4 @@
-import { ChatApi, ChatZod } from '@smartspace-ai/api-client';
+import { ChatApi, ChatZod } from '@smartspace/api-client';
 import { Subject } from 'rxjs';
 
 import { api } from '@/platform/api';

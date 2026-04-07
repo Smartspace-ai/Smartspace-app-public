@@ -5,7 +5,7 @@ import {
   EventType,
 } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
-import { ChatApi } from '@smartspace-ai/api-client';
+import { ChatApi } from '@smartspace/api-client';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { StrictMode } from 'react';

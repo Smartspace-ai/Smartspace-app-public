@@ -7,7 +7,7 @@ const { mockGetMessages, mockMessageElementParse } = vi.hoisted(() => ({
   mockMessageElementParse: vi.fn((data: unknown) => data),
 }));
 
-vi.mock('@smartspace-ai/api-client', () => ({
+vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
       getMessageThreadsIdMessages: mockGetMessages,

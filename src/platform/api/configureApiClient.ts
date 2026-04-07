@@ -1,4 +1,4 @@
-import { AXIOS_INSTANCE } from '@smartspace-ai/api-client';
+import { AXIOS_INSTANCE } from '@smartspace/api-client';
 import { AxiosHeaders } from 'axios';
 
 import { AuthRequiredError } from '@/platform/auth/errors';

@@ -52,7 +52,7 @@ Ensure you have the following installed:
 
 ### GitHub Packages Authentication
 
-This project depends on `@smartspace-ai/api-client`, published to [GitHub Packages](https://github.com/orgs/Smartspace-ai/packages).
+This project depends on `@smartspace/api-client`, published to [npmjs.com](https://www.npmjs.com/package/@smartspace/api-client).
 
 - **Public stable releases** work out of the box — no extra setup needed.
 - **Pre-release versions** (auto-published per backend PR) require a GitHub Personal Access Token with the `read:packages` scope. Add it to your **user-level** `~/.npmrc`:

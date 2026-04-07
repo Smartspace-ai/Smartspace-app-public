@@ -5,7 +5,7 @@ const { mockGetComments, mockPostComments } = vi.hoisted(() => ({
   mockPostComments: vi.fn(),
 }));
 
-vi.mock('@smartspace-ai/api-client', () => ({
+vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
       getMessageThreadsIdComments: mockGetComments,
