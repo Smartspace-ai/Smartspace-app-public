@@ -16,7 +16,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: smartspace
+    environment: Production
 
     steps:
       - name: Checkout code
