@@ -1,14 +1,13 @@
-import { ChatZod } from '@smartspace-ai/api-client';
 import type { z } from 'zod';
+
+import {
+  getModelsIdResponse as modelResponseSchema,
+  getModelsResponse as modelsResponseSchema,
+} from '@/platform/api/generated/chat/zod';
 
 import { utcDate } from '@/shared/utils/dateFromApi';
 
 import { Model } from './model';
-
-const {
-  getModelsIdResponse: modelResponseSchema,
-  getModelsResponse: modelsResponseSchema,
-} = ChatZod;
 
 type ModelsResponseDto = z.infer<typeof modelsResponseSchema>;
 type ModelDto = ModelsResponseDto['data'][number];

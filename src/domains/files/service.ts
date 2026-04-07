@@ -1,6 +1,9 @@
-import { ChatApi, ChatZod } from '@smartspace-ai/api-client';
-
 import { api } from '@/platform/api';
+import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
+import {
+  getFilesIdResponse as fileInfoResponseSchema,
+  postFilesResponse as filesResponseSchema,
+} from '@/platform/api/generated/chat/zod';
 import { parseOrThrow } from '@/platform/validation';
 
 import { mapFileInfoDtoToModel } from './mapper';
@@ -8,11 +11,7 @@ import type { FileInfo, FileScope } from './model';
 
 export const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
 
-const {
-  getFilesIdResponse: fileInfoResponseSchema,
-  postFilesResponse: filesResponseSchema,
-} = ChatZod;
-const chatApi = ChatApi.getSmartSpaceChatAPI();
+const chatApi = getSmartSpaceChatAPI();
 
 const uploadFileInChunks = async (
   file: File,
