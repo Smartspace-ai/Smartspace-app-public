@@ -33,7 +33,7 @@ function getBaseUrl() {
   const w = getSsWindow();
   const configBaseUrl =
     w?.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
-  return configBaseUrl ? configBaseUrl : '';
+  return configBaseUrl ?? '';
 }
 
 /**
