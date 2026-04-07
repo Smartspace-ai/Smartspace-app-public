@@ -7,6 +7,10 @@ on:
   repository_dispatch:
     types: [sdk-published]
 
+concurrency:
+  group: sdk-bump
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write
@@ -17,6 +21,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate inputs
+        env:
+          SDK_VERSION: ${{ github.event.client_payload.version }}
+          TARGET_BRANCH: ${{ github.event.client_payload.target_branch }}
+        run: |
+          if ! echo "$SDK_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9._]+)?$'; then
+            echo "::error::Invalid version format: '$SDK_VERSION' (expected semver)"
+            exit 1
+          fi
+          if ! echo "$TARGET_BRANCH" | grep -qE '^[a-zA-Z0-9/_.-]+$'; then
+            echo "::error::Invalid branch name: '$TARGET_BRANCH'"
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -28,7 +46,9 @@ jobs:
           node-version: 20
 
       - name: Update SDK version
-        run: npm install @smartspace/api-client@${{ github.event.client_payload.version }} --save-exact
+        env:
+          SDK_VERSION: ${{ github.event.client_payload.version }}
+        run: npm install "@smartspace/api-client@${SDK_VERSION}" --save-exact
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v6
