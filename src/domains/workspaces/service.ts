@@ -1,10 +1,6 @@
 // src/domains/workspaces/service.ts
-import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
-import {
-  getWorkSpacesIdResponse as workspaceResponseSchema,
-  getWorkSpacesIdUsersResponse as workspaceUsersResponseSchema,
-  getWorkSpacesResponse as workspacesListResponseSchema,
-} from '@/platform/api/generated/chat/zod';
+import { ChatApi, ChatZod } from '@smartspace-ai/api-client';
+
 import { parseOrThrow } from '@/platform/validation';
 
 import {
@@ -14,7 +10,12 @@ import {
 } from './mapper';
 import type { MentionUser, Workspace } from './model';
 
-const chatApi = getSmartSpaceChatAPI();
+const {
+  getWorkSpacesIdResponse: workspaceResponseSchema,
+  getWorkSpacesIdUsersResponse: workspaceUsersResponseSchema,
+  getWorkSpacesResponse: workspacesListResponseSchema,
+} = ChatZod;
+const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 export async function fetchWorkspaces(search?: string): Promise<Workspace[]> {
   const response = await chatApi.getWorkSpaces({ search });

@@ -16,7 +16,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: smartspace
+    environment: Production
 
     steps:
       - name: Checkout code
@@ -28,6 +28,10 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: package-lock.json
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@smartspace-ai'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGE_TOKEN }}
 
       - name: Check that AZURE_STORAGE_CONNECTION_STRING secret exists
         run: |
@@ -60,10 +64,11 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Reset Nx cache
+        run: npx nx reset
+
       - name: Build
-        run: |
-          npm run -s openapi:generate
-          npm run build
+        run: npm run build
 
       - name: Deploy to Azure Storage
         uses: azure/CLI@v2
