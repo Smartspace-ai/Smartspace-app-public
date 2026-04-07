@@ -1,4 +1,4 @@
-import { ChatZod } from '@smartspace-ai/api-client';
+import { ChatZod } from '@smartspace/api-client';
 import type { z } from 'zod';
 
 import { utcDate } from '@/shared/utils/dateFromApi';

@@ -2,7 +2,6 @@ import {
   dag,
   Container,
   Directory,
-  Secret,
   object,
   func,
   check,
@@ -11,8 +10,6 @@ import {
 const NODE_IMAGE = 'node:20-slim';
 const WORK_DIR = '/work';
 const DIST_DIR = '/work/dist/smartspace';
-const GH_PACKAGES_REGISTRY = 'npm.pkg.github.com';
-const GH_PACKAGES_SCOPE = '@smartspace-ai';
 
 const REQUIRED_ENV_VARS = [
   'VITE_CLIENT_ID',
@@ -26,15 +23,10 @@ const REQUIRED_ENV_VARS = [
 class WebPipeline {
   /**
    * Run lint, typecheck, test, and build in parallel.
-   * Pass ghPackageToken to install from GitHub Packages (dev),
-   * or omit it to install from npmjs.com (production/client).
    */
   @func()
-  async qualityCheck(
-    source: Directory,
-    ghPackageToken?: Secret
-  ): Promise<string> {
-    const base = this.nodeContainer(source, ghPackageToken);
+  async qualityCheck(source: Directory): Promise<string> {
+    const base = this.nodeContainer(source);
 
     const [lint, typecheck, test, build] = await Promise.all([
       base.withExec(['npm', 'run', '-s', 'lint:all']).stdout(),
@@ -48,12 +40,10 @@ class WebPipeline {
 
   /**
    * Build the app and return the dist/smartspace directory.
-   * Pass ghPackageToken to install from GitHub Packages (dev),
-   * or omit it to install from npmjs.com (production/client).
    */
   @func()
-  async build(source: Directory, ghPackageToken?: Secret): Promise<Directory> {
-    const ctr = this.nodeContainer(source, ghPackageToken).withExec([
+  async build(source: Directory): Promise<Directory> {
+    const ctr = this.nodeContainer(source).withExec([
       'npm',
       'run',
       '-s',
@@ -99,41 +89,32 @@ class WebPipeline {
 
   @func()
   @check()
-  async checkLint(source: Directory, ghPackageToken?: Secret): Promise<string> {
-    return this.nodeContainer(source, ghPackageToken)
+  async checkLint(source: Directory): Promise<string> {
+    return this.nodeContainer(source)
       .withExec(['npm', 'run', '-s', 'lint:all'])
       .stdout();
   }
 
   @func()
   @check()
-  async checkTypecheck(
-    source: Directory,
-    ghPackageToken?: Secret
-  ): Promise<string> {
-    return this.nodeContainer(source, ghPackageToken)
+  async checkTypecheck(source: Directory): Promise<string> {
+    return this.nodeContainer(source)
       .withExec(['npm', 'run', '-s', 'typecheck'])
       .stdout();
   }
 
   @func()
   @check()
-  async checkTests(
-    source: Directory,
-    ghPackageToken?: Secret
-  ): Promise<string> {
-    return this.nodeContainer(source, ghPackageToken)
+  async checkTests(source: Directory): Promise<string> {
+    return this.nodeContainer(source)
       .withExec(['npm', 'run', '-s', 'test'])
       .stdout();
   }
 
   @func()
   @check()
-  async checkBuild(
-    source: Directory,
-    ghPackageToken?: Secret
-  ): Promise<Directory> {
-    const ctr = this.nodeContainer(source, ghPackageToken).withExec([
+  async checkBuild(source: Directory): Promise<Directory> {
+    const ctr = this.nodeContainer(source).withExec([
       'npm',
       'run',
       '-s',
@@ -152,31 +133,13 @@ class WebPipeline {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private nodeContainer(source: Directory, ghPackageToken?: Secret): Container {
-    let ctr = dag
+  private nodeContainer(source: Directory): Container {
+    return dag
       .container()
       .from(NODE_IMAGE)
       .withDirectory(WORK_DIR, source)
       .withWorkdir(WORK_DIR)
-      .withMountedCache('/root/.npm', dag.cacheVolume('npm-cache'));
-
-    if (ghPackageToken) {
-      ctr = ctr
-        .withSecretVariable('NODE_AUTH_TOKEN', ghPackageToken)
-        .withExec([
-          'sh',
-          '-c',
-          `echo "//${GH_PACKAGES_REGISTRY}/:_authToken=\${NODE_AUTH_TOKEN}" > .npmrc` +
-            ` && echo "${GH_PACKAGES_SCOPE}:registry=https://${GH_PACKAGES_REGISTRY}" >> .npmrc`,
-        ]);
-    } else {
-      ctr = ctr.withExec([
-        'sh',
-        '-c',
-        `echo "registry=https://registry.npmjs.org" > .npmrc`,
-      ]);
-    }
-
-    return ctr.withExec(['npm', 'ci']);
+      .withMountedCache('/root/.npm', dag.cacheVolume('npm-cache'))
+      .withExec(['npm', 'ci']);
   }
 }

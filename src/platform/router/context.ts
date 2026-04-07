@@ -1,4 +1,4 @@
-import type { ChatApi } from '@smartspace-ai/api-client';
+import type { ChatApi } from '@smartspace/api-client';
 import type { QueryClient } from '@tanstack/react-query';
 
 export interface RouterContext {

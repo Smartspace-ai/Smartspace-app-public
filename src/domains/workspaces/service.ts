@@ -1,5 +1,5 @@
 // src/domains/workspaces/service.ts
-import { ChatApi, ChatZod } from '@smartspace-ai/api-client';
+import { ChatApi, ChatZod } from '@smartspace/api-client';
 
 import { parseOrThrow } from '@/platform/validation';
 

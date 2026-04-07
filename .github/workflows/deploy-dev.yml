@@ -40,10 +40,7 @@ jobs:
           args: >-
             build
             --source=.
-            --gh-package-token=env:GH_PACKAGE_TOKEN
             export --path=./dist/smartspace
-        env:
-          GH_PACKAGE_TOKEN: ${{ secrets.GH_PACKAGE_TOKEN }}
 
       - name: Deploy to Azure Storage
         uses: azure/CLI@v2
