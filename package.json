@@ -24,12 +24,7 @@
     "test:dev": "env-cmd -f .env.dev npm run test",
     "test:local": "env-cmd -f .env.local npm run test",
     "build:teams": "ts-node teams/build-manifest.ts",
-    "dev:tunnel": "node scripts/start-tunnel.js",
-    "openapi:fetch": "node scripts/openapi-fetch.mjs",
-    "openapi:fetch:dev": "env-cmd -f .env.dev npm run openapi:fetch",
-    "openapi:generate": "node scripts/openapi-generate.mjs",
-    "openapi:sync": "npm run openapi:fetch && npm run openapi:generate",
-    "openapi:sync:dev": "env-cmd -f .env.dev npm run openapi:sync"
+    "dev:tunnel": "node scripts/start-tunnel.js"
   },
   "private": true,
   "dependencies": {
@@ -57,6 +52,7 @@
     "@mui/system": "^6.5.0",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-slot": "^1.2.4",
+    "@smartspace-ai/api-client": "^0.1.0-dev.825ee49",
     "@tanstack/react-query": "^5.96.2",
     "@tanstack/react-router": "^1.168.10",
     "@types/jwt-decode": "^2.2.1",
@@ -86,7 +82,6 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@azure/storage-blob": "^12.30.0",
     "@nx/cypress": "19.6.0",
     "@nx/eslint": "19.6.0",
     "@nx/eslint-plugin": "19.6.0",
@@ -132,8 +127,6 @@
     "jsdom": "~22.1.0",
     "lint-staged": "^15.5.2",
     "nx": "19.6.0",
-    "openapi-diff": "^0.24.1",
-    "orval": "^7.13.2",
     "postcss": "^8.4.41",
     "prettier": "^2.6.2",
     "sass": "^1.86.0",

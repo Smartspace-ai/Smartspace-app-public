@@ -1,8 +1,7 @@
+import { ChatApi, ChatZod } from '@smartspace-ai/api-client';
 import { Subject } from 'rxjs';
 
 import { api } from '@/platform/api';
-import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
-import { getMessageThreadsIdMessagesResponse as messagesResponseSchema } from '@/platform/api/generated/chat/zod';
 import { parseOrThrow } from '@/platform/validation';
 
 import { FileInfo } from '@/domains/files';
@@ -10,7 +9,8 @@ import { FileInfo } from '@/domains/files';
 import { mapMessageDtoToModel, mapMessagesDtoToModels } from './mapper';
 import type { Message, MessageContentItem } from './model';
 
-const chatApi = getSmartSpaceChatAPI();
+const { getMessageThreadsIdMessagesResponse: messagesResponseSchema } = ChatZod;
+const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 /** Backend sends null createdByUserId on system-generated values; Zod schema requires string. */
 function coerceMessageDto(raw: Record<string, unknown>): void {

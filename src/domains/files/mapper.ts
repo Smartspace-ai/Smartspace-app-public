@@ -1,11 +1,12 @@
+import { ChatZod } from '@smartspace-ai/api-client';
 import type { z } from 'zod';
 
-import {
-  getFilesIdResponse as fileInfoResponseSchema,
-  postFilesResponseItem as fileInfoItemSchema,
-} from '@/platform/api/generated/chat/zod';
-
 import { FileInfo } from './model';
+
+const {
+  getFilesIdResponse: fileInfoResponseSchema,
+  postFilesResponseItem: fileInfoItemSchema,
+} = ChatZod;
 
 type FileInfoDto = z.infer<typeof fileInfoResponseSchema>;
 type FileInfoItemDto = z.infer<typeof fileInfoItemSchema>;

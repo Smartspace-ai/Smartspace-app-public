@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -27,12 +28,13 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: package-lock.json
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@smartspace-ai'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGE_TOKEN }}
 
       - name: Install
         run: npm ci
-
-      - name: OpenAPI generate
-        run: npm run -s openapi:generate
 
       - name: Lint
         run: npm run -s lint:all

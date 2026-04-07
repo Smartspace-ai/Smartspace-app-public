@@ -1,26 +1,36 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { api } from '@/platform/api';
-import { apiMutator } from '@/platform/api/orvalMutator';
+
+const { mockGetFlowRunsIdVariables } = vi.hoisted(() => ({
+  mockGetFlowRunsIdVariables: vi.fn(),
+}));
+
+vi.mock('@smartspace-ai/api-client', () => ({
+  ChatApi: {
+    getSmartSpaceChatAPI: () => ({
+      getFlowRunsIdVariables: mockGetFlowRunsIdVariables,
+    }),
+  },
+  ChatZod: {
+    getFlowRunsIdVariablesResponse: {},
+  },
+  AXIOS_INSTANCE: {},
+}));
+vi.mock('@/platform/validation', () => ({
+  parseOrThrow: vi.fn((_schema: unknown, data: unknown) => data),
+}));
 
 import {
   fetchFlowRunVariables,
   updateFlowRunVariable,
 } from '@/domains/flowruns/service';
 
-vi.mock('@/platform/api/orvalMutator', () => ({
-  apiMutator: vi.fn(),
-}));
-vi.mock('@/platform/validation', () => ({
-  parseOrThrow: vi.fn((_schema: unknown, data: unknown) => data),
-}));
-
-const mockedMutator = vi.mocked(apiMutator);
-
 describe('flowruns service', () => {
   it('fetchFlowRunVariables returns mapped record', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockedMutator.mockResolvedValueOnce({ data: { a: 1, b: 'x' } } as any);
+    mockGetFlowRunsIdVariables.mockResolvedValueOnce({
+      data: { a: 1, b: 'x' },
+    });
     const res = await fetchFlowRunVariables('f1');
     expect(res).toMatchObject({ a: 1, b: 'x' });
   });

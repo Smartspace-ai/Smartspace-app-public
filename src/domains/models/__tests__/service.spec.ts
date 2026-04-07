@@ -1,17 +1,28 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { apiMutator } from '@/platform/api/orvalMutator';
+const { mockGetModels, mockGetModelsId } = vi.hoisted(() => ({
+  mockGetModels: vi.fn(),
+  mockGetModelsId: vi.fn(),
+}));
 
-import { fetchModel, fetchModels } from '@/domains/models/service';
-
-vi.mock('@/platform/api/orvalMutator', () => ({
-  apiMutator: vi.fn(),
+vi.mock('@smartspace-ai/api-client', () => ({
+  ChatApi: {
+    getSmartSpaceChatAPI: () => ({
+      getModels: mockGetModels,
+      getModelsId: mockGetModelsId,
+    }),
+  },
+  ChatZod: {
+    getModelsResponse: {},
+    getModelsIdResponse: {},
+  },
+  AXIOS_INSTANCE: {},
 }));
 vi.mock('@/platform/validation', () => ({
   parseOrThrow: vi.fn((_schema: unknown, data: unknown) => data),
 }));
 
-const mockedMutator = vi.mocked(apiMutator);
+import { fetchModel, fetchModels } from '@/domains/models/service';
 
 describe('models service', () => {
   it('fetchModels returns mapped list and total', async () => {
@@ -31,8 +42,7 @@ describe('models service', () => {
       ],
       total: 1,
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockedMutator.mockResolvedValueOnce({ data: env } as any);
+    mockGetModels.mockResolvedValueOnce({ data: env });
     const res = await fetchModels({ search: 'a', take: 10, skip: 0 });
     expect(res.total).toBe(1);
     expect(res.data[0].id).toBe('m1');
@@ -48,8 +58,7 @@ describe('models service', () => {
       createdAt: '2024-06-01T12:00:00Z',
       properties: [],
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockedMutator.mockResolvedValueOnce({ data: dto } as any);
+    mockGetModelsId.mockResolvedValueOnce({ data: dto });
     const m = await fetchModel('m2');
     expect(m.id).toBe('m2');
   });
