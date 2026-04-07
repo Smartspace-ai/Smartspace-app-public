@@ -5,7 +5,7 @@ import {
   EventType,
 } from '@azure/msal-browser';
 import { MsalProvider } from '@azure/msal-react';
-import { ChatApi } from '@smartspace-ai/api-client';
+import { ChatApi } from '@smartspace/api-client';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { StrictMode } from 'react';
@@ -15,6 +15,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { configureApiClient } from '@/platform/api/configureApiClient';
 import { getMsalInstance } from '@/platform/auth/msalClient';
 import { removeSplash } from '@/platform/boot/removeSplash';
+import { ssError, ssInfoAlways, ssWarn } from '@/platform/log';
 import { queryClient } from '@/platform/reactQueryClient';
 
 import AppProviders from '@/app/AppProviders';
@@ -55,6 +56,7 @@ function fallbackRender({ error }: { error: unknown }) {
   );
 }
 
+// Must run before any ChatApi / AXIOS_INSTANCE usage (e.g. router context below).
 configureApiClient();
 
 const router = createRouter({
@@ -97,8 +99,7 @@ if (isInPopup) {
   removeSplash();
   const rootEl = document.getElementById('root');
   if (rootEl) rootEl.textContent = 'Completing sign-in...';
-  // eslint-disable-next-line no-console
-  console.info('[SmartSpace] Popup context detected; SPA bootstrap skipped.');
+  ssInfoAlways('boot', 'Popup context detected; SPA bootstrap skipped.');
 } else {
   let msal: ReturnType<typeof getMsalInstance> | null = null;
   try {
@@ -106,15 +107,13 @@ if (isInPopup) {
   } catch (e) {
     // Don't leave users stuck on an infinite splash screen.
     removeSplash();
-    // eslint-disable-next-line no-console
-    console.error('MSAL config error', e);
+    ssError('boot', 'MSAL config error', e);
     renderBootstrapError(String((e as Error)?.message ?? e));
   }
 
   if (!msal) {
     // Config issue already rendered.
-    // eslint-disable-next-line no-console
-    console.warn('MSAL not configured; app bootstrap halted.');
+    ssWarn('boot', 'MSAL not configured; app bootstrap halted.');
   } else {
     msal
       .initialize()
@@ -177,9 +176,7 @@ if (isInPopup) {
       .catch((e) => {
         // Don't leave users stuck on an infinite splash screen.
         removeSplash();
-        // Surface error in console; ErrorBoundary won't catch errors before render.
-        // eslint-disable-next-line no-console
-        console.error('MSAL initialization failed', e);
+        ssError('boot', 'MSAL initialization failed', e);
         renderBootstrapError(String((e as Error)?.message ?? e));
       });
   }

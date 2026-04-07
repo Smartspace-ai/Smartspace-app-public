@@ -1,4 +1,4 @@
-import { ChatZod } from '@smartspace-ai/api-client';
+import { ChatZod } from '@smartspace/api-client';
 import type { z } from 'zod';
 
 import { FileInfo } from './model';
@@ -19,7 +19,3 @@ export function mapFileInfoDtoToModel(
     name: dto.name,
   };
 }
-
-export const mapFileInfosDtoToModels = (
-  arr: Array<FileInfoDto | FileInfoItemDto>
-) => arr.map(mapFileInfoDtoToModel);

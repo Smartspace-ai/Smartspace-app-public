@@ -314,5 +314,7 @@ module.exports = {
     '.next',
     // generated router tree or similar
     'src/routeTree.gen.ts',
+    // Dagger CI module (separate tsconfig, decorators)
+    'ci',
   ],
 };

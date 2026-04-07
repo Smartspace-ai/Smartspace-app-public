@@ -6,7 +6,7 @@ const { mockGetFlowRunsIdVariables } = vi.hoisted(() => ({
   mockGetFlowRunsIdVariables: vi.fn(),
 }));
 
-vi.mock('@smartspace-ai/api-client', () => ({
+vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
       getFlowRunsIdVariables: mockGetFlowRunsIdVariables,
