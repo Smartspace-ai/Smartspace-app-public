@@ -9,6 +9,10 @@ import {
 } from '@dagger.io/dagger';
 
 const NODE_IMAGE = 'node:20-slim';
+const WORK_DIR = '/work';
+const DIST_DIR = '/work/dist/smartspace';
+const GH_PACKAGES_REGISTRY = 'npm.pkg.github.com';
+const GH_PACKAGES_SCOPE = '@smartspace-ai';
 
 const REQUIRED_ENV_VARS = [
   'VITE_CLIENT_ID',
@@ -21,7 +25,7 @@ const REQUIRED_ENV_VARS = [
 @object()
 class WebPipeline {
   /**
-   * Run lint, typecheck, and test in parallel, then build.
+   * Run lint, typecheck, test, and build in parallel.
    * Pass ghPackageToken to install from GitHub Packages (dev),
    * or omit it to install from npmjs.com (production/client).
    */
@@ -32,13 +36,12 @@ class WebPipeline {
   ): Promise<string> {
     const base = this.nodeContainer(source, ghPackageToken);
 
-    const [lint, typecheck, test] = await Promise.all([
+    const [lint, typecheck, test, build] = await Promise.all([
       base.withExec(['npm', 'run', '-s', 'lint:all']).stdout(),
       base.withExec(['npm', 'run', '-s', 'typecheck']).stdout(),
       base.withExec(['npm', 'run', '-s', 'test']).stdout(),
+      base.withExec(['npm', 'run', '-s', 'build']).stdout(),
     ]);
-
-    const build = await base.withExec(['npm', 'run', '-s', 'build']).stdout();
 
     return [lint, typecheck, test, build].join('\n');
   }
@@ -57,7 +60,7 @@ class WebPipeline {
       'build',
     ]);
 
-    return ctr.directory('/work/dist/smartspace');
+    return ctr.directory(DIST_DIR);
   }
 
   /**
@@ -78,8 +81,8 @@ class WebPipeline {
     return dag
       .container()
       .from(NODE_IMAGE)
-      .withDirectory('/work', source)
-      .withWorkdir('/work')
+      .withDirectory(WORK_DIR, source)
+      .withWorkdir(WORK_DIR)
       .withExec([
         'sh',
         '-c',
@@ -137,12 +140,12 @@ class WebPipeline {
       'build',
     ]);
 
-    const entries = await ctr.directory('/work/dist/smartspace').entries();
+    const entries = await ctr.directory(DIST_DIR).entries();
     if (entries.length === 0) {
       throw new Error('Build produced an empty dist/smartspace directory');
     }
 
-    return ctr.directory('/work/dist/smartspace');
+    return ctr.directory(DIST_DIR);
   }
 
   // ---------------------------------------------------------------------------
@@ -153,8 +156,8 @@ class WebPipeline {
     let ctr = dag
       .container()
       .from(NODE_IMAGE)
-      .withDirectory('/work', source)
-      .withWorkdir('/work')
+      .withDirectory(WORK_DIR, source)
+      .withWorkdir(WORK_DIR)
       .withMountedCache('/root/.npm', dag.cacheVolume('npm-cache'));
 
     if (ghPackageToken) {
@@ -163,8 +166,15 @@ class WebPipeline {
         .withExec([
           'sh',
           '-c',
-          'echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" > /root/.npmrc && echo "@smartspace-ai:registry=https://npm.pkg.github.com" >> /root/.npmrc',
+          `echo "//${GH_PACKAGES_REGISTRY}/:_authToken=\${NODE_AUTH_TOKEN}" > .npmrc` +
+            ` && echo "${GH_PACKAGES_SCOPE}:registry=https://${GH_PACKAGES_REGISTRY}" >> .npmrc`,
         ]);
+    } else {
+      ctr = ctr.withExec([
+        'sh',
+        '-c',
+        `echo "registry=https://registry.npmjs.org" > .npmrc`,
+      ]);
     }
 
     return ctr.withExec(['npm', 'ci']);

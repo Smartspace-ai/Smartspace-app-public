@@ -21,26 +21,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check .env for required variables
-        run: |
-          required_vars=(
-            VITE_CLIENT_ID
-            VITE_CLIENT_AUTHORITY
-            VITE_CLIENT_SCOPES
-            VITE_CHAT_API_URI
-            VITE_TEAMS_USE_MSAL
-          )
-          for var in "${required_vars[@]}"; do
-            if ! grep -q "^$var=" .env; then
-              echo "::error::.env does not contain $var!"
-              exit 1
-            fi
-            value=$(grep "^$var=" .env | cut -d'=' -f2-)
-            if [ -z "$value" ]; then
-              echo "::error::$var in .env is empty!"
-              exit 1
-            fi
-          done
+      - name: Validate .env
+        uses: dagger/dagger-for-github@v7
+        with:
+          version: "0.20.3"
+          verb: call
+          module: ./ci
+          args: >-
+            check-env
+            --source=.
 
       - name: Build
         uses: dagger/dagger-for-github@v7
