@@ -22,11 +22,13 @@ const REQUIRED_ENV_VARS = [
 class WebPipeline {
   /**
    * Run lint, typecheck, and test in parallel, then build.
+   * Pass ghPackageToken to install from GitHub Packages (dev),
+   * or omit it to install from npmjs.com (production/client).
    */
   @func()
   async qualityCheck(
     source: Directory,
-    ghPackageToken: Secret
+    ghPackageToken?: Secret
   ): Promise<string> {
     const base = this.nodeContainer(source, ghPackageToken);
 
@@ -43,9 +45,11 @@ class WebPipeline {
 
   /**
    * Build the app and return the dist/smartspace directory.
+   * Pass ghPackageToken to install from GitHub Packages (dev),
+   * or omit it to install from npmjs.com (production/client).
    */
   @func()
-  async build(source: Directory, ghPackageToken: Secret): Promise<Directory> {
+  async build(source: Directory, ghPackageToken?: Secret): Promise<Directory> {
     const ctr = this.nodeContainer(source, ghPackageToken).withExec([
       'npm',
       'run',
@@ -92,7 +96,7 @@ class WebPipeline {
 
   @func()
   @check()
-  async checkLint(source: Directory, ghPackageToken: Secret): Promise<string> {
+  async checkLint(source: Directory, ghPackageToken?: Secret): Promise<string> {
     return this.nodeContainer(source, ghPackageToken)
       .withExec(['npm', 'run', '-s', 'lint:all'])
       .stdout();
@@ -102,7 +106,7 @@ class WebPipeline {
   @check()
   async checkTypecheck(
     source: Directory,
-    ghPackageToken: Secret
+    ghPackageToken?: Secret
   ): Promise<string> {
     return this.nodeContainer(source, ghPackageToken)
       .withExec(['npm', 'run', '-s', 'typecheck'])
@@ -111,7 +115,10 @@ class WebPipeline {
 
   @func()
   @check()
-  async checkTests(source: Directory, ghPackageToken: Secret): Promise<string> {
+  async checkTests(
+    source: Directory,
+    ghPackageToken?: Secret
+  ): Promise<string> {
     return this.nodeContainer(source, ghPackageToken)
       .withExec(['npm', 'run', '-s', 'test'])
       .stdout();
@@ -121,7 +128,7 @@ class WebPipeline {
   @check()
   async checkBuild(
     source: Directory,
-    ghPackageToken: Secret
+    ghPackageToken?: Secret
   ): Promise<Directory> {
     const ctr = this.nodeContainer(source, ghPackageToken).withExec([
       'npm',
@@ -142,19 +149,24 @@ class WebPipeline {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private nodeContainer(source: Directory, ghPackageToken: Secret): Container {
-    return dag
+  private nodeContainer(source: Directory, ghPackageToken?: Secret): Container {
+    let ctr = dag
       .container()
       .from(NODE_IMAGE)
       .withDirectory('/work', source)
       .withWorkdir('/work')
-      .withMountedCache('/root/.npm', dag.cacheVolume('npm-cache'))
-      .withSecretVariable('NODE_AUTH_TOKEN', ghPackageToken)
-      .withExec([
-        'sh',
-        '-c',
-        'echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" > /root/.npmrc && echo "@smartspace-ai:registry=https://npm.pkg.github.com" >> /root/.npmrc',
-      ])
-      .withExec(['npm', 'ci']);
+      .withMountedCache('/root/.npm', dag.cacheVolume('npm-cache'));
+
+    if (ghPackageToken) {
+      ctr = ctr
+        .withSecretVariable('NODE_AUTH_TOKEN', ghPackageToken)
+        .withExec([
+          'sh',
+          '-c',
+          'echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" > /root/.npmrc && echo "@smartspace-ai:registry=https://npm.pkg.github.com" >> /root/.npmrc',
+        ]);
+    }
+
+    return ctr.withExec(['npm', 'ci']);
   }
 }
