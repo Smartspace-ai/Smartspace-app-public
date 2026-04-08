@@ -1,11 +1,12 @@
+import { ChatZod } from '@smartspace/api-client';
 import type { z } from 'zod';
 
-import {
-  getFilesIdResponse as fileInfoResponseSchema,
-  postFilesResponseItem as fileInfoItemSchema,
-} from '@/platform/api/generated/chat/zod';
-
 import { FileInfo } from './model';
+
+const {
+  getFilesIdResponse: fileInfoResponseSchema,
+  postFilesResponseItem: fileInfoItemSchema,
+} = ChatZod;
 
 type FileInfoDto = z.infer<typeof fileInfoResponseSchema>;
 type FileInfoItemDto = z.infer<typeof fileInfoItemSchema>;
@@ -18,7 +19,3 @@ export function mapFileInfoDtoToModel(
     name: dto.name,
   };
 }
-
-export const mapFileInfosDtoToModels = (
-  arr: Array<FileInfoDto | FileInfoItemDto>
-) => arr.map(mapFileInfoDtoToModel);

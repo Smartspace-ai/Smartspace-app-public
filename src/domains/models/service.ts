@@ -1,14 +1,15 @@
-import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
-import {
-  getModelsIdResponse as modelResponseSchema,
-  getModelsResponse as modelsResponseSchema,
-} from '@/platform/api/generated/chat/zod';
+import { ChatApi, ChatZod } from '@smartspace/api-client';
+
 import { parseOrThrow } from '@/platform/validation';
 
 import { mapModelDtoToModel, mapModelsEnvelopeDtoToModels } from './mapper';
 import { Model } from './model';
 
-const chatApi = getSmartSpaceChatAPI();
+const {
+  getModelsIdResponse: modelResponseSchema,
+  getModelsResponse: modelsResponseSchema,
+} = ChatZod;
+const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 // Fetch threads for a given workspace
 export async function fetchModels({

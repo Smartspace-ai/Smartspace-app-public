@@ -1,18 +1,46 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { api } from '@/platform/api';
-import { apiMutator } from '@/platform/api/orvalMutator';
 
-import { fetchMessages, postMessage } from '@/domains/messages';
+const { mockGetMessages, mockMessageElementParse } = vi.hoisted(() => ({
+  mockGetMessages: vi.fn(),
+  mockMessageElementParse: vi.fn((data: unknown) => data),
+}));
 
-vi.mock('@/platform/api/orvalMutator', () => ({
-  apiMutator: vi.fn(),
+vi.mock('@smartspace/api-client', () => ({
+  ChatApi: {
+    getSmartSpaceChatAPI: () => ({
+      getMessageThreadsIdMessages: mockGetMessages,
+    }),
+  },
+  ChatZod: {
+    getMessageThreadsIdMessagesResponse: {
+      shape: {
+        data: {
+          element: {
+            parse: mockMessageElementParse,
+          },
+        },
+      },
+    },
+  },
+  AXIOS_INSTANCE: {},
 }));
 vi.mock('@/platform/validation', () => ({
   parseOrThrow: vi.fn((_schema: unknown, data: unknown) => data),
 }));
 
-const mockedMutator = vi.mocked(apiMutator);
+vi.mock('@/platform/log', () => ({
+  ssDebug: vi.fn(),
+  ssWarn: vi.fn(),
+  ssError: vi.fn(),
+}));
+
+import {
+  addInputToMessage,
+  fetchMessages,
+  postMessage,
+} from '@/domains/messages';
 
 type ProgressEventLike = { event: { currentTarget: { response: string } } };
 
@@ -31,8 +59,7 @@ describe('messages service', () => {
         },
       ],
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockedMutator.mockResolvedValueOnce({ data: envelope } as any);
+    mockGetMessages.mockResolvedValueOnce({ data: envelope });
     const res = await fetchMessages('t1');
     expect(res.length).toBe(1);
     expect(res[0].id).toBe('m1');
@@ -74,5 +101,68 @@ describe('messages service', () => {
 
     expect(typeof obs.subscribe).toBe('function');
     postSpy.mockRestore();
+  });
+
+  it('postMessage observable emits error when stream fails', () => {
+    const networkError = new Error('Network failure');
+    const postSpy = vi.spyOn(api, 'post').mockRejectedValueOnce(networkError);
+
+    const obs = postMessage({ workSpaceId: 'w', threadId: 't1' });
+
+    return new Promise<void>((resolve) => {
+      obs.subscribe({
+        error: (err) => {
+          expect(err).toBe(networkError);
+          postSpy.mockRestore();
+          resolve();
+        },
+      });
+    });
+  });
+
+  it('addInputToMessage throws when no valid message received', async () => {
+    vi.spyOn(api, 'post').mockResolvedValueOnce(undefined as never);
+
+    await expect(
+      addInputToMessage({
+        messageId: 'm1',
+        name: 'test',
+        value: 'v',
+        channels: null,
+      })
+    ).rejects.toThrow('No valid message received from stream');
+  });
+
+  it('addInputToMessage returns parsed message from SSE stream', async () => {
+    const chunk = JSON.stringify({
+      id: 'm3',
+      createdAt: '2024-01-01',
+      createdBy: 'u1',
+      hasComments: false,
+      createdByUserId: 'u1',
+      messageThreadId: 't1',
+      values: [],
+    });
+
+    vi.spyOn(api, 'post').mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      async (_url: string, _payload: any, cfg?: any) => {
+        const cb = cfg?.onDownloadProgress as
+          | ((e: ProgressEventLike) => void)
+          | undefined;
+        cb?.({
+          event: { currentTarget: { response: `data:${chunk}\n\n` } },
+        });
+        return undefined as unknown as never;
+      }
+    );
+
+    const result = await addInputToMessage({
+      messageId: 'm1',
+      name: 'test',
+      value: 'v',
+      channels: null,
+    });
+    expect(result.id).toBe('m3');
   });
 });

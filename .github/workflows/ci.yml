@@ -21,27 +21,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Quality check
+        uses: dagger/dagger-for-github@v7
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install
-        run: npm ci
-
-      - name: OpenAPI generate
-        run: npm run -s openapi:generate
-
-      - name: Lint
-        run: npm run -s lint:all
-
-      - name: Typecheck
-        run: npm run -s typecheck
-
-      - name: Test
-        run: npm run -s test
-
-      - name: Build
-        run: npm run -s build
+          version: "0.20.3"
+          verb: call
+          module: ./ci
+          args: >-
+            quality-check
+            --source=.

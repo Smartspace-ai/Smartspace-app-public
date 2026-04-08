@@ -1,14 +1,15 @@
-import { getSmartSpaceChatAPI } from '@/platform/api/generated/chat/api';
-import {
-  getWorkSpacesIdMessageThreadsResponse as threadsListResponseSchema,
-  getWorkspacesWorkspaceIdMessagethreadsIdResponse as threadResponseSchema,
-  postWorkspacesWorkspaceIdMessagethreadsResponse as createThreadResponseSchema,
-} from '@/platform/api/generated/chat/zod';
+import { ChatApi, ChatZod } from '@smartspace/api-client';
+
 import { parseOrThrow } from '@/platform/validation';
 
 import { mapThreadDtoToModel, mapThreadsResponseDtoToModel } from './mapper';
 
-const chatApi = getSmartSpaceChatAPI();
+const {
+  getWorkSpacesIdMessageThreadsResponse: threadsListResponseSchema,
+  getWorkspacesWorkspaceIdMessagethreadsIdResponse: threadResponseSchema,
+  postWorkspacesWorkspaceIdMessagethreadsResponse: createThreadResponseSchema,
+} = ChatZod;
+const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 // Fetch threads for a given workspace
 export async function fetchThreads(

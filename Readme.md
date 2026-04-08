@@ -1,7 +1,7 @@
 # SmartSpace Chat UI
 
 > **Template Repository:**
-> 
+>
 > This repository is intended as a starting point for clients who want to build their own customized chat UI for Smartspace. The recommended workflow is to **fork this repository**, then white label and customize it to fit your organization's branding and requirements. Once customized, you can deploy your version and connect it to your own Smartspace backend.
 
 A modern, customizable chat interface built with React 18.3, utilizing [shadcn UI](https://ui.shadcn.com/) components and [Tailwind CSS](https://tailwindcss.com/) for styling. This project is designed to integrate seamlessly with [smartspace.ai](https://smartspace.ai).
@@ -27,13 +27,33 @@ Ensure you have the following installed:
 - [Node.js](https://nodejs.org/en/download/) (version 20 or higher)
 - [npm](https://www.npmjs.com/get-npm) or [yarn](https://yarnpkg.com/getting-started/install)
 
+### Versioning
+
+This repository is tagged to match SmartSpace deployment versions. **Always clone the tag that matches the version of SmartSpace your instance is running.**
+
+You can check your SmartSpace version in the admin portal, then clone the matching tag:
+
+```bash
+# Replace v1.13.1 with your SmartSpace version
+git clone --branch v1.13.1 https://github.com/Smartspace-ai/Smartspace-app-public.git
+```
+
+To see all available versions:
+
+```bash
+git ls-remote --tags https://github.com/Smartspace-ai/Smartspace-app-public.git
+```
+
+> **Do not clone from `main` directly** unless you are running the latest version of SmartSpace. The `main` branch tracks the most recent release and may include API changes that are incompatible with older SmartSpace versions.
+
 ### Installation
 
 1. **Fork [this repository](https://github.com/Smartspace-ai/Smartspace-app-public) to your own GitHub account.**
-2. **Clone your fork:**
+2. **Clone your fork at the correct version:**
 
    ```bash
-   git clone https://github.com/<your-org-or-username>/Smartspace-app-public.git
+   # Replace v1.13.1 with your SmartSpace version
+   git clone --branch v1.13.1 https://github.com/<your-org-or-username>/Smartspace-app-public.git
    ```
 
 3. **Navigate to the project directory:**
@@ -46,9 +66,11 @@ Ensure you have the following installed:
 
    ```bash
    npm install
-   # or
-   yarn install
    ```
+
+### SDK Dependency
+
+This project depends on `@smartspace/api-client`, published to [npmjs.com](https://www.npmjs.com/package/@smartspace/api-client). Stable releases install automatically — no extra setup or authentication needed.
 
 ### Configuration
 
@@ -98,6 +120,7 @@ If you need a public URL to your local dev server (e.g. for Teams manifests / ca
   ```
 
 - **Env vars** (in `.env.local` / `.env.dev`):
+
   - `PUBLIC_ORIGIN`: the tunnel URL (hostname is used by Vite `server.allowedHosts`)
   - `TUNNEL_ID` (optional, recommended): existing tunnel id to reuse (stable URL), e.g. `puzzled-chair-8bzd2hr.aue`
 
