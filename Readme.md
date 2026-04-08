@@ -27,13 +27,33 @@ Ensure you have the following installed:
 - [Node.js](https://nodejs.org/en/download/) (version 20 or higher)
 - [npm](https://www.npmjs.com/get-npm) or [yarn](https://yarnpkg.com/getting-started/install)
 
+### Versioning
+
+This repository is tagged to match SmartSpace deployment versions. **Always clone the tag that matches the version of SmartSpace your instance is running.**
+
+You can check your SmartSpace version in the admin portal, then clone the matching tag:
+
+```bash
+# Replace v1.13.1 with your SmartSpace version
+git clone --branch v1.13.1 https://github.com/Smartspace-ai/Smartspace-app-public.git
+```
+
+To see all available versions:
+
+```bash
+git ls-remote --tags https://github.com/Smartspace-ai/Smartspace-app-public.git
+```
+
+> **Do not clone from `main` directly** unless you are running the latest version of SmartSpace. The `main` branch tracks the most recent release and may include API changes that are incompatible with older SmartSpace versions.
+
 ### Installation
 
 1. **Fork [this repository](https://github.com/Smartspace-ai/Smartspace-app-public) to your own GitHub account.**
-2. **Clone your fork:**
+2. **Clone your fork at the correct version:**
 
    ```bash
-   git clone https://github.com/<your-org-or-username>/Smartspace-app-public.git
+   # Replace v1.13.1 with your SmartSpace version
+   git clone --branch v1.13.1 https://github.com/<your-org-or-username>/Smartspace-app-public.git
    ```
 
 3. **Navigate to the project directory:**
@@ -46,22 +66,11 @@ Ensure you have the following installed:
 
    ```bash
    npm install
-   # or
-   yarn install
    ```
 
-### GitHub Packages Authentication
+### SDK Dependency
 
-This project depends on `@smartspace/api-client`, published to [npmjs.com](https://www.npmjs.com/package/@smartspace/api-client).
-
-- **Public stable releases** work out of the box — no extra setup needed.
-- **Pre-release versions** (auto-published per backend PR) require a GitHub Personal Access Token with the `read:packages` scope. Add it to your **user-level** `~/.npmrc`:
-
-  ```
-  //npm.pkg.github.com/:_authToken=YOUR_GITHUB_PAT
-  ```
-
-  > To create a PAT: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → generate with `read:packages` scope.
+This project depends on `@smartspace/api-client`, published to [npmjs.com](https://www.npmjs.com/package/@smartspace/api-client). Stable releases install automatically — no extra setup or authentication needed.
 
 ### Configuration
 
