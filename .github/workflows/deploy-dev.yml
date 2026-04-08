@@ -14,3 +14,14 @@ jobs:
     with:
       environment: develop
     secrets: inherit
+
+  trigger-smartspace-app-build:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Smartspace-app Docker build
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.SMARTSPACE_APP_DISPATCH_TOKEN }}
+          repository: Smartspace-ai/Smartspace-app
+          event-type: app-public-updated
