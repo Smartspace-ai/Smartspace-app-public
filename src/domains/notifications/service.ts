@@ -1,9 +1,10 @@
-import { api } from '@/platform/api';
-import { parseOrThrow } from '@/platform/validation';
+import { apiParsed } from '@/platform/apiParsed';
 
+import { NotificationsEnvelopeDto } from './dto';
 import { mapNotificationsEnvelopeDto } from './mapper';
 import type { Notification } from './model';
-import { notificationsEnvelopeSchema } from './schemas';
+
+
 
 export interface NotificationList {
   items: Notification[];
@@ -19,19 +20,13 @@ export async function fetchNotifications(
 ): Promise<NotificationList> {
   const skip = (page - 1) * LIMIT;
 
-  const raw = await api.get('/notification', {
-    params: { unread: isUnreadOnly, skip, take: LIMIT },
-  });
-  const envelope = parseOrThrow(
-    notificationsEnvelopeSchema,
-    raw,
-    'GET /notification'
-  );
+  const envelope = await apiParsed.get(NotificationsEnvelopeDto, '/notification', { params: { unread: isUnreadOnly, skip, take: LIMIT } });
+
   const parsed = mapNotificationsEnvelopeDto(envelope);
 
-  const items = parsed.items
-    .slice()
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const items = parsed.items.slice().sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+  );
 
   return {
     items,
@@ -41,13 +36,11 @@ export async function fetchNotifications(
 }
 
 /** Mark a specific notification as read. */
-export async function markNotificationAsRead(
-  notificationId: string
-): Promise<void> {
-  await api.put('/notification/update', [notificationId]);
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+  await apiParsed.put(NotificationsEnvelopeDto.passthrough().optional(), '/notification/update', [notificationId]);
 }
 
 /** Mark all notifications as read. */
 export async function markAllNotificationsAsRead(): Promise<void> {
-  await api.put('/notification/updateall');
+  await apiParsed.put(NotificationsEnvelopeDto.passthrough().optional(), '/notification/updateall');
 }
