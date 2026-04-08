@@ -19,9 +19,18 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CI_DISPATCH_APP_ID }}
+          private-key: ${{ secrets.CI_DISPATCH_APP_PRIVATE_KEY }}
+          owner: Smartspace-ai
+          repositories: Smartspace-app
+
       - name: Trigger Smartspace-app Docker build
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.SMARTSPACE_APP_DISPATCH_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           repository: Smartspace-ai/Smartspace-app
           event-type: app-public-updated
