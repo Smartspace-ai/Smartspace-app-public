@@ -1,8 +1,13 @@
 export type VariableAccess = 'Read' | 'Write';
-export type Variables = Record<string, { schema: Record<string, unknown>; access: VariableAccess }>;
+export type Variables = Record<
+  string,
+  { schema: Record<string, unknown>; access: VariableAccess }
+>;
 
 export type MentionUser = {
   id: string;
+  /** AppUser id (the principal id used by thread-membership endpoints). */
+  userId: string;
   displayName: string;
   initials: string; // always computed, never null/undefined in the model
 };
@@ -16,12 +21,12 @@ export type Workspace = {
   dataSpaces?: unknown[];
 
   createdByUserId?: string;
-  createdAt?: Date;       // normalized to Date (optional if backend omits)
+  createdAt?: Date; // normalized to Date (optional if backend omits)
 
   modifiedByUserId?: string;
   modifiedAt?: Date;
 
-  favorited: boolean;     // normalized default false
+  favorited: boolean; // normalized default false
 
   summary?: string;
   firstPrompt?: string;
@@ -30,10 +35,10 @@ export type Workspace = {
   isPromptAndResponseLoggingEnabled?: boolean;
   inputs?: unknown;
 
-  variables: Variables;   // normalized default {}
+  variables: Variables; // normalized default {}
 
   sandBoxThreadId?: string;
   supportsFiles?: boolean;
 
-  avatarName: string;     // computed from name if missing
+  avatarName: string; // computed from name if missing
 };

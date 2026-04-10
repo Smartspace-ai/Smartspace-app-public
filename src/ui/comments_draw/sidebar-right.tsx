@@ -1,6 +1,6 @@
 import Skeleton from '@mui/material/Skeleton';
 import { ArrowBigUp, MessageSquare } from 'lucide-react';
-import { CSSProperties, useEffect, useRef, useState } from 'react';
+import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
@@ -92,10 +92,16 @@ export function SidebarRight() {
   const { threadId, workspaceId } = useRouteIds();
   const isDraft = isDraftThreadId(threadId);
   const {
-    data: comments,
+    data: rawComments,
     isLoading,
     isError: commentsError,
   } = useComments(threadId);
+  // Empty-content comments are produced server-side as side effects of
+  // membership changes; hide them from the comments feed.
+  const comments = useMemo(
+    () => rawComments?.filter((c) => c.content && c.content.trim() !== ''),
+    [rawComments]
+  );
   const { mutateAsync: addCommentAsync, isPending: isAddingComment } =
     useAddComment(threadId);
   const commentsEndRef = useRef<HTMLDivElement>(null);

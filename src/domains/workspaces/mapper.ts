@@ -35,6 +35,7 @@ const computeAvatar = (name: string, fallback?: string): string => {
 export function mapMentionUserDtoToModel(dto: MentionUserDto): MentionUser {
   return {
     id: dto.id,
+    userId: dto.userId,
     displayName: dto.displayName ?? '',
     initials: getInitials(dto.displayName ?? ''),
   };
