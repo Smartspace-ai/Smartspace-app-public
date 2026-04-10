@@ -5,6 +5,12 @@ import { toast } from 'sonner';
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 
 import { FileInfo } from '@/domains/files';
+import {
+  addThreadUser,
+  clearPendingThreadUsers,
+  getPendingThreadUsers,
+  threadUsersKeys,
+} from '@/domains/thread-users';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 
 import { MessageValueType } from './enums';
@@ -168,6 +174,24 @@ export function useSendMessage() {
           qc.invalidateQueries({
             queryKey: threadsKeys.detail(workspaceId, threadId),
           });
+
+          // If users were queued for this (previously draft) thread,
+          // attach them now that the thread exists server-side.
+          const pending = getPendingThreadUsers(threadId);
+          if (pending.length > 0) {
+            clearPendingThreadUsers(threadId);
+            void Promise.all(
+              pending.map((userId) =>
+                addThreadUser(threadId, userId).catch((err) => {
+                  console.error('Failed to add pending thread user', err);
+                })
+              )
+            ).then(() => {
+              qc.invalidateQueries({
+                queryKey: threadUsersKeys.list(threadId),
+              });
+            });
+          }
         },
       });
 
