@@ -46,7 +46,6 @@ export async function fetchThread(workspaceId: string, id: string) {
 // Set pin status of a message thread
 export async function setPin(threadId: string, pin: boolean): Promise<void> {
   await chatApi.messageThreadsSetFavoritedChat(threadId, pin);
-  return;
 }
 
 // Rename a message thread
@@ -56,13 +55,11 @@ export async function renameThread(
 ): Promise<void> {
   // API expects a JSON string body; axios won't JSON-encode plain strings.
   await chatApi.messageThreadsThreadIdName(threadId, JSON.stringify(name));
-  return;
 }
 
 // Delete a message thread by ID
 export async function deleteThread(threadId: string): Promise<void> {
   await chatApi.messageThreadsThreadId(threadId);
-  return;
 }
 
 // Create a new message thread

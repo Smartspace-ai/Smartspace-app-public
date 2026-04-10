@@ -97,6 +97,18 @@ const getFileIcon = (fileName: string) => {
   return FileText;
 };
 
+function getSafeUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return parsed.href;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function getDisplayName(source: MessageResponseSource): string {
   if (source.file?.name) return source.file.name;
   if (source.url) {
@@ -196,6 +208,8 @@ export function ChatMessageSources({
                 );
               }
 
+              const safeHref = source.url ? getSafeUrl(source.url) : null;
+
               return (
                 <li
                   key={`url-${source.index}`}
@@ -204,15 +218,21 @@ export function ChatMessageSources({
                 >
                   <span>{`(${source.index})`} : </span>
                   <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                  <a
-                    title={source.url ?? displayName}
-                    href={source.url ?? '#'}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 underline underline-offset-2"
-                  >
-                    {displayName}
-                  </a>
+                  {safeHref ? (
+                    <a
+                      title={source.url ?? displayName}
+                      href={safeHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 underline underline-offset-2"
+                    >
+                      {displayName}
+                    </a>
+                  ) : (
+                    <span className="text-foreground rounded px-1 py-0.5">
+                      {displayName}
+                    </span>
+                  )}
                 </li>
               );
             })}

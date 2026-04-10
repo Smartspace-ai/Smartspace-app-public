@@ -35,9 +35,9 @@ export async function fetchNotifications(
 
   const mapped = mapNotificationsEnvelopeDto(parsed);
 
-  const items = mapped.items
-    .slice()
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const items = mapped.items.sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+  );
 
   return {
     items,
