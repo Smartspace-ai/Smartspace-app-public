@@ -1,10 +1,15 @@
-import {
-  NotificationDto,
-  NotificationsEnvelopeDto,
-  TNotificationDto,
-  TNotificationsEnvelopeDto,
-} from './dto';
+import { ChatZod } from '@smartspace/api-client';
+import type { z } from 'zod';
+
+import { utcDate } from '@/shared/utils/dateFromApi';
+
 import { Notification, NotificationType } from './model';
+
+const { notificationGetResponse: notificationsResponseSchema } = ChatZod;
+
+type NotificationsResponseDto = z.infer<typeof notificationsResponseSchema>;
+type NotificationDto = NotificationsResponseDto['data'][number];
+
 const normalizeType = (value: unknown): NotificationType => {
   if (typeof value === 'number') {
     return value === 1
@@ -27,27 +32,25 @@ const normalizeType = (value: unknown): NotificationType => {
   return NotificationType.WorkSpaceUpdated;
 };
 
-export function mapNotificationDtoToModel(dto: TNotificationDto): Notification {
-  const parsed = NotificationDto.parse(dto);
+export function mapNotificationDtoToModel(dto: NotificationDto): Notification {
   return {
-    id: parsed.id,
-    notificationType: normalizeType(parsed.notificationType),
-    description: parsed.description,
-    workSpaceId: parsed.workSpaceId ?? undefined,
-    threadId: parsed.threadId ?? undefined,
-    createdBy: parsed.createdBy,
-    createdAt: parsed.createdAt,
-    dismissedAt: parsed.dismissedAt ?? undefined,
-    avatar: parsed.avatar ?? undefined,
+    id: dto.id ?? '',
+    notificationType: normalizeType(dto.notificationType),
+    description: dto.description ?? '',
+    workSpaceId: dto.workSpaceId ?? undefined,
+    threadId: dto.threadId ?? undefined,
+    createdBy: dto.createdBy ?? '',
+    createdAt: dto.createdAt ? utcDate(dto.createdAt) : new Date(0),
+    dismissedAt: dto.dismissedAt ?? undefined,
+    avatar: undefined,
   };
 }
 
-export function mapNotificationsEnvelopeDto(dto: TNotificationsEnvelopeDto) {
-  const env = NotificationsEnvelopeDto.parse(dto);
-  const items = env.data.map(mapNotificationDtoToModel);
+export function mapNotificationsEnvelopeDto(dto: NotificationsResponseDto) {
+  const items = dto.data.map(mapNotificationDtoToModel);
   return {
     items,
-    totalCount: env.total ?? items.length,
-    unreadCount: env.totalUnread ?? 0,
+    totalCount: dto.total,
+    unreadCount: dto.totalUnread,
   };
 }

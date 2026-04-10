@@ -1,10 +1,12 @@
-import { apiParsed } from '@/platform/apiParsed';
+import { ChatApi, ChatZod } from '@smartspace/api-client';
 
-import { NotificationsEnvelopeDto } from './dto';
+import { parseOrThrow } from '@/platform/validation';
+
 import { mapNotificationsEnvelopeDto } from './mapper';
 import type { Notification } from './model';
 
-
+const { notificationGetResponse: notificationsResponseSchema } = ChatZod;
+const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 export interface NotificationList {
   items: Notification[];
@@ -20,27 +22,38 @@ export async function fetchNotifications(
 ): Promise<NotificationList> {
   const skip = (page - 1) * LIMIT;
 
-  const envelope = await apiParsed.get(NotificationsEnvelopeDto, '/notification', { params: { unread: isUnreadOnly, skip, take: LIMIT } });
-
-  const parsed = mapNotificationsEnvelopeDto(envelope);
-
-  const items = parsed.items.slice().sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+  const response = await chatApi.notificationGet({
+    unread: isUnreadOnly,
+    skip,
+    take: LIMIT,
+  });
+  const parsed = parseOrThrow(
+    notificationsResponseSchema,
+    response.data,
+    'GET /notification'
   );
+
+  const mapped = mapNotificationsEnvelopeDto(parsed);
+
+  const items = mapped.items
+    .slice()
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return {
     items,
-    totalCount: parsed.totalCount,
-    unreadCount: parsed.unreadCount,
+    totalCount: mapped.totalCount,
+    unreadCount: mapped.unreadCount,
   };
 }
 
 /** Mark a specific notification as read. */
-export async function markNotificationAsRead(notificationId: string): Promise<void> {
-  await apiParsed.put(NotificationsEnvelopeDto.passthrough().optional(), '/notification/update', [notificationId]);
+export async function markNotificationAsRead(
+  notificationId: string
+): Promise<void> {
+  await chatApi.notificationPutUpdate([notificationId]);
 }
 
 /** Mark all notifications as read. */
 export async function markAllNotificationsAsRead(): Promise<void> {
-  await apiParsed.put(NotificationsEnvelopeDto.passthrough().optional(), '/notification/updateall');
+  await chatApi.notificationPutUpdateall();
 }
