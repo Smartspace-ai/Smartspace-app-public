@@ -6,8 +6,8 @@ import { utcDate } from '@/shared/utils/dateFromApi';
 import { Comment, MentionUser } from './model';
 
 const {
-  getMessageThreadsIdCommentsResponse: commentsResponseSchema,
-  postMessageThreadsIdCommentsResponse: commentCreateResponseSchema,
+  messageThreadsGetCommentsResponse: commentsResponseSchema,
+  messageThreadsPostCommentResponse: commentCreateResponseSchema,
 } = ChatZod;
 
 type CommentsResponseDto = z.infer<typeof commentsResponseSchema>;

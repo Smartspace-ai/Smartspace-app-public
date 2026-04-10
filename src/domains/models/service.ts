@@ -6,8 +6,8 @@ import { mapModelDtoToModel, mapModelsEnvelopeDtoToModels } from './mapper';
 import { Model } from './model';
 
 const {
-  getModelsIdResponse: modelResponseSchema,
-  getModelsResponse: modelsResponseSchema,
+  modelsGetModelResponse: modelResponseSchema,
+  modelsGetModelsResponse: modelsResponseSchema,
 } = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
@@ -20,7 +20,7 @@ export async function fetchModels({
   data: Model[];
   total: number;
 }> {
-  const response = await chatApi.getModels({ search, take, skip });
+  const response = await chatApi.modelsGetModels({ search, take, skip });
   const parsed = parseOrThrow(
     modelsResponseSchema,
     response.data,
@@ -31,7 +31,7 @@ export async function fetchModels({
 }
 
 export async function fetchModel(id: string): Promise<Model> {
-  const response = await chatApi.getModelsId(id);
+  const response = await chatApi.modelsGetModel(id);
   const parsed = parseOrThrow(
     modelResponseSchema,
     response.data,
