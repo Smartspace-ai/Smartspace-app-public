@@ -10,11 +10,11 @@ const { mockGetMessages, mockMessageElementParse } = vi.hoisted(() => ({
 vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
-      getMessageThreadsIdMessages: mockGetMessages,
+      messageThreadsThreadMessagesIdMessages: mockGetMessages,
     }),
   },
   ChatZod: {
-    getMessageThreadsIdMessagesResponse: {
+    messageThreadsThreadMessagesIdMessagesResponse: {
       shape: {
         data: {
           element: {
