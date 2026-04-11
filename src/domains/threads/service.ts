@@ -5,9 +5,10 @@ import { parseOrThrow } from '@/platform/validation';
 import { mapThreadDtoToModel, mapThreadsResponseDtoToModel } from './mapper';
 
 const {
-  getWorkSpacesIdMessageThreadsResponse: threadsListResponseSchema,
-  getWorkspacesWorkspaceIdMessagethreadsIdResponse: threadResponseSchema,
-  postWorkspacesWorkspaceIdMessagethreadsResponse: createThreadResponseSchema,
+  workSpacesThreadResponse: threadsListResponseSchema,
+  messageThreadsGetMessageThreadWorkspacesWorkspaceIdMessagethreadsIdResponse:
+    threadResponseSchema,
+  messageThreadsCreateMessageThreadResponse: createThreadResponseSchema,
 } = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
@@ -16,7 +17,7 @@ export async function fetchThreads(
   workspaceId: string,
   { take, skip }: { take?: number; skip?: number } = {}
 ) {
-  const response = await chatApi.getWorkSpacesIdMessageThreads(workspaceId, {
+  const response = await chatApi.workSpacesThread(workspaceId, {
     take,
     skip,
   });
@@ -29,10 +30,11 @@ export async function fetchThreads(
 }
 
 export async function fetchThread(workspaceId: string, id: string) {
-  const response = await chatApi.getWorkspacesWorkspaceIdMessagethreadsId(
-    workspaceId,
-    id
-  );
+  const response =
+    await chatApi.messageThreadsGetMessageThreadWorkspacesWorkspaceIdMessagethreadsId(
+      workspaceId,
+      id
+    );
   const parsed = parseOrThrow(
     threadResponseSchema,
     response.data,
@@ -43,8 +45,7 @@ export async function fetchThread(workspaceId: string, id: string) {
 
 // Set pin status of a message thread
 export async function setPin(threadId: string, pin: boolean): Promise<void> {
-  await chatApi.putMessageThreadsIdFavorited(threadId, pin);
-  return;
+  await chatApi.messageThreadsSetFavoritedChat(threadId, pin);
 }
 
 // Rename a message thread
@@ -53,19 +54,17 @@ export async function renameThread(
   name: string
 ): Promise<void> {
   // API expects a JSON string body; axios won't JSON-encode plain strings.
-  await chatApi.putMessageThreadsIdName(threadId, JSON.stringify(name));
-  return;
+  await chatApi.messageThreadsThreadIdName(threadId, JSON.stringify(name));
 }
 
 // Delete a message thread by ID
 export async function deleteThread(threadId: string): Promise<void> {
-  await chatApi.deleteMessageThreadsId(threadId);
-  return;
+  await chatApi.messageThreadsThreadId(threadId);
 }
 
 // Create a new message thread
 export async function createThread(name: string, workspaceId: string) {
-  const response = await chatApi.postWorkspacesWorkspaceIdMessagethreads(
+  const response = await chatApi.messageThreadsCreateMessageThread(
     workspaceId,
     { name }
   );

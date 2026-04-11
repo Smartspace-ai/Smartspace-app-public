@@ -10,7 +10,9 @@ import { FileInfo } from '@/domains/files';
 import { mapMessageDtoToModel, mapMessagesDtoToModels } from './mapper';
 import type { Message, MessageContentItem } from './model';
 
-const { getMessageThreadsIdMessagesResponse: messagesResponseSchema } = ChatZod;
+const {
+  messageThreadsThreadMessagesIdMessagesResponse: messagesResponseSchema,
+} = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 /** Backend sends null createdByUserId on system-generated values; Zod schema requires string. */
@@ -28,7 +30,10 @@ export async function fetchMessages(
   threadId: string,
   opts?: { take?: number; skip?: number }
 ): Promise<Message[]> {
-  const response = await chatApi.getMessageThreadsIdMessages(threadId, opts);
+  const response = await chatApi.messageThreadsThreadMessagesIdMessages(
+    threadId,
+    opts
+  );
   const parsed = parseOrThrow(
     messagesResponseSchema,
     response.data,

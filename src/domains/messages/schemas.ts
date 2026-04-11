@@ -15,7 +15,8 @@ export const MessageResponseSourceSchema = z.object({
   datasetItemId: z.string().optional(),
   containerItemId: z.string().nullish(),
   flowRunId: z.string().optional(),
-  file: FileInfoSchema.optional(),
+  file: FileInfoSchema.nullish(),
+  url: z.string().nullish(),
   sourceType: z.nativeEnum(MessageResponseSourceType),
 });
 

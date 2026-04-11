@@ -1,5 +1,15 @@
-
-import { ChevronUp, FileArchive, FileAudio, FileCode, FileImage, FileSpreadsheet, FileText, FileVideo, Presentation } from 'lucide-react';
+import {
+  ChevronUp,
+  ExternalLink,
+  FileArchive,
+  FileAudio,
+  FileCode,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
+  FileVideo,
+  Presentation,
+} from 'lucide-react';
 import { useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
@@ -8,7 +18,6 @@ import { useFileMutations } from '@/domains/files/mutations';
 import { MessageResponseSourceType } from '@/domains/messages/enums';
 // Keeping this component generic; adjust type if needed in the future
 
-
 import { cn } from '@/shared/utils/utils';
 
 export type MessageResponseSource = {
@@ -16,7 +25,8 @@ export type MessageResponseSource = {
   datasetItemId?: string;
   containerItemId?: string | null;
   flowRunId?: string;
-  file?: { id: string; name: string };
+  file?: { id: string; name: string } | null;
+  url?: string | null;
   sourceType: MessageResponseSourceType;
 };
 
@@ -25,12 +35,18 @@ const getFileIcon = (fileName: string) => {
   const extension = fileName.split('.').pop()?.toLowerCase();
 
   // Image files
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension || '')) {
+  if (
+    ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(
+      extension || ''
+    )
+  ) {
     return FileImage;
   }
 
   // Video files
-  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(extension || '')) {
+  if (
+    ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(extension || '')
+  ) {
     return FileVideo;
   }
 
@@ -45,7 +61,25 @@ const getFileIcon = (fileName: string) => {
   }
 
   // Code files
-  if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'cs', 'php', 'html', 'css', 'json', 'xml', 'md'].includes(extension || '')) {
+  if (
+    [
+      'js',
+      'ts',
+      'jsx',
+      'tsx',
+      'py',
+      'java',
+      'cpp',
+      'c',
+      'cs',
+      'php',
+      'html',
+      'css',
+      'json',
+      'xml',
+      'md',
+    ].includes(extension || '')
+  ) {
     return FileCode;
   }
 
@@ -63,19 +97,59 @@ const getFileIcon = (fileName: string) => {
   return FileText;
 };
 
+function getSafeUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return parsed.href;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function getDisplayName(source: MessageResponseSource): string {
+  if (source.file?.name) return source.file.name;
+  if (source.url) {
+    try {
+      const parsed = new URL(source.url);
+      return parsed.hostname + (parsed.pathname !== '/' ? parsed.pathname : '');
+    } catch {
+      return source.url;
+    }
+  }
+  return `Source ${source.index}`;
+}
+
+function isFileSource(
+  s: MessageResponseSource
+): s is MessageResponseSource & { file: { id: string; name: string } } {
+  return s.sourceType === MessageResponseSourceType.File && !!s.file;
+}
+
+function isLinkSource(s: MessageResponseSource): boolean {
+  return (
+    (s.sourceType === MessageResponseSourceType.URL ||
+      s.sourceType === MessageResponseSourceType.WebExternal) &&
+    !!s.url
+  );
+}
+
 export function ChatMessageSources({
   sources,
-}: { sources: MessageResponseSource[] }) {
+}: {
+  sources: MessageResponseSource[];
+}) {
   const { workspaceId, threadId } = useRouteIds();
   const { downloadFileMutation } = useFileMutations({ workspaceId, threadId });
   const [isExpanded, setIsExpanded] = useState(true);
 
-  const fileSources = (sources ?? []).filter(
-    (s): s is MessageResponseSource & { file: { id: string; name: string } } =>
-      s.sourceType === MessageResponseSourceType.File && !!s.file
+  const displaySources = (sources ?? []).filter(
+    (s) => isFileSource(s) || isLinkSource(s)
   );
 
-  if (fileSources.length === 0) return null;
+  if (displaySources.length === 0) return null;
 
   return (
     <div className="mt-4 rounded-lg border border-border bg-muted/30 overflow-hidden">
@@ -88,7 +162,7 @@ export function ChatMessageSources({
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-medium text-foreground">Sources</span>
           <span className="flex items-center justify-center min-w-[16px] h-3.5 px-0.5 rounded-full bg-background text-[10px] font-medium text-foreground leading-none">
-            {fileSources.length}
+            {displaySources.length}
           </span>
         </div>
         <ChevronUp
@@ -106,30 +180,59 @@ export function ChatMessageSources({
             className="list-none space-y-1 m-0 p-0"
             style={{ paddingLeft: 0, marginLeft: 0 }}
           >
-            {fileSources.map((source) => {
-              const file = source.file;
-              const displayName = file.name || `Source ${source.index}`;
-              const Icon = getFileIcon(file.name);
+            {displaySources.map((source) => {
+              const displayName = getDisplayName(source);
+
+              if (isFileSource(source)) {
+                const Icon = getFileIcon(source.file.name);
+                return (
+                  <li
+                    key={`${source.file.id}-${source.index}`}
+                    className="list-none text-sm text-foreground m-0 p-0 flex items-center gap-1.5"
+                    style={{ paddingLeft: 0, marginLeft: 0 }}
+                  >
+                    <span>{`(${source.index})`} : </span>
+                    {Icon && (
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    )}
+                    <button
+                      type="button"
+                      title={displayName}
+                      onClick={() => downloadFileMutation.mutate(source.file)}
+                      className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={downloadFileMutation.isPending}
+                    >
+                      {displayName}
+                    </button>
+                  </li>
+                );
+              }
+
+              const safeHref = source.url ? getSafeUrl(source.url) : null;
 
               return (
                 <li
-                  key={`${file.id}-${source.index}`}
+                  key={`url-${source.index}`}
                   className="list-none text-sm text-foreground m-0 p-0 flex items-center gap-1.5"
                   style={{ paddingLeft: 0, marginLeft: 0 }}
                 >
                   <span>{`(${source.index})`} : </span>
-                  {Icon && (
-                    <Icon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  {safeHref ? (
+                    <a
+                      title={source.url ?? displayName}
+                      href={safeHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 underline underline-offset-2"
+                    >
+                      {displayName}
+                    </a>
+                  ) : (
+                    <span className="text-foreground rounded px-1 py-0.5">
+                      {displayName}
+                    </span>
                   )}
-                  <button
-                    type="button"
-                    title={displayName}
-                    onClick={() => downloadFileMutation.mutate(file)}
-                    className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={downloadFileMutation.isPending}
-                  >
-                    {displayName}
-                  </button>
                 </li>
               );
             })}
