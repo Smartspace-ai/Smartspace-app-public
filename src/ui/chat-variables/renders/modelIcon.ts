@@ -1,4 +1,3 @@
-import anthropicIcon from '@lobehub/icons-static-svg/icons/anthropic.svg';
 import azureAiIcon from '@lobehub/icons-static-svg/icons/azureai-color.svg';
 import bedrockIcon from '@lobehub/icons-static-svg/icons/bedrock-color.svg';
 import claudeIcon from '@lobehub/icons-static-svg/icons/claude-color.svg';
@@ -20,27 +19,21 @@ const PUBLISHER_ICONS: Record<string, string> = {
   openai: openaiIcon,
   anthropic: claudeIcon,
   google: geminiIcon,
-  googlegemini: geminiIcon,
-  gemini: geminiIcon,
   meta: metaIcon,
   mistral: mistralIcon,
   microsoft: microsoftIcon,
   deepseek: deepseekIcon,
   cohere: cohereIcon,
   xai: xaiIcon,
-  grok: xaiIcon,
   huggingface: huggingfaceIcon,
   amazon: bedrockIcon,
-  aws: bedrockIcon,
-  bedrock: bedrockIcon,
   perplexity: perplexityIcon,
-  qwen: qwenIcon,
   alibaba: qwenIcon,
 };
 
 const FOUNDRY_ICONS: Record<string, string> = {
   openai: openaiIcon,
-  anthropic: anthropicIcon,
+  anthropic: claudeIcon,
   azureopenai: azureAiIcon,
   azure: azureAiIcon,
   google: geminiIcon,
