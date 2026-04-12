@@ -205,10 +205,11 @@ export function NotificationPanel() {
                           <AvatarImage
                             src={getUserPhotoUrl(notification.createdByUserId)}
                             alt={notification.createdBy}
-                          />
-                          <AvatarFallback className="text-xs font-medium">
-                            {getInitials(notification.createdBy || '')}
-                          </AvatarFallback>
+                          >
+                            <AvatarFallback className="text-xs font-medium">
+                              {getInitials(notification.createdBy || '')}
+                            </AvatarFallback>
+                          </AvatarImage>
                         </Avatar>
 
                         <div className="flex-1 min-w-0">
