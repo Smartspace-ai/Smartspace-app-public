@@ -11,13 +11,7 @@ export type Notification = {
   workSpaceId?: string | null;
   threadId?: string | null;
   createdBy: string;
+  createdByUserId?: string | null;
   createdAt: Date;
   dismissedAt?: string | null;
-  avatar?: string | null;
 };
-
-
-
-
-
-

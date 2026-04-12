@@ -40,9 +40,9 @@ export function mapNotificationDtoToModel(dto: NotificationDto): Notification {
     workSpaceId: dto.workSpaceId ?? undefined,
     threadId: dto.threadId ?? undefined,
     createdBy: dto.createdBy ?? '',
+    createdByUserId: dto.createdByUserId ?? undefined,
     createdAt: dto.createdAt ? utcDate(dto.createdAt) : new Date(0),
     dismissedAt: dto.dismissedAt ?? undefined,
-    avatar: undefined,
   };
 }
 
