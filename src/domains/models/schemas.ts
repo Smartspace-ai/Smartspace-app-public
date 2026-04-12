@@ -8,6 +8,7 @@ export const ModelSchema = z.object({
   displayName: z.string(),
   deploymentStatus: z.string(),
   modelDeploymentProviderType: z.string(),
+  modelPublisher: z.string().nullable(),
   createdByUserId: z.string(),
   createdAt: DateFromApi,
   properties: z.array(

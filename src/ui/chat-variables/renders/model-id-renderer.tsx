@@ -18,56 +18,12 @@ import React, {
   useState,
 } from 'react';
 
-import { llmModelIcons } from '../../../assets/providers';
+import { getModelIcon } from './modelIcon';
 import { useModels } from '../../../domains/models/queries';
 import type { Model } from '../../../domains/models/schemas';
 
+
 type AccessUiSchema = { access?: 'Read' | 'Write' };
-
-// Helper function to get provider logo/icon
-const getProviderInfo = (
-  providerType: string
-): { iconSrc: string | null; bgColor: string; textColor: string } => {
-  const provider = providerType?.toLowerCase() || '';
-
-  switch (provider) {
-    case 'anthropic':
-      return {
-        iconSrc: llmModelIcons.Anthropic,
-        bgColor: 'transparent',
-        textColor: '#FFFFFF',
-      };
-    case 'openai':
-      return {
-        iconSrc: llmModelIcons.OpenAi,
-        bgColor: 'transparent',
-        textColor: '#FFFFFF',
-      };
-    case 'azureopenai':
-    case 'azure':
-      return {
-        iconSrc: llmModelIcons.AzureOpenAi,
-        bgColor: 'transparent',
-        textColor: '#FFFFFF',
-      };
-    case 'google':
-    case 'gemini':
-    case 'googlegemini':
-      return {
-        iconSrc: llmModelIcons.GoogleGemini,
-        bgColor: 'transparent',
-        textColor: '#FFFFFF',
-      };
-    case 'huggingface':
-      return {
-        iconSrc: llmModelIcons.HuggingFace,
-        bgColor: 'transparent',
-        textColor: '#FFFFFF',
-      };
-    default:
-      return { iconSrc: null, bgColor: 'transparent', textColor: '#6B7280' };
-  }
-};
 
 const ModelIdRenderer: React.FC<ControlProps> = ({
   data,
@@ -205,9 +161,7 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
   const isDisabled = !enabled || readOnly;
 
   if (isMobile) {
-    const providerInfo = selectedModel
-      ? getProviderInfo(selectedModel.modelDeploymentProviderType || '')
-      : null;
+    const iconSrc = getModelIcon(selectedModel);
     return (
       <div className="w-full flex justify-center">
         <button
@@ -217,12 +171,8 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
           className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 bg-accent text-foreground/90 hover:bg-accent/80 transition-colors"
           style={{ width: 'fit-content', maxWidth: '100%' }}
         >
-          {providerInfo?.iconSrc && (
-            <img
-              src={providerInfo.iconSrc}
-              alt="Provider"
-              className="h-4 w-4"
-            />
+          {iconSrc && (
+            <img src={iconSrc} alt="Provider" className="h-4 w-4" />
           )}
           <span className="text-sm truncate">
             {selectedModel
@@ -277,9 +227,7 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
                       >
                         <div className="flex items-center gap-2">
                           {(() => {
-                            const icon = getProviderInfo(
-                              option.modelDeploymentProviderType || ''
-                            ).iconSrc;
+                            const icon = getModelIcon(option);
                             return icon ? (
                               <img
                                 src={icon}
@@ -355,9 +303,7 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
         </div>
       }
       renderInput={(params) => {
-        const providerInfo = selectedModel
-          ? getProviderInfo(selectedModel.modelDeploymentProviderType || '')
-          : null;
+        const iconSrc = getModelIcon(selectedModel);
 
         return (
           <TextField
@@ -418,32 +364,18 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
             }}
             InputProps={{
               ...params.InputProps,
-              startAdornment: providerInfo?.iconSrc ? (
-                <div
+              startAdornment: iconSrc ? (
+                <img
+                  src={iconSrc}
+                  alt="Provider logo"
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '4px',
-                    backgroundColor: providerInfo.bgColor,
-                    marginRight: '8px',
+                    width: 20,
+                    height: 20,
+                    objectFit: 'contain',
+                    marginRight: 8,
                     flexShrink: 0,
                   }}
-                >
-                  <img
-                    src={providerInfo.iconSrc}
-                    alt="Provider logo"
-                    style={{
-                      width: 20,
-                      height: 20,
-                      objectFit: 'contain',
-                      marginRight: 0,
-                      borderRadius: 4,
-                    }}
-                  />
-                </div>
+                />
               ) : null,
               endAdornment: (
                 <>
@@ -460,9 +392,7 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
         );
       }}
       renderOption={(props, option) => {
-        const providerInfo = getProviderInfo(
-          option.modelDeploymentProviderType || ''
-        );
+        const iconSrc = getModelIcon(option);
 
         return (
           <li
@@ -471,7 +401,6 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
             className="!px-4 !py-3 hover:!bg-gray-50 cursor-pointer transition-colors duration-150 border-b border-gray-50 last:border-b-0"
           >
             <div className="flex items-center space-x-3">
-              {/* Provider Logo */}
               <div
                 style={{
                   display: 'flex',
@@ -479,28 +408,24 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
                   justifyContent: 'center',
                   width: '24px',
                   height: '24px',
-                  borderRadius: '6px',
-                  backgroundColor: providerInfo.bgColor,
                   flexShrink: 0,
                 }}
               >
-                {providerInfo.iconSrc ? (
+                {iconSrc ? (
                   <img
-                    src={providerInfo.iconSrc}
+                    src={iconSrc}
                     alt="Provider logo"
                     style={{
                       width: 20,
                       height: 20,
                       objectFit: 'contain',
-                      marginRight: 0,
-                      borderRadius: 4,
                     }}
                   />
                 ) : (
                   <span
                     role="img"
                     aria-label="Provider"
-                    style={{ color: providerInfo.textColor, fontSize: '12px' }}
+                    style={{ color: '#6B7280', fontSize: '12px' }}
                   >
                     ⚡
                   </span>

@@ -41,6 +41,11 @@ export function mapModelDtoToModel(dto: ModelDto | ModelDetailDto): Model {
       (dto as { deploymentStatus?: unknown }).deploymentStatus
     ),
     modelDeploymentProviderType: toStringEnum(dto.modelDeploymentProviderType),
+    modelPublisher:
+      ((dto as { modelPublisher?: unknown }).modelPublisher as
+        | string
+        | null
+        | undefined) ?? null,
     createdByUserId: dto.createdByUserId ?? '',
     createdAt: dto.createdAt ? utcDate(dto.createdAt) : new Date(0),
     properties: dto.properties.map(mapPropertyDtoToModel),
