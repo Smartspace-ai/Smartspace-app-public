@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Subject } from 'rxjs';
 import { toast } from 'sonner';
 
-import { useUserDisplayName, useUserId } from '@/platform/auth/session';
+import { useChatIdentity, useChatService } from '@/platform/chat';
 
 import { FileInfo } from '@/domains/files';
 import { threadsKeys } from '@/domains/threads/queryKeys';
@@ -10,7 +10,6 @@ import { threadsKeys } from '@/domains/threads/queryKeys';
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
 import { messagesKeys } from './queryKeys';
-import { addInputToMessage, postMessage } from './service';
 
 function isPromptMessage(m: Message): boolean {
   return !!m.values?.some(
@@ -28,8 +27,8 @@ type SendArgs = {
 
 export function useSendMessage() {
   const qc = useQueryClient();
-  const userId = useUserId();
-  const userName = useUserDisplayName();
+  const service = useChatService();
+  const { userId, displayName: userName } = useChatIdentity();
 
   return useMutation<Subject<Message>, Error, SendArgs>({
     mutationFn: async ({
@@ -108,7 +107,7 @@ export function useSendMessage() {
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
       // start server call (returns Subject synchronously so we subscribe before data arrives)
-      const subject = postMessage({
+      const subject = service.sendMessage({
         workSpaceId: workspaceId,
         threadId,
         contentList,
@@ -189,8 +188,8 @@ type AddInputArgs = {
 
 export function useAddInputToMessage() {
   const qc = useQueryClient();
-  const userId = useUserId();
-  const userName = useUserDisplayName();
+  const service = useChatService();
+  const { userId, displayName: userName } = useChatIdentity();
 
   const addInputToMessageMutation = useMutation<Message, Error, AddInputArgs>({
     mutationFn: async ({ threadId, messageId, name, value, channels }) => {
@@ -222,13 +221,13 @@ export function useAddInputToMessage() {
 
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
-      const result = await addInputToMessage({
+      const result = await service.addInputToMessage({
         messageId,
         name,
         value,
         channels,
       });
-      return result; // already parsed in service.ts
+      return result;
     },
     onSuccess: (message, { threadId }) => {
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {

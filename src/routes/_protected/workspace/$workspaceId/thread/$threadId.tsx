@@ -2,6 +2,7 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { z } from 'zod';
 
+import { defaultChatService } from '@/platform/chat';
 import { isNotFoundError } from '@/platform/envelopes';
 
 import {
@@ -36,6 +37,7 @@ export const Route = createFileRoute(
     try {
       return await context.queryClient.ensureQueryData(
         threadDetailOptions({
+          service: defaultChatService,
           workspaceId: params.workspaceId,
           threadId: params.threadId,
         })

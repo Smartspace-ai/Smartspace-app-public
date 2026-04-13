@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+import { useChatContext } from '@/platform/chat';
 
 import { useSendMessage } from '@/domains/messages/mutations';
 import { useThread } from '@/domains/threads/queries';
@@ -19,7 +19,7 @@ export type MessageComposerVmProps = {
 }; // optional inbound props for attachments-owned-by-UI
 
 export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
-  const { workspaceId, threadId } = useRouteIds();
+  const { workspaceId, threadId } = useChatContext();
   const [isDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpand] = useState(false);

@@ -2,8 +2,7 @@
 
 import { FC, ReactNode } from 'react';
 
-// domains
-import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+import { useChatContext } from '@/platform/chat';
 
 import { FileInfo } from '@/domains/files';
 import { Message, MessageContentItem } from '@/domains/messages';
@@ -86,7 +85,7 @@ function coerceSources(x: unknown): MessageResponseSource[] {
 }
 
 export const MessageItem: FC<MessageItemProps> = ({ message }) => {
-  const { workspaceId, threadId } = useRouteIds();
+  const { workspaceId, threadId } = useChatContext();
   const { data: workspace } = useWorkspace(workspaceId);
   const chatbotName = getChatbotName(workspace?.name);
   const { addInputToMessageMutation } = useAddInputToMessage();

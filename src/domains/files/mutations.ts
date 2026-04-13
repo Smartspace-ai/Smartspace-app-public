@@ -2,15 +2,15 @@ import { useMutation } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useChatService } from '@/platform/chat';
+
 import { FileInfo, FileScope } from './model';
 import { filesKeys } from './queryKeys';
-import { downloadFile, getFileDownloadUrl, uploadFiles } from './service';
-
-
 
 // All mutations and state for file management
 export const useFileMutations = (scope: FileScope) => {
   const { workspaceId, threadId } = scope;
+  const service = useChatService();
 
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
   const [fileProgress, setFileProgress] = useState<Record<string, number>>({});
@@ -27,7 +27,7 @@ export const useFileMutations = (scope: FileScope) => {
 
       const progressTracker: Record<string, number> = {};
 
-      const uploaded = await uploadFiles(
+      const uploaded = await service.uploadFiles(
         files,
         scope,
         (file, fileInfo) => {
@@ -40,7 +40,7 @@ export const useFileMutations = (scope: FileScope) => {
           const percent = Math.round((chunkIndex / totalChunks) * 100);
           progressTracker[file.name] = percent;
           setFileProgress((prev) => ({ ...prev, [file.name]: percent }));
-        },
+        }
       );
 
       return uploaded ?? [];
@@ -53,7 +53,7 @@ export const useFileMutations = (scope: FileScope) => {
   const downloadFileMutation = useMutation({
     mutationKey: filesKeys.mutation.download(''),
     mutationFn: async (fileInfo: FileInfo) => {
-      const blob = await downloadFile(fileInfo.id, scope);
+      const blob = await service.downloadFile(fileInfo.id, scope);
       saveFile(blob, fileInfo.name);
     },
     onError: () => toast.error('Failed to download file'),
@@ -68,7 +68,7 @@ export const useFileMutations = (scope: FileScope) => {
       name: string;
       sourceUri: string;
     }) => {
-      const uri = await getFileDownloadUrl(sourceUri);
+      const uri = await service.getFileDownloadUrl(sourceUri);
       if (!uri) throw new Error('No download URL');
       const response = await fetch(uri);
       const blob = await response.blob();
@@ -89,10 +89,10 @@ export const useFileMutations = (scope: FileScope) => {
 
   const getFileBlobUrl = useCallback(
     async (id: string) => {
-      const blob = await downloadFile(id, { workspaceId, threadId });
+      const blob = await service.downloadFile(id, { workspaceId, threadId });
       return URL.createObjectURL(blob);
     },
-    [workspaceId, threadId],
+    [service, workspaceId, threadId]
   );
 
   return {
@@ -117,5 +117,3 @@ const saveFile = (blob: Blob, fileName: string) => {
   });
   a.click();
 };
-
-

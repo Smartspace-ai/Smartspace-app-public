@@ -1,31 +1,26 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
-import React from 'react';
+import { Subject } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
-
-vi.mock('@/platform/auth/session', () => ({
-  useUserId: () => 'test-user',
-  useUserDisplayName: () => 'Test User',
-}));
 
 import {
   useAddInputToMessage,
   useSendMessage,
 } from '@/domains/messages/mutations';
 import { messagesKeys } from '@/domains/messages/queryKeys';
-import * as service from '@/domains/messages/service';
+
+import {
+  buildChatHarness,
+  createFakeChatService,
+} from '@/test/chatProviderHarness';
 
 describe('messages mutations', () => {
   it('useSendMessage writes optimistic and subscribes to subject', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
-    const subject = {
-      subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })),
-    } as any;
-    const spy = vi.spyOn(service, 'postMessage').mockReturnValueOnce(subject);
+    const subject = new Subject<any>();
+    const subscribe = vi.spyOn(subject, 'subscribe');
+    const service = createFakeChatService({
+      sendMessage: () => subject,
+    });
+    const { wrapper, queryClient } = buildChatHarness({ service });
 
     const { result } = renderHook(() => useSendMessage(), { wrapper });
     await result.current.mutateAsync({
@@ -35,23 +30,13 @@ describe('messages mutations', () => {
       files: [],
       variables: {},
     });
-    const data = client.getQueryData<any[]>(messagesKeys.list('t')) || [];
+
+    const data = queryClient.getQueryData<any[]>(messagesKeys.list('t')) || [];
     expect(data.some((m) => m.optimistic)).toBe(true);
-    expect(subject.subscribe).toHaveBeenCalled();
-    spy.mockRestore();
+    expect(subscribe).toHaveBeenCalled();
   });
 
   it('useAddInputToMessage optimistic patch and reconcile on success', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
-    // seed cache with one message
-    client.setQueryData(messagesKeys.list('t1'), [
-      { id: 'm1', values: [] },
-    ] as any);
-
     const returned = {
       id: 'm1',
       values: [
@@ -66,9 +51,14 @@ describe('messages mutations', () => {
         },
       ],
     } as any;
-    const spy = vi
-      .spyOn(service, 'addInputToMessage')
-      .mockResolvedValueOnce(returned);
+    const service = createFakeChatService({
+      addInputToMessage: async () => returned,
+    });
+    const { wrapper, queryClient } = buildChatHarness({ service });
+
+    queryClient.setQueryData(messagesKeys.list('t1'), [
+      { id: 'm1', values: [] },
+    ] as any);
 
     const { result } = renderHook(() => useAddInputToMessage(), { wrapper });
     await result.current.addInputToMessageMutation.mutateAsync({
@@ -79,8 +69,7 @@ describe('messages mutations', () => {
       channels: {},
     });
 
-    const data = client.getQueryData<any[]>(messagesKeys.list('t1')) || [];
+    const data = queryClient.getQueryData<any[]>(messagesKeys.list('t1')) || [];
     expect(data[0].values?.length).toBeGreaterThan(0);
-    spy.mockRestore();
   });
 });

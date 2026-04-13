@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+import { useChatContext } from '@/platform/chat';
 
 import { useFileMutations } from '@/domains/files/mutations';
 import { MessageResponseSourceType } from '@/domains/messages/enums';
@@ -141,7 +141,7 @@ export function ChatMessageSources({
 }: {
   sources: MessageResponseSource[];
 }) {
-  const { workspaceId, threadId } = useRouteIds();
+  const { workspaceId, threadId } = useChatContext();
   const { downloadFileMutation } = useFileMutations({ workspaceId, threadId });
   const [isExpanded, setIsExpanded] = useState(true);
 

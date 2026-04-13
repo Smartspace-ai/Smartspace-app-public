@@ -244,6 +244,18 @@ module.exports = {
       },
     },
 
+    // src/platform/chat/** is the extraction target for the future
+    // @smartspace/chat-ui npm package. It needs to reference domain models,
+    // mappers, and schemas to implement the ChatService port. Relaxing the
+    // boundary here is deliberate — this subtree will be lifted into a
+    // standalone package where these files become siblings.
+    {
+      files: ['src/platform/chat/**/*.{ts,tsx}'],
+      rules: {
+        'boundaries/element-types': 'off',
+      },
+    },
+
     // Loosen rules in known noisy/legacy areas (example)
     {
       files: ['src/ui/chat-variables/**/*.{ts,tsx}'],

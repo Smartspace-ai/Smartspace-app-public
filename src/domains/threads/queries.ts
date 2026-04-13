@@ -6,23 +6,28 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
+import { useChatService } from '@/platform/chat';
+import type { ChatService } from '@/platform/chat';
+
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
 import type { MessageThread } from './model';
 import { ThreadsResponse } from './model';
 import { threadsKeys } from './queryKeys';
-import { fetchThread, fetchThreads } from './service';
+import { fetchThreads } from './service';
 
 export const threadDetailOptions = ({
+  service,
   workspaceId,
   threadId,
 }: {
+  service: ChatService;
   workspaceId: string;
   threadId: string;
 }) =>
   queryOptions({
     queryKey: threadsKeys.detail(workspaceId, threadId),
-    queryFn: () => fetchThread(workspaceId, threadId),
+    queryFn: () => service.fetchThread(workspaceId, threadId),
     refetchOnWindowFocus: false,
     staleTime: 60_000,
   });
@@ -74,6 +79,7 @@ export const useThread = ({
   threadId: string;
   enabled?: boolean;
 }) => {
+  const service = useChatService();
   const queryClient = useQueryClient();
   const canFetch =
     enabled && !!workspaceId && !!threadId && !isDraftThreadId(threadId);
@@ -83,7 +89,7 @@ export const useThread = ({
     threadId
   );
   return useQuery({
-    ...threadDetailOptions({ workspaceId, threadId }),
+    ...threadDetailOptions({ service, workspaceId, threadId }),
     enabled: canFetch,
     placeholderData,
   });
