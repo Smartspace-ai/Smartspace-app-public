@@ -22,12 +22,13 @@ import type { ChatService } from './ChatService';
 import { parseSseMessageChunk } from './sseMessageStream';
 
 const {
-  getMessageThreadsIdMessagesResponse: messagesResponseSchema,
-  getFilesIdResponse: fileInfoResponseSchema,
-  postFilesResponse: filesResponseSchema,
-  getWorkspacesWorkspaceIdMessagethreadsIdResponse: threadResponseSchema,
-  getWorkSpacesIdResponse: workspaceResponseSchema,
-  getWorkSpacesIdUsersResponse: workspaceUsersResponseSchema,
+  messageThreadsThreadMessagesIdMessagesResponse: messagesResponseSchema,
+  filesGetFileInfoResponse: fileInfoResponseSchema,
+  filesUploadFilesResponse: filesResponseSchema,
+  messageThreadsGetMessageThreadWorkspacesWorkspaceIdMessagethreadsIdResponse:
+    threadResponseSchema,
+  workSpacesGetIdResponse: workspaceResponseSchema,
+  workSpacesGetUsersResponse: workspaceUsersResponseSchema,
 } = ChatZod;
 
 const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
@@ -67,7 +68,7 @@ export function createDefaultChatService(): ChatService {
     for (let i = 0; i < totalChunks; i++) {
       const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
       const chunkFile = new File([chunk], file.name, { type: file.type });
-      const response = await chatApi.postFiles({
+      const response = await chatApi.filesUploadFiles({
         files: [chunkFile],
         uploadId,
         chunkIndex: i,
@@ -93,7 +94,7 @@ export function createDefaultChatService(): ChatService {
 
   return {
     async fetchMessages(threadId, opts) {
-      const response = await chatApi.getMessageThreadsIdMessages(
+      const response = await chatApi.messageThreadsThreadMessagesIdMessages(
         threadId,
         opts
       );
@@ -205,7 +206,7 @@ export function createDefaultChatService(): ChatService {
         if (file.size > CHUNK_SIZE) {
           fileInfo = await uploadFileInChunks(file, scope, onChunkUploaded);
         } else {
-          const response = await chatApi.postFiles({
+          const response = await chatApi.filesUploadFiles({
             files: [file],
             workspaceId: scope.workspaceId,
             threadId: scope.threadId,
@@ -231,7 +232,7 @@ export function createDefaultChatService(): ChatService {
     },
 
     async getFileInfo(id, scope) {
-      const response = await chatApi.getFilesId(id, scope);
+      const response = await chatApi.filesGetFileInfo(id, scope);
       const parsed = parseOrThrow(
         fileInfoResponseSchema,
         response.data,
@@ -248,10 +249,11 @@ export function createDefaultChatService(): ChatService {
     },
 
     async fetchThread(workspaceId, threadId) {
-      const response = await chatApi.getWorkspacesWorkspaceIdMessagethreadsId(
-        workspaceId,
-        threadId
-      );
+      const response =
+        await chatApi.messageThreadsGetMessageThreadWorkspacesWorkspaceIdMessagethreadsId(
+          workspaceId,
+          threadId
+        );
       const parsed = parseOrThrow(
         threadResponseSchema,
         response.data,
@@ -261,7 +263,7 @@ export function createDefaultChatService(): ChatService {
     },
 
     async fetchWorkspace(workspaceId) {
-      const response = await chatApi.getWorkSpacesId(workspaceId);
+      const response = await chatApi.workSpacesGetId(workspaceId);
       const parsed = parseOrThrow(
         workspaceResponseSchema,
         response.data,
@@ -271,7 +273,7 @@ export function createDefaultChatService(): ChatService {
     },
 
     async fetchTaggableUsers(workspaceId) {
-      const response = await chatApi.getWorkSpacesIdUsers(workspaceId);
+      const response = await chatApi.workSpacesGetUsers(workspaceId);
       const parsed = parseOrThrow(
         workspaceUsersResponseSchema,
         response.data,
