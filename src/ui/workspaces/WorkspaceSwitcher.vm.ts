@@ -10,11 +10,8 @@ import { commentsKeys } from '@/domains/comments/queryKeys';
 import { messagesKeys } from '@/domains/messages/queryKeys';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 import type { Workspace } from '@/domains/workspaces/model';
-import {
-  useWorkspace,
-  useWorkspaces,
-  workspaceDetailOptions,
-} from '@/domains/workspaces/queries';
+import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
+import { workspaceKeys } from '@/domains/workspaces/queryKeys';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
@@ -100,7 +97,7 @@ export function useWorkspaceSwitcherVm() {
     // Seed the active-workspace query cache immediately from the dropdown list item,
     // so header + dropdown reflect the new workspace without waiting for a refetch.
     queryClient.setQueryData(
-      workspaceDetailOptions(id).queryKey,
+      workspaceKeys.byId(id),
       (old: Workspace | undefined) => {
         const base: Partial<Workspace> = old ?? {};
         return {
@@ -116,7 +113,7 @@ export function useWorkspaceSwitcherVm() {
     // The seeded data above is partial (no `variables`, etc.).  Mark it stale so
     // the layout loader's `ensureQueryData` refetches the full workspace from the API.
     queryClient.invalidateQueries({
-      queryKey: workspaceDetailOptions(id).queryKey,
+      queryKey: workspaceKeys.byId(id),
     });
 
     // Immediately clear list/detail caches so the UI shows loading states instead

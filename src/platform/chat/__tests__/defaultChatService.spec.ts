@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+// eslint-disable-next-line import/order -- plugin flip-flops between "missing"/"extra" blank for single-external + path-grouped internal
 import { api } from '@/platform/api';
 
 const { mockGetMessages, mockMessageElementParse } = vi.hoisted(() => ({
@@ -23,9 +24,15 @@ vi.mock('@smartspace/api-client', () => ({
         },
       },
     },
+    getFilesIdResponse: {},
+    postFilesResponse: {},
+    getWorkspacesWorkspaceIdMessagethreadsIdResponse: {},
+    getWorkSpacesIdResponse: {},
+    getWorkSpacesIdUsersResponse: {},
   },
   AXIOS_INSTANCE: {},
 }));
+
 vi.mock('@/platform/validation', () => ({
   parseOrThrow: vi.fn((_schema: unknown, data: unknown) => data),
 }));
@@ -36,15 +43,11 @@ vi.mock('@/platform/log', () => ({
   ssError: vi.fn(),
 }));
 
-import {
-  addInputToMessage,
-  fetchMessages,
-  postMessage,
-} from '@/domains/messages';
+import { createDefaultChatService } from '@/platform/chat/defaultChatService';
 
 type ProgressEventLike = { event: { currentTarget: { response: string } } };
 
-describe('messages service', () => {
+describe('defaultChatService', () => {
   it('fetchMessages returns mapped list', async () => {
     const envelope = {
       data: [
@@ -60,13 +63,13 @@ describe('messages service', () => {
       ],
     };
     mockGetMessages.mockResolvedValueOnce({ data: envelope });
-    const res = await fetchMessages('t1');
+    const service = createDefaultChatService();
+    const res = await service.fetchMessages('t1');
     expect(res.length).toBe(1);
     expect(res[0].id).toBe('m1');
   });
 
-  it('postMessage sets up SSE handling (smoke)', async () => {
-    // capture onDownloadProgress to trigger after subscription
+  it('sendMessage sets up SSE handling (smoke)', async () => {
     let capturedCb: ((e: ProgressEventLike) => void) | undefined;
     const postSpy = vi.spyOn(api, 'post').mockImplementation(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,9 +81,9 @@ describe('messages service', () => {
       }
     );
 
-    const obs = postMessage({ workSpaceId: 'w', threadId: 't1' });
+    const service = createDefaultChatService();
+    const obs = service.sendMessage({ workSpaceId: 'w', threadId: 't1' });
 
-    // now simulate streaming frames after subscription
     const chunk = JSON.stringify({
       id: 'm2',
       createdAt: '2024-01-01',
@@ -103,16 +106,22 @@ describe('messages service', () => {
     postSpy.mockRestore();
   });
 
-  it('postMessage observable emits error when stream fails', () => {
+  it('sendMessage observable emits a scrubbed error when stream fails', () => {
     const networkError = new Error('Network failure');
     const postSpy = vi.spyOn(api, 'post').mockRejectedValueOnce(networkError);
 
-    const obs = postMessage({ workSpaceId: 'w', threadId: 't1' });
+    const service = createDefaultChatService();
+    const obs = service.sendMessage({ workSpaceId: 'w', threadId: 't1' });
 
     return new Promise<void>((resolve) => {
       obs.subscribe({
         error: (err) => {
-          expect(err).toBe(networkError);
+          // Subscribers must receive a plain Error with only the message —
+          // the original axios error (which may contain auth headers) must
+          // not leak through.
+          expect(err).toBeInstanceOf(Error);
+          expect(err).not.toBe(networkError);
+          expect((err as Error).message).toBe('Network failure');
           postSpy.mockRestore();
           resolve();
         },
@@ -123,8 +132,9 @@ describe('messages service', () => {
   it('addInputToMessage throws when no valid message received', async () => {
     vi.spyOn(api, 'post').mockResolvedValueOnce(undefined as never);
 
+    const service = createDefaultChatService();
     await expect(
-      addInputToMessage({
+      service.addInputToMessage({
         messageId: 'm1',
         name: 'test',
         value: 'v',
@@ -157,7 +167,8 @@ describe('messages service', () => {
       }
     );
 
-    const result = await addInputToMessage({
+    const service = createDefaultChatService();
+    const result = await service.addInputToMessage({
       messageId: 'm1',
       name: 'test',
       value: 'v',

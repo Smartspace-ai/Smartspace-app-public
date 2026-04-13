@@ -1,18 +1,22 @@
 import Skeleton from '@mui/material/Skeleton';
 import { FC, useEffect, useMemo } from 'react';
 
-import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+import { useChatContext } from '@/platform/chat';
 
 import { FileInfo } from '@/domains/files';
-import { useDownloadFileBlobQuery, } from '@/domains/files/queries';
+import { useDownloadFileBlobQuery } from '@/domains/files/queries';
 
+export const ChatMessageImage: FC<{ image: FileInfo }> = ({ image }) => {
+  const { workspaceId, threadId } = useChatContext();
+  const { data: imageBlob, isPending } = useDownloadFileBlobQuery(image.id, {
+    workspaceId,
+    threadId,
+  });
 
-
-export const ChatMessageImage: FC<{image: FileInfo}> = ({image}) => {
-  const { workspaceId, threadId } = useRouteIds();
-  const { data:imageBlob, isPending } = useDownloadFileBlobQuery(image.id, {workspaceId, threadId});
-
-  const objectUrl = useMemo(() => (imageBlob ? URL.createObjectURL(imageBlob) : null), [imageBlob]);
+  const objectUrl = useMemo(
+    () => (imageBlob ? URL.createObjectURL(imageBlob) : null),
+    [imageBlob]
+  );
   useEffect(() => {
     return () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);

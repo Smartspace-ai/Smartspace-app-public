@@ -1,7 +1,9 @@
 // routes/_protected/workspace/$workspaceId/__layout.tsx
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo, type ReactNode } from 'react';
 
+import { useUserDisplayName, useUserId } from '@/platform/auth/session';
+import { ChatProvider, defaultChatService } from '@/platform/chat';
 import {
   RouteIdsProvider,
   useRouteIds,
@@ -16,6 +18,22 @@ import { PageSkeleton } from '@/ui/feedback/Skeletons';
 import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
+
+function ChatProviderBridge({ children }: { children: ReactNode }) {
+  const { workspaceId, threadId } = useRouteIds();
+  const userId = useUserId();
+  const displayName = useUserDisplayName();
+  return (
+    <ChatProvider
+      service={defaultChatService}
+      workspaceId={workspaceId}
+      threadId={threadId}
+      identity={{ userId, displayName }}
+    >
+      {children}
+    </ChatProvider>
+  );
+}
 
 function WorkspaceBodyBackground() {
   const { workspaceId } = useRouteIds();
@@ -54,16 +72,21 @@ export const Route = createFileRoute(
 )({
   loader: ({ params, context }) =>
     context.queryClient.ensureQueryData(
-      workspaceDetailOptions(params.workspaceId)
+      workspaceDetailOptions({
+        service: defaultChatService,
+        workspaceId: params.workspaceId,
+      })
     ),
   component: () => (
     <RouteIdsProvider>
-      <PendingThreadsProvider>
-        <WorkspaceBodyBackground />
-        <Suspense fallback={<PageSkeleton />}>
-          <Outlet />
-        </Suspense>
-      </PendingThreadsProvider>
+      <ChatProviderBridge>
+        <PendingThreadsProvider>
+          <WorkspaceBodyBackground />
+          <Suspense fallback={<PageSkeleton />}>
+            <Outlet />
+          </Suspense>
+        </PendingThreadsProvider>
+      </ChatProviderBridge>
     </RouteIdsProvider>
   ),
 });
