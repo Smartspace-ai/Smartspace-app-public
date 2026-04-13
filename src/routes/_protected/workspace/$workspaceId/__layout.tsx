@@ -72,7 +72,10 @@ export const Route = createFileRoute(
 )({
   loader: ({ params, context }) =>
     context.queryClient.ensureQueryData(
-      workspaceDetailOptions(defaultChatService, params.workspaceId)
+      workspaceDetailOptions({
+        service: defaultChatService,
+        workspaceId: params.workspaceId,
+      })
     ),
   component: () => (
     <RouteIdsProvider>

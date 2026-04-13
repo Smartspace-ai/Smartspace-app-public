@@ -106,7 +106,7 @@ describe('defaultChatService', () => {
     postSpy.mockRestore();
   });
 
-  it('sendMessage observable emits error when stream fails', () => {
+  it('sendMessage observable emits a scrubbed error when stream fails', () => {
     const networkError = new Error('Network failure');
     const postSpy = vi.spyOn(api, 'post').mockRejectedValueOnce(networkError);
 
@@ -116,7 +116,12 @@ describe('defaultChatService', () => {
     return new Promise<void>((resolve) => {
       obs.subscribe({
         error: (err) => {
-          expect(err).toBe(networkError);
+          // Subscribers must receive a plain Error with only the message —
+          // the original axios error (which may contain auth headers) must
+          // not leak through.
+          expect(err).toBeInstanceOf(Error);
+          expect(err).not.toBe(networkError);
+          expect((err as Error).message).toBe('Network failure');
           postSpy.mockRestore();
           resolve();
         },

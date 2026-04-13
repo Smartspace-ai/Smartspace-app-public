@@ -18,10 +18,13 @@ export function useWorkspaces(searchTerm?: string) {
   return useQuery(workspacesListOptions(searchTerm));
 }
 
-export const workspaceDetailOptions = (
-  service: ChatService,
-  workspaceId: string
-) =>
+export const workspaceDetailOptions = ({
+  service,
+  workspaceId,
+}: {
+  service: ChatService;
+  workspaceId: string;
+}) =>
   queryOptions<Workspace>({
     queryKey: workspaceKeys.byId(workspaceId),
     queryFn: () => service.fetchWorkspace(workspaceId),
@@ -30,13 +33,16 @@ export const workspaceDetailOptions = (
 
 export function useWorkspace(workspaceId: string) {
   const service = useChatService();
-  return useQuery(workspaceDetailOptions(service, workspaceId));
+  return useQuery(workspaceDetailOptions({ service, workspaceId }));
 }
 
-export const taggableUsersOptions = (
-  service: ChatService,
-  workspaceId: string
-) =>
+export const taggableUsersOptions = ({
+  service,
+  workspaceId,
+}: {
+  service: ChatService;
+  workspaceId: string;
+}) =>
   queryOptions<MentionUser[]>({
     queryKey: workspaceKeys.taggableUsers(workspaceId),
     queryFn: () => service.fetchTaggableUsers(workspaceId),
@@ -45,5 +51,5 @@ export const taggableUsersOptions = (
 
 export function useTaggableWorkspaceUsers(workspaceId: string) {
   const service = useChatService();
-  return useQuery(taggableUsersOptions(service, workspaceId));
+  return useQuery(taggableUsersOptions({ service, workspaceId }));
 }

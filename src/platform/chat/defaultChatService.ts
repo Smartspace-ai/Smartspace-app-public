@@ -119,6 +119,7 @@ export function createDefaultChatService(): ChatService {
           value: files.map((file) => ({
             id: file.id,
             name: file.name,
+            // backend contract: discriminator for File-type inputs
             _type: 'File',
           })),
         });
@@ -160,9 +161,14 @@ export function createDefaultChatService(): ChatService {
           ssDebug('sse', 'stream complete');
           observable.complete();
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
+          // Log the full error internally, but hand subscribers a scrubbed
+          // Error — axios errors carry config.headers.Authorization which
+          // must never reach a log forwarder like Sentry or LogRocket.
           ssError('sse', 'stream error', error);
-          observable.error(error);
+          const message =
+            error instanceof Error ? error.message : 'Message stream failed';
+          observable.error(new Error(message));
         });
 
       return observable;
@@ -284,5 +290,16 @@ export function createDefaultChatService(): ChatService {
   };
 }
 
-/** Memoized singleton for app-level use. Tests should call `createDefaultChatService()` directly. */
+/**
+ * Module-load singleton for app-level use.
+ *
+ * Constructing this runs `ChatApi.getSmartSpaceChatAPI()` eagerly at import
+ * time, so any module that imports this file will trigger SDK initialization.
+ * That's fine for the production app (Vite, client-only, single bundle), but
+ * if you need to defer SDK init — e.g. lazy-loaded chat code-split, SSR, or a
+ * test that wants to mock the SDK — import `createDefaultChatService` directly
+ * and call it yourself so nothing happens at module load.
+ *
+ * Tests should call `createDefaultChatService()` directly.
+ */
 export const defaultChatService: ChatService = createDefaultChatService();

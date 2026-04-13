@@ -32,7 +32,7 @@ describe('workspaces queries options', () => {
   it('workspaceDetailOptions composes key and calls injected service', async () => {
     const fetchWorkspace = vi.fn().mockResolvedValueOnce({ id: 'w1' });
     const service = createFakeChatService({ fetchWorkspace });
-    const opts = workspaceDetailOptions(service, 'w1');
+    const opts = workspaceDetailOptions({ service, workspaceId: 'w1' });
     expect(opts.queryKey).toEqual(['workspaces', 'byId', 'w1']);
     await opts.queryFn?.({
       client: new QueryClient(),
@@ -46,7 +46,7 @@ describe('workspaces queries options', () => {
   it('taggableUsersOptions composes key and calls injected service', async () => {
     const fetchTaggableUsers = vi.fn().mockResolvedValueOnce([]);
     const service = createFakeChatService({ fetchTaggableUsers });
-    const opts = taggableUsersOptions(service, 'w1');
+    const opts = taggableUsersOptions({ service, workspaceId: 'w1' });
     expect(opts.queryKey).toEqual(['workspaces', 'taggableUsers', 'w1']);
     await opts.queryFn?.({
       client: new QueryClient(),
