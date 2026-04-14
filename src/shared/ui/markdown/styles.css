@@ -111,6 +111,101 @@
   color: #0369a1;
 }
 
+/* Code block wrapper (via htmlPreview node view) */
+.md-editor .ss-code-block {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  background: #0b1020;
+  color: #e6edf3;
+  margin: 0.75em 0;
+  overflow: hidden;
+}
+
+.md-editor .ss-code-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.md-editor .ss-code-block__lang {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ba3af;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.md-editor .ss-code-block__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.md-editor .ss-code-block__toggle,
+.md-editor .ss-code-block__copy {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e6edf3;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.md-editor .ss-code-block__toggle:hover,
+.md-editor .ss-code-block__copy:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.md-editor .ss-code-block pre {
+  margin: 0;
+  padding: 12px 14px;
+  background: transparent;
+  color: inherit;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.md-editor .ss-code-block pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font: inherit;
+}
+
+.md-editor .ss-code-block__iframe {
+  display: block;
+  width: 100%;
+  /* Initial height before the height reporter postMessages in the real size
+     (capped in JS by MAX_IFRAME_HEIGHT). */
+  height: 500px;
+  border: 0;
+  background: #ffffff;
+  /* Kill the baseline gap under replaced elements (iframe is inline by
+     default), which otherwise adds ~4px of empty space below the preview. */
+  vertical-align: top;
+}
+
+/* Inline code */
+.md-editor .ProseMirror :not(pre) > code {
+  background: rgba(135, 131, 120, 0.15);
+  color: #c7254e;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
 /* Mentions popup */
 .md-mention-menu {
   background: hsl(var(--background, 0 0% 100%));

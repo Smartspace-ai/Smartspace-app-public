@@ -15,11 +15,24 @@ const URL_RE =
 function buildDecorations(doc: PMNode): DecorationSet {
   const decorations: Decoration[] = [];
 
-  doc.descendants((node, pos) => {
+  doc.descendants((node, pos, parent) => {
+    // Don't descend into code blocks — URLs inside source code must stay literal.
+    if (node.type.name === 'code_block') return false;
+
     if (!node.isText || !node.text) return;
 
-    // Skip nodes that are already inside a link mark
+    // Skip nodes that are already inside a link mark, or marked as inline code.
     if (node.marks.some((m) => m.type.name === 'link')) return;
+    if (
+      node.marks.some(
+        (m) => m.type.name === 'inlineCode' || m.type.name === 'code'
+      )
+    )
+      return;
+
+    // Defensive: skip text whose parent is a code-ish node (covers custom nodeViews).
+    if (parent && (parent.type.spec.code || parent.type.name === 'code_block'))
+      return;
 
     let match: RegExpExecArray | null;
     URL_RE.lastIndex = 0;
