@@ -13,23 +13,28 @@ const HEIGHT_MESSAGE = 'ss-html-preview-height';
 // `sandbox="allow-scripts"` (no `allow-same-origin`), the parent cannot read
 // `contentDocument` directly, so the iframe has to push its height out via
 // postMessage. ResizeObserver handles late content (charts, images, fonts).
+// The script is idempotent (dedupes repeated heights) so a chatty ResizeObserver
+// doesn't spam the parent.
 const HEIGHT_REPORTER_SCRIPT = `
 <script>(function(){
-  // Reset default body margin so the reported height matches actual content
-  // and we don't inherit an extra ~16px of whitespace from the UA stylesheet.
+  // Reset default UA body margin so the reported height matches actual content
+  // and we don't inherit an extra ~16px of whitespace. Keep body overflow
+  // visible so popovers/anchors inside the preview still work.
   try {
     var s = document.createElement('style');
-    s.textContent = 'html,body{margin:0;padding:0;}body{overflow:hidden;}';
+    s.textContent = 'html,body{margin:0;padding:0;}';
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {}
+  var lastSent = -1;
   function send(){
     try {
       var body = document.body;
       if (!body) return;
       // getBoundingClientRect returns the laid-out height of the body,
       // excluding any empty trailing space from html margins/padding.
-      var rect = body.getBoundingClientRect();
-      var h = Math.ceil(rect.height);
+      var h = Math.ceil(body.getBoundingClientRect().height);
+      if (h === lastSent) return;
+      lastSent = h;
       parent.postMessage({ type: ${JSON.stringify(
         HEIGHT_MESSAGE
       )}, height: h }, '*');
@@ -53,18 +58,37 @@ const HEIGHT_REPORTER_SCRIPT = `
 })();</script>
 `;
 
-function injectHeightReporter(html: string): string {
-  if (/<\/body>/i.test(html))
-    return html.replace(/<\/body>/i, HEIGHT_REPORTER_SCRIPT + '</body>');
-  if (/<\/html>/i.test(html))
-    return html.replace(/<\/html>/i, HEIGHT_REPORTER_SCRIPT + '</html>');
+/**
+ * Injects the height-reporter script just before the LAST `</body>` (or
+ * `</html>`) tag. We use `lastIndexOf` rather than a regex replace because a
+ * chat response might include `</body>` inside a string literal or comment,
+ * and we want the real closing tag.
+ *
+ * Exported for unit testing.
+ */
+export function injectHeightReporter(html: string): string {
+  const lower = html.toLowerCase();
+  const bodyIdx = lower.lastIndexOf('</body>');
+  if (bodyIdx >= 0) {
+    return (
+      html.slice(0, bodyIdx) + HEIGHT_REPORTER_SCRIPT + html.slice(bodyIdx)
+    );
+  }
+  const htmlIdx = lower.lastIndexOf('</html>');
+  if (htmlIdx >= 0) {
+    return (
+      html.slice(0, htmlIdx) + HEIGHT_REPORTER_SCRIPT + html.slice(htmlIdx)
+    );
+  }
   return html + HEIGHT_REPORTER_SCRIPT;
 }
 
 // Single global listener — routes height messages back to whichever iframe
-// originated them by matching against `event.source`.
-const iframeHandlers = new WeakMap<MessagePortLike, (height: number) => void>();
-type MessagePortLike = Window;
+// originated them by matching against `event.source`. A WeakMap means that
+// when an iframe is removed from the DOM and its contentWindow is collected,
+// the handler entry drops automatically — but we still clear eagerly in the
+// node view's `destroy` hook to avoid stale handlers firing mid-teardown.
+const iframeHandlers = new WeakMap<Window, (height: number) => void>();
 
 function ensureGlobalListener() {
   if (typeof window === 'undefined') return;
@@ -75,7 +99,7 @@ function ensureGlobalListener() {
     const data = event.data as { type?: string; height?: number } | null;
     if (!data || data.type !== HEIGHT_MESSAGE) return;
     if (typeof data.height !== 'number') return;
-    const source = event.source as MessagePortLike | null;
+    const source = event.source as Window | null;
     if (!source) return;
     const handler = iframeHandlers.get(source);
     if (handler) handler(data.height);
@@ -141,6 +165,7 @@ export const htmlPreviewView = $view(codeBlockSchema.node, () => (node) => {
   let iframe: HTMLIFrameElement | null = null;
   let showingPreview = isPreviewable;
   let lastSrcdoc = '';
+  let destroyed = false;
 
   const syncIframe = (src: string) => {
     if (!iframe) return;
@@ -164,9 +189,12 @@ export const htmlPreviewView = $view(codeBlockSchema.node, () => (node) => {
     e.preventDefault();
     e.stopPropagation();
     const ok = await copyText(code.textContent ?? '');
+    if (destroyed) return;
     copyBtn.textContent = ok ? 'Copied' : 'Failed';
     if (copyResetTimer) clearTimeout(copyResetTimer);
     copyResetTimer = setTimeout(() => {
+      copyResetTimer = null;
+      if (destroyed) return;
       copyBtn.textContent = 'Copy';
     }, 1500);
   });
@@ -176,6 +204,30 @@ export const htmlPreviewView = $view(codeBlockSchema.node, () => (node) => {
   actions.appendChild(copyBtn);
   setCopyVisible(!isPreviewable);
 
+  // Parent-side rAF coalescing: a noisy ResizeObserver in the iframe could
+  // fire many height messages per frame; we only apply the latest one each
+  // animation frame to avoid layout thrash.
+  let pendingHeight: number | null = null;
+  let rafId: number | null = null;
+  const flushPendingHeight = () => {
+    rafId = null;
+    if (pendingHeight == null || !iframe) return;
+    const next = Math.min(pendingHeight, MAX_IFRAME_HEIGHT);
+    pendingHeight = null;
+    if (next <= 0) return;
+    iframe.style.height = `${next}px`;
+  };
+  const scheduleHeight = (height: number) => {
+    pendingHeight = height;
+    if (rafId != null) return;
+    if (typeof requestAnimationFrame === 'function') {
+      rafId = requestAnimationFrame(flushPendingHeight);
+    } else {
+      // Fallback for SSR / jsdom without rAF.
+      rafId = window.setTimeout(flushPendingHeight, 16) as unknown as number;
+    }
+  };
+
   if (isPreviewable) {
     ensureGlobalListener();
     iframe = document.createElement('iframe');
@@ -184,13 +236,8 @@ export const htmlPreviewView = $view(codeBlockSchema.node, () => (node) => {
     iframe.setAttribute('loading', 'lazy');
     iframe.setAttribute('title', 'HTML preview');
     iframe.addEventListener('load', () => {
-      if (iframe && iframe.contentWindow) {
-        iframeHandlers.set(iframe.contentWindow, (height: number) => {
-          if (!iframe) return;
-          if (height <= 0) return;
-          iframe.style.height = `${Math.min(height, MAX_IFRAME_HEIGHT)}px`;
-        });
-      }
+      if (destroyed || !iframe || !iframe.contentWindow) return;
+      iframeHandlers.set(iframe.contentWindow, scheduleHeight);
     });
     syncIframe(node.textContent);
 
@@ -243,6 +290,24 @@ export const htmlPreviewView = $view(codeBlockSchema.node, () => (node) => {
       if (mutation.target === code) return false;
       if (code.contains(mutation.target as Node)) return false;
       return true;
+    },
+    destroy() {
+      destroyed = true;
+      if (copyResetTimer) {
+        clearTimeout(copyResetTimer);
+        copyResetTimer = null;
+      }
+      if (rafId != null) {
+        if (typeof cancelAnimationFrame === 'function') {
+          cancelAnimationFrame(rafId);
+        } else {
+          clearTimeout(rafId);
+        }
+        rafId = null;
+      }
+      if (iframe?.contentWindow) {
+        iframeHandlers.delete(iframe.contentWindow);
+      }
     },
   };
 });

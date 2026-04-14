@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import React from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { injectHeightReporter } from '@/shared/ui/markdown/extensions/htmlPreview';
 import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
 
 const CHART_HTML = [
@@ -145,5 +146,160 @@ describe('MarkdownEditor — html fenced code block', () => {
     expect(container.querySelector('.ss-code-block--previewable')).toBeNull();
     expect(container.querySelector('iframe')).toBeNull();
     expect(container.textContent ?? '').toContain("console.log('hi');");
+  });
+});
+
+describe('MarkdownEditor — copy button', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('is hidden by default on an html preview and revealed when toggled to source', async () => {
+    const { container } = renderEditor(HTML_BLOCK_MD);
+
+    const copy = await waitFor(() => {
+      const el = container.querySelector(
+        '.ss-code-block__copy'
+      ) as HTMLButtonElement | null;
+      if (!el) throw new Error('copy button not rendered');
+      return el;
+    });
+
+    // Preview is the default for html → copy lives alongside the source and is hidden.
+    expect(copy.style.display).toBe('none');
+
+    const toggle = container.querySelector(
+      '.ss-code-block__toggle'
+    ) as HTMLButtonElement;
+    act(() => {
+      fireEvent.click(toggle);
+    });
+    expect(copy.style.display).toBe('');
+
+    act(() => {
+      fireEvent.click(toggle);
+    });
+    expect(copy.style.display).toBe('none');
+  });
+
+  it('is visible for non-previewable code blocks', async () => {
+    const md = ['```js', "console.log('hi');", '```'].join('\n');
+    const { container } = renderEditor(md);
+
+    const copy = await waitFor(() => {
+      const el = container.querySelector(
+        '.ss-code-block__copy'
+      ) as HTMLButtonElement | null;
+      if (!el) throw new Error('copy button not rendered');
+      return el;
+    });
+    expect(copy.style.display).toBe('');
+  });
+
+  it('copies the source via navigator.clipboard and flips the label to Copied', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const md = ['```js', "console.log('hi');", '```'].join('\n');
+    const { container } = renderEditor(md);
+
+    const copy = await waitFor(() => {
+      const el = container.querySelector(
+        '.ss-code-block__copy'
+      ) as HTMLButtonElement | null;
+      if (!el) throw new Error('copy button not rendered');
+      return el;
+    });
+
+    await act(async () => {
+      fireEvent.click(copy);
+    });
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText.mock.calls[0][0]).toContain("console.log('hi');");
+    expect(copy.textContent).toBe('Copied');
+  });
+
+  it('falls back to Failed when the clipboard API rejects and the textarea fallback also fails', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: vi.fn().mockRejectedValue(new Error('blocked')),
+      },
+    });
+    // jsdom doesn't implement `execCommand`, so define it for this test and
+    // make the fallback path report failure.
+    const originalExec = (
+      document as Document & { execCommand?: (cmd: string) => boolean }
+    ).execCommand;
+    (
+      document as Document & { execCommand?: (cmd: string) => boolean }
+    ).execCommand = () => false;
+
+    const md = ['```js', "console.log('hi');", '```'].join('\n');
+    const { container } = renderEditor(md);
+
+    const copy = await waitFor(() => {
+      const el = container.querySelector(
+        '.ss-code-block__copy'
+      ) as HTMLButtonElement | null;
+      if (!el) throw new Error('copy button not rendered');
+      return el;
+    });
+
+    await act(async () => {
+      fireEvent.click(copy);
+    });
+
+    expect(copy.textContent).toBe('Failed');
+    (
+      document as Document & { execCommand?: (cmd: string) => boolean }
+    ).execCommand = originalExec;
+  });
+});
+
+describe('injectHeightReporter', () => {
+  const REPORTER_SIGNATURE = '<script>(function()';
+
+  it('injects before the closing body tag', () => {
+    const out = injectHeightReporter('<html><body>hi</body></html>');
+    const reporterIdx = out.indexOf(REPORTER_SIGNATURE);
+    const bodyClose = out.indexOf('</body>');
+    expect(reporterIdx).toBeGreaterThan(out.indexOf('hi'));
+    expect(reporterIdx).toBeLessThan(bodyClose);
+    expect(bodyClose).toBeLessThan(out.indexOf('</html>'));
+  });
+
+  it('injects before the LAST </body> even if an earlier one appears inside a script string', () => {
+    // A chatbot response might include the literal string "</body>" in JS —
+    // we must still inject before the *real* closing tag, not the fake one.
+    const html =
+      '<html><body><script>var x = "</body>";</script></body></html>';
+    const out = injectHeightReporter(html);
+    const firstBodyClose = out.indexOf('</body>');
+    const lastBodyClose = out.lastIndexOf('</body>');
+    const reporterIdx = out.indexOf(REPORTER_SIGNATURE);
+    // The fake </body> inside the string is still at firstBodyClose.
+    // The reporter should sit between the fake one and the real closing tag.
+    expect(reporterIdx).toBeGreaterThan(firstBodyClose);
+    expect(reporterIdx).toBeLessThan(lastBodyClose);
+  });
+
+  it('falls back to injecting before </html> when there is no </body>', () => {
+    const out = injectHeightReporter('<html>hi</html>');
+    const reporterIdx = out.indexOf(REPORTER_SIGNATURE);
+    const htmlClose = out.indexOf('</html>');
+    expect(reporterIdx).toBeGreaterThan(out.indexOf('hi'));
+    expect(reporterIdx).toBeLessThan(htmlClose);
+    expect(out.includes('</body>')).toBe(false);
+  });
+
+  it('appends the script when there is neither </body> nor </html>', () => {
+    const out = injectHeightReporter('<p>fragment</p>');
+    expect(out.startsWith('<p>fragment</p>')).toBe(true);
+    expect(out).toContain(REPORTER_SIGNATURE);
   });
 });
