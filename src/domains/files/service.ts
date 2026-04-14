@@ -9,8 +9,8 @@ import type { FileInfo, FileScope } from './model';
 export const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
 
 const {
-  filesGetFileInfoResponse: fileInfoResponseSchema,
-  filesUploadFilesResponse: filesResponseSchema,
+  getFilesIdResponse: fileInfoResponseSchema,
+  postFilesResponse: filesResponseSchema,
 } = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
@@ -28,7 +28,7 @@ const uploadFileInChunks = async (
   for (let i = 0; i < totalChunks; i++) {
     const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
     const chunkFile = new File([chunk], file.name, { type: file.type });
-    const response = await chatApi.filesUploadFiles({
+    const response = await chatApi.postFiles({
       files: [chunkFile],
       uploadId,
       chunkIndex: i,
@@ -71,7 +71,7 @@ export const uploadFiles = async (
       fileInfo = await uploadFileInChunks(file, scope, onChunkUploaded);
     } else {
       // Use the same endpoint for small files
-      const response = await chatApi.filesUploadFiles({
+      const response = await chatApi.postFiles({
         files: [file],
         workspaceId: scope.workspaceId,
         threadId: scope.threadId,
@@ -104,7 +104,7 @@ export const getFileInfo = async (
   id: string,
   scope: FileScope
 ): Promise<FileInfo> => {
-  const response = await chatApi.filesGetFileInfo(id, scope);
+  const response = await chatApi.getFilesId(id, scope);
   const parsed = parseOrThrow(
     fileInfoResponseSchema,
     response.data,

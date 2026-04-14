@@ -9,13 +9,13 @@ const { mockGet, mockPutUpdate, mockPutUpdateAll } = vi.hoisted(() => ({
 vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
-      notificationGet: mockGet,
-      notificationPutUpdate: mockPutUpdate,
-      notificationPutUpdateall: mockPutUpdateAll,
+      getNotification: mockGet,
+      putNotificationUpdate: mockPutUpdate,
+      putNotificationUpdateall: mockPutUpdateAll,
     }),
   },
   ChatZod: {
-    notificationGetResponse: {},
+    getNotificationResponse: {},
   },
   AXIOS_INSTANCE: {},
 }));

@@ -11,14 +11,14 @@ import {
 import type { MentionUser, Workspace } from './model';
 
 const {
-  workSpacesGetIdResponse: workspaceResponseSchema,
-  workSpacesGetUsersResponse: workspaceUsersResponseSchema,
-  workSpacesGetGetResponse: workspacesListResponseSchema,
+  getWorkSpacesIdResponse: workspaceResponseSchema,
+  getWorkSpacesIdUsersResponse: workspaceUsersResponseSchema,
+  getWorkSpacesResponse: workspacesListResponseSchema,
 } = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 export async function fetchWorkspaces(search?: string): Promise<Workspace[]> {
-  const response = await chatApi.workSpacesGetGet({ search });
+  const response = await chatApi.getWorkSpaces({ search });
   const parsed = parseOrThrow(
     workspacesListResponseSchema,
     response.data,
@@ -28,7 +28,7 @@ export async function fetchWorkspaces(search?: string): Promise<Workspace[]> {
 }
 
 export async function fetchWorkspace(id: string): Promise<Workspace> {
-  const response = await chatApi.workSpacesGetId(id);
+  const response = await chatApi.getWorkSpacesId(id);
   const parsed = parseOrThrow(
     workspaceResponseSchema,
     response.data,
@@ -40,7 +40,7 @@ export async function fetchWorkspace(id: string): Promise<Workspace> {
 export async function fetchTaggableUsers(
   workspaceId: string
 ): Promise<MentionUser[]> {
-  const response = await chatApi.workSpacesGetUsers(workspaceId);
+  const response = await chatApi.getWorkSpacesIdUsers(workspaceId);
   const parsed = parseOrThrow(
     workspaceUsersResponseSchema,
     response.data,

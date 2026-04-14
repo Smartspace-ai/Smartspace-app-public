@@ -7,9 +7,9 @@ import { getInitials } from '@/shared/utils/initials';
 import { MentionUser, Variables, Workspace } from './model';
 
 const {
-  workSpacesGetIdResponse: workspaceResponseSchema,
-  workSpacesGetUsersResponse: workspaceUsersResponseSchema,
-  workSpacesGetGetResponse: workspacesListResponseSchema,
+  getWorkSpacesIdResponse: workspaceResponseSchema,
+  getWorkSpacesIdUsersResponse: workspaceUsersResponseSchema,
+  getWorkSpacesResponse: workspacesListResponseSchema,
 } = ChatZod;
 
 type WorkspaceDto = z.infer<typeof workspaceResponseSchema>;

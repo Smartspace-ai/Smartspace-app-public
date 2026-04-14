@@ -8,13 +8,13 @@ const { mockGetModels, mockGetModelsId } = vi.hoisted(() => ({
 vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
-      modelsGetModels: mockGetModels,
-      modelsGetModel: mockGetModelsId,
+      getModels: mockGetModels,
+      getModelsId: mockGetModelsId,
     }),
   },
   ChatZod: {
-    modelsGetModelsResponse: {},
-    modelsGetModelResponse: {},
+    getModelsResponse: {},
+    getModelsIdResponse: {},
   },
   AXIOS_INSTANCE: {},
 }));

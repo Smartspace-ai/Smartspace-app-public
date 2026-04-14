@@ -8,13 +8,13 @@ const { mockGetComments, mockPostComments } = vi.hoisted(() => ({
 vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
-      messageThreadsGetComments: mockGetComments,
-      messageThreadsPostComment: mockPostComments,
+      getMessageThreadsIdComments: mockGetComments,
+      postMessageThreadsIdComments: mockPostComments,
     }),
   },
   ChatZod: {
-    messageThreadsGetCommentsResponse: {},
-    messageThreadsPostCommentResponse: {},
+    getMessageThreadsIdCommentsResponse: {},
+    postMessageThreadsIdCommentsResponse: {},
   },
   AXIOS_INSTANCE: {},
 }));

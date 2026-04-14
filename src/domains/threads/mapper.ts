@@ -6,9 +6,8 @@ import { utcDate } from '@/shared/utils/dateFromApi';
 import { MessageThread, ThreadsResponse } from './model';
 
 const {
-  workSpacesThreadResponse: threadsListResponseSchema,
-  messageThreadsGetMessageThreadWorkspacesWorkspaceIdMessagethreadsIdResponse:
-    threadResponseSchema,
+  getWorkSpacesIdMessageThreadsResponse: threadsListResponseSchema,
+  getWorkspacesWorkspaceIdMessagethreadsIdResponse: threadResponseSchema,
 } = ChatZod;
 
 type ThreadsResponseDto = z.infer<typeof threadsListResponseSchema>;

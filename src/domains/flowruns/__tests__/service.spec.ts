@@ -9,11 +9,11 @@ const { mockGetFlowRunsIdVariables } = vi.hoisted(() => ({
 vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
-      flowRunsGetVariables: mockGetFlowRunsIdVariables,
+      getFlowRunsIdVariables: mockGetFlowRunsIdVariables,
     }),
   },
   ChatZod: {
-    flowRunsGetVariablesResponse: {},
+    getFlowRunsIdVariablesResponse: {},
   },
   AXIOS_INSTANCE: {},
 }));

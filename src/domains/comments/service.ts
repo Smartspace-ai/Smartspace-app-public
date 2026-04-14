@@ -6,14 +6,14 @@ import { mapCommentDtoToModel, mapCommentsDtoToModels } from './mapper';
 import { Comment, MentionUser } from './model';
 
 const {
-  messageThreadsGetCommentsResponse: commentsResponseSchema,
-  messageThreadsPostCommentResponse: commentCreateResponseSchema,
+  getMessageThreadsIdCommentsResponse: commentsResponseSchema,
+  postMessageThreadsIdCommentsResponse: commentCreateResponseSchema,
 } = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 // Fetch all comments for a given thread
 export async function fetchComments(threadId: string): Promise<Comment[]> {
-  const response = await chatApi.messageThreadsGetComments(threadId);
+  const response = await chatApi.getMessageThreadsIdComments(threadId);
   const parsed = parseOrThrow(
     commentsResponseSchema,
     response.data,
@@ -31,7 +31,7 @@ export async function addComment(
   content: string,
   mentionedUsers: MentionUser[] = []
 ): Promise<Comment> {
-  const response = await chatApi.messageThreadsPostComment(threadId, {
+  const response = await chatApi.postMessageThreadsIdComments(threadId, {
     content,
     mentionedUsers: mentionedUsers.map((u) => u.id),
   });

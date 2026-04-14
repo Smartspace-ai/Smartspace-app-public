@@ -11,17 +11,12 @@ import {
 } from '@/domains/notifications/mutations';
 import { useNotificationsQuery } from '@/domains/notifications/queries';
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/shared/ui/mui-compat/avatar';
+import { Avatar, AvatarFallback } from '@/shared/ui/mui-compat/avatar';
 import { Button } from '@/shared/ui/mui-compat/button';
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
 import { Switch } from '@/shared/ui/mui-compat/switch';
 import { getInitials } from '@/shared/utils/initials';
 import { parseDateTimeHuman } from '@/shared/utils/parseDateTime';
-import { getUserPhotoUrl } from '@/shared/utils/userPhoto';
 import { cn } from '@/shared/utils/utils';
 
 export function NotificationPanel() {
@@ -202,14 +197,9 @@ export function NotificationPanel() {
                         onClick={() => handleClickNotification(notification)}
                       >
                         <Avatar className="h-8 w-8 rounded-full">
-                          <AvatarImage
-                            src={getUserPhotoUrl(notification.createdByUserId)}
-                            alt={notification.createdBy}
-                          >
-                            <AvatarFallback className="text-xs font-medium">
-                              {getInitials(notification.createdBy || '')}
-                            </AvatarFallback>
-                          </AvatarImage>
+                          <AvatarFallback className="text-xs font-medium">
+                            {getInitials(notification.createdBy || '')}
+                          </AvatarFallback>
                         </Avatar>
 
                         <div className="flex-1 min-w-0">

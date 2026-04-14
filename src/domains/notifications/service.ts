@@ -5,7 +5,7 @@ import { parseOrThrow } from '@/platform/validation';
 import { mapNotificationsEnvelopeDto } from './mapper';
 import type { Notification } from './model';
 
-const { notificationGetResponse: notificationsResponseSchema } = ChatZod;
+const { getNotificationResponse: notificationsResponseSchema } = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 export interface NotificationList {
@@ -22,7 +22,7 @@ export async function fetchNotifications(
 ): Promise<NotificationList> {
   const skip = (page - 1) * LIMIT;
 
-  const response = await chatApi.notificationGet({
+  const response = await chatApi.getNotification({
     unread: isUnreadOnly,
     skip,
     take: LIMIT,
@@ -50,10 +50,10 @@ export async function fetchNotifications(
 export async function markNotificationAsRead(
   notificationId: string
 ): Promise<void> {
-  await chatApi.notificationPutUpdate([notificationId]);
+  await chatApi.putNotificationUpdate([notificationId]);
 }
 
 /** Mark all notifications as read. */
 export async function markAllNotificationsAsRead(): Promise<void> {
-  await chatApi.notificationPutUpdateall();
+  await chatApi.putNotificationUpdateall();
 }

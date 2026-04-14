@@ -4,8 +4,8 @@ import type { z } from 'zod';
 import { FileInfo } from './model';
 
 const {
-  filesGetFileInfoResponse: fileInfoResponseSchema,
-  filesUploadFilesResponseItem: fileInfoItemSchema,
+  getFilesIdResponse: fileInfoResponseSchema,
+  postFilesResponseItem: fileInfoItemSchema,
 } = ChatZod;
 
 type FileInfoDto = z.infer<typeof fileInfoResponseSchema>;
