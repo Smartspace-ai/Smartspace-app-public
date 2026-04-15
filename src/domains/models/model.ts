@@ -13,6 +13,7 @@ export type Model = {
   displayName: string;
   deploymentStatus: string;
   modelDeploymentProviderType: string;
+  modelPublisher: string | null;
   createdByUserId: string;
   createdAt: Date;
   properties: ModelProperty[];

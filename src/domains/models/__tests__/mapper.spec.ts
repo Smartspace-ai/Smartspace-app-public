@@ -13,6 +13,7 @@ describe('models mapper', () => {
       displayName: 'A',
       deploymentStatus: 'x',
       modelDeploymentProviderType: 'y',
+      modelPublisher: null,
       createdByUserId: 'u',
       createdAt: '2024-06-01T12:00:00Z',
       properties: [],
