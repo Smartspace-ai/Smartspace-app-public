@@ -14,18 +14,18 @@ import {
 } from '@/domains/messages/mutations';
 import { messagesKeys } from '@/domains/messages/queryKeys';
 import * as service from '@/domains/messages/service';
+import { threadsKeys } from '@/domains/threads/queryKeys';
 
 describe('messages mutations', () => {
-  it('useSendMessage writes optimistic and subscribes to subject', async () => {
+  it('useSendMessage writes optimistic and keeps it after postMessage resolves', async () => {
     const client = new QueryClient();
     const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
       <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
 
-    const subject = {
-      subscribe: vi.fn(() => ({ unsubscribe: vi.fn() })),
-    } as any;
-    const spy = vi.spyOn(service, 'postMessage').mockReturnValueOnce(subject);
+    const spy = vi
+      .spyOn(service, 'postMessage')
+      .mockResolvedValueOnce(undefined);
 
     const { result } = renderHook(() => useSendMessage(), { wrapper });
     await result.current.mutateAsync({
@@ -35,9 +35,43 @@ describe('messages mutations', () => {
       files: [],
       variables: {},
     });
+
     const data = client.getQueryData<any[]>(messagesKeys.list('t')) || [];
     expect(data.some((m) => m.optimistic)).toBe(true);
-    expect(subject.subscribe).toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledOnce();
+    spy.mockRestore();
+  });
+
+  it('useSendMessage rolls back optimistic on postMessage error', async () => {
+    const client = new QueryClient();
+    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+
+    client.setQueryData(threadsKeys.detail('w', 't'), {
+      id: 't',
+      isFlowRunning: false,
+    } as any);
+
+    const spy = vi
+      .spyOn(service, 'postMessage')
+      .mockRejectedValueOnce(new Error('boom'));
+
+    const { result } = renderHook(() => useSendMessage(), { wrapper });
+    await expect(
+      result.current.mutateAsync({
+        workspaceId: 'w',
+        threadId: 't',
+        contentList: [],
+        files: [],
+        variables: {},
+      })
+    ).rejects.toThrow('boom');
+
+    const data = client.getQueryData<any[]>(messagesKeys.list('t')) || [];
+    expect(data.some((m) => m.optimistic)).toBe(false);
+    const detail = client.getQueryData<any>(threadsKeys.detail('w', 't'));
+    expect(detail?.isFlowRunning).toBe(false);
     spy.mockRestore();
   });
 
