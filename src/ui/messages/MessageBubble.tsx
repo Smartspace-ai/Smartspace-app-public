@@ -12,7 +12,7 @@ import { MessageValueType } from '@/domains/messages/enums';
 
 import { cells, renderers } from '@/ui/chat-variables/renders';
 
-import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
+import { MessageMarkdown } from '@/shared/ui/markdown/MessageMarkdown';
 import {
   Avatar,
   AvatarFallback,
@@ -127,7 +127,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
                 key={`content-${i}`}
                 className="prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed mb-3 last:mb-0"
               >
-                <MarkdownEditor value={item.text} editable={false} />
+                <MessageMarkdown value={item.text} />
               </div>
             ) : item.image ? (
               <div key={`image-${i}`} className="mb-3 last:mb-0">

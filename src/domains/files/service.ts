@@ -14,6 +14,23 @@ const {
 } = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
+// The API returns `null` for `createdByUserId` / `modifiedByUserId` on file
+// upload responses, but the SDK's generated Zod schema marks them as required
+// non-nullable strings. The mapper doesn't use these fields, so coerce nulls
+// to empty strings before validation rather than forking the SDK.
+const coerceFileUploadResponse = (data: unknown): unknown => {
+  if (!Array.isArray(data)) return data;
+  return data.map((item) => {
+    if (!item || typeof item !== 'object') return item;
+    const r = item as Record<string, unknown>;
+    return {
+      ...r,
+      createdByUserId: r.createdByUserId ?? '',
+      modifiedByUserId: r.modifiedByUserId ?? '',
+    };
+  });
+};
+
 const uploadFileInChunks = async (
   file: File,
   scope: FileScope,
@@ -45,7 +62,7 @@ const uploadFileInChunks = async (
     if (i === totalChunks - 1) {
       const parsed = parseOrThrow(
         filesResponseSchema,
-        response.data,
+        coerceFileUploadResponse(response.data),
         'POST /files (chunked)'
       );
       return mapFileInfoDtoToModel(parsed[0]);
@@ -78,7 +95,7 @@ export const uploadFiles = async (
       });
       const parsed = parseOrThrow(
         filesResponseSchema,
-        response.data,
+        coerceFileUploadResponse(response.data),
         'POST /files'
       );
       fileInfo = mapFileInfoDtoToModel(parsed[0]);
