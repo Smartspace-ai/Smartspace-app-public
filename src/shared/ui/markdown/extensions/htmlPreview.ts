@@ -118,9 +118,31 @@ export const htmlPreviewView = $view(codeBlockSchema.node, () => (node) => {
     iframe.setAttribute('sandbox', 'allow-scripts');
     iframe.setAttribute('loading', 'lazy');
     iframe.setAttribute('title', 'HTML preview');
+    const setShowingPreview = (next: boolean) => {
+      showingPreview = next;
+      if (!iframe) return;
+      if (showingPreview) {
+        iframe.style.display = '';
+        pre.style.display = 'none';
+        toggle.textContent = 'Source';
+        setCopyVisible(false);
+      } else {
+        iframe.style.display = 'none';
+        pre.style.display = '';
+        toggle.textContent = 'Preview';
+        setCopyVisible(true);
+      }
+    };
+
     iframe.addEventListener('load', () => {
       if (destroyed || !iframe || !iframe.contentWindow) return;
-      iframeHandlers.set(iframe.contentWindow, scheduleHeight);
+      iframeHandlers.set(iframe.contentWindow, {
+        onHeight: scheduleHeight,
+        onError: () => {
+          if (destroyed) return;
+          if (showingPreview) setShowingPreview(false);
+        },
+      });
     });
     syncIframe(node.textContent);
 
@@ -135,19 +157,7 @@ export const htmlPreviewView = $view(codeBlockSchema.node, () => (node) => {
     toggle.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      showingPreview = !showingPreview;
-      if (!iframe) return;
-      if (showingPreview) {
-        iframe.style.display = '';
-        pre.style.display = 'none';
-        toggle.textContent = 'Source';
-        setCopyVisible(false);
-      } else {
-        iframe.style.display = 'none';
-        pre.style.display = '';
-        toggle.textContent = 'Preview';
-        setCopyVisible(true);
-      }
+      setShowingPreview(!showingPreview);
     });
     actions.appendChild(toggle);
   }

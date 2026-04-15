@@ -60,7 +60,16 @@ export function HtmlPreview({ source }: HtmlPreviewProps) {
 
     const onLoad = () => {
       if (!iframe.contentWindow) return;
-      iframeHandlers.set(iframe.contentWindow, scheduleHeight);
+      iframeHandlers.set(iframe.contentWindow, {
+        onHeight: scheduleHeight,
+        // Auto-flip to source if the previewed HTML throws (e.g. an LLM
+        // emitted a JS-only snippet referencing a missing canvas, leaving
+        // the iframe blank). Don't fight the user if they've manually
+        // toggled back to preview already.
+        onError: () => {
+          setShowingPreview((current) => (current ? false : current));
+        },
+      });
     };
 
     iframe.addEventListener('load', onLoad);

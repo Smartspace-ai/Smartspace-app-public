@@ -3,6 +3,7 @@
 // viewports on a laptop, so any legitimate chart/table still fits.
 export const MAX_IFRAME_HEIGHT = 5000;
 export const HEIGHT_MESSAGE = 'ss-html-preview-height';
+export const ERROR_MESSAGE = 'ss-html-preview-error';
 
 // Injected into each previewed HTML document. Because the iframe uses
 // `sandbox="allow-scripts"` (no `allow-same-origin`), the parent cannot read
@@ -17,6 +18,23 @@ const HEIGHT_REPORTER_SCRIPT = `
     s.textContent = 'html,body{margin:0;padding:0;}';
     (document.head || document.documentElement).appendChild(s);
   } catch (e) {}
+  function reportError(msg){
+    try {
+      parent.postMessage({ type: ${JSON.stringify(
+        ERROR_MESSAGE
+      )}, message: String(msg || 'preview error') }, '*');
+    } catch (e) {}
+  }
+  // Catch synchronous script errors and unhandled promise rejections so the
+  // host can flip the preview back to source view instead of showing a blank
+  // iframe (e.g. when an LLM emits a JS-only snippet referencing a missing
+  // canvas).
+  window.addEventListener('error', function(ev){
+    reportError(ev && ev.message);
+  });
+  window.addEventListener('unhandledrejection', function(ev){
+    reportError(ev && ev.reason && ev.reason.message);
+  });
   var lastSent = -1;
   function send(){
     try {
@@ -70,10 +88,14 @@ export function injectHeightReporter(html: string): string {
   return html + HEIGHT_REPORTER_SCRIPT;
 }
 
-// Single global listener routing height messages back to whichever iframe
-// originated them, via WeakMap keyed on `event.source`. Consumers still clear
-// eagerly on teardown to avoid stale handlers firing mid-destroy.
-export const iframeHandlers = new WeakMap<Window, (height: number) => void>();
+// Single global listener routing height + error messages back to whichever
+// iframe originated them, via WeakMap keyed on `event.source`. Consumers
+// still clear eagerly on teardown to avoid stale handlers firing mid-destroy.
+export type IframeHandler = {
+  onHeight: (height: number) => void;
+  onError?: (message: string) => void;
+};
+export const iframeHandlers = new WeakMap<Window, IframeHandler>();
 
 export function ensureGlobalListener(): void {
   if (typeof window === 'undefined') return;
@@ -81,13 +103,21 @@ export function ensureGlobalListener(): void {
   if (w.__ssHtmlPreviewListener) return;
   w.__ssHtmlPreviewListener = true;
   window.addEventListener('message', (event) => {
-    const data = event.data as { type?: string; height?: number } | null;
-    if (!data || data.type !== HEIGHT_MESSAGE) return;
-    if (typeof data.height !== 'number') return;
+    const data = event.data as {
+      type?: string;
+      height?: number;
+      message?: string;
+    } | null;
+    if (!data || typeof data.type !== 'string') return;
     const source = event.source as Window | null;
     if (!source) return;
     const handler = iframeHandlers.get(source);
-    if (handler) handler(data.height);
+    if (!handler) return;
+    if (data.type === HEIGHT_MESSAGE && typeof data.height === 'number') {
+      handler.onHeight(data.height);
+    } else if (data.type === ERROR_MESSAGE) {
+      handler.onError?.(typeof data.message === 'string' ? data.message : '');
+    }
   });
 }
 
