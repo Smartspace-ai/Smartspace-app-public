@@ -6,6 +6,7 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 
+import { remarkFileTag } from './plugins/remarkFileTag';
 import { CodeBlock } from './renderers/CodeBlock';
 import { HtmlPreview } from './renderers/HtmlPreview';
 import { SsImage } from './renderers/SsImage';
@@ -18,7 +19,7 @@ const rehypePlugins: React.ComponentProps<
 
 const remarkPlugins: React.ComponentProps<
   typeof ReactMarkdown
->['remarkPlugins'] = [remarkGfm];
+>['remarkPlugins'] = [remarkGfm, remarkFileTag];
 
 // react-markdown's default urlTransform strips any URL whose protocol isn't
 // in its built-in safelist (http, https, mailto, etc). The chat backend uses

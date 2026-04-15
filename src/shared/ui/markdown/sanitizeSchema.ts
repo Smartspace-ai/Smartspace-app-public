@@ -29,6 +29,14 @@ export const messageSanitizeSchema: Schema = {
       'dataAlign',
       'dataCaption',
     ],
+    // Permits the `<span class="file-tag" data-file-tag data-id>` markup
+    // emitted by `remarkFileTag` for inline `[[file:id|name]]` references.
+    span: [
+      ...((base.attributes?.span as AttrList) ?? []),
+      'className',
+      'dataFileTag',
+      'dataId',
+    ],
   },
   // Re-permit the custom `ss-file:` URI scheme so file attachments embedded
   // as `![](ss-file:id?...)` or `[name](ss-file:id)` survive sanitization.

@@ -89,12 +89,12 @@ export function SsImage(props: ImgProps) {
         className="ss-attach__img"
         data-ss-image=""
         data-file-id={parsed.fileId}
+        data-error={errored ? '' : undefined}
         src={resolvedSrc ?? undefined}
         alt={alt ?? ''}
         title={title}
         width={finalWidth as number | string | undefined}
         height={finalHeight as number | string | undefined}
-        style={errored ? { background: 'rgba(255,0,0,0.06)' } : undefined}
       />
     </span>
   );

@@ -68,6 +68,12 @@
   cursor: pointer;
 }
 
+/* Read-only: error state for ss-file image attachments. The SsImage renderer
+   sets `data-error` when the file resolver hook rejects. */
+.ss-markdown .ss-attach__img[data-error] {
+  background: rgba(220, 38, 38, 0.08);
+}
+
 /* Custom inline file-tag */
 .file-tag {
   display: inline-block;
