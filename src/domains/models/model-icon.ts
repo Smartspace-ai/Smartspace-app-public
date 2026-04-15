@@ -11,9 +11,10 @@ import mistralIcon from '@lobehub/icons-static-svg/icons/mistral-color.svg';
 import openaiIcon from '@lobehub/icons-static-svg/icons/openai.svg';
 import perplexityIcon from '@lobehub/icons-static-svg/icons/perplexity-color.svg';
 import qwenIcon from '@lobehub/icons-static-svg/icons/qwen-color.svg';
+import vertexaiIcon from '@lobehub/icons-static-svg/icons/vertexai-color.svg';
 import xaiIcon from '@lobehub/icons-static-svg/icons/xai.svg';
 
-import type { Model } from '@/domains/models/model';
+import type { Model } from './model';
 
 const PUBLISHER_ICONS: Record<string, string> = {
   openai: openaiIcon,
@@ -36,10 +37,13 @@ const FOUNDRY_ICONS: Record<string, string> = {
   anthropic: claudeIcon,
   azureopenai: azureAiIcon,
   azure: azureAiIcon,
+  azurefoundry: azureAiIcon,
   google: geminiIcon,
   gemini: geminiIcon,
   googlegemini: geminiIcon,
+  vertexai: vertexaiIcon,
   huggingface: huggingfaceIcon,
+  cohere: cohereIcon,
 };
 
 export function getModelIcon(model: Model | null | undefined): string | null {

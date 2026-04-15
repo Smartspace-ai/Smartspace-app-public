@@ -18,10 +18,7 @@ import React, {
   useState,
 } from 'react';
 
-import { getModelIcon } from './modelIcon';
-import { useModels } from '../../../domains/models/queries';
-import type { Model } from '../../../domains/models/schemas';
-
+import { getModelIcon, type Model, useModels } from '@/domains/models';
 
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
@@ -171,9 +168,7 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
           className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 bg-accent text-foreground/90 hover:bg-accent/80 transition-colors"
           style={{ width: 'fit-content', maxWidth: '100%' }}
         >
-          {iconSrc && (
-            <img src={iconSrc} alt="Provider" className="h-4 w-4" />
-          )}
+          {iconSrc && <img src={iconSrc} alt="Provider" className="h-4 w-4" />}
           <span className="text-sm truncate">
             {selectedModel
               ? selectedModel.displayName || selectedModel.name
@@ -401,38 +396,24 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
             className="!px-4 !py-3 hover:!bg-gray-50 cursor-pointer transition-colors duration-150 border-b border-gray-50 last:border-b-0"
           >
             <div className="flex items-center space-x-3">
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '24px',
-                  height: '24px',
-                  flexShrink: 0,
-                }}
-              >
+              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
                 {iconSrc ? (
                   <img
                     src={iconSrc}
                     alt="Provider logo"
-                    style={{
-                      width: 20,
-                      height: 20,
-                      objectFit: 'contain',
-                    }}
+                    className="h-5 w-5 object-contain"
                   />
                 ) : (
                   <span
                     role="img"
                     aria-label="Provider"
-                    style={{ color: '#6B7280', fontSize: '12px' }}
+                    className="text-muted-foreground text-xs"
                   >
                     ⚡
                   </span>
                 )}
               </div>
 
-              {/* Model Info */}
               <div className="flex flex-col space-y-1 flex-1">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900 text-sm leading-tight">
