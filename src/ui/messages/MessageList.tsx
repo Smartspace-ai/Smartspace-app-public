@@ -2,8 +2,6 @@ import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { useMatch } from '@tanstack/react-router';
 import { AlertTriangle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
@@ -13,6 +11,7 @@ import { useThread } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
+import { MessageMarkdown } from '@/shared/ui/markdown/MessageMarkdown';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 import { Skeleton } from '@/shared/ui/mui-compat/skeleton';
 
@@ -189,10 +188,8 @@ export function MessageList() {
           {activeWorkspace?.name ?? 'No messages yet'}
         </h3>
         {activeWorkspace?.firstPrompt && (
-          <div className="max-w-3xl mx-auto p-4 whitespace-pre-wrap">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {activeWorkspace.firstPrompt}
-            </ReactMarkdown>
+          <div className="max-w-3xl mx-auto p-4">
+            <MessageMarkdown value={activeWorkspace.firstPrompt} />
           </div>
         )}
       </div>

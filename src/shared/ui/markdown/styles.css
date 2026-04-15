@@ -111,8 +111,11 @@
   color: #0369a1;
 }
 
-/* Code block wrapper (via htmlPreview node view) */
-.md-editor .ss-code-block {
+/* Code block wrapper — shared by the Milkdown editor node view
+   (`.md-editor` scope) and the react-markdown read-only renderer
+   (`.ss-markdown` scope). Keep selectors in sync. */
+.md-editor .ss-code-block,
+.ss-markdown .ss-code-block {
   border: 1px solid var(--border, #e5e7eb);
   border-radius: 8px;
   background: #0b1020;
@@ -121,7 +124,8 @@
   overflow: hidden;
 }
 
-.md-editor .ss-code-block__header {
+.md-editor .ss-code-block__header,
+.ss-markdown .ss-code-block__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -132,21 +136,25 @@
   line-height: 1;
 }
 
-.md-editor .ss-code-block__lang {
+.md-editor .ss-code-block__lang,
+.ss-markdown .ss-code-block__lang {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #9ba3af;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-.md-editor .ss-code-block__actions {
+.md-editor .ss-code-block__actions,
+.ss-markdown .ss-code-block__actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .md-editor .ss-code-block__toggle,
-.md-editor .ss-code-block__copy {
+.md-editor .ss-code-block__copy,
+.ss-markdown .ss-code-block__toggle,
+.ss-markdown .ss-code-block__copy {
   appearance: none;
   background: rgba(255, 255, 255, 0.1);
   color: #e6edf3;
@@ -160,11 +168,14 @@
 }
 
 .md-editor .ss-code-block__toggle:hover,
-.md-editor .ss-code-block__copy:hover {
+.md-editor .ss-code-block__copy:hover,
+.ss-markdown .ss-code-block__toggle:hover,
+.ss-markdown .ss-code-block__copy:hover {
   background: rgba(255, 255, 255, 0.18);
 }
 
-.md-editor .ss-code-block pre {
+.md-editor .ss-code-block pre,
+.ss-markdown .ss-code-block pre {
   margin: 0;
   padding: 12px 14px;
   background: transparent;
@@ -176,14 +187,16 @@
   white-space: pre;
 }
 
-.md-editor .ss-code-block pre code {
+.md-editor .ss-code-block pre code,
+.ss-markdown .ss-code-block pre code {
   background: transparent;
   color: inherit;
   padding: 0;
   font: inherit;
 }
 
-.md-editor .ss-code-block__iframe {
+.md-editor .ss-code-block__iframe,
+.ss-markdown .ss-code-block__iframe {
   display: block;
   width: 100%;
   /* Initial height before the height reporter postMessages in the real size
@@ -194,6 +207,34 @@
   /* Kill the baseline gap under replaced elements (iframe is inline by
      default), which otherwise adds ~4px of empty space below the preview. */
   vertical-align: top;
+}
+
+/* Inline code in read-only messages — matches the Milkdown editor's
+   inline code treatment. */
+.ss-markdown :not(pre) > code {
+  background: rgba(135, 131, 120, 0.15);
+  color: #c7254e;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+/* Read-only: anchors should feel clickable. */
+.ss-markdown a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* Read-only: give <details>/<summary> sensible defaults. Most browser UAs
+   already render the triangle, but we tidy spacing. */
+.ss-markdown details {
+  margin: 0.75em 0;
+}
+
+.ss-markdown summary {
+  cursor: pointer;
+  font-weight: 600;
 }
 
 /* Inline code */
