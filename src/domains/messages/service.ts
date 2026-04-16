@@ -1,8 +1,6 @@
 import { ChatApi, ChatZod } from '@smartspace/api-client';
-import { Subject } from 'rxjs';
 
 import { api } from '@/platform/api';
-import { ssDebug, ssWarn, ssError } from '@/platform/log';
 import { parseOrThrow } from '@/platform/validation';
 
 import { FileInfo } from '@/domains/files';
@@ -93,8 +91,9 @@ export async function addInputToMessage({
 }
 
 // Post a new user message to a thread (supports content + files + variables).
-// Returns a Subject synchronously so the caller can subscribe *before* data arrives.
-export function postMessage({
+// Resolves when the server has finished processing the request. Cache updates
+// are driven by SignalR ReceiveThreadUpdate, not by the SSE stream payload.
+export async function postMessage({
   workSpaceId,
   threadId,
   contentList,
@@ -106,7 +105,7 @@ export function postMessage({
   contentList?: MessageContentItem[];
   files?: FileInfo[];
   variables?: Record<string, unknown>;
-}): Subject<Message> {
+}): Promise<void> {
   const inputs: Array<{ name: string; value: unknown }> = [];
 
   if (contentList?.length) {
@@ -134,49 +133,8 @@ export function postMessage({
     variables,
   };
 
-  const observable = new Subject<Message>();
-
-  api
-    .post(`/messages`, payload, {
-      adapter: 'xhr',
-      headers: { Accept: 'text/event-stream' },
-      onDownloadProgress: (e) => {
-        const xhr = e.event?.currentTarget as XMLHttpRequest | undefined;
-        const raw = String(xhr?.response ?? '');
-        ssDebug('sse', 'onDownloadProgress fired', {
-          rawLength: raw.length,
-          xhrExists: !!xhr,
-        });
-        const chunks = raw
-          .split('\n\n')
-          .map((c) => c.trim())
-          .filter(Boolean);
-        if (!chunks.length) return;
-        const last = chunks[chunks.length - 1];
-        const dataLine = last.startsWith('data:') ? last.slice(5).trim() : last;
-        if (!dataLine) return;
-        try {
-          const parsed = JSON.parse(dataLine);
-          coerceMessageDto(parsed);
-          const dto = messagesResponseSchema.shape.data.element.parse(parsed);
-          const parsedMessage = mapMessageDtoToModel(dto);
-          ssDebug('sse', `emitting message: ${parsedMessage.id}`, {
-            values: parsedMessage.values?.map((v) => v.name),
-          });
-          observable.next(parsedMessage);
-        } catch (err) {
-          ssWarn('sse', 'parse failed', err);
-        }
-      },
-    })
-    .then(() => {
-      ssDebug('sse', 'stream complete');
-      observable.complete();
-    })
-    .catch((error) => {
-      ssError('sse', 'stream error', error);
-      observable.error(error);
-    });
-
-  return observable;
+  await api.post(`/messages`, payload, {
+    adapter: 'xhr',
+    headers: { Accept: 'text/event-stream' },
+  });
 }
