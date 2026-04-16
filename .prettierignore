@@ -6,7 +6,3 @@
 
 # Generated (TanStack Router)
 /src/routeTree.gen.ts
-
-# Generated (OpenAPI / Orval)
-/openapi
-/src/platform/api/generated
