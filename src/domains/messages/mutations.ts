@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Subject } from 'rxjs';
 import { toast } from 'sonner';
 
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
@@ -11,12 +10,6 @@ import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
 import { messagesKeys } from './queryKeys';
 import { addInputToMessage, postMessage } from './service';
-
-function isPromptMessage(m: Message): boolean {
-  return !!m.values?.some(
-    (v) => v.type === MessageValueType.INPUT && v.name === 'prompt'
-  );
-}
 
 type SendArgs = {
   workspaceId: string;
@@ -31,7 +24,7 @@ export function useSendMessage() {
   const userId = useUserId();
   const userName = useUserDisplayName();
 
-  return useMutation<Subject<Message>, Error, SendArgs>({
+  return useMutation<void, Error, SendArgs>({
     mutationFn: async ({
       workspaceId,
       threadId,
@@ -104,74 +97,49 @@ export function useSendMessage() {
           old && typeof old === 'object' ? { ...old, isFlowRunning: true } : old
       );
 
-      // cancel in-flight refetches for this list
+      // cancel in-flight refetches for this list so they don't race the optimistic insert
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
-      // start server call (returns Subject synchronously so we subscribe before data arrives)
-      const subject = postMessage({
-        workSpaceId: workspaceId,
-        threadId,
-        contentList,
-        files,
-        variables,
-      });
+      try {
+        await postMessage({
+          workSpaceId: workspaceId,
+          threadId,
+          contentList,
+          files,
+          variables,
+        });
+      } catch (err) {
+        // rollback: remove optimistics and clear optimistic isFlowRunning
+        qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
+          old.filter((x) => !x.optimistic)
+        );
+        qc.setQueryData(
+          threadsKeys.detail(workspaceId, threadId),
+          (old: unknown) =>
+            old && typeof old === 'object'
+              ? { ...old, isFlowRunning: false }
+              : old
+        );
+        toast.error('There was an error posting your message');
+        throw err;
+      }
 
-      // subscribe to server stream: replace optimistic with real items / updates
-      const sub = subject.subscribe({
-        next: (m: Message) => {
-          qc.setQueryData<Message[]>(
-            messagesKeys.list(threadId),
-            (old = []) => {
-              // Only drop optimistic messages if the server actually sent back a prompt message.
-              // Many backends stream assistant output first; dropping optimistics there would hide the user's message.
-              const stable = isPromptMessage(m)
-                ? old.filter((x) => !x.optimistic)
-                : old;
-              // upsert by id
-              const idx = stable.findIndex((x) => x.id === m.id);
-              if (idx === -1) return [...stable, m];
-              const copy = stable.slice();
-              copy[idx] = m;
-              return copy;
-            }
+      // Reconcile thread list ordering / last-message preview and thread detail
+      // (isFlowRunning). The messages list itself is driven by SignalR
+      // ReceiveThreadUpdate -> mergeFetchedWithOptimistics, so don't invalidate it here.
+      qc.invalidateQueries({
+        predicate: (query) => {
+          const k = query.queryKey as unknown[];
+          return (
+            k[0] === 'threads' &&
+            k[1] === 'list' &&
+            (k[2] as { workspaceId?: string })?.workspaceId === workspaceId
           );
-        },
-        error: (_err: Error) => {
-          // rollback: remove any optimistics
-          qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
-            old.filter((x) => !x.optimistic)
-          );
-          // rollback optimistic isFlowRunning
-          qc.setQueryData(
-            threadsKeys.detail(workspaceId, threadId),
-            (old: unknown) =>
-              old && typeof old === 'object'
-                ? { ...old, isFlowRunning: false }
-                : old
-          );
-          toast.error('There was an error posting your message');
-          sub.unsubscribe();
-        },
-        complete: () => {
-          sub.unsubscribe();
-          qc.invalidateQueries({
-            predicate: (query) => {
-              const k = query.queryKey as unknown[];
-              return (
-                k[0] === 'threads' &&
-                k[1] === 'list' &&
-                (k[2] as { workspaceId?: string })?.workspaceId === workspaceId
-              );
-            },
-          });
-          // Refetch thread detail so isFlowRunning reflects server state
-          qc.invalidateQueries({
-            queryKey: threadsKeys.detail(workspaceId, threadId),
-          });
         },
       });
-
-      return subject;
+      qc.invalidateQueries({
+        queryKey: threadsKeys.detail(workspaceId, threadId),
+      });
     },
     retry: false,
   });

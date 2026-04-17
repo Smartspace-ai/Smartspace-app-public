@@ -13,6 +13,7 @@ describe('models mapper', () => {
       displayName: 'A',
       deploymentStatus: 'x',
       modelDeploymentProviderType: 'y',
+      modelPublisher: null,
       createdByUserId: 'u',
       createdAt: '2024-06-01T12:00:00Z',
       properties: [],
@@ -20,8 +21,40 @@ describe('models mapper', () => {
     } as any;
     const m = mapModelDtoToModel(dto);
     expect(m.id).toBe('m1');
+    expect(m.modelPublisher).toBeNull();
     expect(m.createdAt).toBeInstanceOf(Date);
     expect(m.createdAt.toISOString()).toBe('2024-06-01T12:00:00.000Z');
+  });
+
+  it('maps modelPublisher string values through', () => {
+    const dto = {
+      id: 'm1',
+      name: 'A',
+      displayName: 'A',
+      deploymentStatus: 'x',
+      modelDeploymentProviderType: 'AzureOpenAi',
+      modelPublisher: 'Meta',
+      createdByUserId: 'u',
+      createdAt: '2024-06-01T12:00:00Z',
+      properties: [],
+      virtualMachineUrl: null,
+    } as any;
+    expect(mapModelDtoToModel(dto).modelPublisher).toBe('Meta');
+  });
+
+  it('coerces missing modelPublisher field to null', () => {
+    const dto = {
+      id: 'm1',
+      name: 'A',
+      displayName: 'A',
+      deploymentStatus: 'x',
+      modelDeploymentProviderType: 'y',
+      createdByUserId: 'u',
+      createdAt: '2024-06-01T12:00:00Z',
+      properties: [],
+      virtualMachineUrl: null,
+    } as any;
+    expect(mapModelDtoToModel(dto).modelPublisher).toBeNull();
   });
 
   it('maps envelope', () => {

@@ -6,7 +6,9 @@ import { utcDate } from '@/shared/utils/dateFromApi';
 import { MessageValueType } from './enums';
 import { Message } from './model';
 
-const { getMessageThreadsIdMessagesResponse: messagesResponseSchema } = ChatZod;
+const {
+  messageThreadsThreadMessagesIdMessagesResponse: messagesResponseSchema,
+} = ChatZod;
 
 type MessagesResponseDto = z.infer<typeof messagesResponseSchema>;
 type MessageDto = MessagesResponseDto['data'][number];

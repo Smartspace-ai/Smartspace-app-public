@@ -9,10 +9,27 @@ import type { FileInfo, FileScope } from './model';
 export const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
 
 const {
-  getFilesIdResponse: fileInfoResponseSchema,
-  postFilesResponse: filesResponseSchema,
+  filesGetFileInfoResponse: fileInfoResponseSchema,
+  filesUploadFilesResponse: filesResponseSchema,
 } = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
+
+// The API returns `null` for `createdByUserId` / `modifiedByUserId` on file
+// upload responses, but the SDK's generated Zod schema marks them as required
+// non-nullable strings. The mapper doesn't use these fields, so coerce nulls
+// to empty strings before validation rather than forking the SDK.
+const coerceFileUploadResponse = (data: unknown): unknown => {
+  if (!Array.isArray(data)) return data;
+  return data.map((item) => {
+    if (!item || typeof item !== 'object') return item;
+    const r = item as Record<string, unknown>;
+    return {
+      ...r,
+      createdByUserId: r.createdByUserId ?? '',
+      modifiedByUserId: r.modifiedByUserId ?? '',
+    };
+  });
+};
 
 const uploadFileInChunks = async (
   file: File,
@@ -28,7 +45,7 @@ const uploadFileInChunks = async (
   for (let i = 0; i < totalChunks; i++) {
     const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
     const chunkFile = new File([chunk], file.name, { type: file.type });
-    const response = await chatApi.postFiles({
+    const response = await chatApi.filesUploadFiles({
       files: [chunkFile],
       uploadId,
       chunkIndex: i,
@@ -45,7 +62,7 @@ const uploadFileInChunks = async (
     if (i === totalChunks - 1) {
       const parsed = parseOrThrow(
         filesResponseSchema,
-        response.data,
+        coerceFileUploadResponse(response.data),
         'POST /files (chunked)'
       );
       return mapFileInfoDtoToModel(parsed[0]);
@@ -71,14 +88,14 @@ export const uploadFiles = async (
       fileInfo = await uploadFileInChunks(file, scope, onChunkUploaded);
     } else {
       // Use the same endpoint for small files
-      const response = await chatApi.postFiles({
+      const response = await chatApi.filesUploadFiles({
         files: [file],
         workspaceId: scope.workspaceId,
         threadId: scope.threadId,
       });
       const parsed = parseOrThrow(
         filesResponseSchema,
-        response.data,
+        coerceFileUploadResponse(response.data),
         'POST /files'
       );
       fileInfo = mapFileInfoDtoToModel(parsed[0]);
@@ -104,7 +121,7 @@ export const getFileInfo = async (
   id: string,
   scope: FileScope
 ): Promise<FileInfo> => {
-  const response = await chatApi.getFilesId(id, scope);
+  const response = await chatApi.filesGetFileInfo(id, scope);
   const parsed = parseOrThrow(
     fileInfoResponseSchema,
     response.data,

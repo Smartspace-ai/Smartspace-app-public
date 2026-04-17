@@ -10,11 +10,11 @@ const { mockGetMessages, mockMessageElementParse } = vi.hoisted(() => ({
 vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
-      getMessageThreadsIdMessages: mockGetMessages,
+      messageThreadsThreadMessagesIdMessages: mockGetMessages,
     }),
   },
   ChatZod: {
-    getMessageThreadsIdMessagesResponse: {
+    messageThreadsThreadMessagesIdMessagesResponse: {
       shape: {
         data: {
           element: {
@@ -65,59 +65,35 @@ describe('messages service', () => {
     expect(res[0].id).toBe('m1');
   });
 
-  it('postMessage sets up SSE handling (smoke)', async () => {
-    // capture onDownloadProgress to trigger after subscription
-    let capturedCb: ((e: ProgressEventLike) => void) | undefined;
-    const postSpy = vi.spyOn(api, 'post').mockImplementation(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async (_url: string, _payload: any, cfg?: any) => {
-        capturedCb = cfg?.onDownloadProgress as
-          | ((e: ProgressEventLike) => void)
-          | undefined;
-        return undefined as unknown as never;
-      }
-    );
+  it('postMessage posts to /messages and resolves when the request completes', async () => {
+    const postSpy = vi
+      .spyOn(api, 'post')
+      .mockResolvedValueOnce(undefined as never);
 
-    const obs = postMessage({ workSpaceId: 'w', threadId: 't1' });
+    await expect(
+      postMessage({
+        workSpaceId: 'w',
+        threadId: 't1',
+        contentList: [{ type: 'text', text: 'hi' } as never],
+      })
+    ).resolves.toBeUndefined();
 
-    // now simulate streaming frames after subscription
-    const chunk = JSON.stringify({
-      id: 'm2',
-      createdAt: '2024-01-01',
-      createdBy: 'u1',
-      hasComments: false,
-      createdByUserId: 'u1',
-      messageThreadId: 't1',
-      values: [],
-    });
-    capturedCb?.({
-      event: { currentTarget: { response: `data:${chunk}\n\n` } },
-    });
-    capturedCb?.({
-      event: {
-        currentTarget: { response: `data:${chunk}\n\ndata:${chunk}\n\n` },
-      },
-    });
-
-    expect(typeof obs.subscribe).toBe('function');
+    expect(postSpy).toHaveBeenCalledOnce();
+    const [url, payload] = postSpy.mock.calls[0];
+    expect(url).toBe('/messages');
+    expect((payload as { messageThreadId: string }).messageThreadId).toBe('t1');
     postSpy.mockRestore();
   });
 
-  it('postMessage observable emits error when stream fails', () => {
+  it('postMessage rejects when the underlying request fails', async () => {
     const networkError = new Error('Network failure');
     const postSpy = vi.spyOn(api, 'post').mockRejectedValueOnce(networkError);
 
-    const obs = postMessage({ workSpaceId: 'w', threadId: 't1' });
+    await expect(
+      postMessage({ workSpaceId: 'w', threadId: 't1' })
+    ).rejects.toBe(networkError);
 
-    return new Promise<void>((resolve) => {
-      obs.subscribe({
-        error: (err) => {
-          expect(err).toBe(networkError);
-          postSpy.mockRestore();
-          resolve();
-        },
-      });
-    });
+    postSpy.mockRestore();
   });
 
   it('addInputToMessage throws when no valid message received', async () => {

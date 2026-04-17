@@ -10,13 +10,13 @@ const { mockPostFiles, mockGetFilesId } = vi.hoisted(() => ({
 vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
-      postFiles: mockPostFiles,
-      getFilesId: mockGetFilesId,
+      filesUploadFiles: mockPostFiles,
+      filesGetFileInfo: mockGetFilesId,
     }),
   },
   ChatZod: {
-    getFilesIdResponse: {},
-    postFilesResponse: {},
+    filesGetFileInfoResponse: {},
+    filesUploadFilesResponse: {},
   },
   AXIOS_INSTANCE: {},
 }));

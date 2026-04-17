@@ -30,6 +30,7 @@ import { createPortal } from 'react-dom';
 // This setup is ready to add a mention-like plugin later if desired.
 import { autolink } from './extensions/autolink';
 import { fileTag } from './extensions/fileTag';
+import { htmlPreviewView } from './extensions/htmlPreview';
 import { mention } from './extensions/mention';
 import { ssImageNode, ssImageView } from './extensions/ssImage';
 import './styles.css';
@@ -370,6 +371,7 @@ function EditorInner({
         .use(fileTag)
         .use(ssImageNode)
         .use(ssImageView)
+        .use(htmlPreviewView)
         .use(enableMentions ? mention : fileTag);
     },
     [isEditable]
