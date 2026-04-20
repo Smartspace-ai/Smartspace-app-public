@@ -294,21 +294,24 @@ export default function MessageComposer() {
   }, [editorKey]);
 
   const handleSendMessageAndClear = () => {
-    if (sendDisabled) return;
-    handleSendMessage(uploadedAttachments);
+    // Read the freshest markdown straight from the editor. The `markdownUpdated`
+    // listener is debounced by 200ms in `@milkdown/plugin-listener`, so when a
+    // user types fast and hits Enter the React `newMessage` state can be stale —
+    // previously that caused the send to use/require old text and the subsequent
+    // editor remount to wipe characters the user had just typed.
+    const latestText = editorRef.current?.getMarkdown() ?? newMessage;
+    const sent = handleSendMessage(latestText, uploadedAttachments);
+    if (!sent) return;
     handleClearAttachments();
     setEditorKey((k) => k + 1);
   };
 
   const handleComposerKeyDown = (e: React.KeyboardEvent) => {
-    // Send on Enter (no Shift) and then clear both attachments + editor UI state.
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (sendDisabled) return;
       handleSendMessageAndClear();
       return;
     }
-    // Preserve any other key handling from the VM (currently a no-op outside Enter).
     handleKeyDown(e, uploadedAttachments);
   };
 
