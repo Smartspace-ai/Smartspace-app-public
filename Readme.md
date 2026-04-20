@@ -46,6 +46,21 @@ git ls-remote --tags https://github.com/Smartspace-ai/Smartspace-app-public.git
 
 > **Do not clone from `main` directly** unless you are running the latest version of SmartSpace. The `main` branch tracks the most recent release and may include API changes that are incompatible with older SmartSpace versions.
 
+#### Updating an existing fork
+
+When pulling in upstream changes, merge the SmartSpace version tag that matches your instance — **not** `main`. This keeps your fork aligned with a known-compatible release instead of whatever is currently on `main`.
+
+```bash
+# Add the upstream template as a remote (one-time setup)
+git remote add upstream https://github.com/Smartspace-ai/Smartspace-app-public.git
+
+# Fetch tags from upstream
+git fetch upstream --tags
+
+# Merge the tag that matches your SmartSpace version
+git merge v1.13.1
+```
+
 ### Installation
 
 1. **Fork [this repository](https://github.com/Smartspace-ai/Smartspace-app-public) to your own GitHub account.**
