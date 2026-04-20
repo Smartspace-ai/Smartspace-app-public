@@ -34,9 +34,13 @@ export default defineConfig(({ mode }) => ({
   },
 
   plugins: [
-    // Skip route-tree generation in test mode — tests import route modules
-    // directly and the plugin's HMR injection clashes with @vitejs/plugin-react
-    // when the config is re-evaluated by @nx/vite:test under pnpm's layout.
+    // Skip the TanStack Router plugin in test mode. Tests import route
+    // modules directly (routeTree.gen.ts is already generated and committed),
+    // so the plugin's route-tree regeneration and HMR injection are unused.
+    // Under @nx/vite:test the plugin's output gets layered on top of the
+    // transform @vitejs/plugin-react already applies, producing
+    // "Duplicate declaration 'hot'" in Babel when test files import routes.
+    // This gate is targeted — the plugin still runs for dev/build/preview.
     ...(mode === 'test'
       ? []
       : [
