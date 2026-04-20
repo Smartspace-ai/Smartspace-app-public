@@ -15,7 +15,7 @@ const publicOriginHost = (() => {
   }
 })();
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   root: __dirname,
   cacheDir: './node_modules/.vite/smartspace',
 
@@ -34,24 +34,31 @@ export default defineConfig({
   },
 
   plugins: [
-    // Dynamically resolve the TanStack Router Vite plugin to avoid editor/moduleResolution issues
-    ((() => {
-      const require = createRequire(import.meta.url);
-      try {
-        // Avoid static analysis resolution by constructing the module name dynamically
-        const moduleName = ['@tanstack', 'router-plugin', 'vite'].join('/');
-        const mod = require(moduleName) as { default?: unknown };
-        if (typeof mod?.default === 'function') {
-          return mod.default as (opts: { routeFileIgnorePattern?: string }) => PluginOption;
-        }
-      } catch {
-        // ignore
-      }
-      return () => ({ name: 'tanstack-router-plugin-noop' }) as PluginOption;
-    })())({
-      // Ignore tests and test directories when scanning for route files
-      routeFileIgnorePattern: '__tests__|\\.(test|spec)\\.(t|j)sx?$',
-    }),
+    // Skip route-tree generation in test mode — tests import route modules
+    // directly and the plugin's HMR injection clashes with @vitejs/plugin-react
+    // when the config is re-evaluated by @nx/vite:test under pnpm's layout.
+    ...(mode === 'test'
+      ? []
+      : [
+          // Dynamically resolve the TanStack Router Vite plugin to avoid editor/moduleResolution issues
+          ((() => {
+            const require = createRequire(import.meta.url);
+            try {
+              // Avoid static analysis resolution by constructing the module name dynamically
+              const moduleName = ['@tanstack', 'router-plugin', 'vite'].join('/');
+              const mod = require(moduleName) as { default?: unknown };
+              if (typeof mod?.default === 'function') {
+                return mod.default as (opts: { routeFileIgnorePattern?: string }) => PluginOption;
+              }
+            } catch {
+              // ignore
+            }
+            return () => ({ name: 'tanstack-router-plugin-noop' }) as PluginOption;
+          })())({
+            // Ignore tests and test directories when scanning for route files
+            routeFileIgnorePattern: '__tests__|\\.(test|spec)\\.(t|j)sx?$',
+          }),
+        ]),
     react(),
     nxViteTsPaths(),
   ],
@@ -157,4 +164,4 @@ export default defineConfig({
       reportOnFailure: true,
     },
   },
-});
+}));

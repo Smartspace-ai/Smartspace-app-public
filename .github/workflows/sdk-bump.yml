@@ -40,15 +40,19 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.target_branch }}
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: pnpm
 
       - name: Update SDK version
         env:
           SDK_VERSION: ${{ github.event.client_payload.version }}
-        run: npm install "@smartspace/api-client@${SDK_VERSION}" --save-exact
+        run: pnpm add "@smartspace/api-client@${SDK_VERSION}" --save-exact
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v6
