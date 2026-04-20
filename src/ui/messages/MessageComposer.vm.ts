@@ -55,10 +55,14 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     props.hasAttachments,
   ]);
 
-  const internalSend = (files?: { id: string; name: string }[]) => {
+  const internalSend = (
+    text: string,
+    files?: { id: string; name: string }[]
+  ) => {
     if (!workspaceId || !threadId) return;
-    const contentList = newMessage.trim()
-      ? [{ text: newMessage.trim(), image: undefined }]
+    const trimmed = text.trim();
+    const contentList = trimmed
+      ? [{ text: trimmed, image: undefined }]
       : undefined;
     const vars =
       variables && Object.keys(variables).length > 0 ? variables : undefined;
@@ -71,23 +75,41 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     });
     setNewMessage('');
   };
-  /** Unified "Send" */
-  const sendNow = (files?: { id: string; name: string }[]) => {
-    if (sendDisabled) return;
-    internalSend(files);
+
+  /**
+   * Can we send given the provided text/files right now?
+   * Kept separate from `sendDisabled` (which drives the UI button) so callers
+   * can bypass the React-state-based check when they have a fresher text value —
+   * e.g. when reading directly from the editor at Enter time, since the Milkdown
+   * `markdownUpdated` listener is debounced by 200ms and React state can lag.
+   */
+  const canSend = (text: string, files?: { id: string; name: string }[]) => {
+    const hasFiles = (files?.length ?? 0) > 0 || !!props.hasAttachments;
+    const nothingToSend = !text.trim() && !hasFiles;
+    const flowBlocked = !!thread?.isFlowRunning || sendMessage.isPending;
+    return !(isUploadingFiles || flowBlocked || nothingToSend);
   };
 
-  const handleSendMessage = (files?: { id: string; name: string }[]) =>
-    sendNow(files);
+  /**
+   * Returns true when the message was dispatched, false when blocked.
+   * Callers use the return value to decide whether to clear local UI state.
+   */
+  const handleSendMessage = (
+    text: string,
+    files?: { id: string; name: string }[]
+  ): boolean => {
+    if (!canSend(text, files)) return false;
+    internalSend(text, files);
+    return true;
+  };
 
   const handleKeyDown = (
-    e: React.KeyboardEvent,
-    files?: { id: string; name: string }[]
+    _e: React.KeyboardEvent,
+    _files?: { id: string; name: string }[]
   ) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      if (!sendDisabled) sendNow(files);
-    }
+    // Enter handling lives in the composer so it can read the editor's current
+    // markdown directly — Milkdown's `markdownUpdated` listener is debounced
+    // 200ms, so relying on React state here dropped characters on fast typing.
   };
 
   return {
