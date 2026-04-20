@@ -33,6 +33,29 @@ const {
 
 const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
 
+/**
+ * Strip headers / config / request / response from an axios-style error before
+ * it reaches any log surface. Axios error objects carry `config.headers`
+ * (including `Authorization: Bearer ...`) and the full `request` / `response`
+ * — all of which would leak the bearer token if forwarded to a sink that
+ * captures `console.error` or reads `window.__ssLogs` (Sentry, LogRocket).
+ */
+function scrubAxiosError(error: unknown): unknown {
+  if (!error || typeof error !== 'object') return error;
+  const e = error as Record<string, unknown>;
+  const scrubbed: Record<string, unknown> = {
+    name: e.name,
+    message: e.message,
+    code: e.code,
+    status: e.status,
+  };
+  if (e.response && typeof e.response === 'object') {
+    const r = e.response as Record<string, unknown>;
+    scrubbed.response = { status: r.status, statusText: r.statusText };
+  }
+  return scrubbed;
+}
+
 /** Backend sends null createdByUserId on system-generated values; Zod schema requires string. */
 function coerceMessageDto(raw: Record<string, unknown>): void {
   if (raw.createdByUserId == null) raw.createdByUserId = '';
@@ -106,7 +129,7 @@ export function createDefaultChatService(): ChatService {
       return mapMessagesDtoToModels(parsed.data);
     },
 
-    sendMessage({ workSpaceId, threadId, contentList, files, variables }) {
+    sendMessage({ workspaceId, threadId, contentList, files, variables }) {
       const inputs: Array<{ name: string; value: unknown }> = [];
 
       if (contentList?.length) {
@@ -128,7 +151,7 @@ export function createDefaultChatService(): ChatService {
       const payload = {
         inputs,
         messageThreadId: threadId,
-        workspaceId: workSpaceId,
+        workspaceId,
         variables,
       };
 
@@ -162,10 +185,11 @@ export function createDefaultChatService(): ChatService {
           observable.complete();
         })
         .catch((error: unknown) => {
-          // Log the full error internally, but hand subscribers a scrubbed
-          // Error — axios errors carry config.headers.Authorization which
-          // must never reach a log forwarder like Sentry or LogRocket.
-          ssError('sse', 'stream error', error);
+          // Scrub before logging or surfacing to subscribers — axios errors
+          // carry config.headers.Authorization which must never reach
+          // ssError (which writes to console.error and window.__ssLogs and
+          // is captured by sinks like Sentry / LogRocket) or any subscriber.
+          ssError('sse', 'stream error', scrubAxiosError(error));
           const message =
             error instanceof Error ? error.message : 'Message stream failed';
           observable.error(new Error(message));

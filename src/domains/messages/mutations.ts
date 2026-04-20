@@ -108,7 +108,7 @@ export function useSendMessage() {
 
       // start server call (returns Subject synchronously so we subscribe before data arrives)
       const subject = service.sendMessage({
-        workSpaceId: workspaceId,
+        workspaceId,
         threadId,
         contentList,
         files,

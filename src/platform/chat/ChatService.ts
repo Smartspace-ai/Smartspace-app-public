@@ -28,7 +28,7 @@ export interface ChatService {
    * can subscribe before SSE chunks start arriving.
    */
   sendMessage(args: {
-    workSpaceId: string;
+    workspaceId: string;
     threadId: string;
     contentList?: MessageContentItem[];
     files?: FileInfo[];
