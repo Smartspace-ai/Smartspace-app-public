@@ -47,6 +47,9 @@ importers:
       '@milkdown/core':
         specifier: ^7.20.0
         version: 7.20.0
+      '@milkdown/kit':
+        specifier: 7.20.0
+        version: 7.20.0(@codemirror/language@6.12.3)(@codemirror/state@6.6.0)(@codemirror/view@6.41.1)(typescript@5.5.4)
       '@milkdown/plugin-clipboard':
         specifier: ^7.20.0
         version: 7.20.0
@@ -65,6 +68,9 @@ importers:
       '@milkdown/react':
         specifier: ^7.20.0
         version: 7.20.0(@codemirror/language@6.12.3)(@codemirror/state@6.6.0)(@codemirror/view@6.41.1)(prosemirror-model@1.25.4)(prosemirror-state@1.4.4)(prosemirror-view@1.41.8)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
+      '@milkdown/transformer':
+        specifier: 7.20.0
+        version: 7.20.0
       '@milkdown/utils':
         specifier: ^7.20.0
         version: 7.20.0
@@ -101,6 +107,9 @@ importers:
       archiver:
         specifier: ^7.0.1
         version: 7.0.1
+      axios:
+        specifier: 1.15.1
+        version: 1.15.1
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -113,6 +122,9 @@ importers:
       framer-motion:
         specifier: ^12.38.0
         version: 12.38.0(@emotion/is-prop-valid@1.4.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      hast-util-sanitize:
+        specifier: 5.0.2
+        version: 5.0.2
       jwt-decode:
         specifier: ^4.0.0
         version: 4.0.0
@@ -170,6 +182,12 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+      unified:
+        specifier: 11.0.5
+        version: 11.0.5
+      unist-util-visit:
+        specifier: 5.1.0
+        version: 5.1.0
     devDependencies:
       '@nx/cypress':
         specifier: 19.6.0
@@ -225,6 +243,9 @@ importers:
       '@types/lodash.debounce':
         specifier: ^4.0.9
         version: 4.0.9
+      '@types/mdast':
+        specifier: 4.0.4
+        version: 4.0.4
       '@types/node':
         specifier: ^25.0.6
         version: 25.6.0
@@ -234,6 +255,9 @@ importers:
       '@types/react-dom':
         specifier: 18.3.0
         version: 18.3.0
+      '@types/unist':
+        specifier: 3.0.3
+        version: 3.0.3
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.16.0
         version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.5.4))(eslint@8.57.1)(typescript@5.5.4)
