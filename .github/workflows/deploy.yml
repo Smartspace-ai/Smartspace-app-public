@@ -74,3 +74,39 @@ jobs:
               --destination '$web/assets' \
               --content-cache-control 'public, max-age=31536000, immutable' \
               --overwrite true
+
+      # Optional: purge CDN / Front Door in front of the storage account.
+      # These steps no-op unless the environment sets CDN_TYPE to "cdn" or "afd"
+      # and provides AZURE_CREDENTIALS for the az login step.
+      - name: Azure login (for CDN purge)
+        if: vars.CDN_TYPE == 'cdn' || vars.CDN_TYPE == 'afd'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Purge Azure CDN
+        if: vars.CDN_TYPE == 'cdn'
+        uses: azure/CLI@v2
+        with:
+          azcliversion: 2.67.0
+          inlineScript: |
+            az cdn endpoint purge \
+              --resource-group "${{ vars.CDN_RESOURCE_GROUP }}" \
+              --profile-name "${{ vars.CDN_PROFILE_NAME }}" \
+              --name "${{ vars.CDN_ENDPOINT_NAME }}" \
+              --content-paths '/*' \
+              --no-wait
+
+      - name: Purge Azure Front Door
+        if: vars.CDN_TYPE == 'afd'
+        uses: azure/CLI@v2
+        with:
+          azcliversion: 2.67.0
+          inlineScript: |
+            az afd endpoint purge \
+              --resource-group "${{ vars.AFD_RESOURCE_GROUP }}" \
+              --profile-name "${{ vars.AFD_PROFILE_NAME }}" \
+              --endpoint-name "${{ vars.AFD_ENDPOINT_NAME }}" \
+              --content-paths '/*' \
+              --domains "${{ vars.AFD_DOMAIN }}" \
+              --no-wait
