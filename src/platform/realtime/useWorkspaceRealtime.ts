@@ -1,12 +1,13 @@
 // src/platform/realtime/useWorkspaceRealtime.ts
+import { SignalR } from '@smartspace/api-client';
 import { useEffect } from 'react';
 
 import { useOptionalRealtime } from './RealtimeProvider';
 
 type Handlers = {
-  onThreadUpdate?: (threadId: string) => void;
-  onThreadDeleted?: (threadId: string) => void;
-  onCommentsUpdate?: (threadId: string) => void;
+  onThreadUpdate?: (thread: SignalR.MessageThreadSummary) => void;
+  onThreadDeleted?: (thread: SignalR.MessageThreadSummary) => void;
+  onCommentsUpdate?: (comment: SignalR.CommentSummary) => void;
 };
 
 export function useWorkspaceRealtime(
@@ -30,27 +31,29 @@ export function useWorkspaceRealtime(
     // join workspace group
     subscribeToGroup(workspaceId);
 
-    const onThreadUpdate = (t: { id: string } & Record<string, unknown>) => {
-      handlers.onThreadUpdate?.(t.id);
-    };
-    const onThreadDeleted = (t: { id: string } & Record<string, unknown>) => {
-      handlers.onThreadDeleted?.(t.id);
-    };
-    const onCommentsUpdate = (
-      c: { messageThreadId: string } & Record<string, unknown>
-    ) => {
-      handlers.onCommentsUpdate?.(c.messageThreadId);
-    };
-
-    connection.on('ReceiveThreadUpdate', onThreadUpdate);
-    connection.on('ReceiveThreadDeleted', onThreadDeleted);
-    connection.on('ReceiveCommentsUpdate', onCommentsUpdate);
+    const subscription = SignalR.getReceiverRegister(
+      'INotificationReceiver'
+    ).register(connection, {
+      receiveMessage: async () => {
+        /* no-op: toast/notification handling lives elsewhere */
+      },
+      receiveThreadUpdate: async (thread) => {
+        handlers.onThreadUpdate?.(thread);
+      },
+      receiveThreadDeleted: async (thread) => {
+        handlers.onThreadDeleted?.(thread);
+      },
+      receiveCommentsUpdate: async (comment) => {
+        handlers.onCommentsUpdate?.(comment);
+      },
+      blocksUpdate: async () => {
+        /* no-op: blocks invalidation handled by domain listeners */
+      },
+    });
 
     return () => {
       unsubscribeFromGroup(workspaceId);
-      connection.off('ReceiveThreadUpdate', onThreadUpdate);
-      connection.off('ReceiveThreadDeleted', onThreadDeleted);
-      connection.off('ReceiveCommentsUpdate', onCommentsUpdate);
+      subscription.dispose();
     };
   }, [
     workspaceId,

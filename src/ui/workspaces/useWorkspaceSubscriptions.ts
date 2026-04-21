@@ -18,23 +18,27 @@ export function useWorkspaceSubscriptions() {
   const navigate = useNavigate();
 
   useWorkspaceRealtime(workspaceId, {
-    onThreadUpdate: (id) => {
+    onThreadUpdate: (thread) => {
       if (!workspaceId) return;
       // eslint-disable-next-line no-console
-      console.log('[SignalR] ReceiveThreadUpdate for thread:', id);
+      console.log('[SignalR] ReceiveThreadUpdate for thread:', thread.id);
       qc.invalidateQueries({ queryKey: threadsKeys.list(workspaceId) });
-      qc.invalidateQueries({ queryKey: threadsKeys.detail(workspaceId, id) });
-      qc.invalidateQueries({ queryKey: messagesKeys.list(id) });
+      qc.invalidateQueries({
+        queryKey: threadsKeys.detail(workspaceId, thread.id),
+      });
+      qc.invalidateQueries({ queryKey: messagesKeys.list(thread.id) });
     },
-    onThreadDeleted: (id) => {
+    onThreadDeleted: (thread) => {
       if (!workspaceId) return;
       qc.invalidateQueries({ queryKey: threadsKeys.list(workspaceId) });
-      if (id === threadId) {
+      if (thread.id === threadId) {
         navigate({ to: '/workspace/$workspaceId', params: { workspaceId } });
       }
     },
-    onCommentsUpdate: (tid) => {
-      qc.invalidateQueries({ queryKey: ['comments', tid] });
+    onCommentsUpdate: (comment) => {
+      qc.invalidateQueries({
+        queryKey: ['comments', comment.messageThreadId],
+      });
     },
   });
 }
