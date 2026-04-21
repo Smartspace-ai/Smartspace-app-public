@@ -1,7 +1,8 @@
-# Auto-bump @smartspace/api-client when a new SDK version is published.
+# Smartspace-internal: safe to delete in forks.
+# Auto-bumps @smartspace/api-client when a new SDK version is published.
 # Triggered via repository_dispatch from Smartspace-app-api SDK publish workflows.
 
-name: Bump SDK version
+name: Bump SDK version (internal)
 
 on:
   repository_dispatch:
