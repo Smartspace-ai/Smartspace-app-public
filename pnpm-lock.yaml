@@ -98,9 +98,6 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.168.10
         version: 1.168.23(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@types/jwt-decode':
-        specifier: ^2.2.1
-        version: 2.2.1
       ace-builds:
         specifier: ^1.43.6
         version: 1.43.6
@@ -240,9 +237,6 @@ importers:
       '@testing-library/react':
         specifier: 15.0.6
         version: 15.0.6(@types/react@18.3.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@types/lodash':
-        specifier: ^4.17.16
-        version: 4.17.24
       '@types/lodash.debounce':
         specifier: ^4.0.9
         version: 4.0.9
@@ -3149,9 +3143,6 @@ packages:
 
   '@types/json5@0.0.29':
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
-
-  '@types/jwt-decode@2.2.1':
-    resolution: {integrity: sha512-aWw2YTtAdT7CskFyxEX2K21/zSDStuf/ikI3yBqmwpwJF0pS+/IX5DWv+1UFffZIbruP6cnT9/LAJV1gFwAT1A==}
 
   '@types/katex@0.16.8':
     resolution: {integrity: sha512-trgaNyfU+Xh2Tc+ABIb44a5AYUpicB3uwirOioeOkNPPbmgRNtcWyDeeFRzjPZENO9Vq8gvVqfhaaXWLlevVwg==}
@@ -11350,8 +11341,6 @@ snapshots:
   '@types/json-schema@7.0.15': {}
 
   '@types/json5@0.0.29': {}
-
-  '@types/jwt-decode@2.2.1': {}
 
   '@types/katex@0.16.8': {}
 
