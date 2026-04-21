@@ -5,6 +5,7 @@ import {
   HubConnectionBuilder,
   HubConnectionState,
 } from '@microsoft/signalr';
+import { SignalR } from '@smartspace/api-client';
 import {
   createContext,
   useCallback,
@@ -17,6 +18,9 @@ import {
 } from 'react';
 
 import { parseScopes } from '@/platform/auth/scopes';
+
+const createClientHub = (connection: HubConnection) =>
+  SignalR.getHubProxyFactory('IClientHubInvoker').createHubProxy(connection);
 
 type RealtimeCtx = {
   connection?: HubConnection;
@@ -104,7 +108,8 @@ export function RealtimeProvider({
         return; // lifecycle will re-join
       }
       try {
-        await connection.invoke(method, groupName);
+        const hub = createClientHub(connection);
+        await hub[method](groupName);
       } catch (err) {
         if (attempt < 3) {
           const delay = 300 * Math.pow(2, attempt) + Math.random() * 100;
@@ -167,9 +172,10 @@ export function RealtimeProvider({
     // rejoin desired groups after reconnect
     const rejoin = async () => {
       if (conn.state !== HubConnectionState.Connected) return;
+      const hub = createClientHub(conn);
       for (const g of desiredGroups.current) {
         try {
-          await conn.invoke('joinGroup', g);
+          await hub.joinGroup(g);
         } catch {
           console.error('Error joining group', g);
         }
