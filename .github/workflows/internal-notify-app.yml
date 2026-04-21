@@ -1,0 +1,33 @@
+# Smartspace-internal: safe to delete in forks.
+# Notifies the Smartspace-ai/Smartspace-app repo that this repo's develop branch
+# has updated, so it can rebuild its Docker image with the latest public UI.
+
+name: Notify Smartspace-app (internal)
+
+on:
+  push:
+    branches: [develop]
+
+concurrency:
+  group: internal-notify-app
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CI_DISPATCH_APP_ID }}
+          private-key: ${{ secrets.CI_DISPATCH_APP_PRIVATE_KEY }}
+          owner: Smartspace-ai
+          repositories: Smartspace-app
+
+      - name: Trigger Smartspace-app Docker build
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          repository: Smartspace-ai/Smartspace-app
+          event-type: app-public-updated
