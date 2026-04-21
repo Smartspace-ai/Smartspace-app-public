@@ -129,13 +129,62 @@ export default defineConfig(({ mode }) => ({
       },
       output: {
         // Practical code-splitting to keep bundles smaller and reduce chunk-size warnings.
+        // Order matters — first match wins.
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
+          // React core (imported everywhere)
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/scheduler/')
+          )
+            return 'react';
+
+          // UI libraries
           if (id.includes('/@mui/')) return 'mui';
-          if (id.includes('/@milkdown/')) return 'milkdown';
+          if (id.includes('/@emotion/')) return 'emotion';
+          if (id.includes('/@radix-ui/')) return 'radix';
+          if (id.includes('/lucide-react/') || id.includes('/@heroicons/'))
+            return 'icons';
+          if (id.includes('/framer-motion/')) return 'motion';
+
+          // Editor libraries (heaviest third-party surfaces)
+          if (id.includes('/@milkdown/') || id.includes('/@milkdown-next/'))
+            return 'milkdown';
+          if (id.includes('/ace-builds/') || id.includes('/react-ace/'))
+            return 'ace';
+
+          // Router + data
           if (id.includes('/@tanstack/')) return 'tanstack';
-          if (id.includes('/ace-builds/')) return 'ace';
+
+          // Auth + identity
+          if (
+            id.includes('/@azure/msal') ||
+            id.includes('/jwt-decode/')
+          )
+            return 'msal';
+          if (id.includes('/@microsoft/teams-js/')) return 'teams';
+
+          // Realtime
+          if (id.includes('/@microsoft/signalr/')) return 'signalr';
+
+          // Markdown pipeline — unified, remark/rehype, mdast/hast utils, visit
+          if (
+            id.includes('/react-markdown/') ||
+            id.includes('/remark-') ||
+            id.includes('/rehype-') ||
+            id.includes('/unified/') ||
+            id.includes('/unist-util-') ||
+            id.includes('/mdast-util-') ||
+            id.includes('/hast-util-') ||
+            id.includes('/micromark') ||
+            id.includes('/decode-named-character-reference/')
+          )
+            return 'markdown';
+
+          // Form schema rendering
+          if (id.includes('/@jsonforms/')) return 'jsonforms';
 
           return 'vendor';
         },
