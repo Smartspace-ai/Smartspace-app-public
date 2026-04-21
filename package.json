@@ -159,5 +159,14 @@
   },
   "nx": {
     "includedScripts": []
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@swc/core",
+      "cypress",
+      "esbuild",
+      "nx"
+    ]
   }
 }
