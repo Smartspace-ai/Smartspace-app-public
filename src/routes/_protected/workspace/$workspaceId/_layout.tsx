@@ -1,4 +1,4 @@
-// routes/_protected/workspace/$workspaceId/__layout.tsx
+// routes/_protected/workspace/$workspaceId/_layout.tsx
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { Suspense, useEffect, useMemo } from 'react';
 
@@ -50,7 +50,7 @@ function WorkspaceBodyBackground() {
 }
 
 export const Route = createFileRoute(
-  '/_protected/workspace/$workspaceId/__layout'
+  '/_protected/workspace/$workspaceId/_layout'
 )({
   loader: ({ params, context }) =>
     context.queryClient.ensureQueryData(
