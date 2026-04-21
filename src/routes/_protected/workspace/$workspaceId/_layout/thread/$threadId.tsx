@@ -27,7 +27,7 @@ export type ThreadRouteSearch = z.infer<typeof threadRouteSearchSchema>;
 
 // routes/_protected/workspace/$workspaceId/thread/$threadId.tsx
 export const Route = createFileRoute(
-  '/_protected/workspace/$workspaceId/thread/$threadId'
+  '/_protected/workspace/$workspaceId/_layout/thread/$threadId'
 )({
   validateSearch: (search): ThreadRouteSearch =>
     threadRouteSearchSchema.parse(search),

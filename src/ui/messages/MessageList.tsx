@@ -31,7 +31,7 @@ export function MessageList() {
 
   const { data: activeWorkspace } = useWorkspace(workspaceId);
   const workspaceIndexMatch = useMatch({
-    from: '/_protected/workspace/$workspaceId/',
+    from: '/_protected/workspace/$workspaceId/_layout/',
     shouldThrow: false,
   });
 
