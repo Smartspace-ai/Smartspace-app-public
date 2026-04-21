@@ -9,7 +9,7 @@ import { threadsKeys } from '@/domains/threads/queryKeys';
 
 export function useWorkspaceSubscriptions() {
   const match = useMatch({
-    from: '/_protected/workspace/$workspaceId/thread/$threadId',
+    from: '/_protected/workspace/$workspaceId/_layout/thread/$threadId',
     shouldThrow: false,
   });
   const workspaceId = match?.params?.workspaceId;

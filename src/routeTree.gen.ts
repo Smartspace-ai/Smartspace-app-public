@@ -15,9 +15,9 @@ import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProtectedWorkspaceIndexRouteImport } from './routes/_protected/workspace/index'
 import { Route as ProtectedWorkspaceNoWorkspacesRouteImport } from './routes/_protected/workspace/no-workspaces'
-import { Route as ProtectedWorkspaceWorkspaceIdIndexRouteImport } from './routes/_protected/workspace/$workspaceId/index'
-import { Route as ProtectedWorkspaceWorkspaceId_layoutRouteImport } from './routes/_protected/workspace/$workspaceId/__layout'
-import { Route as ProtectedWorkspaceWorkspaceIdThreadThreadIdRouteImport } from './routes/_protected/workspace/$workspaceId/thread/$threadId'
+import { Route as ProtectedWorkspaceWorkspaceIdLayoutRouteImport } from './routes/_protected/workspace/$workspaceId/_layout'
+import { Route as ProtectedWorkspaceWorkspaceIdLayoutIndexRouteImport } from './routes/_protected/workspace/$workspaceId/_layout/index'
+import { Route as ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRouteImport } from './routes/_protected/workspace/$workspaceId/_layout/thread/$threadId'
 
 const _rootNotFoundRoute = _rootNotFoundRouteImport.update({
   id: '/__root/notFound',
@@ -49,23 +49,23 @@ const ProtectedWorkspaceNoWorkspacesRoute =
     path: '/workspace/no-workspaces',
     getParentRoute: () => ProtectedRoute,
   } as any)
-const ProtectedWorkspaceWorkspaceIdIndexRoute =
-  ProtectedWorkspaceWorkspaceIdIndexRouteImport.update({
-    id: '/workspace/$workspaceId/',
-    path: '/workspace/$workspaceId/',
-    getParentRoute: () => ProtectedRoute,
-  } as any)
-const ProtectedWorkspaceWorkspaceId_layoutRoute =
-  ProtectedWorkspaceWorkspaceId_layoutRouteImport.update({
-    id: '/workspace/$workspaceId/__layout',
+const ProtectedWorkspaceWorkspaceIdLayoutRoute =
+  ProtectedWorkspaceWorkspaceIdLayoutRouteImport.update({
+    id: '/workspace/$workspaceId/_layout',
     path: '/workspace/$workspaceId',
     getParentRoute: () => ProtectedRoute,
   } as any)
-const ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute =
-  ProtectedWorkspaceWorkspaceIdThreadThreadIdRouteImport.update({
-    id: '/workspace/$workspaceId/thread/$threadId',
-    path: '/workspace/$workspaceId/thread/$threadId',
-    getParentRoute: () => ProtectedRoute,
+const ProtectedWorkspaceWorkspaceIdLayoutIndexRoute =
+  ProtectedWorkspaceWorkspaceIdLayoutIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ProtectedWorkspaceWorkspaceIdLayoutRoute,
+  } as any)
+const ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRoute =
+  ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRouteImport.update({
+    id: '/thread/$threadId',
+    path: '/thread/$threadId',
+    getParentRoute: () => ProtectedWorkspaceWorkspaceIdLayoutRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -74,9 +74,9 @@ export interface FileRoutesByFullPath {
   '/notFound': typeof _rootNotFoundRoute
   '/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
   '/workspace/': typeof ProtectedWorkspaceIndexRoute
-  '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceId_layoutRoute
-  '/workspace/$workspaceId/': typeof ProtectedWorkspaceWorkspaceIdIndexRoute
-  '/workspace/$workspaceId/thread/$threadId': typeof ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute
+  '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdLayoutRouteWithChildren
+  '/workspace/$workspaceId/': typeof ProtectedWorkspaceWorkspaceIdLayoutIndexRoute
+  '/workspace/$workspaceId/thread/$threadId': typeof ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,8 +84,8 @@ export interface FileRoutesByTo {
   '/notFound': typeof _rootNotFoundRoute
   '/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
   '/workspace': typeof ProtectedWorkspaceIndexRoute
-  '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdIndexRoute
-  '/workspace/$workspaceId/thread/$threadId': typeof ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute
+  '/workspace/$workspaceId': typeof ProtectedWorkspaceWorkspaceIdLayoutIndexRoute
+  '/workspace/$workspaceId/thread/$threadId': typeof ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,9 +95,9 @@ export interface FileRoutesById {
   '/__root/notFound': typeof _rootNotFoundRoute
   '/_protected/workspace/no-workspaces': typeof ProtectedWorkspaceNoWorkspacesRoute
   '/_protected/workspace/': typeof ProtectedWorkspaceIndexRoute
-  '/_protected/workspace/$workspaceId/__layout': typeof ProtectedWorkspaceWorkspaceId_layoutRoute
-  '/_protected/workspace/$workspaceId/': typeof ProtectedWorkspaceWorkspaceIdIndexRoute
-  '/_protected/workspace/$workspaceId/thread/$threadId': typeof ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute
+  '/_protected/workspace/$workspaceId/_layout': typeof ProtectedWorkspaceWorkspaceIdLayoutRouteWithChildren
+  '/_protected/workspace/$workspaceId/_layout/': typeof ProtectedWorkspaceWorkspaceIdLayoutIndexRoute
+  '/_protected/workspace/$workspaceId/_layout/thread/$threadId': typeof ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,9 +127,9 @@ export interface FileRouteTypes {
     | '/__root/notFound'
     | '/_protected/workspace/no-workspaces'
     | '/_protected/workspace/'
-    | '/_protected/workspace/$workspaceId/__layout'
-    | '/_protected/workspace/$workspaceId/'
-    | '/_protected/workspace/$workspaceId/thread/$threadId'
+    | '/_protected/workspace/$workspaceId/_layout'
+    | '/_protected/workspace/$workspaceId/_layout/'
+    | '/_protected/workspace/$workspaceId/_layout/thread/$threadId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -183,47 +183,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedWorkspaceNoWorkspacesRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/workspace/$workspaceId/': {
-      id: '/_protected/workspace/$workspaceId/'
-      path: '/workspace/$workspaceId'
-      fullPath: '/workspace/$workspaceId/'
-      preLoaderRoute: typeof ProtectedWorkspaceWorkspaceIdIndexRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/workspace/$workspaceId/__layout': {
-      id: '/_protected/workspace/$workspaceId/__layout'
+    '/_protected/workspace/$workspaceId/_layout': {
+      id: '/_protected/workspace/$workspaceId/_layout'
       path: '/workspace/$workspaceId'
       fullPath: '/workspace/$workspaceId'
-      preLoaderRoute: typeof ProtectedWorkspaceWorkspaceId_layoutRouteImport
+      preLoaderRoute: typeof ProtectedWorkspaceWorkspaceIdLayoutRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/workspace/$workspaceId/thread/$threadId': {
-      id: '/_protected/workspace/$workspaceId/thread/$threadId'
-      path: '/workspace/$workspaceId/thread/$threadId'
+    '/_protected/workspace/$workspaceId/_layout/': {
+      id: '/_protected/workspace/$workspaceId/_layout/'
+      path: '/'
+      fullPath: '/workspace/$workspaceId/'
+      preLoaderRoute: typeof ProtectedWorkspaceWorkspaceIdLayoutIndexRouteImport
+      parentRoute: typeof ProtectedWorkspaceWorkspaceIdLayoutRoute
+    }
+    '/_protected/workspace/$workspaceId/_layout/thread/$threadId': {
+      id: '/_protected/workspace/$workspaceId/_layout/thread/$threadId'
+      path: '/thread/$threadId'
       fullPath: '/workspace/$workspaceId/thread/$threadId'
-      preLoaderRoute: typeof ProtectedWorkspaceWorkspaceIdThreadThreadIdRouteImport
-      parentRoute: typeof ProtectedRoute
+      preLoaderRoute: typeof ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRouteImport
+      parentRoute: typeof ProtectedWorkspaceWorkspaceIdLayoutRoute
     }
   }
 }
 
+interface ProtectedWorkspaceWorkspaceIdLayoutRouteChildren {
+  ProtectedWorkspaceWorkspaceIdLayoutIndexRoute: typeof ProtectedWorkspaceWorkspaceIdLayoutIndexRoute
+  ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRoute: typeof ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRoute
+}
+
+const ProtectedWorkspaceWorkspaceIdLayoutRouteChildren: ProtectedWorkspaceWorkspaceIdLayoutRouteChildren =
+  {
+    ProtectedWorkspaceWorkspaceIdLayoutIndexRoute:
+      ProtectedWorkspaceWorkspaceIdLayoutIndexRoute,
+    ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRoute:
+      ProtectedWorkspaceWorkspaceIdLayoutThreadThreadIdRoute,
+  }
+
+const ProtectedWorkspaceWorkspaceIdLayoutRouteWithChildren =
+  ProtectedWorkspaceWorkspaceIdLayoutRoute._addFileChildren(
+    ProtectedWorkspaceWorkspaceIdLayoutRouteChildren,
+  )
+
 interface ProtectedRouteChildren {
   ProtectedWorkspaceNoWorkspacesRoute: typeof ProtectedWorkspaceNoWorkspacesRoute
   ProtectedWorkspaceIndexRoute: typeof ProtectedWorkspaceIndexRoute
-  ProtectedWorkspaceWorkspaceId_layoutRoute: typeof ProtectedWorkspaceWorkspaceId_layoutRoute
-  ProtectedWorkspaceWorkspaceIdIndexRoute: typeof ProtectedWorkspaceWorkspaceIdIndexRoute
-  ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute: typeof ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute
+  ProtectedWorkspaceWorkspaceIdLayoutRoute: typeof ProtectedWorkspaceWorkspaceIdLayoutRouteWithChildren
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedWorkspaceNoWorkspacesRoute: ProtectedWorkspaceNoWorkspacesRoute,
   ProtectedWorkspaceIndexRoute: ProtectedWorkspaceIndexRoute,
-  ProtectedWorkspaceWorkspaceId_layoutRoute:
-    ProtectedWorkspaceWorkspaceId_layoutRoute,
-  ProtectedWorkspaceWorkspaceIdIndexRoute:
-    ProtectedWorkspaceWorkspaceIdIndexRoute,
-  ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute:
-    ProtectedWorkspaceWorkspaceIdThreadThreadIdRoute,
+  ProtectedWorkspaceWorkspaceIdLayoutRoute:
+    ProtectedWorkspaceWorkspaceIdLayoutRouteWithChildren,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
