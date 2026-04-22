@@ -52,6 +52,9 @@ jobs:
             --source=.
             export --path=./dist/smartspace
 
+      - name: Copy index.html to 404.html for SPA deep-link refreshes
+        run: cp ./dist/smartspace/index.html ./dist/smartspace/404.html
+
       - name: Deploy to Azure Storage
         uses: azure/CLI@v2
         with:
