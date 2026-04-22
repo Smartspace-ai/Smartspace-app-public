@@ -31,25 +31,23 @@ export function useWorkspaceRealtime(
     // join workspace group
     subscribeToGroup(workspaceId);
 
-    const subscription = SignalR.getReceiverRegister(
-      'INotificationReceiver'
-    ).register(connection, {
-      receiveMessage: async () => {
-        /* no-op: toast/notification handling lives elsewhere */
-      },
-      receiveThreadUpdate: async (thread) => {
-        handlers.onThreadUpdate?.(thread);
-      },
-      receiveThreadDeleted: async (thread) => {
-        handlers.onThreadDeleted?.(thread);
-      },
-      receiveCommentsUpdate: async (comment) => {
-        handlers.onCommentsUpdate?.(comment);
-      },
-      blocksUpdate: async () => {
-        /* no-op: blocks invalidation handled by domain listeners */
-      },
-    });
+    const subscription = SignalR.getReceiverRegister('IChatReceiver').register(
+      connection,
+      {
+        receiveMessage: async () => {
+          /* no-op: toast/notification handling lives elsewhere */
+        },
+        receiveThreadUpdate: async (thread) => {
+          handlers.onThreadUpdate?.(thread);
+        },
+        receiveThreadDeleted: async (thread) => {
+          handlers.onThreadDeleted?.(thread);
+        },
+        receiveCommentsUpdate: async (comment) => {
+          handlers.onCommentsUpdate?.(comment);
+        },
+      }
+    );
 
     return () => {
       unsubscribeFromGroup(workspaceId);
