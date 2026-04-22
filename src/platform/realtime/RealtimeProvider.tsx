@@ -19,8 +19,8 @@ import {
 
 import { parseScopes } from '@/platform/auth/scopes';
 
-const createClientHub = (connection: HubConnection) =>
-  SignalR.getHubProxyFactory('IClientHubInvoker').createHubProxy(connection);
+const createChatHub = (connection: HubConnection) =>
+  SignalR.getHubProxyFactory('IChatHubInvoker').createHubProxy(connection);
 
 type RealtimeCtx = {
   connection?: HubConnection;
@@ -108,7 +108,7 @@ export function RealtimeProvider({
         return; // lifecycle will re-join
       }
       try {
-        const hub = createClientHub(connection);
+        const hub = createChatHub(connection);
         await hub[method](groupName);
       } catch (err) {
         if (attempt < 3) {
@@ -172,7 +172,7 @@ export function RealtimeProvider({
     // rejoin desired groups after reconnect
     const rejoin = async () => {
       if (conn.state !== HubConnectionState.Connected) return;
-      const hub = createClientHub(conn);
+      const hub = createChatHub(conn);
       for (const g of desiredGroups.current) {
         try {
           await hub.joinGroup(g);
