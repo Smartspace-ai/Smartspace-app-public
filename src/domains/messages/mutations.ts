@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 
 import { FileInfo } from '@/domains/files';
+import { setThreadRunningInLists } from '@/domains/threads';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 
 import { MessageValueType } from './enums';
@@ -90,18 +91,19 @@ export function useSendMessage() {
         optimistic,
       ]);
 
-      // Optimistically mark thread as running so the loading indicator shows immediately
-      qc.setQueryData(
-        threadsKeys.detail(workspaceId, threadId),
-        (old: unknown) =>
-          old && typeof old === 'object' ? { ...old, isFlowRunning: true } : old
-      );
+      // Light up the sidebar's running indicator instantly. We patch the
+      // thread-list caches only — NOT the detail cache, which gates the
+      // thread SSE (that value must stay server-confirmed so we don't open
+      // the SSE before the backend has actually started the flow). The
+      // composer's spinner is already covered by `mutation.isPending`.
+      setThreadRunningInLists(qc, workspaceId, threadId, true);
 
       // cancel in-flight refetches for this list so they don't race the optimistic insert
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
+      let realMessage: Message;
       try {
-        await postMessage({
+        realMessage = await postMessage({
           workSpaceId: workspaceId,
           threadId,
           contentList,
@@ -109,24 +111,31 @@ export function useSendMessage() {
           variables,
         });
       } catch (err) {
-        // rollback: remove optimistics and clear optimistic isFlowRunning
+        // rollback: remove optimistics, undo the running flag in lists
         qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
           old.filter((x) => !x.optimistic)
         );
-        qc.setQueryData(
-          threadsKeys.detail(workspaceId, threadId),
-          (old: unknown) =>
-            old && typeof old === 'object'
-              ? { ...old, isFlowRunning: false }
-              : old
-        );
+        setThreadRunningInLists(qc, workspaceId, threadId, false);
         toast.error('There was an error posting your message');
         throw err;
       }
 
+      // Replace the optimistic temp-id entry with the server-authoritative
+      // Message we just got back. If the thread SSE already added the same
+      // id (from its snapshot frame), keep its copy — it's at least as fresh
+      // as ours — and just drop the optimistic.
+      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
+        const withoutOptimistic = old.filter((m) => !m.optimistic);
+        const alreadyPresent = withoutOptimistic.some(
+          (m) => m.id === realMessage.id
+        );
+        return alreadyPresent
+          ? withoutOptimistic
+          : [...withoutOptimistic, realMessage];
+      });
+
       // Reconcile thread list ordering / last-message preview and thread detail
-      // (isFlowRunning). The messages list itself is driven by SignalR
-      // ReceiveThreadUpdate -> mergeFetchedWithOptimistics, so don't invalidate it here.
+      // (isFlowRunning). Message content continues to arrive via the thread SSE.
       qc.invalidateQueries({
         predicate: (query) => {
           const k = query.queryKey as unknown[];

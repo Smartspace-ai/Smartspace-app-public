@@ -104,9 +104,23 @@ export function RealtimeProvider({
       groupName: string,
       attempt = 0
     ): Promise<void> => {
-      if (!connection || !isConnected()) {
-        return; // lifecycle will re-join
+      if (!connection) return; // effect will retry once connection is built
+
+      // Wait out the initial connect. `onreconnected` handles the reconnect
+      // case; without this await the first joinGroup is silently dropped
+      // while conn.start() is still in flight and no rejoin fires on initial
+      // connect, leaving the client absent from the server's group.
+      if (!isConnected()) {
+        if (startPromise.current) {
+          try {
+            await startPromise.current;
+          } catch {
+            return;
+          }
+        }
+        if (!isConnected()) return;
       }
+
       try {
         const hub = createChatHub(connection);
         await hub[method](groupName);
