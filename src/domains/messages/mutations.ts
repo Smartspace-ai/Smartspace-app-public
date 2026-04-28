@@ -4,8 +4,7 @@ import { toast } from 'sonner';
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 
 import { FileInfo } from '@/domains/files';
-import { setThreadRunningInLists } from '@/domains/threads';
-import { threadsKeys } from '@/domains/threads/queryKeys';
+import { setThreadRunningInLists, threadsKeys } from '@/domains/threads';
 
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';

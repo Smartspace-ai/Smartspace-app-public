@@ -1,3 +1,4 @@
+import { SignalR } from '@smartspace/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
@@ -13,7 +14,8 @@ import { Message } from './model';
 import { messagesKeys } from './queryKeys';
 import { type MessageDelta, streamThreadMessages } from './service';
 
-const RECONNECT_BACKOFF_MS = 500;
+const RECONNECT_BASE_DELAY_MS = 500;
+const RECONNECT_MAX_DELAY_MS = 10_000;
 
 /**
  * Holds the thread-scoped SSE open while `enabled` is true (typically bound
@@ -40,7 +42,7 @@ export function useThreadMessageStream(
     const byCreatedAt = (a: Message, b: Message) =>
       a.createdAt.getTime() - b.createdAt.getTime();
 
-    const applySnapshot = (messages: Message[]) => {
+    const onSnapshot = (messages: Message[]) => {
       const sorted = [...messages].sort(byCreatedAt);
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
         const optimistics = old.filter((m) => m.optimistic);
@@ -48,7 +50,7 @@ export function useThreadMessageStream(
       });
     };
 
-    const applyUpsert = (messageId: string, message: Message) => {
+    const onUpsert = (messageId: string, message: Message) => {
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
         const stable = old.filter((m) => !m.optimistic);
         const optimistics = old.filter((m) => m.optimistic);
@@ -61,7 +63,7 @@ export function useThreadMessageStream(
       });
     };
 
-    const applyDelta = (messageId: string, delta: MessageDelta) => {
+    const onDelta = (messageId: string, delta: MessageDelta) => {
       if (!delta.outputs.length && !delta.errors.length) return;
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
         const idx = old.findIndex((m) => m.id === messageId);
@@ -75,48 +77,52 @@ export function useThreadMessageStream(
       });
     };
 
-    const handleSnapshot = (messages: Message[]) => applySnapshot(messages);
-    const handleUpsert = (messageId: string, message: Message) =>
-      applyUpsert(messageId, message);
-    const handleDelta = (messageId: string, delta: MessageDelta) =>
-      applyDelta(messageId, delta);
-
     // Thread summary comes on the initial snapshot (late joiner catch-up) and
     // terminal frames (authoritative flow-complete). Treat these as the source
     // of truth for isFlowRunning — SignalR receiveThreadUpdate is a hint and
     // may silently drop if Azure SignalR flakes.
-    const handleThread = (
-      summary: Parameters<
-        NonNullable<Parameters<typeof streamThreadMessages>[0]['onThread']>
-      >[0]
-    ) => {
+    const onThread = (summary: SignalR.MessageThreadSummary) => {
       applyThreadToCache(qc, mapSignalRThreadSummaryToModel(summary));
     };
 
+    const backoffFor = (attempt: number) =>
+      Math.min(RECONNECT_MAX_DELAY_MS, RECONNECT_BASE_DELAY_MS * 2 ** attempt);
+
     const run = async () => {
+      let attempt = 0;
       while (!state.stopped && !controller.signal.aborted) {
         try {
           const result = await streamThreadMessages({
             threadId,
             signal: controller.signal,
-            onSnapshot: handleSnapshot,
-            onMessage: handleUpsert,
-            onDelta: handleDelta,
-            onThread: handleThread,
+            onSnapshot,
+            onMessage: onUpsert,
+            onDelta,
+            onThread,
           });
           if (result.status === 'not-found') {
             ssInfo('sse', 'thread stream 404', { threadId });
             return;
           }
-          if (state.stopped || controller.signal.aborted) return;
+          // Server closed the connection cleanly. The terminal frame's
+          // `onThread` (if any) has already flipped `isFlowRunning: false`
+          // in the cache, which will trip the gate and trigger cleanup. Exit
+          // immediately so we don't open a redundant connection while the
+          // useEffect cleanup is still propagating.
+          return;
         } catch (err) {
           if (controller.signal.aborted) return;
           ssWarn('sse', 'thread stream error — reconnecting', {
             threadId,
+            attempt,
             error: err instanceof Error ? err.message : String(err),
           });
+          const delay = backoffFor(attempt);
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, delay);
+          });
+          attempt += 1;
         }
-        await new Promise((r) => setTimeout(r, RECONNECT_BACKOFF_MS));
       }
     };
 

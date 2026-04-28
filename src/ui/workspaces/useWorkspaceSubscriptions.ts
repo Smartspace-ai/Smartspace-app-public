@@ -5,20 +5,15 @@ import { useNavigate } from '@tanstack/react-router';
 import { useWorkspaceRealtime } from '@/platform/realtime/useWorkspaceRealtime';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import {
-  type Comment,
-  commentsKeys,
-  mapSignalRCommentSummaryToModel,
-} from '@/domains/comments';
-import { useThreadMessageStream } from '@/domains/messages';
-import { messagesKeys } from '@/domains/messages/queryKeys';
+import { applyCommentToCache, commentsKeys } from '@/domains/comments';
+import { messagesKeys, useThreadMessageStream } from '@/domains/messages';
 import {
   applyThreadToCache,
   invalidateWorkspaceThreadLists,
   mapSignalRThreadSummaryToModel,
   threadDetailOptions,
+  threadsKeys,
 } from '@/domains/threads';
-import { threadsKeys } from '@/domains/threads/queryKeys';
 
 export function useWorkspaceSubscriptions() {
   // Derive ids from whichever workspace route is active: thread,
@@ -30,9 +25,10 @@ export function useWorkspaceSubscriptions() {
   const navigate = useNavigate();
 
   // Only hold the thread SSE open while the thread is actively running.
-  // The isFlowRunning flag is flipped optimistically by useSendMessage and
-  // canonically by SignalR's receiveThreadUpdate, so the stream opens/closes
-  // in sync with real backend state.
+  // `thread.isFlowRunning` here is server-confirmed: it's set by the initial
+  // detail GET, by SignalR's receiveThreadUpdate, or by the SSE's own thread
+  // frame. We deliberately don't optimistically flip it on send — the gate
+  // would open before the backend has actually started the flow.
   const { data: thread } = useQuery({
     ...threadDetailOptions({
       workspaceId: workspaceId || '',
@@ -70,31 +66,17 @@ export function useWorkspaceSubscriptions() {
       }
     },
     onCommentsUpdate: (summary) => {
-      // Splice the comment straight into the list cache. The previous handler
-      // invalidated `['comments', <threadId>]` which never matched the real
-      // key (`['comments', 'list', { threadId }]`), so comments weren't
-      // refetched at all on live updates.
-      const mapped = mapSignalRCommentSummaryToModel(summary);
-      const listKey = commentsKeys.list(summary.messageThreadId);
-      let applied = false;
-      qc.setQueryData<Comment[]>(listKey, (old) => {
-        if (!old) return old;
-        applied = true;
-        const idx = old.findIndex((c) => c.id === summary.id);
-        if (idx === -1) {
-          return [...old, mapped].sort(
-            (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
-          );
-        }
-        const copy = old.slice();
-        copy[idx] = mapped;
-        return copy;
-      });
-      // If we've never fetched this thread's comments before, the cache
-      // entry doesn't exist yet — fall back to an invalidate so the next
-      // observer fetches fresh.
+      // The previous handler invalidated `['comments', <threadId>]` which
+      // never matched the real key (`['comments', 'list', { threadId }]`),
+      // so comments weren't refetched at all on live updates. Splice
+      // straight into the list cache via the shared helper, and fall back
+      // to invalidate when the user has never opened the comments panel
+      // (no cache entry to patch).
+      const applied = applyCommentToCache(qc, summary);
       if (!applied) {
-        qc.invalidateQueries({ queryKey: listKey });
+        qc.invalidateQueries({
+          queryKey: commentsKeys.list(summary.messageThreadId),
+        });
       }
     },
   });

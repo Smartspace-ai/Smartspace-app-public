@@ -1,3 +1,4 @@
+export { applyCommentToCache } from './cache';
 export { mapSignalRCommentSummaryToModel } from './mapper';
 export type { Comment, MentionUser } from './model';
 export * from './mutations';
