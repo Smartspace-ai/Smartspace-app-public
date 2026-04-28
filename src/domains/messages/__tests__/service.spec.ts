@@ -1,16 +1,22 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { api } from '@/platform/api';
-
-const { mockGetMessages, mockMessageElementParse } = vi.hoisted(() => ({
+const {
+  mockGetMessages,
+  mockPostMessage,
+  mockMessageElementParse,
+  mockGetAccessToken,
+} = vi.hoisted(() => ({
   mockGetMessages: vi.fn(),
+  mockPostMessage: vi.fn(),
   mockMessageElementParse: vi.fn((data: unknown) => data),
+  mockGetAccessToken: vi.fn(async () => 'test-token'),
 }));
 
 vi.mock('@smartspace/api-client', () => ({
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
       messageThreadsThreadMessagesIdMessages: mockGetMessages,
+      messagesThreadMessages: mockPostMessage,
     }),
   },
   ChatZod: {
@@ -19,12 +25,16 @@ vi.mock('@smartspace/api-client', () => ({
         data: {
           element: {
             parse: mockMessageElementParse,
+            shape: {
+              values: { element: { parse: vi.fn((d: unknown) => d) } },
+              errors: { element: { parse: vi.fn((d: unknown) => d) } },
+            },
           },
         },
       },
     },
   },
-  AXIOS_INSTANCE: {},
+  AXIOS_INSTANCE: { defaults: { baseURL: 'https://api.test' } },
 }));
 vi.mock('@/platform/validation', () => ({
   parseOrThrow: vi.fn((_schema: unknown, data: unknown) => data),
@@ -32,8 +42,17 @@ vi.mock('@/platform/validation', () => ({
 
 vi.mock('@/platform/log', () => ({
   ssDebug: vi.fn(),
+  ssInfo: vi.fn(),
   ssWarn: vi.fn(),
   ssError: vi.fn(),
+}));
+
+vi.mock('@/platform/auth', () => ({
+  getAuthAdapter: () => ({ getAccessToken: mockGetAccessToken }),
+}));
+
+vi.mock('@/platform/auth/scopes', () => ({
+  getApiScopes: () => ['scope.read'],
 }));
 
 import {
@@ -42,9 +61,22 @@ import {
   postMessage,
 } from '@/domains/messages';
 
-type ProgressEventLike = { event: { currentTarget: { response: string } } };
+function bodyFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+      controller.close();
+    },
+  });
+}
 
 describe('messages service', () => {
+  const originalFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
   it('fetchMessages returns mapped list', async () => {
     const envelope = {
       data: [
@@ -65,39 +97,45 @@ describe('messages service', () => {
     expect(res[0].id).toBe('m1');
   });
 
-  it('postMessage posts to /messages and resolves when the request completes', async () => {
-    const postSpy = vi
-      .spyOn(api, 'post')
-      .mockResolvedValueOnce(undefined as never);
+  it('postMessage POSTs JSON and returns the parsed Message body', async () => {
+    const real = {
+      id: 'real-7',
+      createdAt: '2024-01-01T00:00:00Z',
+      createdBy: 'Server',
+      createdByUserId: 'u1',
+      hasComments: false,
+      messageThreadId: 't1',
+      errors: [],
+      values: [],
+    };
+    mockPostMessage.mockResolvedValueOnce({ data: real });
 
-    await expect(
-      postMessage({
-        workSpaceId: 'w',
-        threadId: 't1',
-        contentList: [{ type: 'text', text: 'hi' } as never],
-      })
-    ).resolves.toBeUndefined();
+    const result = await postMessage({
+      workSpaceId: 'w',
+      threadId: 't1',
+      contentList: [{ type: 'text', text: 'hi' } as never],
+    });
 
-    expect(postSpy).toHaveBeenCalledOnce();
-    const [url, payload] = postSpy.mock.calls[0];
-    expect(url).toBe('/messages');
-    expect((payload as { messageThreadId: string }).messageThreadId).toBe('t1');
-    postSpy.mockRestore();
+    expect(result.id).toBe('real-7');
+
+    expect(mockPostMessage).toHaveBeenCalledOnce();
+    const [body] = mockPostMessage.mock.calls[0];
+    expect(body.messageThreadId).toBe('t1');
+    expect(body.workSpaceId).toBe('w');
+    expect(body.inputs[0].name).toBe('prompt');
   });
 
-  it('postMessage rejects when the underlying request fails', async () => {
-    const networkError = new Error('Network failure');
-    const postSpy = vi.spyOn(api, 'post').mockRejectedValueOnce(networkError);
-
+  it('postMessage propagates errors from the request', async () => {
+    mockPostMessage.mockRejectedValueOnce(new Error('boom'));
     await expect(
       postMessage({ workSpaceId: 'w', threadId: 't1' })
-    ).rejects.toBe(networkError);
-
-    postSpy.mockRestore();
+    ).rejects.toThrow('boom');
   });
 
   it('addInputToMessage throws when no valid message received', async () => {
-    vi.spyOn(api, 'post').mockResolvedValueOnce(undefined as never);
+    globalThis.fetch = vi.fn(
+      async () => new Response(bodyFromChunks([]), { status: 200 })
+    ) as typeof fetch;
 
     await expect(
       addInputToMessage({
@@ -109,8 +147,8 @@ describe('messages service', () => {
     ).rejects.toThrow('No valid message received from stream');
   });
 
-  it('addInputToMessage returns parsed message from SSE stream', async () => {
-    const chunk = JSON.stringify({
+  it('addInputToMessage returns the last successfully parsed Message', async () => {
+    const chunkA = JSON.stringify({
       id: 'm3',
       createdAt: '2024-01-01',
       createdBy: 'u1',
@@ -119,19 +157,35 @@ describe('messages service', () => {
       messageThreadId: 't1',
       values: [],
     });
+    const chunkB = JSON.stringify({
+      id: 'm3',
+      createdAt: '2024-01-01',
+      createdBy: 'u1',
+      hasComments: false,
+      createdByUserId: 'u1',
+      messageThreadId: 't1',
+      values: [
+        {
+          id: 'v1',
+          name: 'x',
+          type: 'INPUT',
+          value: 'y',
+          channels: {},
+          createdAt: '2024-01-01',
+          createdBy: 'me',
+          createdByUserId: 'me',
+        },
+      ],
+    });
 
-    vi.spyOn(api, 'post').mockImplementation(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async (_url: string, _payload: any, cfg?: any) => {
-        const cb = cfg?.onDownloadProgress as
-          | ((e: ProgressEventLike) => void)
-          | undefined;
-        cb?.({
-          event: { currentTarget: { response: `data:${chunk}\n\n` } },
-        });
-        return undefined as unknown as never;
-      }
-    );
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          bodyFromChunks([`data: ${chunkA}\n\n`, `data: ${chunkB}\n\n`]),
+          { status: 200 }
+        )
+    ) as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
 
     const result = await addInputToMessage({
       messageId: 'm1',
@@ -139,6 +193,32 @@ describe('messages service', () => {
       value: 'v',
       channels: null,
     });
+
+    // Last frame wins (final message after streaming completes).
     expect(result.id).toBe('m3');
+    expect(result.values?.length).toBe(1);
+
+    const [rawUrl, init] = (fetchMock as unknown as ReturnType<typeof vi.fn>)
+      .mock.calls[0] as [string, RequestInit];
+    expect(rawUrl).toBe('https://api.test/messages/m1/values');
+    expect(init.method).toBe('POST');
+    expect((init.headers as Record<string, string>).Accept).toBe(
+      'text/event-stream'
+    );
+  });
+
+  it('addInputToMessage rejects when the server returns a non-2xx status', async () => {
+    globalThis.fetch = vi.fn(
+      async () => new Response('err', { status: 500 })
+    ) as typeof fetch;
+
+    await expect(
+      addInputToMessage({
+        messageId: 'm1',
+        name: 'test',
+        value: 'v',
+        channels: null,
+      })
+    ).rejects.toThrow(/status 500/);
   });
 });
