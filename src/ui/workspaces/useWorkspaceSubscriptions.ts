@@ -25,10 +25,11 @@ export function useWorkspaceSubscriptions() {
   const navigate = useNavigate();
 
   // Only hold the thread SSE open while the thread is actively running.
-  // `thread.isFlowRunning` here is server-confirmed: it's set by the initial
-  // detail GET, by SignalR's receiveThreadUpdate, or by the SSE's own thread
-  // frame. We deliberately don't optimistically flip it on send — the gate
-  // would open before the backend has actually started the flow.
+  // `thread.isFlowRunning` is set by the initial detail GET, by SignalR's
+  // receiveThreadUpdate, by the SSE's own thread frame, and (after a
+  // successful POST /messages) by useSendMessage — that last write is
+  // post-server-confirmation so the gate doesn't open against a flow the
+  // backend hasn't actually started yet.
   const { data: thread } = useQuery({
     ...threadDetailOptions({
       workspaceId: workspaceId || '',

@@ -5,7 +5,6 @@ import {
   SignalR,
 } from '@smartspace/api-client';
 
-import { api } from '@/platform/api';
 import { getAuthAdapter } from '@/platform/auth';
 import { getApiScopes } from '@/platform/auth/scopes';
 import { parseOrThrow } from '@/platform/validation';
@@ -55,7 +54,11 @@ export async function fetchMessages(
   return mapMessagesDtoToModels(parsed.data);
 }
 
-// Send structured input (e.g. form values) to a specific message
+// Send structured input (e.g. form values) to a specific message. The server
+// streams an `IAsyncEnumerable<Message>` of intermediate states and a final
+// state — we read the stream to completion and return the last successfully
+// parsed Message. Used by sandbox / iterative-input flows; the standard chat
+// send path uses `postMessage` + the thread SSE instead.
 export async function addInputToMessage({
   messageId,
   name,
@@ -67,42 +70,48 @@ export async function addInputToMessage({
   value: unknown;
   channels: Record<string, number> | null;
 }): Promise<Message> {
-  let result: Message | null = null;
+  const baseUrl = (AXIOS_INSTANCE.defaults.baseURL ?? '').replace(/\/$/, '');
+  const token = await getAuthAdapter().getAccessToken({
+    silentOnly: true,
+    scopes: getApiScopes(),
+  });
 
-  await api.post(
-    `/messages/${messageId}/values`,
-    { name, value, channels },
-    {
-      adapter: 'xhr',
-      headers: { Accept: 'text/event-stream' },
-      onDownloadProgress: (event) => {
-        const xhr = event.event?.currentTarget as XMLHttpRequest | undefined;
-        const raw = String(xhr?.response ?? '');
-        // Split by server-sent event message delimiter and normalize "data:" prefix
-        const chunks = raw
-          .split('\n\n')
-          .map((c) => c.trim())
-          .filter(Boolean);
-        const last = chunks[chunks.length - 1] || '';
-        const dataLine = last.startsWith('data:') ? last.slice(5).trim() : last;
-        if (!dataLine) return;
-        try {
-          const parsed = JSON.parse(dataLine);
-          coerceMessageDto(parsed);
-          const dto = messagesResponseSchema.shape.data.element.parse(parsed);
-          result = mapMessageDtoToModel(dto);
-        } catch (error) {
-          // Ignore incomplete JSON frames; wait for more data
-        }
-      },
-    }
-  );
+  const response = await fetch(`${baseUrl}/messages/${messageId}/values`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'text/event-stream',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name, value, channels }),
+  });
 
-  if (!result) {
-    throw new Error('No valid message received from stream');
+  if (!response.ok) {
+    throw new Error(
+      `POST /messages/${messageId}/values failed with status ${response.status}`
+    );
+  }
+  if (!response.body) {
+    throw new Error('POST /messages/:id/values returned no body');
   }
 
-  return result;
+  const messageDtoSchema = messagesResponseSchema.shape.data.element;
+  let last: Message | null = null;
+  for await (const frame of parseSseStream(response.body)) {
+    if (!frame.data) continue;
+    try {
+      const parsed = JSON.parse(frame.data) as Record<string, unknown>;
+      coerceMessageDto(parsed);
+      last = mapMessageDtoToModel(messageDtoSchema.parse(parsed));
+    } catch {
+      // Ignore malformed/partial frames; the next frame will bring fresh state.
+    }
+  }
+
+  if (!last) {
+    throw new Error('No valid message received from stream');
+  }
+  return last;
 }
 
 // Post a new user message to a thread (supports content + files + variables).

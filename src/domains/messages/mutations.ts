@@ -4,7 +4,11 @@ import { toast } from 'sonner';
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 
 import { FileInfo } from '@/domains/files';
-import { setThreadRunningInLists, threadsKeys } from '@/domains/threads';
+import {
+  type MessageThread,
+  setThreadRunningInLists,
+  threadsKeys,
+} from '@/domains/threads';
 
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
@@ -132,6 +136,20 @@ export function useSendMessage() {
           ? withoutOptimistic
           : [...withoutOptimistic, realMessage];
       });
+
+      // POST returned successfully — the server has accepted the message
+      // and the flow is now running. Mirror that in the detail cache so:
+      //   1. The composer doesn't briefly drop its "running" indicator
+      //      between mutation resolution and the SignalR receiveThreadUpdate
+      //      broadcast (which can lag by a few hundred ms).
+      //   2. The thread SSE gate (which reads this value) opens immediately
+      //      instead of waiting for SignalR to flip it.
+      // SignalR / SSE thread frames will overwrite this with the authoritative
+      // value as they arrive.
+      qc.setQueryData<MessageThread>(
+        threadsKeys.detail(workspaceId, threadId),
+        (old) => (old ? { ...old, isFlowRunning: true } : old)
+      );
 
       // Reconcile thread list ordering / last-message preview and thread detail
       // (isFlowRunning). Message content continues to arrive via the thread SSE.

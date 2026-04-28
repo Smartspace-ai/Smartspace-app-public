@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { api } from '@/platform/api';
-
 const {
   mockGetMessages,
   mockPostMessage,
@@ -62,8 +60,6 @@ import {
   fetchMessages,
   postMessage,
 } from '@/domains/messages';
-
-type ProgressEventLike = { event: { currentTarget: { response: string } } };
 
 function bodyFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -137,7 +133,9 @@ describe('messages service', () => {
   });
 
   it('addInputToMessage throws when no valid message received', async () => {
-    vi.spyOn(api, 'post').mockResolvedValueOnce(undefined as never);
+    globalThis.fetch = vi.fn(
+      async () => new Response(bodyFromChunks([]), { status: 200 })
+    ) as typeof fetch;
 
     await expect(
       addInputToMessage({
@@ -149,8 +147,8 @@ describe('messages service', () => {
     ).rejects.toThrow('No valid message received from stream');
   });
 
-  it('addInputToMessage returns parsed message from SSE stream', async () => {
-    const chunk = JSON.stringify({
+  it('addInputToMessage returns the last successfully parsed Message', async () => {
+    const chunkA = JSON.stringify({
       id: 'm3',
       createdAt: '2024-01-01',
       createdBy: 'u1',
@@ -159,19 +157,35 @@ describe('messages service', () => {
       messageThreadId: 't1',
       values: [],
     });
+    const chunkB = JSON.stringify({
+      id: 'm3',
+      createdAt: '2024-01-01',
+      createdBy: 'u1',
+      hasComments: false,
+      createdByUserId: 'u1',
+      messageThreadId: 't1',
+      values: [
+        {
+          id: 'v1',
+          name: 'x',
+          type: 'INPUT',
+          value: 'y',
+          channels: {},
+          createdAt: '2024-01-01',
+          createdBy: 'me',
+          createdByUserId: 'me',
+        },
+      ],
+    });
 
-    vi.spyOn(api, 'post').mockImplementation(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async (_url: string, _payload: any, cfg?: any) => {
-        const cb = cfg?.onDownloadProgress as
-          | ((e: ProgressEventLike) => void)
-          | undefined;
-        cb?.({
-          event: { currentTarget: { response: `data:${chunk}\n\n` } },
-        });
-        return undefined as unknown as never;
-      }
-    );
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          bodyFromChunks([`data: ${chunkA}\n\n`, `data: ${chunkB}\n\n`]),
+          { status: 200 }
+        )
+    ) as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
 
     const result = await addInputToMessage({
       messageId: 'm1',
@@ -179,6 +193,32 @@ describe('messages service', () => {
       value: 'v',
       channels: null,
     });
+
+    // Last frame wins (final message after streaming completes).
     expect(result.id).toBe('m3');
+    expect(result.values?.length).toBe(1);
+
+    const [rawUrl, init] = (fetchMock as unknown as ReturnType<typeof vi.fn>)
+      .mock.calls[0] as [string, RequestInit];
+    expect(rawUrl).toBe('https://api.test/messages/m1/values');
+    expect(init.method).toBe('POST');
+    expect((init.headers as Record<string, string>).Accept).toBe(
+      'text/event-stream'
+    );
+  });
+
+  it('addInputToMessage rejects when the server returns a non-2xx status', async () => {
+    globalThis.fetch = vi.fn(
+      async () => new Response('err', { status: 500 })
+    ) as typeof fetch;
+
+    await expect(
+      addInputToMessage({
+        messageId: 'm1',
+        name: 'test',
+        value: 'v',
+        channels: null,
+      })
+    ).rejects.toThrow(/status 500/);
   });
 });
