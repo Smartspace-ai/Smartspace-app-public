@@ -42,22 +42,28 @@ export function useWorkspaceSubscriptions() {
   useWorkspaceRealtime(workspaceId || undefined, {
     onThreadUpdate: (summary) => {
       if (!workspaceId) return;
-      // eslint-disable-next-line no-console
-      console.log('[SignalR] ReceiveThreadUpdate for thread:', summary.id);
 
-      // SignalR is now a hint: the SSE's `thread` frame is authoritative for
-      // `isFlowRunning` on the thread the user is viewing. For other threads
-      // (no SSE open), SignalR still drives sidebar state — the direct cache
-      // write makes that instant regardless.
+      // SignalR is a hint; the SSE `thread` frame is authoritative for the
+      // viewed thread. SignalR commonly races ahead of SSE on terminal
+      // updates — if we let it write the detail cache (which the typing
+      // indicator reads from), `isFlowRunning` flips to false before the SSE
+      // delivers the new message, leaving the indicator gone and the
+      // response missing for ~tens-to-hundreds of ms. Skip the detail write
+      // for the viewed thread; still update list caches so the sidebar's
+      // running dot stays in sync for everyone else's tabs / other threads.
+      const isViewedThread = summary.id === threadId;
       const foundInList = applyThreadToCache(
         qc,
-        mapSignalRThreadSummaryToModel(summary)
+        mapSignalRThreadSummaryToModel(summary),
+        { skipDetail: isViewedThread }
       );
       if (!foundInList) invalidateWorkspaceThreadLists(qc, workspaceId);
 
       // Mark messages stale for threads the user isn't actively viewing;
       // the thread SSE handles the one they are viewing.
-      qc.invalidateQueries({ queryKey: messagesKeys.list(summary.id) });
+      if (!isViewedThread) {
+        qc.invalidateQueries({ queryKey: messagesKeys.list(summary.id) });
+      }
     },
     onThreadDeleted: (summary) => {
       if (!workspaceId) return;

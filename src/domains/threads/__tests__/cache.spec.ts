@@ -82,6 +82,35 @@ describe('applyThreadToCache', () => {
     expect(found).toBe(false);
   });
 
+  it('leaves the detail cache untouched when skipDetail is set', () => {
+    const qc = new QueryClient();
+    qc.setQueryData<MessageThread>(
+      threadsKeys.detail('w1', 't1'),
+      thread({ isFlowRunning: true })
+    );
+    qc.setQueryData<ThreadsResponse>(threadsKeys.list('w1'), {
+      data: [thread({ isFlowRunning: true })],
+      total: 1,
+    });
+
+    applyThreadToCache(qc, thread({ isFlowRunning: false }), {
+      skipDetail: true,
+    });
+
+    // Detail cache stays as-is — SSE remains authoritative for the viewed
+    // thread.
+    expect(
+      qc.getQueryData<MessageThread>(threadsKeys.detail('w1', 't1'))
+        ?.isFlowRunning
+    ).toBe(true);
+    // Sidebar list still reflects the SignalR hint so other tabs / list
+    // rows stay in sync.
+    expect(
+      qc.getQueryData<ThreadsResponse>(threadsKeys.list('w1'))?.data[0]
+        .isFlowRunning
+    ).toBe(false);
+  });
+
   it("only touches list caches matching the thread's workspace", () => {
     const qc = new QueryClient();
     qc.setQueryData<ThreadsResponse>(threadsKeys.list('w1'), {
