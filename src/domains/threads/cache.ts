@@ -12,7 +12,8 @@ type ThreadsListCache =
  * directly into the relevant query caches so subscribers paint without a
  * refetch roundtrip.
  *
- * - Merges into `threadsKeys.detail(workspaceId, thread.id)`.
+ * - Merges into `threadsKeys.detail(workspaceId, thread.id)` (unless
+ *   `skipDetail` is set — see below).
  * - Splices into every threads-list cache for the workspace, handling both
  *   finite `ThreadsResponse` and infinite `{ pages, pageParams }` shapes.
  *
@@ -20,15 +21,26 @@ type ThreadsListCache =
  * Callers that need to surface brand-new threads (e.g. another user just
  * created one) can fall back to invalidating the list queries when this
  * returns `false`.
+ *
+ * `skipDetail` exists so the SignalR `receiveThreadUpdate` path can refresh
+ * sidebar list rows without overwriting the actively-viewed thread's detail
+ * cache. SignalR can race ahead of the SSE for the viewed thread, flipping
+ * `isFlowRunning: false` before the SSE delivers the terminal frame carrying
+ * the new message — leaving a window where the typing indicator is gone but
+ * the response hasn't painted yet. SSE thread frames remain authoritative
+ * for detail.
  */
 export function applyThreadToCache(
   qc: QueryClient,
-  thread: MessageThread
+  thread: MessageThread,
+  options?: { skipDetail?: boolean }
 ): boolean {
-  qc.setQueryData<MessageThread>(
-    threadsKeys.detail(thread.workSpaceId, thread.id),
-    (old) => ({ ...(old ?? thread), ...thread })
-  );
+  if (!options?.skipDetail) {
+    qc.setQueryData<MessageThread>(
+      threadsKeys.detail(thread.workSpaceId, thread.id),
+      (old) => ({ ...(old ?? thread), ...thread })
+    );
+  }
 
   let foundInList = false;
   qc.setQueriesData<ThreadsListCache>(
