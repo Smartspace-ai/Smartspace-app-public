@@ -104,6 +104,34 @@ export const useThreads = (workspaceId: string) => {
   return useQuery(threadsListOptions(workspaceId));
 };
 
+/**
+ * Unified "is this thread running?" signal for UI consumers (composer,
+ * message list typing dots, sidebar dot). ORs the client-only optimistic
+ * flag (set the instant the user hits send) with server-confirmed
+ * `isFlowRunning` from the detail cache, so all three indicators start
+ * and stop on the same render. The optimistic cell is cleared by
+ * `useSendMessage` once POST returns and the detail cache holds the
+ * authoritative value.
+ */
+export const useThreadIsRunning = (
+  workspaceId: string | undefined,
+  threadId: string | undefined
+): boolean => {
+  const { data: thread } = useThread({
+    workspaceId: workspaceId ?? '',
+    threadId: threadId ?? '',
+    enabled: !!workspaceId && !!threadId,
+  });
+  const { data: optimistic } = useQuery({
+    queryKey: threadsKeys.optimisticRunning(threadId ?? ''),
+    queryFn: () => false,
+    initialData: false,
+    staleTime: Infinity,
+    enabled: !!threadId,
+  });
+  return !!optimistic || !!thread?.isFlowRunning;
+};
+
 export const useInfiniteThreads = (
   workspaceId: string,
   options?: {

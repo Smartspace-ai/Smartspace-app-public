@@ -1,6 +1,7 @@
 export {
   applyThreadToCache,
   invalidateWorkspaceThreadLists,
+  setThreadOptimisticRunning,
   setThreadRunningInLists,
 } from './cache';
 export { ensureDraftThread, removeDraftThread } from './draftThread';
@@ -12,6 +13,7 @@ export {
   threadsListOptions,
   useInfiniteThreads,
   useThread,
+  useThreadIsRunning,
   useThreads,
 } from './queries';
 export { threadsKeys, THREAD_LIST_PAGE_SIZE } from './queryKeys';

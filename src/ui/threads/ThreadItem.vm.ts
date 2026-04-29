@@ -7,6 +7,7 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import type { MessageThread } from '@/domains/threads';
 import { useDeleteThread, useSetPin } from '@/domains/threads/mutations';
+import { useThreadIsRunning } from '@/domains/threads/queries';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
@@ -26,7 +27,12 @@ export function useThreadItemVm({
   const { mutate: setPin, isPending: isSetPinPending } = useSetPin();
   const { mutateAsync: deleteThread } = useDeleteThread();
 
-  const isRunning = thread.isFlowRunning;
+  // Unified running signal: ORs the optimistic flag (set the instant the
+  // user hits send) with the server-confirmed `isFlowRunning`, so the
+  // sidebar dot lights up on the same render as the composer spinner and
+  // message-list typing dots, and they all turn off together when the
+  // SSE/SignalR terminal frame arrives.
+  const isRunning = useThreadIsRunning(thread.workSpaceId, thread.id);
 
   const goToThread = useCallback(() => {
     const wsId = thread.workSpaceId;
