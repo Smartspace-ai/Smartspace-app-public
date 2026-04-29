@@ -28,11 +28,16 @@ const {
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 /** Backend sends null createdByUserId on system-generated values; Zod schema requires string. */
+function coerceMessageValueDto(v: Record<string, unknown>): void {
+  if (v.createdByUserId == null) v.createdByUserId = '';
+  if (v.channels == null) v.channels = {};
+}
+
 function coerceMessageDto(raw: Record<string, unknown>): void {
   if (raw.createdByUserId == null) raw.createdByUserId = '';
   if (Array.isArray(raw.values)) {
     for (const v of raw.values as Record<string, unknown>[]) {
-      if (v.createdByUserId == null) v.createdByUserId = '';
+      coerceMessageValueDto(v);
     }
   }
 }
@@ -305,7 +310,7 @@ export async function streamThreadMessages({
         if (!targetId || !onDelta) continue;
         const outputs = (envelope.delta.outputs ?? []).map((raw) => {
           const obj = raw as Record<string, unknown>;
-          if (obj.createdByUserId == null) obj.createdByUserId = '';
+          coerceMessageValueDto(obj);
           return mapMessageValueDtoToModel(valueDtoSchema.parse(obj));
         });
         const errors = (envelope.delta.errors ?? []).map((raw) =>
