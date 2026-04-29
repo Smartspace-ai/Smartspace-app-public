@@ -22,7 +22,12 @@ export const queryClient = new QueryClient({
         return isTransient(error) && failureCount < 2;
       },
       staleTime: 60_000, // 1 min
-      gcTime: 10 * 60_000, // 10 min
+      // 2 min — every visited thread caches its full message list under
+      // its own key, so a generous gcTime piles up retained messages
+      // (and their channels/values) when the user hops threads. 2 min
+      // is short enough to release abandoned threads quickly while still
+      // letting "back/forward between two threads" hit a warm cache.
+      gcTime: 2 * 60_000,
     },
     mutations: {
       // Never retry auth errors; retry at most once on transient failures

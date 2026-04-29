@@ -374,6 +374,18 @@ function EditorInner({
               dom.addEventListener('keyup', handle);
               dom.addEventListener('click', handle);
               dom.addEventListener('keydown', handleKeyDown);
+              // Pair every addEventListener with a removeEventListener via
+              // the listener plugin's `destroy` hook. `useEditor` rebuilds
+              // the editor on every `[isEditable]` flip and on unmount; the
+              // old `view.dom` would otherwise hang on to closure refs over
+              // setMentionCoords/setMentionOpen (and through them the whole
+              // component scope). With many thread switches that grew into
+              // a real retention problem.
+              lm.destroy(() => {
+                dom.removeEventListener('keyup', handle);
+                dom.removeEventListener('click', handle);
+                dom.removeEventListener('keydown', handleKeyDown);
+              });
             } catch {
               /* ignore get view errors */
             }
