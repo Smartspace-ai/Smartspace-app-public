@@ -133,13 +133,12 @@ export default defineConfig(({ mode }) => ({
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
-          // React core (imported everywhere)
-          if (
-            id.includes('/react/') ||
-            id.includes('/react-dom/') ||
-            id.includes('/scheduler/')
-          )
-            return 'react';
+          // Note: React core is intentionally NOT split into its own chunk.
+          // Doing so caused `Cannot read properties of undefined (reading 'useState')`
+          // in the vendor chunk at runtime — CJS-interop'd consumers (react-is,
+          // use-sync-external-store, prop-types, etc.) ended up in `vendor` and
+          // received an undefined React namespace when React lived in a sibling
+          // chunk. Letting Rollup co-locate React with its consumers fixes it.
 
           // UI libraries
           if (id.includes('/@mui/')) return 'mui';
