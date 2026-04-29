@@ -1,4 +1,4 @@
-import { ChatZod } from '@smartspace/api-client';
+import { ChatZod, SignalR } from '@smartspace/api-client';
 import type { z } from 'zod';
 
 import { utcDate } from '@/shared/utils/dateFromApi';
@@ -45,3 +45,26 @@ export function mapCommentDtoToModel(
 
 export const mapCommentsDtoToModels = (arr: CommentDto[]) =>
   arr.map(mapCommentDtoToModel);
+
+/**
+ * Map the SignalR `receiveCommentsUpdate` payload to our comment model so we
+ * can splice it directly into the comments list cache without an invalidate +
+ * refetch roundtrip.
+ */
+export function mapSignalRCommentSummaryToModel(
+  summary: SignalR.CommentSummary
+): Comment {
+  return {
+    id: summary.id,
+    createdAt: utcDate(summary.createdAt),
+    createdByUserId: summary.createdByUserId,
+    createdBy: summary.createdBy ?? '',
+    content: summary.content,
+    mentionedUsers: (summary.mentionedUsers ?? []).map((u) => ({
+      id: u.id,
+      displayName: u.name ?? '',
+      initials: null,
+    })),
+    messageThreadId: summary.messageThreadId,
+  };
+}

@@ -47,8 +47,6 @@ module.exports = {
       { type: 'ui', pattern: 'src/ui/**' },
       { type: 'pages', pattern: 'src/pages/**' },
       { type: 'shared', pattern: 'src/shared/**' },
-      { type: 'mocks', pattern: 'src/mocks/**' },
-      { type: 'tests', pattern: 'src/tests/**' },
     ],
   },
 

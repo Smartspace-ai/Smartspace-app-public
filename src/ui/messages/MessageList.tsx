@@ -31,7 +31,7 @@ export function MessageList() {
 
   const { data: activeWorkspace } = useWorkspace(workspaceId);
   const workspaceIndexMatch = useMatch({
-    from: '/_protected/workspace/$workspaceId/',
+    from: '/_protected/workspace/$workspaceId/_layout/',
     shouldThrow: false,
   });
 
@@ -241,30 +241,34 @@ export function MessageList() {
                 : ''
             } px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
           >
-            {safeMessages.map((message, index) => (
-              <div
-                className="ss-chat__message w-full"
-                key={message.id || index}
-              >
-                <MessageItem message={message} />
+            {safeMessages.map((message, index) => {
+              const isLastMessage = index === safeMessages.length - 1;
+              const isLive = isLastMessage && !!thread?.isFlowRunning;
+              return (
+                <div
+                  className="ss-chat__message w-full"
+                  key={message.id || index}
+                >
+                  <MessageItem message={message} isLive={isLive} />
 
-                {index === safeMessages.length - 1 && thread?.isFlowRunning && (
-                  <div className="p-3 min-h-3">
-                    <div className="flex space-x-2 p-1">
-                      {[0, 300, 600].map((delay) => (
-                        <div
-                          key={delay}
-                          className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
-                          style={{ animationDelay: `${delay}ms` }}
-                        />
-                      ))}
+                  {isLastMessage && thread?.isFlowRunning && (
+                    <div className="p-3 min-h-3">
+                      <div className="flex space-x-2 p-1">
+                        {[0, 300, 600].map((delay) => (
+                          <div
+                            key={delay}
+                            className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
+                            style={{ animationDelay: `${delay}ms` }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <div ref={messagesEndRef} className="h-1" />
-              </div>
-            ))}
+                  <div ref={messagesEndRef} className="h-1" />
+                </div>
+              );
+            })}
           </div>
         </ScrollAreaPrimitive.Viewport>
 

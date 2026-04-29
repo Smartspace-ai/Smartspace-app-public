@@ -1,7 +1,7 @@
 // src/ui/workspaces/WorkspaceSwitcher.vm.ts
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import debounce from 'lodash/debounce';
+import debounce from 'lodash.debounce';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';

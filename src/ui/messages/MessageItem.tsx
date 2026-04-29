@@ -21,6 +21,15 @@ import { MessageStatus } from './MessageStatus';
 
 interface MessageItemProps {
   message: Message;
+  /**
+   * True when this is the most recent message in the thread AND the flow
+   * is still running. Gates the trailing transient status node — without
+   * this, a stuck `status` value in `message.values` (e.g. one tool's
+   * "running" status that arrived after another tool's content during a
+   * parallel-tool-call run, with no clearing frame from the backend)
+   * would render as a permanent bubble below the response.
+   */
+  isLive?: boolean;
 }
 
 /** shallow-enough equality for small channel maps like { stream: 0 } */
@@ -85,7 +94,10 @@ function coerceSources(x: unknown): MessageResponseSource[] {
   return x.filter(isMessageResponseSource);
 }
 
-export const MessageItem: FC<MessageItemProps> = ({ message }) => {
+export const MessageItem: FC<MessageItemProps> = ({
+  message,
+  isLive = false,
+}) => {
   const { workspaceId, threadId } = useRouteIds();
   const { data: workspace } = useWorkspace(workspaceId);
   const chatbotName = getChatbotName(workspace?.name);
@@ -298,8 +310,13 @@ export const MessageItem: FC<MessageItemProps> = ({ message }) => {
     );
   }
 
-  // Show the last status indicator if no content followed it
-  if (lastStatusNode) {
+  // Show the trailing transient status only while this message is live
+  // (last in the thread + flow still running). Once the flow ends, any
+  // status value left over in `message.values` is stale — typically from
+  // parallel tool calls where one tool's status arrived after another's
+  // content and there was no clearing frame to overwrite it. Without this
+  // gate that stale status would render as a permanent bubble.
+  if (lastStatusNode && isLive) {
     bubbles.push(lastStatusNode);
   }
 

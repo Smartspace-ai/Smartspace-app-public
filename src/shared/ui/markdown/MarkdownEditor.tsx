@@ -4,6 +4,7 @@ import {
   editorViewCtx,
   editorViewOptionsCtx,
   rootCtx,
+  serializerCtx,
 } from '@milkdown/core';
 import { history } from '@milkdown/kit/plugin/history';
 import { clipboard } from '@milkdown/plugin-clipboard';
@@ -56,6 +57,13 @@ export type MarkdownEditorHandle = {
   focus: () => void;
   /** Clears the editor content (useful when host clears `value`, since Milkdown isn't fully controlled here). */
   clear: () => void;
+  /**
+   * Serializes the current editor doc to markdown synchronously.
+   * Needed because the `markdownUpdated` listener is debounced by 200ms inside
+   * `@milkdown/plugin-listener`, so React state can lag behind what's in the editor.
+   * Callers that need the freshest text (e.g. sending on Enter) should read from here.
+   */
+  getMarkdown: () => string;
   /**
    * Returns mention users currently present in the editor document.
    * Useful for building API payloads (e.g. comments.mentionedUsers).
@@ -171,6 +179,7 @@ function EditorInner({
   const previewUrlsRef = useRef<string[]>([]);
   const [_isDragging, setIsDragging] = useState(false);
   const viewRef = useRef<EditorView | null>(null);
+  const serializerRef = useRef<((doc: PMNode) => string) | null>(null);
 
   function guessImageExt(mime: string) {
     const t = (mime || '').toLowerCase();
@@ -326,6 +335,13 @@ function EditorInner({
               const anyCtx = c as { get: (t: unknown) => unknown };
               const view = anyCtx.get(editorViewCtx) as EditorView;
               viewRef.current = view;
+              try {
+                serializerRef.current = anyCtx.get(serializerCtx) as (
+                  doc: PMNode
+                ) => string;
+              } catch {
+                /* serializer not ready yet */
+              }
               const handle = () => {
                 try {
                   if (enableMentions) updateMentionFromView();
@@ -358,6 +374,18 @@ function EditorInner({
               dom.addEventListener('keyup', handle);
               dom.addEventListener('click', handle);
               dom.addEventListener('keydown', handleKeyDown);
+              // Pair every addEventListener with a removeEventListener via
+              // the listener plugin's `destroy` hook. `useEditor` rebuilds
+              // the editor on every `[isEditable]` flip and on unmount; the
+              // old `view.dom` would otherwise hang on to closure refs over
+              // setMentionCoords/setMentionOpen (and through them the whole
+              // component scope). With many thread switches that grew into
+              // a real retention problem.
+              lm.destroy(() => {
+                dom.removeEventListener('keyup', handle);
+                dom.removeEventListener('click', handle);
+                dom.removeEventListener('keydown', handleKeyDown);
+              });
             } catch {
               /* ignore get view errors */
             }
@@ -602,6 +630,16 @@ function EditorInner({
           chars[i] = /\w/.test(next) ? ' ' : '';
         }
         return chars.join('').trimEnd();
+      },
+      getMarkdown: () => {
+        const view = viewRef.current;
+        const serializer = serializerRef.current;
+        if (!view || !serializer) return (value ?? '') as string;
+        try {
+          return serializer(view.state.doc);
+        } catch {
+          return (value ?? '') as string;
+        }
       },
       clear: () => {
         const view = viewRef.current;

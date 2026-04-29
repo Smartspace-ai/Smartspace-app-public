@@ -8,22 +8,25 @@ SmartSpace Chat UI — a React 18.3 + TypeScript chat interface built with Vite,
 
 ## Commands
 
-| Task                | Command               |
-| ------------------- | --------------------- |
-| Dev server          | `npm run serve`       |
-| Dev with .env.local | `npm run start:local` |
-| Dev with .env.dev   | `npm run start:dev`   |
-| Build               | `npm run build`       |
-| Test                | `npm test`            |
-| Lint (quiet)        | `npm run lint`        |
-| Lint (full)         | `npm run lint:all`    |
-| Lint fix            | `npm run lint:fix`    |
-| Typecheck           | `npm run typecheck`   |
-| Teams manifest      | `npm run build:teams` |
+| Task                | Command                |
+| ------------------- | ---------------------- |
+| Install deps        | `pnpm install`         |
+| Dev server          | `pnpm run serve`       |
+| Dev with .env.local | `pnpm run start:local` |
+| Dev with .env.dev   | `pnpm run start:dev`   |
+| Build               | `pnpm run build`       |
+| Test                | `pnpm test`            |
+| Lint (quiet)        | `pnpm run lint`        |
+| Lint (full)         | `pnpm run lint:all`    |
+| Lint fix            | `pnpm run lint:fix`    |
+| Typecheck           | `pnpm run typecheck`   |
+| Teams manifest      | `pnpm run build:teams` |
 
-Run a single test file: `npx vitest run src/path/to/file.spec.ts`
+Run a single test file: `pnpm exec vitest run src/path/to/file.spec.ts`
 
-CI pipeline runs: `npm run lint:all` → `npm run typecheck` → `npm test` → `npm run build`
+Package manager: **pnpm** (pinned via `packageManager` field in `package.json`, resolved by Corepack). Do not use `npm install` — it creates `package-lock.json` and causes lockfile drift.
+
+CI pipeline runs: `pnpm run lint:all` → `pnpm run typecheck` → `pnpm test` → `pnpm run build`
 
 ## Architecture
 

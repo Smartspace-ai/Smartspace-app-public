@@ -1,7 +1,8 @@
-# Auto-bump @smartspace/api-client when a new SDK version is published.
+# Smartspace-internal: safe to delete in forks.
+# Auto-bumps @smartspace/api-client when a new SDK version is published.
 # Triggered via repository_dispatch from Smartspace-app-api SDK publish workflows.
 
-name: Bump SDK version
+name: Bump SDK version (internal)
 
 on:
   repository_dispatch:
@@ -40,15 +41,19 @@ jobs:
         with:
           ref: ${{ github.event.client_payload.target_branch }}
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: pnpm
 
       - name: Update SDK version
         env:
           SDK_VERSION: ${{ github.event.client_payload.version }}
-        run: npm install "@smartspace/api-client@${SDK_VERSION}" --save-exact
+        run: pnpm add "@smartspace/api-client@${SDK_VERSION}" --save-exact
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v6

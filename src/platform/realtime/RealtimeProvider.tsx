@@ -5,6 +5,7 @@ import {
   HubConnectionBuilder,
   HubConnectionState,
 } from '@microsoft/signalr';
+import { SignalR } from '@smartspace/api-client';
 import {
   createContext,
   useCallback,
@@ -17,6 +18,9 @@ import {
 } from 'react';
 
 import { parseScopes } from '@/platform/auth/scopes';
+
+const createChatHub = (connection: HubConnection) =>
+  SignalR.getHubProxyFactory('IChatHubInvoker').createHubProxy(connection);
 
 type RealtimeCtx = {
   connection?: HubConnection;
@@ -100,11 +104,26 @@ export function RealtimeProvider({
       groupName: string,
       attempt = 0
     ): Promise<void> => {
-      if (!connection || !isConnected()) {
-        return; // lifecycle will re-join
+      if (!connection) return; // effect will retry once connection is built
+
+      // Wait out the initial connect. `onreconnected` handles the reconnect
+      // case; without this await the first joinGroup is silently dropped
+      // while conn.start() is still in flight and no rejoin fires on initial
+      // connect, leaving the client absent from the server's group.
+      if (!isConnected()) {
+        if (startPromise.current) {
+          try {
+            await startPromise.current;
+          } catch {
+            return;
+          }
+        }
+        if (!isConnected()) return;
       }
+
       try {
-        await connection.invoke(method, groupName);
+        const hub = createChatHub(connection);
+        await hub[method](groupName);
       } catch (err) {
         if (attempt < 3) {
           const delay = 300 * Math.pow(2, attempt) + Math.random() * 100;
@@ -167,9 +186,10 @@ export function RealtimeProvider({
     // rejoin desired groups after reconnect
     const rejoin = async () => {
       if (conn.state !== HubConnectionState.Connected) return;
+      const hub = createChatHub(conn);
       for (const g of desiredGroups.current) {
         try {
-          await conn.invoke('joinGroup', g);
+          await hub.joinGroup(g);
         } catch {
           console.error('Error joining group', g);
         }

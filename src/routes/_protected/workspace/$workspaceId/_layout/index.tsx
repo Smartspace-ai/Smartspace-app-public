@@ -6,7 +6,9 @@ import { threadsListOptions } from '@/domains/threads/queries';
 import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
 
 // routes/_protected/workspace/$workspaceId/index.tsx
-export const Route = createFileRoute('/_protected/workspace/$workspaceId/')({
+export const Route = createFileRoute(
+  '/_protected/workspace/$workspaceId/_layout/'
+)({
   pendingMs: 0,
   pendingComponent: WorkspaceIndexRouteComponent,
   loader: async ({ params, context }) => {
