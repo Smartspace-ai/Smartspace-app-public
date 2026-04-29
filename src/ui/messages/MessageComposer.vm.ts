@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { useSendMessage } from '@/domains/messages/mutations';
-import { useThread } from '@/domains/threads/queries';
+import { useThreadIsRunning } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
@@ -33,7 +33,7 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
   const isMobile = useIsMobile();
   const { leftOpen, rightOpen } = useSidebar();
   const { data: workspace } = useWorkspace(workspaceId);
-  const { data: thread } = useThread({ workspaceId, threadId });
+  const isRunning = useThreadIsRunning(workspaceId, threadId);
 
   const isUploadingFiles = props.isUploadingFiles ?? false;
 
@@ -45,11 +45,11 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
   /** Derived: can we send? */
   const sendDisabled = useMemo(() => {
     const nothingToSend = !newMessage.trim() && !props.hasAttachments;
-    const flowBlocked = !!thread?.isFlowRunning || sendMessage.isPending;
+    const flowBlocked = isRunning || sendMessage.isPending;
     return isUploadingFiles || flowBlocked || nothingToSend;
   }, [
     isUploadingFiles,
-    thread?.isFlowRunning,
+    isRunning,
     sendMessage.isPending,
     newMessage,
     props.hasAttachments,
@@ -86,7 +86,7 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
   const canSend = (text: string, files?: { id: string; name: string }[]) => {
     const hasFiles = (files?.length ?? 0) > 0 || !!props.hasAttachments;
     const nothingToSend = !text.trim() && !hasFiles;
-    const flowBlocked = !!thread?.isFlowRunning || sendMessage.isPending;
+    const flowBlocked = isRunning || sendMessage.isPending;
     return !(isUploadingFiles || flowBlocked || nothingToSend);
   };
 
@@ -118,9 +118,9 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     setNewMessage,
     handleKeyDown,
     handleSendMessage,
-    isSending: sendMessage.isPending || !!thread?.isFlowRunning,
+    isSending: isRunning,
     supportsFiles: !!workspace?.supportsFiles,
-    disabled: thread?.isFlowRunning,
+    disabled: isRunning,
     isDraftThread,
     variables,
     setVariables,

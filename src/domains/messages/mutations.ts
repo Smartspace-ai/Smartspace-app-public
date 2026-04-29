@@ -6,6 +6,7 @@ import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 import { FileInfo } from '@/domains/files';
 import {
   type MessageThread,
+  setThreadOptimisticRunning,
   setThreadRunningInLists,
   threadsKeys,
 } from '@/domains/threads';
@@ -94,11 +95,15 @@ export function useSendMessage() {
         optimistic,
       ]);
 
-      // Light up the sidebar's running indicator instantly. We patch the
-      // thread-list caches only — NOT the detail cache, which gates the
-      // thread SSE (that value must stay server-confirmed so we don't open
-      // the SSE before the backend has actually started the flow). The
-      // composer's spinner is already covered by `mutation.isPending`.
+      // Light up every running indicator (composer spinner, message-list
+      // typing dots, sidebar dot) on the same render. The optimistic flag
+      // lives in its own cache cell, so the SSE gate — which reads server-
+      // confirmed `isFlowRunning` from the detail cache — stays untouched
+      // and we don't open the stream before the backend has actually
+      // started the flow. The list-cache patch keeps cross-tab SignalR
+      // semantics consistent for sidebars that aren't reading the unified
+      // selector.
+      setThreadOptimisticRunning(qc, threadId, true);
       setThreadRunningInLists(qc, workspaceId, threadId, true);
 
       // cancel in-flight refetches for this list so they don't race the optimistic insert
@@ -114,10 +119,11 @@ export function useSendMessage() {
           variables,
         });
       } catch (err) {
-        // rollback: remove optimistics, undo the running flag in lists
+        // rollback: remove optimistics, undo the running flags
         qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
           old.filter((x) => !x.optimistic)
         );
+        setThreadOptimisticRunning(qc, threadId, false);
         setThreadRunningInLists(qc, workspaceId, threadId, false);
         toast.error('There was an error posting your message');
         throw err;
@@ -150,6 +156,12 @@ export function useSendMessage() {
         threadsKeys.detail(workspaceId, threadId),
         (old) => (old ? { ...old, isFlowRunning: true } : old)
       );
+
+      // Detail cache now holds the server-confirmed truth — drop the
+      // optimistic flag so the unified selector relies purely on
+      // `isFlowRunning` from here. SSE/SignalR terminal frames will flip
+      // it false to stop every indicator together.
+      setThreadOptimisticRunning(qc, threadId, false);
 
       // Reconcile thread list ordering / last-message preview and thread detail
       // (isFlowRunning). Message content continues to arrive via the thread SSE.
