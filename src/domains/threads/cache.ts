@@ -96,6 +96,23 @@ export function invalidateWorkspaceThreadLists(
 }
 
 /**
+ * Client-only flag for "we just hit send for this thread, server hasn't
+ * confirmed yet". Stored in its own cache cell (not on `MessageThread`)
+ * so the SSE gate — which reads server-confirmed `isFlowRunning` from the
+ * detail cache — stays unaffected. The unified UI selector
+ * `useThreadIsRunning` ORs this with `thread.isFlowRunning` so the composer,
+ * message list typing dots, and sidebar dot all light up at the same instant
+ * on send and turn off together when the flow's terminal frame arrives.
+ */
+export function setThreadOptimisticRunning(
+  qc: QueryClient,
+  threadId: string,
+  running: boolean
+): void {
+  qc.setQueryData<boolean>(threadsKeys.optimisticRunning(threadId), running);
+}
+
+/**
  * Optimistically flip a single thread's `isFlowRunning` flag in every list
  * cache for the workspace (finite + infinite shapes). Used by `useSendMessage`
  * so the sidebar dot lights up instantly without waiting for SignalR — the
