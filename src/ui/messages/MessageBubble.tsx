@@ -194,7 +194,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
           </div>
         )}
 
-        <ChatMessageSources sources={sources} />
+        {sources.length > 0 && <ChatMessageSources sources={sources} />}
       </div>
     </div>
   );
