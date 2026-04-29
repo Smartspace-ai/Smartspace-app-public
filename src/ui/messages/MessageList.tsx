@@ -7,7 +7,7 @@ import { isInTeams } from '@/platform/auth/msalConfig';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { useMessages } from '@/domains/messages';
-import { useThread } from '@/domains/threads/queries';
+import { useThread, useThreadIsRunning } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
@@ -43,6 +43,7 @@ export function MessageList() {
     isFetching: threadFetching,
     error: threadError,
   } = useThread({ workspaceId, threadId });
+  const isRunning = useThreadIsRunning(workspaceId, threadId);
   const {
     data: messages,
     isPending: messagesPending,
@@ -107,10 +108,10 @@ export function MessageList() {
   // When the thread starts "running" (typing indicator appears) but message count doesn't change,
   // still ensure we reveal the loading dots if the user is at the bottom.
   useEffect(() => {
-    if (!thread?.isFlowRunning) return;
+    if (!isRunning) return;
     if (!isAtBottom) return;
     requestAnimationFrame(() => scrollToBottom('smooth'));
-  }, [thread?.isFlowRunning, isAtBottom, scrollToBottom]);
+  }, [isRunning, isAtBottom, scrollToBottom]);
 
   // Also keep pinned when content height changes (streaming tokens, images, typing indicator).
   useEffect(() => {
@@ -243,7 +244,7 @@ export function MessageList() {
           >
             {safeMessages.map((message, index) => {
               const isLastMessage = index === safeMessages.length - 1;
-              const isLive = isLastMessage && !!thread?.isFlowRunning;
+              const isLive = isLastMessage && isRunning;
               return (
                 <div
                   className="ss-chat__message w-full"
@@ -251,7 +252,7 @@ export function MessageList() {
                 >
                   <MessageItem message={message} isLive={isLive} />
 
-                  {isLastMessage && thread?.isFlowRunning && (
+                  {isLastMessage && isRunning && (
                     <div className="p-3 min-h-3">
                       <div className="flex space-x-2 p-1">
                         {[0, 300, 600].map((delay) => (
