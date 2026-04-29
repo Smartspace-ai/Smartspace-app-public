@@ -34,6 +34,9 @@ export function useThreadMessageStream(
   useEffect(() => {
     if (!threadId || !enabled) return;
 
+    // eslint-disable-next-line no-console
+    console.log('[SSE:effect:start]', { threadId });
+
     const controller = new AbortController();
     const state = { stopped: false };
 
@@ -46,7 +49,18 @@ export function useThreadMessageStream(
       const sorted = [...messages].sort(byCreatedAt);
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
         const optimistics = old.filter((m) => m.optimistic);
-        return [...sorted, ...optimistics];
+        const next = [...sorted, ...optimistics];
+        // eslint-disable-next-line no-console
+        console.log('[Cache:onSnapshot]', {
+          threadId,
+          beforeIds: (old ?? []).map((m) => m.id),
+          afterIds: next.map((m) => m.id),
+          afterValueCounts: next.map((m) => ({
+            id: m.id,
+            count: m.values?.length ?? 0,
+          })),
+        });
+        return next;
       });
     };
 
@@ -55,11 +69,25 @@ export function useThreadMessageStream(
         const stable = old.filter((m) => !m.optimistic);
         const optimistics = old.filter((m) => m.optimistic);
         const idx = stable.findIndex((m) => m.id === messageId);
-        const nextStable =
-          idx === -1
-            ? [...stable, message].sort(byCreatedAt)
-            : stable.map((m, i) => (i === idx ? message : m));
-        return [...nextStable, ...optimistics];
+        const wasInsert = idx === -1;
+        const nextStable = wasInsert
+          ? [...stable, message].sort(byCreatedAt)
+          : stable.map((m, i) => (i === idx ? message : m));
+        const next = [...nextStable, ...optimistics];
+        // eslint-disable-next-line no-console
+        console.log('[Cache:onUpsert]', {
+          threadId,
+          messageId,
+          messageBodyId: message.id,
+          mismatch: messageId !== message.id,
+          op: wasInsert ? 'insert' : 'replace',
+          beforeIds: (old ?? []).map((m) => m.id),
+          afterIds: next.map((m) => m.id),
+          incomingValueNames: (message.values ?? []).map(
+            (v) => `${v.name}(${v.type})`
+          ),
+        });
+        return next;
       });
     };
 
@@ -70,9 +98,52 @@ export function useThreadMessageStream(
         // No base message yet — ignore. The full `message` frame either
         // hasn't arrived or we missed it; the next reconnect snapshot will
         // bring authoritative state.
-        if (idx === -1) return old;
+        if (idx === -1) {
+          // eslint-disable-next-line no-console
+          console.warn('[Cache:onDelta:dropped]', {
+            threadId,
+            messageId,
+            cachedIds: (old ?? []).map((m) => m.id),
+            outputs: delta.outputs.map((o) => ({
+              name: o.name,
+              type: o.type,
+            })),
+          });
+          return old;
+        }
+        const before = old[idx];
+        const after = applyDeltaToMessage(before, delta);
         const copy = old.slice();
-        copy[idx] = applyDeltaToMessage(old[idx], delta);
+        copy[idx] = after;
+        // eslint-disable-next-line no-console
+        console.log('[Cache:onDelta]', {
+          threadId,
+          messageId,
+          targetIdx: idx,
+          targetCachedId: before.id,
+          beforeValueNames: (before.values ?? []).map(
+            (v) => `${v.name}(${v.type})`
+          ),
+          afterValueNames: (after.values ?? []).map(
+            (v) => `${v.name}(${v.type})`
+          ),
+          incoming: delta.outputs.map((o) => ({
+            name: o.name,
+            type: o.type,
+            valueLen:
+              typeof o.value === 'string'
+                ? o.value.length
+                : o.value == null
+                ? 0
+                : JSON.stringify(o.value).length,
+            valuePreview:
+              typeof o.value === 'string'
+                ? o.value.slice(0, 40)
+                : o.value == null
+                ? null
+                : JSON.stringify(o.value).slice(0, 40),
+          })),
+        });
         return copy;
       });
     };
@@ -129,6 +200,8 @@ export function useThreadMessageStream(
     void run();
 
     return () => {
+      // eslint-disable-next-line no-console
+      console.log('[SSE:effect:cleanup]', { threadId });
       state.stopped = true;
       controller.abort();
     };

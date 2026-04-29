@@ -261,6 +261,10 @@ export async function streamThreadMessages({
   const valueDtoSchema = messageDtoSchema.shape.values.element;
   const errorDtoSchema = messageDtoSchema.shape.errors.element;
 
+  let frameCounter = 0;
+  // eslint-disable-next-line no-console
+  console.log('[SSE:open]', { threadId });
+
   for await (const frame of parseSseStream(response.body, signal)) {
     if (!frame.data) continue;
     try {
@@ -277,6 +281,28 @@ export async function streamThreadMessages({
         thread?: SignalR.MessageThreadSummary | null;
       };
       const terminal = Boolean(envelope.terminal);
+      const frameIdx = frameCounter++;
+
+      // eslint-disable-next-line no-console
+      console.log('[SSE:frame]', {
+        threadId,
+        idx: frameIdx,
+        kind: Array.isArray(envelope.snapshot)
+          ? 'snapshot'
+          : envelope.message
+          ? 'message'
+          : envelope.delta
+          ? 'delta'
+          : envelope.thread
+          ? 'thread-only'
+          : 'unknown',
+        outerMessageId: envelope.messageId ?? null,
+        innerDeltaMessageId: envelope.delta?.messageId ?? null,
+        terminal,
+        threadIsFlowRunning: envelope.thread
+          ? envelope.thread.isFlowRunning
+          : null,
+      });
 
       // `thread` is attached to initial snapshot + terminal frames. Surface
       // it first so the cache flips `isFlowRunning` before we apply the
@@ -291,6 +317,17 @@ export async function streamThreadMessages({
           coerceMessageDto(obj);
           return mapMessageDtoToModel(messageDtoSchema.parse(obj));
         });
+        // eslint-disable-next-line no-console
+        console.log('[SSE:snapshot]', {
+          threadId,
+          idx: frameIdx,
+          messages: messages.map((m) => ({
+            id: m.id,
+            createdAt: m.createdAt.toISOString(),
+            valueCount: m.values?.length ?? 0,
+            valueNames: (m.values ?? []).map((v) => `${v.name}(${v.type})`),
+          })),
+        });
         onSnapshot(messages);
         continue;
       }
@@ -300,6 +337,17 @@ export async function streamThreadMessages({
         const raw = envelope.message as Record<string, unknown>;
         coerceMessageDto(raw);
         const message = mapMessageDtoToModel(messageDtoSchema.parse(raw));
+        // eslint-disable-next-line no-console
+        console.log('[SSE:message]', {
+          threadId,
+          idx: frameIdx,
+          envelopeOuterMessageId: envelope.messageId,
+          messageBodyId: message.id,
+          mismatch: envelope.messageId !== message.id,
+          terminal,
+          valueCount: message.values?.length ?? 0,
+          valueNames: (message.values ?? []).map((v) => `${v.name}(${v.type})`),
+        });
         onMessage(envelope.messageId, message, terminal);
         continue;
       }
@@ -316,12 +364,50 @@ export async function streamThreadMessages({
         const errors = (envelope.delta.errors ?? []).map((raw) =>
           mapMessageErrorDtoToModel(errorDtoSchema.parse(raw))
         );
+        // eslint-disable-next-line no-console
+        console.log('[SSE:delta]', {
+          threadId,
+          idx: frameIdx,
+          targetId,
+          outerMessageId: envelope.messageId ?? null,
+          innerDeltaMessageId: envelope.delta.messageId ?? null,
+          outerInnerMatch:
+            envelope.messageId === envelope.delta.messageId ||
+            envelope.delta.messageId == null,
+          terminal,
+          outputs: outputs.map((o) => ({
+            name: o.name,
+            type: o.type,
+            valueLen:
+              typeof o.value === 'string'
+                ? o.value.length
+                : o.value == null
+                ? 0
+                : JSON.stringify(o.value).length,
+            valuePreview:
+              typeof o.value === 'string'
+                ? o.value.slice(0, 40)
+                : o.value == null
+                ? null
+                : JSON.stringify(o.value).slice(0, 40),
+          })),
+          errorCount: errors.length,
+        });
         onDelta(targetId, { outputs, errors }, terminal);
       }
-    } catch {
+    } catch (err) {
       // Ignore malformed/partial frames — server will send another envelope.
+      // eslint-disable-next-line no-console
+      console.warn('[SSE:parse-error]', {
+        threadId,
+        error: err instanceof Error ? err.message : String(err),
+        rawPreview: frame.data?.slice(0, 200),
+      });
     }
   }
+
+  // eslint-disable-next-line no-console
+  console.log('[SSE:close]', { threadId, totalFrames: frameCounter });
 
   return { status: 'completed' };
 }

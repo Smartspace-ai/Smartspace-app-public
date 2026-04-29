@@ -88,6 +88,15 @@ export function useSendMessage() {
         optimistic: true,
       };
 
+      // eslint-disable-next-line no-console
+      console.log('[Send:start]', {
+        threadId,
+        optimisticId: optimistic.id,
+        existingIds: (
+          qc.getQueryData<Message[]>(messagesKeys.list(threadId)) ?? []
+        ).map((m) => m.id),
+      });
+
       // add optimistic into cache
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => [
         ...old,
@@ -122,6 +131,13 @@ export function useSendMessage() {
         toast.error('There was an error posting your message');
         throw err;
       }
+
+      // eslint-disable-next-line no-console
+      console.log('[Send:postReturned]', {
+        threadId,
+        optimisticId: optimistic.id,
+        realMessageId: realMessage.id,
+      });
 
       // Replace the optimistic temp-id entry with the server-authoritative
       // Message we just got back. If the thread SSE already added the same
