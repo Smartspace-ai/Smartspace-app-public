@@ -43,27 +43,26 @@ export function useWorkspaceSubscriptions() {
     onThreadUpdate: (summary) => {
       if (!workspaceId) return;
 
-      // SignalR is a hint; the SSE `thread` frame is authoritative for the
-      // viewed thread. SignalR commonly races ahead of SSE on terminal
-      // updates — if we let it write the detail cache (which the typing
-      // indicator reads from), `isFlowRunning` flips to false before the SSE
-      // delivers the new message, leaving the indicator gone and the
-      // response missing for ~tens-to-hundreds of ms. Skip the detail write
-      // for the viewed thread; still update list caches so the sidebar's
-      // running dot stays in sync for everyone else's tabs / other threads.
-      const isViewedThread = summary.id === threadId;
+      // SignalR is the safety net: the SSE `thread` frame is the preferred
+      // source of truth for the viewed thread, but the SSE doesn't always
+      // deliver a terminal thread summary (the connection can drop or the
+      // backend can return a stale summary if its DB write lags Redis), so
+      // we always apply SignalR's update to the detail cache. There is a
+      // small race window where SignalR's `isFlowRunning: false` paints
+      // before the SSE has delivered the final message frame — visible as a
+      // brief moment with no typing indicator and no response yet — but
+      // that's recoverable on the next frame, whereas a stuck `true` here
+      // requires the user to refresh the tab.
       const foundInList = applyThreadToCache(
         qc,
-        mapSignalRThreadSummaryToModel(summary),
-        { skipDetail: isViewedThread }
+        mapSignalRThreadSummaryToModel(summary)
       );
       if (!foundInList) invalidateWorkspaceThreadLists(qc, workspaceId);
 
-      // Mark messages stale for threads the user isn't actively viewing;
-      // the thread SSE handles the one they are viewing.
-      if (!isViewedThread) {
-        qc.invalidateQueries({ queryKey: messagesKeys.list(summary.id) });
-      }
+      // Refetch the messages list so other-tab activity surfaces; the
+      // viewed thread's SSE will overwrite this with authoritative state
+      // on its next frame.
+      qc.invalidateQueries({ queryKey: messagesKeys.list(summary.id) });
     },
     onThreadDeleted: (summary) => {
       if (!workspaceId) return;
