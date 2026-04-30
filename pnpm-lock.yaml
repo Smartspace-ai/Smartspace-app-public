@@ -90,8 +90,8 @@ importers:
         specifier: ^1.2.4
         version: 1.2.4(@types/react@18.3.1)(react@18.3.1)
       '@smartspace/api-client':
-        specifier: 0.1.0-dev.b434a43
-        version: 0.1.0-dev.b434a43(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
+        specifier: 0.1.0-dev.0f5afe2
+        version: 0.1.0-dev.0f5afe2(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
       '@tanstack/react-query':
         specifier: ^5.96.2
         version: 5.99.2(react@18.3.1)
@@ -2706,8 +2706,8 @@ packages:
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
     engines: {node: '>=10'}
 
-  '@smartspace/api-client@0.1.0-dev.b434a43':
-    resolution: {integrity: sha512-/CF+7jZaFROF7tQlvAtubWsxL1oEVRpzAWD5KHY/hglqiwpRkZqx6xl61T3fv6sGAs+PylD/KdddoVcrvMoXXA==}
+  '@smartspace/api-client@0.1.0-dev.0f5afe2':
+    resolution: {integrity: sha512-oOwNk3oAIc+aTWXMTZJHl/1xhvfUmrnJ2WPmfqgc9Hkv/I6M4ba9SyMFTTZK8jJWBNO1lUL0acCISQYGBlO9jA==}
     peerDependencies:
       '@microsoft/signalr': '>=8.0.0'
       axios: '>=1.0.0'
@@ -10528,7 +10528,7 @@ snapshots:
 
   '@sindresorhus/is@4.6.0': {}
 
-  '@smartspace/api-client@0.1.0-dev.b434a43(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)':
+  '@smartspace/api-client@0.1.0-dev.0f5afe2(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)':
     dependencies:
       '@microsoft/signalr': 8.0.17(encoding@0.1.13)
       axios: 1.15.1
