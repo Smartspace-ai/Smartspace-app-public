@@ -13,8 +13,13 @@ permissions:
 
 jobs:
   sync:
-    # Skip forks — bot can't push to them. Fork PRs fall back to the manual fix.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Skip on customer forks entirely — they don't use the dev/main dist-tag
+    # channel scheme, so this workflow has nothing useful to do for them.
+    # Also skip PRs from forks of the canonical repo (bot can't push to fork
+    # branches; those PRs fall back to manual fix).
+    if: |
+      github.repository == 'Smartspace-ai/Smartspace-app-public' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     name: Swap '@smartspace/*' SDK pins from 'dev' to 'main'
     runs-on: ubuntu-latest
     steps:
