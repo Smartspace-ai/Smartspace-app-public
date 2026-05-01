@@ -14,6 +14,9 @@ concurrency:
 
 jobs:
   notify:
+    # Skip on customer forks — the dispatch target Smartspace-ai/Smartspace-app
+    # is internal-only and the fork's GITHUB_TOKEN can't reach it.
+    if: github.repository == 'Smartspace-ai/Smartspace-app-public'
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub App token
