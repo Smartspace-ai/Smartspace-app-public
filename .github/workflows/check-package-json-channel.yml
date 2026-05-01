@@ -1,26 +1,63 @@
-name: Check package.json SDK channel
+name: Sync package.json SDK channel
 
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
     paths:
       - package.json
+      - pnpm-lock.yaml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  check:
-    name: Forbid 'dev' SDK pins on PRs to main
+  sync:
+    # Skip forks — bot can't push to them. Fork PRs fall back to the manual fix.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    name: Swap '@smartspace/*' SDK pins from 'dev' to 'main'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR head
+      - name: Checkout PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          # PAT (contents: write) so the auto-fix push re-triggers other PR
+          # workflows. The default GITHUB_TOKEN is anti-recursive and won't.
+          token: ${{ secrets.SDK_CHANNEL_SYNC_PAT }}
 
-      - name: Forbid '@smartspace/*': 'dev' in package.json
+      - name: Detect 'dev' SDK pins
+        id: detect
         run: |
-          if grep -E '"@smartspace/[^"]+"\s*:\s*"dev"' package.json; then
-            echo "::error file=package.json::PR to main contains '@smartspace/*: dev' SDK pin. Swap to 'main' before merging so production tracks the main-channel SDK."
-            exit 1
+          if grep -qE '"@smartspace/[^"]+"\s*:\s*"dev"' package.json; then
+            echo "needs-swap=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs-swap=false" >> "$GITHUB_OUTPUT"
+            echo "OK: no develop-channel SDK pins in package.json"
           fi
-          echo "OK: no develop-channel SDK pins in package.json"
+
+      - name: Setup pnpm
+        if: steps.detect.outputs.needs-swap == 'true'
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        if: steps.detect.outputs.needs-swap == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Swap pins and refresh lockfile
+        if: steps.detect.outputs.needs-swap == 'true'
+        run: |
+          sed -i -E 's|("@smartspace/[^"]+"\s*:\s*)"dev"|\1"main"|g' package.json
+          pnpm install --no-frozen-lockfile
+
+      - name: Commit and push
+        if: steps.detect.outputs.needs-swap == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml
+          git commit -m "auto: swap @smartspace/* SDK pins from 'dev' to 'main' for main-targeted PR"
+          git push
