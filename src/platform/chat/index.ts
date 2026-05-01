@@ -14,4 +14,3 @@ export {
   createDefaultChatService,
   defaultChatService,
 } from './defaultChatService';
-export { parseSseMessageChunk } from './sseMessageStream';

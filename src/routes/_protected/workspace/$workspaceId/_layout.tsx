@@ -19,7 +19,11 @@ import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
-function ChatProviderBridge({ children }: { children: ReactNode }) {
+/**
+ * Exported for the integration test in `__tests__/ChatProviderBridge.spec.tsx`.
+ * The route component is the only production consumer.
+ */
+export function ChatProviderBridge({ children }: { children: ReactNode }) {
   const { workspaceId, threadId } = useRouteIds();
   const userId = useUserId();
   const displayName = useUserDisplayName();

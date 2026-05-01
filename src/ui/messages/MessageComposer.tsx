@@ -10,7 +10,6 @@ import {
   FileSpreadsheet,
   FileText,
   FileVideo,
-  Maximize2,
   Minimize2,
   Paperclip,
   Presentation,
@@ -135,7 +134,6 @@ export default function MessageComposer() {
     // text
     newMessage,
     setNewMessage,
-    handleKeyDown,
     handleSendMessage,
     isSending,
     disabled,
@@ -143,7 +141,6 @@ export default function MessageComposer() {
     // ui state
     isFullscreen,
     setIsFullscreen,
-    showExpand,
 
     // derived
     sendDisabled,
@@ -310,9 +307,7 @@ export default function MessageComposer() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessageAndClear();
-      return;
     }
-    handleKeyDown(e, uploadedAttachments);
   };
 
   return (
@@ -476,17 +471,6 @@ export default function MessageComposer() {
                     placeholder="Type a message..."
                     className="md-editor--bare text-sm"
                   />
-                  {showExpand && !isFullscreen && (
-                    <IconButton
-                      type="button"
-                      size="small"
-                      className="h-7 w-7 absolute top-1 right-1 text-muted-foreground hover:text-foreground"
-                      onClick={() => setIsFullscreen(true)}
-                      aria-label="Expand"
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </IconButton>
-                  )}
                 </div>
 
                 {supportsFiles && (

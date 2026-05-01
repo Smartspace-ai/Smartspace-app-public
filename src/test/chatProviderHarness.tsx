@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, renderHook } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
-import { Subject } from 'rxjs';
 
 import {
   ChatProvider,
@@ -12,30 +11,28 @@ import {
 export type FakeChatServiceOverrides = Partial<ChatService>;
 
 /**
- * Build a `ChatService` stub for tests. All methods default to sensible
- * no-ops / empty arrays, so you only override what the test under
- * exercise actually calls.
+ * Build a `ChatService` stub for tests. Every method throws by default — tests
+ * must explicitly override the methods they exercise. This keeps unmocked
+ * calls loud instead of letting them quietly return empty arrays / blobs and
+ * masking missing setup.
  */
 export function createFakeChatService(
   overrides: FakeChatServiceOverrides = {}
 ): ChatService {
+  const notStubbed = (method: string) => () => {
+    throw new Error(`ChatService.${method} not stubbed`);
+  };
   return {
-    fetchMessages: async () => [],
-    sendMessage: () => new Subject(),
-    addInputToMessage: async () => {
-      throw new Error('addInputToMessage not stubbed');
-    },
-    uploadFiles: async () => [],
-    downloadFile: async () => new Blob(),
-    getFileInfo: async () => ({ id: '', name: '' }),
-    getFileDownloadUrl: async () => '',
-    fetchThread: async () => {
-      throw new Error('fetchThread not stubbed');
-    },
-    fetchWorkspace: async () => {
-      throw new Error('fetchWorkspace not stubbed');
-    },
-    fetchTaggableUsers: async () => [],
+    fetchMessages: notStubbed('fetchMessages'),
+    sendMessage: notStubbed('sendMessage'),
+    addInputToMessage: notStubbed('addInputToMessage'),
+    uploadFiles: notStubbed('uploadFiles'),
+    downloadFile: notStubbed('downloadFile'),
+    getFileInfo: notStubbed('getFileInfo'),
+    getFileDownloadUrl: notStubbed('getFileDownloadUrl'),
+    fetchThread: notStubbed('fetchThread'),
+    fetchWorkspace: notStubbed('fetchWorkspace'),
+    fetchTaggableUsers: notStubbed('fetchTaggableUsers'),
     ...overrides,
   };
 }

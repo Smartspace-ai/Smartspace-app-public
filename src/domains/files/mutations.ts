@@ -51,7 +51,6 @@ export const useFileMutations = (scope: FileScope) => {
   });
 
   const downloadFileMutation = useMutation({
-    mutationKey: filesKeys.mutation.download(''),
     mutationFn: async (fileInfo: FileInfo) => {
       const blob = await service.downloadFile(fileInfo.id, scope);
       saveFile(blob, fileInfo.name);
@@ -60,7 +59,6 @@ export const useFileMutations = (scope: FileScope) => {
   });
 
   const downloadFileByUriMutation = useMutation({
-    mutationKey: filesKeys.mutation.downloadByUri(''),
     mutationFn: async ({
       name,
       sourceUri,

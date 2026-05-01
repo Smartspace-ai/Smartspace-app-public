@@ -55,6 +55,9 @@ export function ChatProvider({
     // Depend on primitives, not the identity object reference — callers
     // commonly pass a fresh object literal each render (see ChatProviderBridge),
     // which would otherwise bust the memo and re-render every consumer.
+    // `service` is included as a ref but is expected to be a stable singleton
+    // (the production app passes the module-level `defaultChatService`); a
+    // caller that swaps services on every render would correctly re-trigger.
     [service, workspaceId, threadId, identity.userId, identity.displayName]
   );
   return <ChatCtx.Provider value={value}>{children}</ChatCtx.Provider>;
