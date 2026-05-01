@@ -1,0 +1,26 @@
+name: Check package.json SDK channel
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - package.json
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Forbid 'dev' SDK pins on PRs to main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+
+      - name: Forbid '@smartspace/*': 'dev' in package.json
+        run: |
+          if grep -E '"@smartspace/[^"]+"\s*:\s*"dev"' package.json; then
+            echo "::error file=package.json::PR to main contains '@smartspace/*: dev' SDK pin. Swap to 'main' before merging so production tracks the main-channel SDK."
+            exit 1
+          fi
+          echo "OK: no develop-channel SDK pins in package.json"
