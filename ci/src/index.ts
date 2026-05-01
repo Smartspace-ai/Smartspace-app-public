@@ -31,10 +31,10 @@ class WebPipeline {
     const base = this.nodeContainer(source);
 
     const [lint, typecheck, test, build] = await Promise.all([
-      base.withExec(['npm', 'run', '-s', 'lint:all']).stdout(),
-      base.withExec(['npm', 'run', '-s', 'typecheck']).stdout(),
-      base.withExec(['npm', 'run', '-s', 'test']).stdout(),
-      base.withExec(['npm', 'run', '-s', 'build']).stdout(),
+      base.withExec(['pnpm', 'run', '-s', 'lint:all']).stdout(),
+      base.withExec(['pnpm', 'run', '-s', 'typecheck']).stdout(),
+      base.withExec(['pnpm', 'run', '-s', 'test']).stdout(),
+      base.withExec(['pnpm', 'run', '-s', 'build']).stdout(),
     ]);
 
     return [lint, typecheck, test, build].join('\n');
@@ -46,7 +46,7 @@ class WebPipeline {
   @func()
   async build(source: Directory): Promise<Directory> {
     const ctr = this.nodeContainer(source).withExec([
-      'npm',
+      'pnpm',
       'run',
       '-s',
       'build',
@@ -93,7 +93,7 @@ class WebPipeline {
   @check()
   async checkLint(source: Directory): Promise<string> {
     return this.nodeContainer(source)
-      .withExec(['npm', 'run', '-s', 'lint:all'])
+      .withExec(['pnpm', 'run', '-s', 'lint:all'])
       .stdout();
   }
 
@@ -101,7 +101,7 @@ class WebPipeline {
   @check()
   async checkTypecheck(source: Directory): Promise<string> {
     return this.nodeContainer(source)
-      .withExec(['npm', 'run', '-s', 'typecheck'])
+      .withExec(['pnpm', 'run', '-s', 'typecheck'])
       .stdout();
   }
 
@@ -109,7 +109,7 @@ class WebPipeline {
   @check()
   async checkTests(source: Directory): Promise<string> {
     return this.nodeContainer(source)
-      .withExec(['npm', 'run', '-s', 'test'])
+      .withExec(['pnpm', 'run', '-s', 'test'])
       .stdout();
   }
 
@@ -117,7 +117,7 @@ class WebPipeline {
   @check()
   async checkBuild(source: Directory): Promise<Directory> {
     const ctr = this.nodeContainer(source).withExec([
-      'npm',
+      'pnpm',
       'run',
       '-s',
       'build',
@@ -141,7 +141,10 @@ class WebPipeline {
       .from(NODE_IMAGE)
       .withDirectory(WORK_DIR, source)
       .withWorkdir(WORK_DIR)
-      .withMountedCache('/root/.npm', dag.cacheVolume('npm-cache'))
-      .withExec(['npm', 'ci']);
+      .withMountedCache('/pnpm-store', dag.cacheVolume('pnpm-store'))
+      .withEnvVariable('COREPACK_ENABLE_DOWNLOAD_PROMPT', '0')
+      .withExec(['corepack', 'enable'])
+      .withExec(['pnpm', 'config', 'set', 'store-dir', '/pnpm-store'])
+      .withExec(['pnpm', 'install', '--frozen-lockfile']);
   }
 }

@@ -12,6 +12,9 @@ export const threadsKeys = {
   detail: (workspaceId: string, threadId: string) =>
     [...threadsKeys.details(), { workspaceId, threadId }] as const,
 
+  optimisticRunning: (threadId: string) =>
+    [...threadsKeys.all, 'optimisticRunning', threadId] as const,
+
   mutations: () => [...threadsKeys.all, 'mutations'] as const,
   setPin: (threadId: string) =>
     [...threadsKeys.mutations(), 'setPin', { threadId }] as const,

@@ -2,17 +2,16 @@ import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { useMatch } from '@tanstack/react-router';
 import { AlertTriangle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
 import { useChatContext } from '@/platform/chat';
 
 import { useMessages } from '@/domains/messages';
-import { useThread } from '@/domains/threads/queries';
+import { useThread, useThreadIsRunning } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
+import { MessageMarkdown } from '@/shared/ui/markdown/MessageMarkdown';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 import { Skeleton } from '@/shared/ui/mui-compat/skeleton';
 
@@ -32,7 +31,7 @@ export function MessageList() {
 
   const { data: activeWorkspace } = useWorkspace(workspaceId);
   const workspaceIndexMatch = useMatch({
-    from: '/_protected/workspace/$workspaceId/',
+    from: '/_protected/workspace/$workspaceId/_layout/',
     shouldThrow: false,
   });
 
@@ -44,6 +43,7 @@ export function MessageList() {
     isFetching: threadFetching,
     error: threadError,
   } = useThread({ workspaceId, threadId });
+  const isRunning = useThreadIsRunning(workspaceId, threadId);
   const {
     data: messages,
     isPending: messagesPending,
@@ -108,10 +108,10 @@ export function MessageList() {
   // When the thread starts "running" (typing indicator appears) but message count doesn't change,
   // still ensure we reveal the loading dots if the user is at the bottom.
   useEffect(() => {
-    if (!thread?.isFlowRunning) return;
+    if (!isRunning) return;
     if (!isAtBottom) return;
     requestAnimationFrame(() => scrollToBottom('smooth'));
-  }, [thread?.isFlowRunning, isAtBottom, scrollToBottom]);
+  }, [isRunning, isAtBottom, scrollToBottom]);
 
   // Also keep pinned when content height changes (streaming tokens, images, typing indicator).
   useEffect(() => {
@@ -189,10 +189,8 @@ export function MessageList() {
           {activeWorkspace?.name ?? 'No messages yet'}
         </h3>
         {activeWorkspace?.firstPrompt && (
-          <div className="max-w-3xl mx-auto p-4 whitespace-pre-wrap">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {activeWorkspace.firstPrompt}
-            </ReactMarkdown>
+          <div className="max-w-3xl mx-auto p-4">
+            <MessageMarkdown value={activeWorkspace.firstPrompt} />
           </div>
         )}
       </div>
@@ -244,30 +242,34 @@ export function MessageList() {
                 : ''
             } px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
           >
-            {safeMessages.map((message, index) => (
-              <div
-                className="ss-chat__message w-full"
-                key={message.id || index}
-              >
-                <MessageItem message={message} />
+            {safeMessages.map((message, index) => {
+              const isLastMessage = index === safeMessages.length - 1;
+              const isLive = isLastMessage && isRunning;
+              return (
+                <div
+                  className="ss-chat__message w-full"
+                  key={message.id || index}
+                >
+                  <MessageItem message={message} isLive={isLive} />
 
-                {index === safeMessages.length - 1 && thread?.isFlowRunning && (
-                  <div className="p-3 min-h-3">
-                    <div className="flex space-x-2 p-1">
-                      {[0, 300, 600].map((delay) => (
-                        <div
-                          key={delay}
-                          className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
-                          style={{ animationDelay: `${delay}ms` }}
-                        />
-                      ))}
+                  {isLastMessage && isRunning && (
+                    <div className="p-3 min-h-3">
+                      <div className="flex space-x-2 p-1">
+                        {[0, 300, 600].map((delay) => (
+                          <div
+                            key={delay}
+                            className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
+                            style={{ animationDelay: `${delay}ms` }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <div ref={messagesEndRef} className="h-1" />
-              </div>
-            ))}
+                  <div ref={messagesEndRef} className="h-1" />
+                </div>
+              );
+            })}
           </div>
         </ScrollAreaPrimitive.Viewport>
 

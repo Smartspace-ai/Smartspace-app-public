@@ -1,21 +1,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Subject } from 'rxjs';
 import { toast } from 'sonner';
 
-import { useChatIdentity, useChatService } from '@/platform/chat';
+import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 
 import { FileInfo } from '@/domains/files';
-import { threadsKeys } from '@/domains/threads/queryKeys';
+import {
+  type MessageThread,
+  setThreadOptimisticRunning,
+  setThreadRunningInLists,
+  threadsKeys,
+} from '@/domains/threads';
 
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
 import { messagesKeys } from './queryKeys';
-
-function isPromptMessage(m: Message): boolean {
-  return !!m.values?.some(
-    (v) => v.type === MessageValueType.INPUT && v.name === 'prompt'
-  );
-}
+import { addInputToMessage, postMessage } from './service';
 
 type SendArgs = {
   workspaceId: string;
@@ -27,10 +26,10 @@ type SendArgs = {
 
 export function useSendMessage() {
   const qc = useQueryClient();
-  const service = useChatService();
-  const { userId, displayName: userName } = useChatIdentity();
+  const userId = useUserId();
+  const userName = useUserDisplayName();
 
-  return useMutation<Subject<Message>, Error, SendArgs>({
+  return useMutation<void, Error, SendArgs>({
     mutationFn: async ({
       workspaceId,
       threadId,
@@ -96,81 +95,89 @@ export function useSendMessage() {
         optimistic,
       ]);
 
-      // Optimistically mark thread as running so the loading indicator shows immediately
-      qc.setQueryData(
-        threadsKeys.detail(workspaceId, threadId),
-        (old: unknown) =>
-          old && typeof old === 'object' ? { ...old, isFlowRunning: true } : old
-      );
+      // Light up every running indicator (composer spinner, message-list
+      // typing dots, sidebar dot) on the same render. The optimistic flag
+      // lives in its own cache cell, so the SSE gate — which reads server-
+      // confirmed `isFlowRunning` from the detail cache — stays untouched
+      // and we don't open the stream before the backend has actually
+      // started the flow. The list-cache patch keeps cross-tab SignalR
+      // semantics consistent for sidebars that aren't reading the unified
+      // selector.
+      setThreadOptimisticRunning(qc, threadId, true);
+      setThreadRunningInLists(qc, workspaceId, threadId, true);
 
-      // cancel in-flight refetches for this list
+      // cancel in-flight refetches for this list so they don't race the optimistic insert
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
-      // start server call (returns Subject synchronously so we subscribe before data arrives)
-      const subject = service.sendMessage({
-        workspaceId,
-        threadId,
-        contentList,
-        files,
-        variables,
+      let realMessage: Message;
+      try {
+        realMessage = await postMessage({
+          workSpaceId: workspaceId,
+          threadId,
+          contentList,
+          files,
+          variables,
+        });
+      } catch (err) {
+        // rollback: remove optimistics, undo the running flags
+        qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
+          old.filter((x) => !x.optimistic)
+        );
+        setThreadOptimisticRunning(qc, threadId, false);
+        setThreadRunningInLists(qc, workspaceId, threadId, false);
+        toast.error('There was an error posting your message');
+        throw err;
+      }
+
+      // Replace the optimistic temp-id entry with the server-authoritative
+      // Message we just got back. If the thread SSE already added the same
+      // id (from its snapshot frame), keep its copy — it's at least as fresh
+      // as ours — and just drop the optimistic.
+      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
+        const withoutOptimistic = old.filter((m) => !m.optimistic);
+        const alreadyPresent = withoutOptimistic.some(
+          (m) => m.id === realMessage.id
+        );
+        return alreadyPresent
+          ? withoutOptimistic
+          : [...withoutOptimistic, realMessage];
       });
 
-      // subscribe to server stream: replace optimistic with real items / updates
-      const sub = subject.subscribe({
-        next: (m: Message) => {
-          qc.setQueryData<Message[]>(
-            messagesKeys.list(threadId),
-            (old = []) => {
-              // Only drop optimistic messages if the server actually sent back a prompt message.
-              // Many backends stream assistant output first; dropping optimistics there would hide the user's message.
-              const stable = isPromptMessage(m)
-                ? old.filter((x) => !x.optimistic)
-                : old;
-              // upsert by id
-              const idx = stable.findIndex((x) => x.id === m.id);
-              if (idx === -1) return [...stable, m];
-              const copy = stable.slice();
-              copy[idx] = m;
-              return copy;
-            }
+      // POST returned successfully — the server has accepted the message
+      // and the flow is now running. Mirror that in the detail cache so:
+      //   1. The composer doesn't briefly drop its "running" indicator
+      //      between mutation resolution and the SignalR receiveThreadUpdate
+      //      broadcast (which can lag by a few hundred ms).
+      //   2. The thread SSE gate (which reads this value) opens immediately
+      //      instead of waiting for SignalR to flip it.
+      // SignalR / SSE thread frames will overwrite this with the authoritative
+      // value as they arrive.
+      qc.setQueryData<MessageThread>(
+        threadsKeys.detail(workspaceId, threadId),
+        (old) => (old ? { ...old, isFlowRunning: true } : old)
+      );
+
+      // Detail cache now holds the server-confirmed truth — drop the
+      // optimistic flag so the unified selector relies purely on
+      // `isFlowRunning` from here. SSE/SignalR terminal frames will flip
+      // it false to stop every indicator together.
+      setThreadOptimisticRunning(qc, threadId, false);
+
+      // Reconcile thread list ordering / last-message preview and thread detail
+      // (isFlowRunning). Message content continues to arrive via the thread SSE.
+      qc.invalidateQueries({
+        predicate: (query) => {
+          const k = query.queryKey as unknown[];
+          return (
+            k[0] === 'threads' &&
+            k[1] === 'list' &&
+            (k[2] as { workspaceId?: string })?.workspaceId === workspaceId
           );
-        },
-        error: (_err: Error) => {
-          // rollback: remove any optimistics
-          qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
-            old.filter((x) => !x.optimistic)
-          );
-          // rollback optimistic isFlowRunning
-          qc.setQueryData(
-            threadsKeys.detail(workspaceId, threadId),
-            (old: unknown) =>
-              old && typeof old === 'object'
-                ? { ...old, isFlowRunning: false }
-                : old
-          );
-          toast.error('There was an error posting your message');
-          sub.unsubscribe();
-        },
-        complete: () => {
-          sub.unsubscribe();
-          qc.invalidateQueries({
-            predicate: (query) => {
-              const k = query.queryKey as unknown[];
-              return (
-                k[0] === 'threads' &&
-                k[1] === 'list' &&
-                (k[2] as { workspaceId?: string })?.workspaceId === workspaceId
-              );
-            },
-          });
-          // Refetch thread detail so isFlowRunning reflects server state
-          qc.invalidateQueries({
-            queryKey: threadsKeys.detail(workspaceId, threadId),
-          });
         },
       });
-
-      return subject;
+      qc.invalidateQueries({
+        queryKey: threadsKeys.detail(workspaceId, threadId),
+      });
     },
     retry: false,
   });
@@ -188,8 +195,8 @@ type AddInputArgs = {
 
 export function useAddInputToMessage() {
   const qc = useQueryClient();
-  const service = useChatService();
-  const { userId, displayName: userName } = useChatIdentity();
+  const userId = useUserId();
+  const userName = useUserDisplayName();
 
   const addInputToMessageMutation = useMutation<Message, Error, AddInputArgs>({
     mutationFn: async ({ threadId, messageId, name, value, channels }) => {
@@ -221,13 +228,13 @@ export function useAddInputToMessage() {
 
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
-      const result = await service.addInputToMessage({
+      const result = await addInputToMessage({
         messageId,
         name,
         value,
         channels,
       });
-      return result;
+      return result; // already parsed in service.ts
     },
     onSuccess: (message, { threadId }) => {
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {

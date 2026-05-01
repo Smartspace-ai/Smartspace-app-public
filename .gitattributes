@@ -1,5 +1,2 @@
 # Ensure shell scripts keep LF line endings on all platforms
 .husky/* text eol=lf
-
-# Ensure consistent line endings for generated files
-openapi/*.json text eol=lf
