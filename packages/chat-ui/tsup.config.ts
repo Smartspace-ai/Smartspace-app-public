@@ -1,0 +1,47 @@
+import { defineConfig } from 'tsup';
+
+// Externals mirror packages/chat-ui/package.json `peerDependencies`. Keep in
+// sync — anything left non-external gets bundled into the published artifact
+// and risks shipping a duplicate copy alongside the consumer's own.
+const externals = [
+  '@emotion/react',
+  '@emotion/styled',
+  '@hookform/resolvers',
+  '@jsonforms/core',
+  '@jsonforms/react',
+  '@jsonforms/vanilla-renderers',
+  '@milkdown/core',
+  '@milkdown/kit',
+  '@milkdown/plugin-clipboard',
+  '@milkdown/plugin-listener',
+  '@milkdown/plugin-slash',
+  '@milkdown/preset-commonmark',
+  '@milkdown/prose',
+  '@milkdown/react',
+  '@mui/material',
+  '@radix-ui/react-scroll-area',
+  '@radix-ui/react-slot',
+  '@smartspace/api-client',
+  '@tanstack/react-query',
+  'class-variance-authority',
+  'clsx',
+  'dayjs',
+  'lucide-react',
+  'react',
+  'react-dom',
+  'react-hook-form',
+  'react-markdown',
+  'sonner',
+  'zod',
+];
+
+export default defineConfig({
+  entry: ['src/index.ts'],
+  format: ['esm'],
+  dts: true,
+  sourcemap: true,
+  clean: true,
+  splitting: false,
+  treeshake: true,
+  external: externals,
+});
