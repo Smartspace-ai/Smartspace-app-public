@@ -161,11 +161,11 @@ if (isInPopup) {
               <MsalProvider instance={msal}>
                 <AppProviders>
                   <RouterProvider router={router} />
-                  {/* Devtools read the router from context inside <RouterProvider>; */}
-                  {/* passing `router` here is unnecessary and trips a type mismatch */}
-                  {/* between router-devtools 1.166 and react-router 1.168. */}
                   {import.meta.env.DEV ? (
-                    <TanStackRouterDevtools position="bottom-right" />
+                    <TanStackRouterDevtools
+                      router={router}
+                      position="bottom-right"
+                    />
                   ) : null}
                 </AppProviders>
               </MsalProvider>
