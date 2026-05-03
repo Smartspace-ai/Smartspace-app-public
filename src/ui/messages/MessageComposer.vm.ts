@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+import { useChatContext } from '@/platform/chat';
 
 import { useSendMessage } from '@/domains/messages/mutations';
 import { useThreadIsRunning } from '@/domains/threads/queries';
@@ -19,10 +19,8 @@ export type MessageComposerVmProps = {
 }; // optional inbound props for attachments-owned-by-UI
 
 export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
-  const { workspaceId, threadId } = useRouteIds();
-  const [isDragging] = useState(false);
+  const { workspaceId, threadId } = useChatContext();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showExpand] = useState(false);
   const isDraftThread = isDraftThreadId(threadId);
 
   // Message + attachments state (owned by VM)
@@ -37,9 +35,6 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
 
   const isUploadingFiles = props.isUploadingFiles ?? false;
 
-  // Expand affordance handled by editor styling; keep default false
-
-  // Send message
   const sendMessage = useSendMessage();
 
   /** Derived: can we send? */
@@ -103,20 +98,10 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     return true;
   };
 
-  const handleKeyDown = (
-    _e: React.KeyboardEvent,
-    _files?: { id: string; name: string }[]
-  ) => {
-    // Enter handling lives in the composer so it can read the editor's current
-    // markdown directly — Milkdown's `markdownUpdated` listener is debounced
-    // 200ms, so relying on React state here dropped characters on fast typing.
-  };
-
   return {
     // text + handlers
     newMessage,
     setNewMessage,
-    handleKeyDown,
     handleSendMessage,
     isSending: isRunning,
     supportsFiles: !!workspace?.supportsFiles,
@@ -134,12 +119,8 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
     isMobile,
     leftOpen,
     rightOpen,
-    isDragging,
     isFullscreen,
     setIsFullscreen,
-    showExpand,
-
-    // Files no longer managed in VM
 
     // derived
     sendDisabled,

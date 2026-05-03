@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
+import { useChatService } from '@/platform/chat';
 
 import { FileInfo } from '@/domains/files';
 import {
@@ -14,7 +15,6 @@ import {
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
 import { messagesKeys } from './queryKeys';
-import { addInputToMessage, postMessage } from './service';
 
 type SendArgs = {
   workspaceId: string;
@@ -28,6 +28,7 @@ export function useSendMessage() {
   const qc = useQueryClient();
   const userId = useUserId();
   const userName = useUserDisplayName();
+  const service = useChatService();
 
   return useMutation<void, Error, SendArgs>({
     mutationFn: async ({
@@ -111,8 +112,8 @@ export function useSendMessage() {
 
       let realMessage: Message;
       try {
-        realMessage = await postMessage({
-          workSpaceId: workspaceId,
+        realMessage = await service.sendMessage({
+          workspaceId,
           threadId,
           contentList,
           files,
@@ -197,6 +198,7 @@ export function useAddInputToMessage() {
   const qc = useQueryClient();
   const userId = useUserId();
   const userName = useUserDisplayName();
+  const service = useChatService();
 
   const addInputToMessageMutation = useMutation<Message, Error, AddInputArgs>({
     mutationFn: async ({ threadId, messageId, name, value, channels }) => {
@@ -228,13 +230,12 @@ export function useAddInputToMessage() {
 
       await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
-      const result = await addInputToMessage({
+      return await service.addInputToMessage({
         messageId,
         name,
         value,
         channels,
       });
-      return result; // already parsed in service.ts
     },
     onSuccess: (message, { threadId }) => {
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {

@@ -1,6 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
-import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/platform/auth/session', () => ({
@@ -13,32 +11,29 @@ import {
   useSendMessage,
 } from '@/domains/messages/mutations';
 import { messagesKeys } from '@/domains/messages/queryKeys';
-import * as service from '@/domains/messages/service';
 import { threadsKeys } from '@/domains/threads/queryKeys';
 
+import {
+  buildChatHarness,
+  createFakeChatService,
+} from '@/test/chatProviderHarness';
+
 describe('messages mutations', () => {
-  it('useSendMessage swaps the optimistic entry for the real Message returned by postMessage', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
-    // Seed an existing thread detail so the post-POST isFlowRunning flip
-    // has a record to merge into.
-    client.setQueryData(threadsKeys.detail('w', 't'), {
-      id: 't',
-      isFlowRunning: false,
-    } as any);
-
+  it('useSendMessage swaps the optimistic entry for the real Message returned by sendMessage', async () => {
     const realMessage = {
       id: 'real-42',
       createdAt: new Date(),
       createdBy: 'Server',
       values: [],
     } as any;
-    const spy = vi
-      .spyOn(service, 'postMessage')
-      .mockResolvedValueOnce(realMessage);
+    const sendMessage = vi.fn().mockResolvedValueOnce(realMessage);
+    const service = createFakeChatService({ sendMessage });
+    const { wrapper, queryClient } = buildChatHarness({ service });
+
+    queryClient.setQueryData(threadsKeys.detail('w', 't'), {
+      id: 't',
+      isFlowRunning: false,
+    } as any);
 
     const { result } = renderHook(() => useSendMessage(), { wrapper });
     await result.current.mutateAsync({
@@ -49,33 +44,26 @@ describe('messages mutations', () => {
       variables: {},
     });
 
-    const data = client.getQueryData<any[]>(messagesKeys.list('t')) || [];
+    const data = queryClient.getQueryData<any[]>(messagesKeys.list('t')) || [];
     expect(data.some((m) => m.optimistic)).toBe(false);
     expect(data.some((m) => m.id === 'real-42')).toBe(true);
-    expect(spy).toHaveBeenCalledOnce();
+    expect(sendMessage).toHaveBeenCalledOnce();
 
     // Post-POST flip closes the composer indicator gap and opens the SSE
     // gate without waiting for SignalR.
-    const detail = client.getQueryData<any>(threadsKeys.detail('w', 't'));
+    const detail = queryClient.getQueryData<any>(threadsKeys.detail('w', 't'));
     expect(detail?.isFlowRunning).toBe(true);
-
-    spy.mockRestore();
   });
 
   it('useSendMessage does not flip detail.isFlowRunning on POST error', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
+    const sendMessage = vi.fn().mockRejectedValueOnce(new Error('boom'));
+    const service = createFakeChatService({ sendMessage });
+    const { wrapper, queryClient } = buildChatHarness({ service });
 
-    client.setQueryData(threadsKeys.detail('w', 't'), {
+    queryClient.setQueryData(threadsKeys.detail('w', 't'), {
       id: 't',
       isFlowRunning: false,
     } as any);
-
-    const spy = vi
-      .spyOn(service, 'postMessage')
-      .mockRejectedValueOnce(new Error('boom'));
 
     const { result } = renderHook(() => useSendMessage(), { wrapper });
     await expect(
@@ -88,28 +76,29 @@ describe('messages mutations', () => {
       })
     ).rejects.toThrow('boom');
 
-    const detail = client.getQueryData<any>(threadsKeys.detail('w', 't'));
+    const detail = queryClient.getQueryData<any>(threadsKeys.detail('w', 't'));
     expect(detail?.isFlowRunning).toBe(false);
-    spy.mockRestore();
   });
 
   it('useSendMessage keeps the thread SSE copy when it already added the real id', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
-    // Thread SSE snapshot wrote this entry before postMessage resolved.
-    client.setQueryData(messagesKeys.list('t'), [
-      { id: 'real-42', createdAt: new Date(), values: [], createdBy: 'Server' },
-    ] as any);
-
-    const spy = vi.spyOn(service, 'postMessage').mockResolvedValueOnce({
+    const sendMessage = vi.fn().mockResolvedValueOnce({
       id: 'real-42',
       createdAt: new Date(),
       createdBy: 'Server',
       values: [],
     } as any);
+    const service = createFakeChatService({ sendMessage });
+    const { wrapper, queryClient } = buildChatHarness({ service });
+
+    // Thread SSE snapshot wrote this entry before sendMessage resolved.
+    queryClient.setQueryData(messagesKeys.list('t'), [
+      {
+        id: 'real-42',
+        createdAt: new Date(),
+        values: [],
+        createdBy: 'Server',
+      },
+    ] as any);
 
     const { result } = renderHook(() => useSendMessage(), { wrapper });
     await result.current.mutateAsync({
@@ -120,26 +109,20 @@ describe('messages mutations', () => {
       variables: {},
     });
 
-    const data = client.getQueryData<any[]>(messagesKeys.list('t')) || [];
+    const data = queryClient.getQueryData<any[]>(messagesKeys.list('t')) || [];
     expect(data.filter((m) => m.id === 'real-42').length).toBe(1);
     expect(data.some((m) => m.optimistic)).toBe(false);
-    spy.mockRestore();
   });
 
-  it('useSendMessage rolls back optimistic on postMessage error', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
+  it('useSendMessage rolls back optimistic on sendMessage error', async () => {
+    const sendMessage = vi.fn().mockRejectedValueOnce(new Error('boom'));
+    const service = createFakeChatService({ sendMessage });
+    const { wrapper, queryClient } = buildChatHarness({ service });
 
-    client.setQueryData(threadsKeys.detail('w', 't'), {
+    queryClient.setQueryData(threadsKeys.detail('w', 't'), {
       id: 't',
       isFlowRunning: false,
     } as any);
-
-    const spy = vi
-      .spyOn(service, 'postMessage')
-      .mockRejectedValueOnce(new Error('boom'));
 
     const { result } = renderHook(() => useSendMessage(), { wrapper });
     await expect(
@@ -152,24 +135,13 @@ describe('messages mutations', () => {
       })
     ).rejects.toThrow('boom');
 
-    const data = client.getQueryData<any[]>(messagesKeys.list('t')) || [];
+    const data = queryClient.getQueryData<any[]>(messagesKeys.list('t')) || [];
     expect(data.some((m) => m.optimistic)).toBe(false);
-    const detail = client.getQueryData<any>(threadsKeys.detail('w', 't'));
+    const detail = queryClient.getQueryData<any>(threadsKeys.detail('w', 't'));
     expect(detail?.isFlowRunning).toBe(false);
-    spy.mockRestore();
   });
 
   it('useAddInputToMessage optimistic patch and reconcile on success', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
-    // seed cache with one message
-    client.setQueryData(messagesKeys.list('t1'), [
-      { id: 'm1', values: [] },
-    ] as any);
-
     const returned = {
       id: 'm1',
       values: [
@@ -184,9 +156,13 @@ describe('messages mutations', () => {
         },
       ],
     } as any;
-    const spy = vi
-      .spyOn(service, 'addInputToMessage')
-      .mockResolvedValueOnce(returned);
+    const addInputToMessage = vi.fn().mockResolvedValueOnce(returned);
+    const service = createFakeChatService({ addInputToMessage });
+    const { wrapper, queryClient } = buildChatHarness({ service });
+
+    queryClient.setQueryData(messagesKeys.list('t1'), [
+      { id: 'm1', values: [] },
+    ] as any);
 
     const { result } = renderHook(() => useAddInputToMessage(), { wrapper });
     await result.current.addInputToMessageMutation.mutateAsync({
@@ -197,8 +173,8 @@ describe('messages mutations', () => {
       channels: {},
     });
 
-    const data = client.getQueryData<any[]>(messagesKeys.list('t1')) || [];
+    const data = queryClient.getQueryData<any[]>(messagesKeys.list('t1')) || [];
     expect(data[0].values?.length).toBeGreaterThan(0);
-    spy.mockRestore();
+    expect(addInputToMessage).toHaveBeenCalledOnce();
   });
 });

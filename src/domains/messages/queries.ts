@@ -5,12 +5,14 @@ import {
   useQuery,
 } from '@tanstack/react-query';
 
+import { useChatService } from '@/platform/chat';
+import type { ChatService } from '@/platform/chat';
+
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
 import { MessageValueType } from './enums';
 import type { Message } from './model';
 import { messagesKeys } from './queryKeys';
-import { fetchMessages } from './service';
 
 function getPromptSignature(m: Message): string | null {
   const prompt = m.values?.find(
@@ -51,6 +53,7 @@ function mergeFetchedWithOptimistics(
 }
 
 export const messagesListOptions = (
+  service: ChatService,
   threadId: string,
   opts?: { take?: number; skip?: number }
 ) =>
@@ -61,7 +64,7 @@ export const messagesListOptions = (
     // If opts changes (e.g. user clicks "Load full history"), we manually refetch.
     queryFn: async (ctx) => {
       if (!threadId) return [];
-      const fetched = (await fetchMessages(threadId, opts)).reverse();
+      const fetched = (await service.fetchMessages(threadId, opts)).reverse();
       // IMPORTANT: read cache AFTER fetch so we merge with latest (e.g. optimistic send).
       const current = ctx.client.getQueryData<Message[]>(
         messagesKeys.list(threadId)
@@ -79,6 +82,7 @@ export function useMessages(
   threadId: string,
   opts?: { take?: number; skip?: number; skipWhenNewThread?: boolean }
 ) {
+  const service = useChatService();
   const isDraft = isDraftThreadId(threadId);
   const skipFetch = opts?.skipWhenNewThread || !threadId || isDraft;
   const listOpts =
@@ -86,7 +90,7 @@ export function useMessages(
       ? { take: opts.take, skip: opts.skip }
       : undefined;
   return useQuery({
-    ...messagesListOptions(threadId, listOpts),
+    ...messagesListOptions(service, threadId, listOpts),
     enabled: !opts?.skipWhenNewThread && !!threadId && !isDraft,
     initialData: skipFetch ? [] : undefined,
   });
@@ -99,13 +103,14 @@ const DEFAULT_MESSAGES_PAGE_SIZE = 50;
  * Page 0 = most recent; fetchPreviousPage loads older (page 1, 2, ...).
  */
 export function messagesInfiniteOptions(
+  service: ChatService,
   threadId: string,
   pageSize = DEFAULT_MESSAGES_PAGE_SIZE
 ) {
   return infiniteQueryOptions({
     queryKey: messagesKeys.infinite(threadId),
     queryFn: async ({ pageParam }: { pageParam: number }) => {
-      const fetched = await fetchMessages(threadId, {
+      const fetched = await service.fetchMessages(threadId, {
         take: pageSize,
         skip: pageParam * pageSize,
       });
@@ -134,9 +139,10 @@ export function useInfiniteMessages(
   pageSize = DEFAULT_MESSAGES_PAGE_SIZE,
   opts?: { skipWhenNewThread?: boolean }
 ) {
+  const service = useChatService();
   const isDraft = isDraftThreadId(threadId);
   return useInfiniteQuery({
-    ...messagesInfiniteOptions(threadId, pageSize),
+    ...messagesInfiniteOptions(service, threadId, pageSize),
     enabled: !opts?.skipWhenNewThread && !!threadId && !isDraft,
   });
 }

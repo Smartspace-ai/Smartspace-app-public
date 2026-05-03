@@ -4,7 +4,7 @@ import { AlertTriangle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
-import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
+import { useChatContext } from '@/platform/chat';
 
 import { useMessages } from '@/domains/messages';
 import { useThread, useThreadIsRunning } from '@/domains/threads/queries';
@@ -20,7 +20,7 @@ import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 import { MessageItem } from './MessageItem';
 
 export function MessageList() {
-  const { workspaceId, threadId } = useRouteIds();
+  const { workspaceId, threadId } = useChatContext();
   const contentRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const scrollTopRef = useRef<number>(0);

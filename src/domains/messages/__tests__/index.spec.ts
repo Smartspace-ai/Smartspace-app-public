@@ -6,6 +6,7 @@ describe('messages index exports', () => {
   it('exposes expected APIs', () => {
     expect(messages.messagesKeys.all[0]).toBe('messages');
     expect(typeof messages.messagesListOptions).toBe('function');
-    expect(typeof messages.fetchMessages).toBe('function');
+    expect(typeof messages.useMessages).toBe('function');
+    expect(typeof messages.useSendMessage).toBe('function');
   });
 });

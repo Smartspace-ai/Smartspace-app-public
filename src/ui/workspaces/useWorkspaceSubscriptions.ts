@@ -2,6 +2,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 
+import { useChatService } from '@/platform/chat';
 import { useWorkspaceRealtime } from '@/platform/realtime/useWorkspaceRealtime';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
@@ -21,6 +22,7 @@ export function useWorkspaceSubscriptions() {
   // thread route means the SignalR join never fires on the workspace
   // home, so broadcasts reach zero clients for that tab.
   const { workspaceId, threadId } = useRouteIds();
+  const service = useChatService();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -32,6 +34,7 @@ export function useWorkspaceSubscriptions() {
   // backend hasn't actually started yet.
   const { data: thread } = useQuery({
     ...threadDetailOptions({
+      service,
       workspaceId: workspaceId || '',
       threadId: threadId || '',
     }),
