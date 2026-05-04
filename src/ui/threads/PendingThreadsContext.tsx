@@ -6,7 +6,7 @@ import React, {
   useState,
 } from 'react';
 
-import type { MessageThread } from '@/domains/threads';
+import type { MessageThread } from '@smartspace/chat-ui';
 
 type PendingThreadsContextValue = {
   pendingThreads: MessageThread[];

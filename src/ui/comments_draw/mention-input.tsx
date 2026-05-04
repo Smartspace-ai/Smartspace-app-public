@@ -14,8 +14,6 @@ import { Maximize2, Minimize2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { MentionUser } from '@/domains/workspaces';
-
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import {
   Avatar as SsAvatar,
@@ -24,6 +22,8 @@ import {
 } from '@/shared/ui/mui-compat/avatar';
 import { getInitials } from '@/shared/utils/initials';
 import { getUserPhotoUrl } from '@/shared/utils/userPhoto';
+
+import { MentionUser } from '@smartspace/chat-ui';
 
 interface MentionInputProps {
   value: { plain: string; withMentions: string };

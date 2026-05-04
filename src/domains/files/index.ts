@@ -1,4 +1,4 @@
-export type { FileInfo, FileScope } from './model';
-export * from './mutations';
-export { downloadFileBlobOptions, useDownloadFileBlobQuery } from './queries';
-export { filesKeys } from './queryKeys';
+// App-side files domain barrel — pure re-export from the package.
+// The legacy SDK-bound service stays at @/domains/files/service for the
+// defaultChatService delegation.
+export * from '@smartspace/chat-ui';

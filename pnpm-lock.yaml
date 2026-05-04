@@ -372,6 +372,9 @@ importers:
       '@lobehub/icons-static-svg':
         specifier: ^1.86.0
         version: 1.86.0
+      '@microsoft/signalr':
+        specifier: ^8.0.17
+        version: 8.0.17(encoding@0.1.13)
       '@milkdown/core':
         specifier: ^7.20.0
         version: 7.20.0
@@ -405,9 +408,6 @@ importers:
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.2.4(@types/react@18.3.1)(react@18.3.1)
-      '@smartspace/api-client':
-        specifier: '*'
-        version: 0.1.0(axios@1.15.1)(zod@4.3.6)
       '@tanstack/react-query':
         specifier: ^5.96.2
         version: 5.99.2(react@18.3.1)
@@ -445,6 +445,9 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
+      '@smartspace/api-client':
+        specifier: dev
+        version: 0.1.0-dev.00e0c7c(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
       tsup:
         specifier: ^8.5.0
         version: 8.5.1(@swc/core@1.15.30(@swc/helpers@0.5.21))(jiti@2.4.2)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.5.4)(yaml@2.8.3)
@@ -2811,12 +2814,6 @@ packages:
   '@sindresorhus/is@4.6.0':
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
     engines: {node: '>=10'}
-
-  '@smartspace/api-client@0.1.0':
-    resolution: {integrity: sha512-eVG3f9r1mknGoqN55tzJVxKbYf9HaFSOD7KrIPiropI43wtdgSQnz1XgFMCkZodA9e9SzYecKaVV3pDd1oDpqw==}
-    peerDependencies:
-      axios: '>=1.0.0'
-      zod: ^4.0.0
 
   '@smartspace/api-client@0.1.0-dev.00e0c7c':
     resolution: {integrity: sha512-eqPjwO+iEKvIonXIP8AkWzqdjnuCL3MaxNL7pRn5HLTOhi3fZTyEQe+sXtdJl/YkYzndMTKdSzDPAYWliXLn7w==}
@@ -10686,11 +10683,6 @@ snapshots:
   '@sinclair/typebox@0.34.49': {}
 
   '@sindresorhus/is@4.6.0': {}
-
-  '@smartspace/api-client@0.1.0(axios@1.15.1)(zod@4.3.6)':
-    dependencies:
-      axios: 1.15.1
-      zod: 4.3.6
 
   '@smartspace/api-client@0.1.0-dev.00e0c7c(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)':
     dependencies:

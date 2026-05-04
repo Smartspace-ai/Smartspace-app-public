@@ -23,7 +23,7 @@ import {
   useChatContext,
   useChatIdentity,
   useChatService,
-} from '@/platform/chat';
+} from '@smartspace/chat-ui';
 
 import { ChatProviderBridge } from '../_layout';
 

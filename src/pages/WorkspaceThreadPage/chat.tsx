@@ -5,18 +5,18 @@ import { Toaster } from 'sonner';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
 
-import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
+import { useWorkspace, useWorkspaces } from '@/domains/workspaces';
 
 import SidebarRightPanel from '@/ui/comments_draw/sidebar-right';
 import ChatHeaderBar from '@/ui/header/chat-header';
 import SidebarLeft from '@/ui/layout/SidebarLeft';
-import MessageComposer from '@/ui/messages/MessageComposer';
-import { MessageList } from '@/ui/messages/MessageList';
 import { useThreadsListVm } from '@/ui/threads/ThreadsList.vm';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
+
+import { MessageComposer, MessageList } from '@smartspace/chat-ui';
 
 export default function ChatBotPage({
   workspaceId,

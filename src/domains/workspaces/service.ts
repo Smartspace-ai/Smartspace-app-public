@@ -7,8 +7,8 @@ import {
   mapMentionUserDtoToModel,
   mapWorkspaceDtoToModel,
   mapWorkspacesDtoToModels,
-} from './mapper';
-import type { MentionUser, Workspace } from './model';
+} from '@smartspace/chat-ui';
+import type { MentionUser, Workspace } from '@smartspace/chat-ui';
 
 const {
   workSpacesGetIdResponse: workspaceResponseSchema,

@@ -2,19 +2,21 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 
-import { useChatService } from '@/platform/chat';
 import { useWorkspaceRealtime } from '@/platform/realtime/useWorkspaceRealtime';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { applyCommentToCache, commentsKeys } from '@/domains/comments';
-import { messagesKeys, useThreadMessageStream } from '@/domains/messages';
+import { useThreadMessageStream } from '@/domains/messages/threadStream';
+
 import {
   applyThreadToCache,
   invalidateWorkspaceThreadLists,
   mapSignalRThreadSummaryToModel,
+  messagesKeys,
   threadDetailOptions,
   threadsKeys,
-} from '@/domains/threads';
+  useChatService,
+} from '@smartspace/chat-ui';
 
 export function useWorkspaceSubscriptions() {
   // Derive ids from whichever workspace route is active: thread,

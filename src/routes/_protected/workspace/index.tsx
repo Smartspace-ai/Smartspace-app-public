@@ -1,7 +1,7 @@
 // src/routes/_protected/workspace/index.tsx
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { workspacesListOptions } from '@/domains/workspaces/queries';
+import { workspacesListOptions } from '@/domains/workspaces';
 
 export const Route = createFileRoute('/_protected/workspace/')({
   loader: async ({ context }) => {

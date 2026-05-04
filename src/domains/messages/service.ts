@@ -9,18 +9,19 @@ import { getAuthAdapter } from '@/platform/auth';
 import { getApiScopes } from '@/platform/auth/scopes';
 import { parseOrThrow } from '@/platform/validation';
 
-import { FileInfo } from '@/domains/files';
-
 import { parseSseStream } from '@/shared/utils/sseStream';
 
+import { FileInfo } from '@smartspace/chat-ui';
 import {
   mapMessageDtoToModel,
   mapMessageErrorDtoToModel,
   mapMessageValueDtoToModel,
   mapMessagesDtoToModels,
   type MessageError,
-} from './mapper';
-import type { Message, MessageContentItem, MessageValue } from './model';
+  Message,
+  MessageContentItem,
+  MessageValue,
+} from '@smartspace/chat-ui';
 
 const {
   messageThreadsThreadMessagesIdMessagesResponse: messagesResponseSchema,

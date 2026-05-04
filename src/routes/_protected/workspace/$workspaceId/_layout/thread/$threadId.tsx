@@ -2,20 +2,18 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { z } from 'zod';
 
-import { defaultChatService } from '@/platform/chat';
+import { defaultChatService } from '@/platform/chat/defaultChatService';
 import { isNotFoundError } from '@/platform/envelopes';
 
-import {
-  threadDetailOptions,
-  threadsListOptions,
-  useThread,
-} from '@/domains/threads/queries';
+import { threadsListOptions } from '@/domains/threads';
 
 import { ThreadRenameModal } from '@/ui/threads/ThreadRenameModal';
 
 import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
+
+import { threadDetailOptions, useThread } from '@smartspace/chat-ui';
 
 const threadRouteSearchSchema = z.object({
   modal: z.enum(['rename', 'delete']).optional(),

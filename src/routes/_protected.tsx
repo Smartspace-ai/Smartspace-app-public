@@ -13,7 +13,7 @@ import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath'
 import { ProtectedErrorBoundary } from '@/app/ui/RouteErrorEnvelope';
 import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
 
-import { workspacesListOptions } from '@/domains/workspaces/queries';
+import { workspacesListOptions } from '@/domains/workspaces';
 
 export const Route = createFileRoute('/_protected')({
   // Runs on navigation (and on intent prefetch if enabled).

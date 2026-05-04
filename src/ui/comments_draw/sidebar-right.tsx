@@ -11,8 +11,6 @@ import { useComments } from '@/domains/comments/queries';
 import { fetchTaggableUsers } from '@/domains/workspaces';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
-import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
-import type { MarkdownEditorHandle } from '@/shared/ui/markdown/MarkdownEditor';
 import {
   Avatar,
   AvatarFallback,
@@ -33,6 +31,9 @@ import {
   SidebarHeader,
 } from '@/shared/ui/mui-compat/sidebar';
 import { isDraftThreadId } from '@/shared/utils/threadId';
+
+import type { MarkdownEditorHandle } from '@smartspace/chat-ui';
+import { MarkdownEditor } from '@smartspace/chat-ui';
 
 import { getInitials } from '../../shared/utils/initials';
 import { parseDateTime } from '../../shared/utils/parseDateTime';

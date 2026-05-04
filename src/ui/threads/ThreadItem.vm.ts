@@ -5,11 +5,12 @@ import { toast } from 'sonner';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import type { MessageThread } from '@/domains/threads';
 import { useDeleteThread, useSetPin } from '@/domains/threads/mutations';
-import { useThreadIsRunning } from '@/domains/threads/queries';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
+
+import type { MessageThread } from '@smartspace/chat-ui';
+import { useThreadIsRunning } from '@smartspace/chat-ui';
 
 type UseThreadItemVmArgs = {
   thread: MessageThread;

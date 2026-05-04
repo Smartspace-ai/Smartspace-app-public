@@ -7,11 +7,11 @@ import { ssInfo, ssWarn } from '@/platform/log';
 import {
   applyThreadToCache,
   mapSignalRThreadSummaryToModel,
-} from '@/domains/threads';
+  applyDeltaToMessage,
+  Message,
+  messagesKeys,
+} from '@smartspace/chat-ui';
 
-import { applyDeltaToMessage } from './mapper';
-import { Message } from './model';
-import { messagesKeys } from './queryKeys';
 import { type MessageDelta, streamThreadMessages } from './service';
 
 const RECONNECT_BASE_DELAY_MS = 500;

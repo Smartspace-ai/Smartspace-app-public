@@ -6,7 +6,7 @@ import {
   ChatProvider,
   type ChatIdentity,
   type ChatService,
-} from '@/platform/chat';
+} from '@smartspace/chat-ui';
 
 export type FakeChatServiceOverrides = Partial<ChatService>;
 
@@ -33,6 +33,9 @@ export function createFakeChatService(
     fetchThread: notStubbed('fetchThread'),
     fetchWorkspace: notStubbed('fetchWorkspace'),
     fetchTaggableUsers: notStubbed('fetchTaggableUsers'),
+    fetchFlowRunVariables: notStubbed('fetchFlowRunVariables'),
+    updateFlowRunVariable: notStubbed('updateFlowRunVariable'),
+    fetchModels: notStubbed('fetchModels'),
     ...overrides,
   };
 }
