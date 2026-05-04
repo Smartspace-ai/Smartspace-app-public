@@ -12,6 +12,8 @@ import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import { ErrorBoundary } from 'react-error-boundary';
 
+import '@smartspace/chat-ui/styles.css';
+
 import { configureApiClient } from '@/platform/api/configureApiClient';
 import { getMsalInstance } from '@/platform/auth/msalClient';
 import { removeSplash } from '@/platform/boot/removeSplash';

@@ -78,6 +78,18 @@ export {
   setThreadRunningInLists,
 } from './domains/threads/cache';
 
+// Single canonical module — duplicate copies split the in-memory Set and
+// break draft detection across consumer/package boundaries.
+export {
+  DRAFT_THREAD_PREFIX,
+  NEW_THREAD_ID,
+  createDraftThreadId,
+  createThreadId,
+  isDraftThreadId,
+  markDraftThreadId,
+  unmarkDraftThreadId,
+} from './shared/utils/threadId';
+
 // Query keys consumers may need to invalidate or seed cache.
 export {
   messagesKeys,
