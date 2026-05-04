@@ -1,0 +1,267 @@
+/* Base editor container */
+.md-editor {
+  position: relative;
+}
+
+.ss-attach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--muted), white 80%);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.ss-attach--image {
+  padding: 2px;
+}
+
+.ss-attach__img {
+  display: block;
+  object-fit: contain;
+}
+
+.md-editor .ProseMirror {
+  /* Height controls via CSS variables set on the root element */
+  min-height: var(--md-min-height, 1.6em);
+  max-height: var(--md-max-height, none);
+  overflow: auto; /* will only scroll when max-height is exceeded */
+  /* Expose padding as variables for consistent placeholder alignment */
+  --md-pad-v: 12px;
+  --md-pad-h: 14px;
+  padding: var(--md-pad-v) var(--md-pad-h);
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  line-height: 1.6;
+  outline: none;
+}
+
+/* Focus ring */
+.md-editor .ProseMirror:focus {
+  border-color: #b9d6ff;
+  box-shadow: 0 0 0 3px rgba(70, 128, 255, 0.15);
+}
+
+/* Readonly appearance: remove border and padding to blend into bubbles */
+.md-editor.md-editor--readonly .ProseMirror {
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+/* Bare composer appearance (no border or padding regardless of editable) */
+.md-editor.md-editor--bare .ProseMirror {
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  /* Ensure placeholder aligns to the start of content when bare */
+  --md-pad-v: 0px;
+  --md-pad-h: 0px;
+}
+
+/* Links (autolinked bare URLs and markdown-syntax links) */
+.md-editor .ProseMirror a {
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Read-only: error state for ss-file image attachments. The SsImage renderer
+   sets `data-error` when the file resolver hook rejects. */
+.ss-markdown .ss-attach__img[data-error] {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+/* Custom inline file-tag */
+.file-tag {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid #a7b7e9;
+  background: #eef2ff;
+  font-size: 0.9em;
+  color: #2b3a8a;
+  user-select: text; /* allow selection across it */
+  white-space: nowrap;
+}
+
+/* Ghost placeholder for empty editable state */
+.md-editor__ghost {
+  position: absolute;
+  top: var(--md-pad-v); /* align with ProseMirror padding */
+  left: var(--md-pad-h); /* align with ProseMirror padding */
+  right: var(--md-pad-h);
+  color: #9aa2af;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: inherit;
+  line-height: inherit;
+}
+
+/* Normalize top margin so caret height is consistent when empty */
+.md-editor .ProseMirror > :first-child {
+  margin-top: 0;
+}
+
+/* Mention (placeholder) – tweak as desired */
+.mention {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 0 6px;
+  color: #0369a1;
+}
+
+/* Code block wrapper — shared by the Milkdown editor node view
+   (`.md-editor` scope) and the react-markdown read-only renderer
+   (`.ss-markdown` scope). Keep selectors in sync. */
+.md-editor .ss-code-block,
+.ss-markdown .ss-code-block {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  background: #0b1020;
+  color: #e6edf3;
+  margin: 0.75em 0;
+  overflow: hidden;
+}
+
+.md-editor .ss-code-block__header,
+.ss-markdown .ss-code-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.md-editor .ss-code-block__lang,
+.ss-markdown .ss-code-block__lang {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ba3af;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.md-editor .ss-code-block__actions,
+.ss-markdown .ss-code-block__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.md-editor .ss-code-block__toggle,
+.md-editor .ss-code-block__copy,
+.ss-markdown .ss-code-block__toggle,
+.ss-markdown .ss-code-block__copy {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e6edf3;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.md-editor .ss-code-block__toggle:hover,
+.md-editor .ss-code-block__copy:hover,
+.ss-markdown .ss-code-block__toggle:hover,
+.ss-markdown .ss-code-block__copy:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.md-editor .ss-code-block pre,
+.ss-markdown .ss-code-block pre {
+  margin: 0;
+  padding: 12px 14px;
+  background: transparent;
+  color: inherit;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.md-editor .ss-code-block pre code,
+.ss-markdown .ss-code-block pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font: inherit;
+}
+
+.md-editor .ss-code-block__iframe,
+.ss-markdown .ss-code-block__iframe {
+  display: block;
+  width: 100%;
+  /* Initial height before the height reporter postMessages in the real size
+     (capped in JS by MAX_IFRAME_HEIGHT). */
+  height: 500px;
+  border: 0;
+  background: #ffffff;
+  /* Kill the baseline gap under replaced elements (iframe is inline by
+     default), which otherwise adds ~4px of empty space below the preview. */
+  vertical-align: top;
+}
+
+/* Inline code in read-only messages — matches the Milkdown editor's
+   inline code treatment. */
+.ss-markdown :not(pre) > code {
+  background: rgba(135, 131, 120, 0.15);
+  color: #c7254e;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+/* Read-only: anchors should feel clickable. */
+.ss-markdown a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* Read-only: give <details>/<summary> sensible defaults. Most browser UAs
+   already render the triangle, but we tidy spacing. */
+.ss-markdown details {
+  margin: 0.75em 0;
+}
+
+.ss-markdown summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Inline code */
+.md-editor .ProseMirror :not(pre) > code {
+  background: rgba(135, 131, 120, 0.15);
+  color: #c7254e;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+/* Mentions popup */
+.md-mention-menu {
+  background: hsl(var(--background, 0 0% 100%));
+  color: var(--foreground, #111);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  min-width: 220px;
+  max-width: 320px;
+  overflow: hidden;
+  z-index: 1000;
+}
