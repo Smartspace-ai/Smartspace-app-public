@@ -3,9 +3,7 @@ import { toast } from 'sonner';
 
 import { useThread } from '@/domains/threads/queries';
 import {
-  type ThreadUser,
-  useAddThreadUser,
-  useRemoveThreadUser,
+  useUpdateThreadUsers,
   useThreadUsers,
   useWorkspaceUsers,
 } from '@/domains/threadUsers';
@@ -53,17 +51,12 @@ export function AddUsersDialog({
 
   const { data: workspaceUsers = [], isLoading: workspaceUsersLoading } =
     useWorkspaceUsers(workspaceId ?? '');
-  const { mutateAsync: addThreadUserAsync, isPending: addPending } =
-    useAddThreadUser(threadId ?? '');
-  const { mutateAsync: removeThreadUserAsync, isPending: removePending } =
-    useRemoveThreadUser(threadId ?? '');
-  const isSaving = addPending || removePending;
-  const getUserIds = (users: ThreadUser[]) => users.map((u) => u.id);
+  const { mutateAsync: updateThreadUsersAsync, isPending: isSaving } =
+    useUpdateThreadUsers(threadId ?? '');
 
   useEffect(() => {
     if (!isOpen) return;
-    const existingIds = getUserIds(threadUsers);
-    setSelectedUserIds(existingIds);
+    setSelectedUserIds(threadUsers.map((u) => u.id));
   }, [isOpen, threadUsers]);
 
   useEffect(() => {
@@ -97,17 +90,7 @@ export function AddUsersDialog({
   const handleSubmit = async () => {
     if (!canSubmit || isSaving) return;
     try {
-      const existingIds = new Set(getUserIds(threadUsers));
-      const selectedIds = new Set(selectedUserIds);
-
-      const toAdd = [...selectedIds].filter((id) => !existingIds.has(id));
-      const toRemove = [...existingIds].filter((id) => !selectedIds.has(id));
-
-      await Promise.all(toAdd.map((userId) => addThreadUserAsync(userId)));
-      await Promise.all(
-        toRemove.map((userId) => removeThreadUserAsync(userId))
-      );
-
+      await updateThreadUsersAsync(selectedUserIds);
       toast.success('Thread users updated successfully');
       handleClose();
     } catch (error) {

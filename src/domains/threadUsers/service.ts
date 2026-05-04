@@ -1,5 +1,6 @@
 import { ChatApi, ChatZod } from '@smartspace/api-client';
 
+import { api } from '@/platform/api';
 import { parseOrThrow } from '@/platform/validation';
 
 import type { ThreadUser } from './model';
@@ -23,18 +24,11 @@ export async function fetchThreadUsers(
   return parsed;
 }
 
-export async function addThreadUser(
+export async function updateThreadUsers(
   threadId: string,
-  userId: string
+  userIds: string[]
 ): Promise<void> {
-  await chatApi.messageThreadsAddThreadUser(threadId, userId);
-}
-
-export async function removeThreadUser(
-  threadId: string,
-  userId: string
-): Promise<void> {
-  await chatApi.messageThreadsRemoveThreadUser(threadId, userId);
+  await api.put(`/MessageThreads/${threadId}/users`, { userIds });
 }
 
 export async function fetchWorkspaceUsers(

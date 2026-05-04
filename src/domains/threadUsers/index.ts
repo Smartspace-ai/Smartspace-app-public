@@ -1,10 +1,9 @@
-export { useAddThreadUser, useRemoveThreadUser } from './mutations';
+export { useUpdateThreadUsers } from './mutations';
 export { useThreadUsers, useWorkspaceUsers } from './queries';
 export { threadUsersKeys } from './queryKeys';
 export type { ThreadUser } from './model';
 export {
-  addThreadUser,
+  updateThreadUsers,
   fetchThreadUsers,
   fetchWorkspaceUsers,
-  removeThreadUser,
 } from './service';

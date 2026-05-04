@@ -8,8 +8,6 @@ export const threadUsersKeys = {
     [...threadUsersKeys.all, 'workspaceUsers', { workspaceId }] as const,
 
   mutations: () => [...threadUsersKeys.all, 'mutations'] as const,
-  addUser: (threadId: string) =>
-    [...threadUsersKeys.mutations(), 'addUser', { threadId }] as const,
-  removeUser: (threadId: string) =>
-    [...threadUsersKeys.mutations(), 'removeUser', { threadId }] as const,
+  updateUsers: (threadId: string) =>
+    [...threadUsersKeys.mutations(), 'updateUsers', { threadId }] as const,
 };
