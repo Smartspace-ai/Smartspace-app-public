@@ -3,6 +3,8 @@ import { Stack } from '@mui/material';
 import { useMemo } from 'react';
 import { Toaster } from 'sonner';
 
+import { isInTeams } from '@/platform/auth/msalConfig';
+
 import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
 
 import SidebarRightPanel from '@/ui/comments_draw/sidebar-right';
@@ -63,7 +65,7 @@ export default function ChatBotPage({
           sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}
         >
           <ChatHeaderBar />
-          <MessageList />
+          <MessageList applyHostBackgroundOverride={isInTeams()} />
           <MessageComposer />
         </Stack>
         <SidebarRightPanel />

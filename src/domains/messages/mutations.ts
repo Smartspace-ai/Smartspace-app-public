@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { useUserDisplayName, useUserId } from '@/platform/auth/session';
-import { useChatService } from '@/platform/chat';
+import { useChatIdentity, useChatService } from '@/platform/chat';
 
 import { FileInfo } from '@/domains/files';
 import {
@@ -26,8 +25,7 @@ type SendArgs = {
 
 export function useSendMessage() {
   const qc = useQueryClient();
-  const userId = useUserId();
-  const userName = useUserDisplayName();
+  const { userId, displayName: userName } = useChatIdentity();
   const service = useChatService();
 
   return useMutation<void, Error, SendArgs>({
@@ -196,8 +194,7 @@ type AddInputArgs = {
 
 export function useAddInputToMessage() {
   const qc = useQueryClient();
-  const userId = useUserId();
-  const userName = useUserDisplayName();
+  const { userId, displayName: userName } = useChatIdentity();
   const service = useChatService();
 
   const addInputToMessageMutation = useMutation<Message, Error, AddInputArgs>({

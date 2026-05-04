@@ -3,7 +3,6 @@ import { useMatch } from '@tanstack/react-router';
 import { AlertTriangle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { isInTeams } from '@/platform/auth/msalConfig';
 import { useChatContext } from '@/platform/chat';
 
 import { useMessages } from '@/domains/messages';
@@ -19,7 +18,19 @@ import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 import { MessageItem } from './MessageItem';
 
-export function MessageList() {
+/**
+ * Apply a solid-base + tag-driven gradient to the message body. Set this when
+ * embedding inside a host whose default page background can show through and
+ * skew the perceived chat color (e.g. Microsoft Teams web client). Defaults
+ * to false — the standard browser app doesn't need it.
+ */
+export type MessageListProps = {
+  applyHostBackgroundOverride?: boolean;
+};
+
+export function MessageList({
+  applyHostBackgroundOverride = false,
+}: MessageListProps = {}) {
   const { workspaceId, threadId } = useChatContext();
   const contentRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -52,21 +63,24 @@ export function MessageList() {
   } = useMessages(threadId);
 
   const { leftOpen, rightOpen } = useSidebar();
-  const inTeams = isInTeams();
 
-  // In Teams web, the host can cause the underlying page/background to look dark.
-  // To make it match the web UI, we render our own background on the message list area:
-  // default primary gradient, or tag-driven gradient when a workspace has tags.
-  const teamsBg = useMemo(() => {
-    if (!inTeams) return '';
+  // When the host page can bleed a dark background through (e.g. Teams web),
+  // render our own solid base + tag-driven gradient on the message body so
+  // the perceived chat color matches the standalone web UI. Driven by the
+  // `applyHostBackgroundOverride` prop — the chat tree itself stays
+  // host-agnostic.
+  const hostBg = useMemo(() => {
+    if (!applyHostBackgroundOverride) return '';
     const grad = getBackgroundGradientClasses({
       tags: activeWorkspace?.tags,
       name: activeWorkspace?.name,
     });
-    // In Teams web, set an explicit solid base color first, then layer the gradient on top.
-    // This prevents any dark host/iframe background from influencing the perceived color.
     return `bg-white bg-gradient-to-b from-white from-10% ${grad} via-40% to-100%`;
-  }, [inTeams, activeWorkspace?.tags, activeWorkspace?.name]);
+  }, [
+    applyHostBackgroundOverride,
+    activeWorkspace?.tags,
+    activeWorkspace?.name,
+  ]);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const viewport = viewportRef.current;
@@ -140,7 +154,7 @@ export function MessageList() {
   if (isLoading) {
     return (
       <div
-        className={`ss-chat__body flex-shrink-10 flex-1 overflow-y-auto ${teamsBg}`}
+        className={`ss-chat__body flex-shrink-10 flex-1 overflow-y-auto ${hostBg}`}
         data-ss-layer="message-list"
       >
         <div className="space-y-8 p-4">
@@ -199,7 +213,7 @@ export function MessageList() {
 
   return (
     <div
-      className={`ss-chat__body ${teamsBg}`}
+      className={`ss-chat__body ${hostBg}`}
       data-ss-layer="message-list"
       style={{
         flex: 1,
