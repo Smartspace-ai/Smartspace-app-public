@@ -11,25 +11,33 @@ import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { MessageMarkdown } from '@/shared/ui/markdown/MessageMarkdown';
-import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 import { Skeleton } from '@/shared/ui/mui-compat/skeleton';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 import { MessageItem } from './MessageItem';
 
-/**
- * Apply a solid-base + tag-driven gradient to the message body. Set this when
- * embedding inside a host whose default page background can show through and
- * skew the perceived chat color (e.g. Microsoft Teams web client). Defaults
- * to false — the standard browser app doesn't need it.
- */
 export type MessageListProps = {
+  /**
+   * Apply a solid-base + tag-driven gradient to the message body. Set this
+   * when embedding inside a host whose default page background can show
+   * through and skew the perceived chat color (e.g. Microsoft Teams web
+   * client). Defaults to false — the standard browser app doesn't need it.
+   */
   applyHostBackgroundOverride?: boolean;
+  /**
+   * Use the wider desktop max-width (90% instead of 70%). Set this when the
+   * chat is rendered in a layout where horizontal room is constrained by
+   * other panels (e.g. a sidebar is open beside it). Standalone fork passes
+   * `leftOpen || rightOpen` from `useSidebar()`; the sandbox doesn't have
+   * sidebars, so it omits the prop and gets the natural 70% width.
+   */
+  expandedLayout?: boolean;
 };
 
 export function MessageList({
   applyHostBackgroundOverride = false,
+  expandedLayout = false,
 }: MessageListProps = {}) {
   const { workspaceId, threadId } = useChatContext();
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -61,8 +69,6 @@ export function MessageList({
     isFetching: messagesFetching,
     error: messagesError,
   } = useMessages(threadId);
-
-  const { leftOpen, rightOpen } = useSidebar();
 
   // When the host page can bleed a dark background through (e.g. Teams web),
   // render our own solid base + tag-driven gradient on the message body so
@@ -250,9 +256,7 @@ export function MessageList({
             ref={contentRef}
             className={`flex flex-col w-full ${
               !isMobile
-                ? `${
-                    leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'
-                  } mx-auto`
+                ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
                 : ''
             } px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
           >

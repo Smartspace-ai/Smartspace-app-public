@@ -7,7 +7,6 @@ import { useThreadIsRunning } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
-import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
 /** Public shape exported to the UI component */
@@ -16,7 +15,7 @@ export type MessageComposerVm = ReturnType<typeof useMessageComposerVm>;
 export type MessageComposerVmProps = {
   hasAttachments?: boolean;
   isUploadingFiles?: boolean;
-}; // optional inbound props for attachments-owned-by-UI
+};
 
 export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
   const { workspaceId, threadId } = useChatContext();
@@ -29,7 +28,6 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
 
   // Data/UX context
   const isMobile = useIsMobile();
-  const { leftOpen, rightOpen } = useSidebar();
   const { data: workspace } = useWorkspace(workspaceId);
   const isRunning = useThreadIsRunning(workspaceId, threadId);
 
@@ -117,8 +115,6 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
 
     // UI/UX state
     isMobile,
-    leftOpen,
-    rightOpen,
     isFullscreen,
     setIsFullscreen,
 

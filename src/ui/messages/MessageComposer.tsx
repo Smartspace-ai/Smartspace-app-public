@@ -90,7 +90,14 @@ function getFileIcon(fileName: string) {
   return FileText;
 }
 
-export default function MessageComposer() {
+export type MessageComposerProps = {
+  /** Mirrors `MessageList`'s `expandedLayout`. See its docs. */
+  expandedLayout?: boolean;
+};
+
+export default function MessageComposer({
+  expandedLayout = false,
+}: MessageComposerProps = {}) {
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // Milkdown isn't fully controlled by `value`, so we force-remount the editor after sending to guarantee a visual clear.
@@ -128,8 +135,6 @@ export default function MessageComposer() {
     workspaceId,
     threadId,
     isMobile,
-    leftOpen,
-    rightOpen,
 
     // text
     newMessage,
@@ -326,9 +331,7 @@ export default function MessageComposer() {
         <div
           className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
             !isMobile
-              ? `${
-                  leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'
-                } mx-auto`
+              ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
               : ''
           } transition-[max-width] duration-300 ease-in-out`}
         >
@@ -347,7 +350,7 @@ export default function MessageComposer() {
       <div
         className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
           !isMobile
-            ? `${leftOpen || rightOpen ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
+            ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
             : ''
         } bg-background ${
           isMobile

@@ -14,6 +14,8 @@ import MessageComposer from '@/ui/messages/MessageComposer';
 import { MessageList } from '@/ui/messages/MessageList';
 import { useThreadsListVm } from '@/ui/threads/ThreadsList.vm';
 
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
+
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 export default function ChatBotPage({
@@ -25,6 +27,7 @@ export default function ChatBotPage({
 }) {
   const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces();
   const { data: activeWorkspace } = useWorkspace(workspaceId);
+  const { leftOpen, rightOpen } = useSidebar();
   const { firstThread, isInitialLoading: threadsInitialLoading } =
     useThreadsListVm({
       workspaceId,
@@ -65,8 +68,11 @@ export default function ChatBotPage({
           sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}
         >
           <ChatHeaderBar />
-          <MessageList applyHostBackgroundOverride={isInTeams()} />
-          <MessageComposer />
+          <MessageList
+            applyHostBackgroundOverride={isInTeams()}
+            expandedLayout={leftOpen || rightOpen}
+          />
+          <MessageComposer expandedLayout={leftOpen || rightOpen} />
         </Stack>
         <SidebarRightPanel />
       </Stack>
