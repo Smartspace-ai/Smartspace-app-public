@@ -219,7 +219,12 @@ module.exports = {
   overrides: [
     // TypeScript source
     {
-      files: ['src/**/*.{ts,tsx}', 'theme/**/*.{ts,tsx}', 'teams/**/*.ts'],
+      files: [
+        'src/**/*.{ts,tsx}',
+        'theme/**/*.{ts,tsx}',
+        'teams/**/*.ts',
+        'packages/**/*.{ts,tsx}',
+      ],
       extends: ['plugin:@nx/typescript'],
       rules: {
         '@typescript-eslint/no-explicit-any': 'error',
@@ -229,7 +234,11 @@ module.exports = {
 
     // JavaScript source
     {
-      files: ['src/**/*.{js,jsx}', 'theme/**/*.{js,jsx}'],
+      files: [
+        'src/**/*.{js,jsx}',
+        'theme/**/*.{js,jsx}',
+        'packages/**/*.{js,jsx}',
+      ],
       extends: ['plugin:@nx/javascript'],
       rules: {},
     },

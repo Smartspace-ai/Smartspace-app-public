@@ -32,6 +32,7 @@ const externals = [
   'react-hook-form',
   'react-markdown',
   'sonner',
+  'tailwind-merge',
   'zod',
 ];
 
