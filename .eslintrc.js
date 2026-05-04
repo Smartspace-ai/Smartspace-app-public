@@ -264,6 +264,16 @@ module.exports = {
       },
     },
 
+    // packages/chat-ui/** is the @smartspace/chat-ui workspace package.
+    // The architectural-layer boundaries rule is for the app (src/**); the
+    // package has its own internal structure and ships independently.
+    {
+      files: ['packages/**/*.{ts,tsx,js,jsx}'],
+      rules: {
+        'boundaries/element-types': 'off',
+      },
+    },
+
     // Loosen rules in known noisy/legacy areas (example)
     {
       files: ['src/ui/chat-variables/**/*.{ts,tsx}'],
