@@ -1,5 +1,6 @@
 // src/features/workspaces/Chat.tsx
 import { Stack } from '@mui/material';
+import { useMatch } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { Toaster } from 'sonner';
 
@@ -28,6 +29,13 @@ export default function ChatBotPage({
   const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces();
   const { data: activeWorkspace } = useWorkspace(workspaceId);
   const { leftOpen, rightOpen } = useSidebar();
+  // While the route loader is redirecting from /workspace/$workspaceId/ to
+  // its first thread, MessageList shouldn't show "no messages yet" — pass
+  // the indicator explicitly so the package stays router-agnostic.
+  const workspaceIndexMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/_layout/',
+    shouldThrow: false,
+  });
   const { firstThread, isInitialLoading: threadsInitialLoading } =
     useThreadsListVm({
       workspaceId,
@@ -71,6 +79,9 @@ export default function ChatBotPage({
           <MessageList
             applyHostBackgroundOverride={isInTeams()}
             expandedLayout={leftOpen || rightOpen}
+            isChoosingThread={
+              !!workspaceId && !threadId && !!workspaceIndexMatch
+            }
           />
           <MessageComposer expandedLayout={leftOpen || rightOpen} />
         </Stack>

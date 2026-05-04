@@ -1,5 +1,4 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
-import { useMatch } from '@tanstack/react-router';
 import { AlertTriangle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -33,11 +32,24 @@ export type MessageListProps = {
    * sidebars, so it omits the prop and gets the natural 70% width.
    */
   expandedLayout?: boolean;
+  /**
+   * Set to `true` while the host is mid-redirect from a "no thread selected"
+   * route to the first thread of a workspace — the message list shows a
+   * loading skeleton instead of the empty-state during that brief window so
+   * users don't see a "No messages yet" flash.
+   *
+   * Standalone web fork passes this from `useMatch('/.../_layout/')` to
+   * detect the workspace-index route specifically. The sandbox/admin doesn't
+   * have multi-thread navigation, so it omits the prop entirely (defaults
+   * `false` — no router coupling).
+   */
+  isChoosingThread?: boolean;
 };
 
 export function MessageList({
   applyHostBackgroundOverride = false,
   expandedLayout = false,
+  isChoosingThread = false,
 }: MessageListProps = {}) {
   const { workspaceId, threadId } = useChatContext();
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -49,10 +61,6 @@ export function MessageList({
   const isMobile = useIsMobile();
 
   const { data: activeWorkspace } = useWorkspace(workspaceId);
-  const workspaceIndexMatch = useMatch({
-    from: '/_protected/workspace/$workspaceId/_layout/',
-    shouldThrow: false,
-  });
 
   const [isAtBottom, setIsAtBottom] = useState(true);
 
@@ -148,10 +156,8 @@ export function MessageList({
     return () => ro.disconnect();
   }, [isAtBottom, scrollToBottom]);
 
-  // When switching workspaces, we briefly land on /workspace/$workspaceId/ (no threadId) while the route loader
-  // redirects to the first thread. During that transition we should show a loading skeleton, not "No messages yet".
-  const isChoosingThread = !!workspaceId && !threadId && !!workspaceIndexMatch;
   // Avoid flicker: if we already have data, keep rendering it while refetching.
+  // `isChoosingThread` is opt-in via prop — see MessageListProps for usage.
   const isLoading =
     isChoosingThread ||
     ((threadPending || threadFetching) && !thread) ||
