@@ -1,0 +1,31 @@
+/* Horizontal wrap layout for variables (no forced stretching) */
+.jsonforms-compact .ss-jsonforms-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+/* Each variable is its own flex item */
+.jsonforms-compact .ss-jsonforms-cell {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+/* Let long/tall fields take a full row when present */
+.jsonforms-compact .ss-jsonforms-textarea {
+  flex: 1 1 100%;
+}
+
+/* Keep compact fields at a comfortable fixed width */
+.jsonforms-compact .compact-field {
+  width: 280px;
+  max-width: 100%;
+}
+
+/* On very small screens, let it shrink gracefully */
+@media (max-width: 480px) {
+  .jsonforms-compact .compact-field {
+    width: 100%; /* full width on phones */
+  }
+}
