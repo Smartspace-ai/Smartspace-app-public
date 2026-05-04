@@ -9,6 +9,7 @@ const externals = [
   '@hookform/resolvers',
   '@jsonforms/core',
   '@jsonforms/react',
+  '@lobehub/icons-static-svg',
   '@jsonforms/vanilla-renderers',
   '@milkdown/core',
   '@milkdown/kit',

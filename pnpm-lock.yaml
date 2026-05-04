@@ -92,6 +92,9 @@ importers:
       '@smartspace/api-client':
         specifier: dev
         version: 0.1.0-dev.00e0c7c(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
+      '@smartspace/chat-ui':
+        specifier: workspace:*
+        version: link:packages/chat-ui
       '@tanstack/react-query':
         specifier: ^5.96.2
         version: 5.99.2(react@18.3.1)
@@ -366,6 +369,9 @@ importers:
       '@jsonforms/vanilla-renderers':
         specifier: ^3.7.0
         version: 3.7.0(@jsonforms/core@3.7.0)(@jsonforms/react@3.7.0(@jsonforms/core@3.7.0)(react@18.3.1))(react@18.3.1)
+      '@lobehub/icons-static-svg':
+        specifier: ^1.86.0
+        version: 1.86.0
       '@milkdown/core':
         specifier: ^7.20.0
         version: 7.20.0
@@ -432,6 +438,9 @@ importers:
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      tailwind-merge:
+        specifier: ^2.6.1
+        version: 2.6.1
       zod:
         specifier: ^4.3.6
         version: 4.3.6

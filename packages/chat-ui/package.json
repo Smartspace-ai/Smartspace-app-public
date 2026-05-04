@@ -31,6 +31,7 @@
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.2.2",
     "@jsonforms/core": "^3.7.0",
+    "@lobehub/icons-static-svg": "^1.86.0",
     "@jsonforms/react": "^3.7.0",
     "@jsonforms/vanilla-renderers": "^3.7.0",
     "@milkdown/core": "^7.20.0",

@@ -28,3 +28,6 @@ export type {
   Variables,
   Workspace,
 } from './domains/workspaces/model';
+export type { FlowRunVariables } from './domains/flowruns/model';
+export type { Model, ModelProperty } from './domains/models/model';
+export { getModelIcon } from './domains/models/model-icon';

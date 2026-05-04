@@ -1,5 +1,7 @@
 import type { FileInfo, FileScope } from '@/domains/files/model';
+import type { FlowRunVariables } from '@/domains/flowruns/model';
 import type { Message, MessageContentItem } from '@/domains/messages/model';
+import type { Model } from '@/domains/models/model';
 import type { MessageThread } from '@/domains/threads/model';
 import type { MentionUser, Workspace } from '@/domains/workspaces/model';
 
@@ -70,4 +72,30 @@ export interface ChatService {
   fetchWorkspace(workspaceId: string): Promise<Workspace>;
 
   fetchTaggableUsers(workspaceId: string): Promise<MentionUser[]>;
+
+  /**
+   * Read the current flow-run variable set for a thread. Used by the chat
+   * variables form to seed initial values.
+   */
+  fetchFlowRunVariables(flowRunId: string): Promise<FlowRunVariables>;
+
+  /**
+   * Patch a single flow-run variable. The chat variables form calls this on
+   * each change to keep the running flow's variable state in sync.
+   */
+  updateFlowRunVariable(args: {
+    flowRunId: string;
+    name: string;
+    value: unknown;
+  }): Promise<void>;
+
+  /**
+   * List models the user has access to. Drives the model-id renderer in the
+   * variables form (a dropdown of selectable models).
+   */
+  fetchModels(opts?: {
+    search?: string;
+    take?: number;
+    skip?: number;
+  }): Promise<{ data: Model[]; total: number }>;
 }
