@@ -27,6 +27,7 @@ module.exports = {
           path.resolve(__dirname, './tsconfig.json'),
           path.resolve(__dirname, './tsconfig.app.json'),
           path.resolve(__dirname, './tsconfig.spec.json'),
+          path.resolve(__dirname, './packages/chat-ui/tsconfig.json'),
         ],
         alwaysTryTypes: true,
         extensions: ['.ts', '.tsx', '.js', '.jsx'],
