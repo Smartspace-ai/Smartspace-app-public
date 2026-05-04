@@ -5,16 +5,18 @@ import { Toaster } from 'sonner';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
 
-import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
+import { useWorkspace, useWorkspaces } from '@/domains/workspaces';
 
 import SidebarRightPanel from '@/ui/comments_draw/sidebar-right';
 import ChatHeaderBar from '@/ui/header/chat-header';
 import SidebarLeft from '@/ui/layout/SidebarLeft';
-import MessageComposer from '@/ui/messages/MessageComposer';
-import { MessageList } from '@/ui/messages/MessageList';
 import { useThreadsListVm } from '@/ui/threads/ThreadsList.vm';
 
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
+
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
+
+import { MessageComposer, MessageList } from '@smartspace/chat-ui';
 
 export default function ChatBotPage({
   workspaceId,
@@ -25,6 +27,7 @@ export default function ChatBotPage({
 }) {
   const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces();
   const { data: activeWorkspace } = useWorkspace(workspaceId);
+  const { leftOpen, rightOpen } = useSidebar();
   const { firstThread, isInitialLoading: threadsInitialLoading } =
     useThreadsListVm({
       workspaceId,
@@ -65,8 +68,11 @@ export default function ChatBotPage({
           sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}
         >
           <ChatHeaderBar />
-          <MessageList applyHostBackgroundOverride={isInTeams()} />
-          <MessageComposer />
+          <MessageList
+            applyHostBackgroundOverride={isInTeams()}
+            expandedLayout={leftOpen || rightOpen}
+          />
+          <MessageComposer expandedLayout={leftOpen || rightOpen} />
         </Stack>
         <SidebarRightPanel />
       </Stack>

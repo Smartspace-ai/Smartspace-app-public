@@ -4,21 +4,23 @@ import { MessageSquare, PanelLeft } from 'lucide-react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import { useThread } from '@/domains/threads/queries';
-import { useWorkspace } from '@/domains/workspaces/queries';
-
-
 import { SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
 
 import { getTagChipClasses } from '@/theme/tag-styles';
+
+import { useThread, useWorkspace } from '@smartspace/chat-ui';
 
 import { NotificationPanel } from './notifications-panel';
 
 export function ChatHeader() {
   const { workspaceId, threadId } = useRouteIds();
-  const { data: activeWorkspace, isPending: workspaceLoading, isError: workspaceError } = useWorkspace(workspaceId);
+  const {
+    data: activeWorkspace,
+    isPending: workspaceLoading,
+    isError: workspaceError,
+  } = useWorkspace(workspaceId);
   const { data: activeThread } = useThread({ workspaceId, threadId });
-  
+
   // Render all tags as chips; color-code safe/unsafe (and other known tags)
   const tagChips = (() => {
     const tags = activeWorkspace?.tags || [];
@@ -29,7 +31,10 @@ export function ChatHeader() {
           const v = (t || '').toString();
           const cls = getTagChipClasses(v);
           return (
-            <span key={`${v}-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}>
+            <span
+              key={`${v}-${i}`}
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}
+            >
               {v}
             </span>
           );
@@ -91,7 +96,6 @@ export function ChatHeader() {
           className="text-muted-foreground hover:text-foreground h-8 w-8"
         />
       </div>
-      
     </header>
   );
 }

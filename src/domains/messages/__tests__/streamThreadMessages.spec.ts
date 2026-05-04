@@ -55,7 +55,7 @@ vi.mock('@/platform/auth/scopes', () => ({
   getApiScopes: () => ['scope.read'],
 }));
 
-import { streamThreadMessages } from '@/domains/messages';
+import { streamThreadMessages } from '@/domains/messages/service';
 
 function bodyFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();

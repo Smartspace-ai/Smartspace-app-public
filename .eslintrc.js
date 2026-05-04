@@ -27,6 +27,7 @@ module.exports = {
           path.resolve(__dirname, './tsconfig.json'),
           path.resolve(__dirname, './tsconfig.app.json'),
           path.resolve(__dirname, './tsconfig.spec.json'),
+          path.resolve(__dirname, './packages/chat-ui/tsconfig.json'),
         ],
         alwaysTryTypes: true,
         extensions: ['.ts', '.tsx', '.js', '.jsx'],
@@ -219,7 +220,12 @@ module.exports = {
   overrides: [
     // TypeScript source
     {
-      files: ['src/**/*.{ts,tsx}', 'theme/**/*.{ts,tsx}', 'teams/**/*.ts'],
+      files: [
+        'src/**/*.{ts,tsx}',
+        'theme/**/*.{ts,tsx}',
+        'teams/**/*.ts',
+        'packages/**/*.{ts,tsx}',
+      ],
       extends: ['plugin:@nx/typescript'],
       rules: {
         '@typescript-eslint/no-explicit-any': 'error',
@@ -229,7 +235,11 @@ module.exports = {
 
     // JavaScript source
     {
-      files: ['src/**/*.{js,jsx}', 'theme/**/*.{js,jsx}'],
+      files: [
+        'src/**/*.{js,jsx}',
+        'theme/**/*.{js,jsx}',
+        'packages/**/*.{js,jsx}',
+      ],
       extends: ['plugin:@nx/javascript'],
       rules: {},
     },
@@ -249,6 +259,16 @@ module.exports = {
     // standalone package where these files become siblings.
     {
       files: ['src/platform/chat/**/*.{ts,tsx}'],
+      rules: {
+        'boundaries/element-types': 'off',
+      },
+    },
+
+    // packages/chat-ui/** is the @smartspace/chat-ui workspace package.
+    // The architectural-layer boundaries rule is for the app (src/**); the
+    // package has its own internal structure and ships independently.
+    {
+      files: ['packages/**/*.{ts,tsx,js,jsx}'],
       rules: {
         'boundaries/element-types': 'off',
       },

@@ -5,17 +5,22 @@ import {
   uploadFiles as filesUploadFiles,
 } from '@/domains/files/service';
 import {
+  fetchFlowRunVariables as flowrunsFetchFlowRunVariables,
+  updateFlowRunVariable as flowrunsUpdateFlowRunVariable,
+} from '@/domains/flowruns/service';
+import {
   addInputToMessage as messagesAddInputToMessage,
   fetchMessages as messagesFetchMessages,
   postMessage as messagesPostMessage,
 } from '@/domains/messages/service';
+import { fetchModels as modelsFetchModels } from '@/domains/models/service';
 import { fetchThread as threadsFetchThread } from '@/domains/threads/service';
 import {
   fetchTaggableUsers as workspacesFetchTaggableUsers,
   fetchWorkspace as workspacesFetchWorkspace,
 } from '@/domains/workspaces/service';
 
-import type { ChatService } from './ChatService';
+import type { ChatService } from '@smartspace/chat-ui';
 
 /**
  * Factory for the default `ChatService` — a thin adapter that delegates each
@@ -61,6 +66,15 @@ export function createDefaultChatService(): ChatService {
 
     fetchTaggableUsers: (workspaceId) =>
       workspacesFetchTaggableUsers(workspaceId),
+
+    fetchFlowRunVariables: (flowRunId) =>
+      flowrunsFetchFlowRunVariables(flowRunId),
+
+    updateFlowRunVariable: async ({ flowRunId, name, value }) => {
+      await flowrunsUpdateFlowRunVariable(flowRunId, name, value);
+    },
+
+    fetchModels: (opts) => modelsFetchModels(opts),
   };
 }
 

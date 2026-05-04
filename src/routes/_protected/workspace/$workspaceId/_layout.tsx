@@ -3,21 +3,22 @@ import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { Suspense, useEffect, useMemo, type ReactNode } from 'react';
 
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
-import { ChatProvider, defaultChatService } from '@/platform/chat';
+import { defaultChatService } from '@/platform/chat/defaultChatService';
 import {
   RouteIdsProvider,
   useRouteIds,
 } from '@/platform/routing/RouteIdsProvider';
 
-import {
-  useWorkspace,
-  workspaceDetailOptions,
-} from '@/domains/workspaces/queries';
-
 import { PageSkeleton } from '@/ui/feedback/Skeletons';
 import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
+
+import {
+  useWorkspace,
+  ChatProvider,
+  workspaceDetailOptions,
+} from '@smartspace/chat-ui';
 
 /**
  * Exported for the integration test in `__tests__/ChatProviderBridge.spec.tsx`.

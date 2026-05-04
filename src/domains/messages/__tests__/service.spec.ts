@@ -59,7 +59,7 @@ import {
   addInputToMessage,
   fetchMessages,
   postMessage,
-} from '@/domains/messages';
+} from '@/domains/messages/service';
 
 function bodyFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();

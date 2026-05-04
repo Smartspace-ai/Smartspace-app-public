@@ -1,0 +1,66 @@
+name: chat-ui publish (dev channel)
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'packages/chat-ui/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/chat-ui-publish-develop.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chat-ui-publish-develop
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'Smartspace-ai/Smartspace-app-public'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need tag history for git describe
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Compute dev version
+        id: ver
+        run: |
+          # Base = most recent v* tag, stripped of the leading 'v'.
+          # Falls back to 0.0.0 if no platform tags exist yet (first
+          # release pre-cut situation).
+          BASE_TAG=$(git describe --tags --match='v*' --abbrev=0 2>/dev/null || echo 'v0.0.0')
+          BASE="${BASE_TAG#v}"
+          VERSION="${BASE}-dev.${GITHUB_SHA:0:7}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Stamp version into package.json
+        run: |
+          cd packages/chat-ui
+          jq --arg v "${{ steps.ver.outputs.version }}" '.version = $v' package.json > p.json
+          mv p.json package.json
+
+      - run: pnpm --filter @smartspace/chat-ui build
+
+      - name: Publish dev to npmjs.com (tag=dev)
+        run: |
+          cd packages/chat-ui
+          pnpm publish --tag dev --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "Published \`@smartspace/chat-ui@${{ steps.ver.outputs.version }}\` (dist-tag \`dev\`)" >> "$GITHUB_STEP_SUMMARY"

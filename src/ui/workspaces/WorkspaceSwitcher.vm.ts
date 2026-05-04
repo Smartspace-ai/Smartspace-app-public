@@ -7,13 +7,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { commentsKeys } from '@/domains/comments/queryKeys';
-import { messagesKeys } from '@/domains/messages/queryKeys';
-import { threadsKeys } from '@/domains/threads/queryKeys';
-import type { Workspace } from '@/domains/workspaces/model';
-import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
-import { workspaceKeys } from '@/domains/workspaces/queryKeys';
+import { useWorkspace, useWorkspaces } from '@/domains/workspaces';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
+
+import type { Workspace } from '@smartspace/chat-ui';
+import { messagesKeys, threadsKeys, workspaceKeys } from '@smartspace/chat-ui';
 
 import { useWorkspaceSubscriptions } from './useWorkspaceSubscriptions';
 
