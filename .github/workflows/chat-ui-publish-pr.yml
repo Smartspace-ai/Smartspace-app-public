@@ -24,6 +24,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need tag history for git describe
 
       - uses: pnpm/action-setup@v4
 
@@ -38,7 +40,8 @@ jobs:
       - name: Compute pre-release version
         id: ver
         run: |
-          BASE=$(jq -r '.version' packages/chat-ui/version.json)
+          BASE_TAG=$(git describe --tags --match='v*' --abbrev=0 2>/dev/null || echo 'v0.0.0')
+          BASE="${BASE_TAG#v}"
           SHORT_SHA="${{ github.event.pull_request.head.sha }}"
           SHORT_SHA="${SHORT_SHA:0:7}"
           VERSION="${BASE}-pr.${{ github.event.pull_request.number }}.${SHORT_SHA}"

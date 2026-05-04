@@ -22,6 +22,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need tag history for git describe
 
       - uses: pnpm/action-setup@v4
 
@@ -36,7 +38,11 @@ jobs:
       - name: Compute dev version
         id: ver
         run: |
-          BASE=$(jq -r '.version' packages/chat-ui/version.json)
+          # Base = most recent v* tag, stripped of the leading 'v'.
+          # Falls back to 0.0.0 if no platform tags exist yet (first
+          # release pre-cut situation).
+          BASE_TAG=$(git describe --tags --match='v*' --abbrev=0 2>/dev/null || echo 'v0.0.0')
+          BASE="${BASE_TAG#v}"
           VERSION="${BASE}-dev.${GITHUB_SHA:0:7}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
