@@ -1,5 +1,14 @@
 // Public API surface of @smartspace/chat-ui.
 
+// UI components — what the consumer renders inside <ChatProvider>.
+export { MessageComposer, MessageList, MessageListSkeleton } from './messages';
+export type { MessageListProps } from './messages/MessageList';
+export type { MessageComposerProps } from './messages/MessageComposer';
+
+// Workspace variables form (used inside MessageComposer; also exported so
+// consumers can render it standalone if needed).
+export { ChatVariablesForm } from './chat-variables/VariablesForm';
+
 // Port — ChatService interface + provider + hooks.
 export type { ChatService } from './platform/chat/ChatService';
 export {
