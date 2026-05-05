@@ -65,8 +65,8 @@ export function mapWorkspaceDtoToModel(dto: WorkspaceDto): Workspace {
     id: dto.id ?? '',
     name: dto.name ?? '',
     tags: dto.tags ?? [],
-    showSources: dto.showSources ?? undefined,
-    dataSpaces: Array.isArray(dto.dataSpaces) ? dto.dataSpaces : undefined,
+    showSources: truthy(dto.showSources),
+    dataSpaces: Array.isArray(dto.dataSpaces) ? dto.dataSpaces : [],
 
     createdByUserId: dto.createdByUserId ?? undefined,
     createdAt: dto.createdAt != null ? utcDate(dto.createdAt) : undefined,
@@ -76,18 +76,20 @@ export function mapWorkspaceDtoToModel(dto: WorkspaceDto): Workspace {
 
     favorited: truthy(dto.favorited),
 
-    summary: dto.summary ?? undefined,
-    firstPrompt: dto.firstPrompt ?? undefined,
+    summary: dto.summary ?? '',
+    firstPrompt: dto.firstPrompt ?? '',
 
     outputSchema: dto.outputSchema ?? undefined,
-    isPromptAndResponseLoggingEnabled:
-      dto.isPromptAndResponseLoggingEnabled ?? undefined,
     inputs: dto.inputs ?? undefined,
+
+    isPromptAndResponseLoggingEnabled: truthy(
+      dto.isPromptAndResponseLoggingEnabled
+    ),
 
     variables,
 
     sandBoxThreadId: dto.sandBoxThreadId ?? undefined,
-    supportsFiles: dto.supportsFiles ?? undefined,
+    supportsFiles: truthy(dto.supportsFiles),
 
     avatarName: computeAvatar(dto.name ?? ''),
   };
