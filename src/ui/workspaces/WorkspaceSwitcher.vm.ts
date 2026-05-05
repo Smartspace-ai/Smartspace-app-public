@@ -14,8 +14,6 @@ import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 import type { Workspace } from '@smartspace/chat-ui';
 import { messagesKeys, threadsKeys, workspaceKeys } from '@smartspace/chat-ui';
 
-import { useWorkspaceSubscriptions } from './useWorkspaceSubscriptions';
-
 export function useWorkspaceSwitcherVm() {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,8 +25,6 @@ export function useWorkspaceSwitcherVm() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { workspaceId } = useRouteIds();
-
-  useWorkspaceSubscriptions();
 
   const queryClient = useQueryClient();
 

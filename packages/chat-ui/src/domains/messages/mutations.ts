@@ -41,10 +41,10 @@ export function useSendMessage() {
 
       // Optimistic message
       const optimistic: Message = {
-        id: `temp-${Date.now()}`,
+        id: `temp-${crypto.randomUUID()}`,
         values: [
           {
-            id: `temp-${Date.now()}-prompt`,
+            id: `temp-${crypto.randomUUID()}-prompt`,
             type: MessageValueType.INPUT,
             name: 'prompt',
             value: contentList,
@@ -56,7 +56,7 @@ export function useSendMessage() {
           ...(files?.length
             ? [
                 {
-                  id: `temp-${Date.now()}-files`,
+                  id: `temp-${crypto.randomUUID()}-files`,
                   type: MessageValueType.INPUT,
                   name: 'files',
                   value: files,
@@ -70,7 +70,7 @@ export function useSendMessage() {
           ...(variables && Object.keys(variables).length
             ? [
                 {
-                  id: `temp-${Date.now()}-vars`,
+                  id: `temp-${crypto.randomUUID()}-vars`,
                   type: MessageValueType.INPUT,
                   name: 'variables',
                   value: variables,

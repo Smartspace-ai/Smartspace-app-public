@@ -11,6 +11,7 @@ import {
 
 import { PageSkeleton } from '@/ui/feedback/Skeletons';
 import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
+import { useWorkspaceSubscriptions } from '@/ui/workspaces/useWorkspaceSubscriptions';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
@@ -38,6 +39,11 @@ export function ChatProviderBridge({ children }: { children: ReactNode }) {
       {children}
     </ChatProvider>
   );
+}
+
+function WorkspaceSubscriptionsHost() {
+  useWorkspaceSubscriptions();
+  return null;
 }
 
 function WorkspaceBodyBackground() {
@@ -86,6 +92,7 @@ export const Route = createFileRoute(
     <RouteIdsProvider>
       <ChatProviderBridge>
         <PendingThreadsProvider>
+          <WorkspaceSubscriptionsHost />
           <WorkspaceBodyBackground />
           <Suspense fallback={<PageSkeleton />}>
             <Outlet />
