@@ -37,21 +37,13 @@ export const messagesListOptions = (
     staleTime: 30_000,
   });
 
-export function useMessages(
-  threadId: string,
-  opts?: { take?: number; skip?: number; skipWhenNewThread?: boolean }
-) {
+export function useMessages(threadId: string) {
   const service = useChatService();
   const isDraft = isDraftThreadId(threadId);
-  const skipFetch = opts?.skipWhenNewThread || !threadId || isDraft;
-  const listOpts =
-    opts?.take != null || opts?.skip != null
-      ? { take: opts.take, skip: opts.skip }
-      : undefined;
   return useQuery({
-    ...messagesListOptions(service, threadId, listOpts),
-    enabled: !opts?.skipWhenNewThread && !!threadId && !isDraft,
-    initialData: skipFetch ? [] : undefined,
+    ...messagesListOptions(service, threadId),
+    enabled: !!threadId && !isDraft,
+    initialData: !threadId || isDraft ? [] : undefined,
   });
 }
 
