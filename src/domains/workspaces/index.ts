@@ -1,8 +1,6 @@
-// App-side workspaces domain barrel.
-//
-// Re-exports the package's chat-side surface (model, queryKeys, useWorkspace,
-// taggable users) plus the app-only sidebar surface (workspacesListOptions /
-// useWorkspaces / fetchWorkspaces).
-export * from '@smartspace/chat-ui';
+// App-side workspaces domain barrel — exports the app-only sidebar surface
+// (paginated workspaces list, fetch helpers). Package chat-side exports
+// (model, queryKeys, useWorkspace, taggable users) live at `@smartspace/chat-ui`
+// and should be imported from there directly.
 export { useWorkspaces, workspacesListOptions } from './queries';
 export { fetchTaggableUsers, fetchWorkspace, fetchWorkspaces } from './service';

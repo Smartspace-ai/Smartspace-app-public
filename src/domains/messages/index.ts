@@ -1,8 +1,6 @@
-// App-side messages domain barrel.
-//
-// Re-exports the package's chat-side surface plus the app-only service
-// + the legacy useThreadMessageStream hook (still in app because it
-// depends on @/platform/log and the SDK-bound streamThreadMessages).
-export * from '@smartspace/chat-ui';
+// App-side messages domain barrel — exports the app-only SDK-bound service
+// and the legacy `useThreadMessageStream` hook. Package chat-side exports
+// (model, queries, mutations, mappers, queryKeys) live at `@smartspace/chat-ui`
+// and should be imported from there directly.
 export * from './service';
 export { useThreadMessageStream } from './threadStream';
