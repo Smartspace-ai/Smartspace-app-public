@@ -22,7 +22,6 @@ import { createPortal } from 'react-dom';
 import type { FileInfo } from '@/domains/files/model';
 import { useFileMutations } from '@/domains/files/mutations';
 
-
 import type { MarkdownEditorHandle } from '@/shared/markdown/MarkdownEditor';
 import { MarkdownEditor } from '@/shared/markdown/MarkdownEditor';
 import { Button as UIButton } from '@/shared/mui-compat/button';
@@ -162,12 +161,16 @@ export default function MessageComposer({
     workspaceId,
     threadId: isDraftThread ? undefined : threadId,
   });
-  // Provide a global downloader for ssImage node views (non-React context)
-  if (typeof window !== 'undefined') {
-    window.__ssDownloadFile = async (id: string) => {
-      return await getFileBlobUrl(id);
+  // Provide a global downloader for ssImage node views (non-React context).
+  // Milkdown's image node view reads `window.__ssDownloadFile` by name on
+  // first render, so an effect-based assignment runs early enough.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.__ssDownloadFile = (id: string) => getFileBlobUrl(id);
+    return () => {
+      if (window.__ssDownloadFile) delete window.__ssDownloadFile;
     };
-  }
+  }, [getFileBlobUrl]);
   const onUploadFiles = async (files: File[]) => {
     const res = await uploadFilesMutation.mutateAsync(files);
     return res.map(({ id, name }) => ({ id, name }));
