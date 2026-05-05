@@ -1,9 +1,9 @@
 // src/ui/workspaces/useWorkspaceSubscriptions.ts
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { useMatch, useNavigate } from '@tanstack/react-router';
 
+import { defaultChatService } from '@/platform/chat/defaultChatService';
 import { useWorkspaceRealtime } from '@/platform/realtime/useWorkspaceRealtime';
-import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { applyCommentToCache, commentsKeys } from '@/domains/comments';
 import { useThreadMessageStream } from '@/domains/messages/threadStream';
@@ -15,16 +15,34 @@ import {
   messagesKeys,
   threadDetailOptions,
   threadsKeys,
-  useChatService,
 } from '@smartspace/chat-ui';
 
+// Mounted at the auth layout (`_protected.tsx`) so SignalR persists across
+// workspace switches. Reads ids directly via `useMatch` (rather than
+// `useRouteIds`) so the hook can sit above the workspace layout where the
+// provider isn't mounted, and gracefully no-ops on non-workspace routes
+// like `/workspace`. Uses the singleton `defaultChatService` directly
+// because `ChatProvider` only mounts under the workspace layout.
 export function useWorkspaceSubscriptions() {
-  // Derive ids from whichever workspace route is active: thread,
-  // workspace index, or the bare workspace layout. Matching only the
-  // thread route means the SignalR join never fires on the workspace
-  // home, so broadcasts reach zero clients for that tab.
-  const { workspaceId, threadId } = useRouteIds();
-  const service = useChatService();
+  const threadMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/_layout/thread/$threadId',
+    shouldThrow: false,
+  });
+  const workspaceIndexMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/_layout/',
+    shouldThrow: false,
+  });
+  const workspaceLayoutMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/_layout',
+    shouldThrow: false,
+  });
+  const workspaceId =
+    threadMatch?.params?.workspaceId ??
+    workspaceIndexMatch?.params?.workspaceId ??
+    workspaceLayoutMatch?.params?.workspaceId ??
+    '';
+  const threadId = threadMatch?.params?.threadId ?? '';
+  const service = defaultChatService;
   const qc = useQueryClient();
   const navigate = useNavigate();
 

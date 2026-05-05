@@ -15,6 +15,8 @@ import { RouteProgressBar } from '@/app/ui/RouteProgressBar';
 
 import { workspacesListOptions } from '@/domains/workspaces';
 
+import { useWorkspaceSubscriptions } from '@/ui/workspaces/useWorkspaceSubscriptions';
+
 export const Route = createFileRoute('/_protected')({
   // Runs on navigation (and on intent prefetch if enabled).
   // If you find redirects during hover annoying, disable preload on links into /_protected.
@@ -52,6 +54,11 @@ function ProtectedLayout() {
   useEffect(() => {
     removeSplash();
   }, []);
+  // Mount workspace SignalR + thread SSE subscriptions here so they persist
+  // across workspace switches. Mounting under the workspace layout makes
+  // the hook unmount/remount on every workspace change, which causes a
+  // visible thread-list flicker after navigation.
+  useWorkspaceSubscriptions();
   return (
     <>
       <RouteProgressBar />
