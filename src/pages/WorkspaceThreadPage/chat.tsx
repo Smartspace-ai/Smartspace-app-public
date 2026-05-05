@@ -6,7 +6,7 @@ import { Toaster } from 'sonner';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
 
-import { useWorkspace, useWorkspaces } from '@/domains/workspaces';
+import { useWorkspaces } from '@/domains/workspaces';
 
 import SidebarRightPanel from '@/ui/comments_draw/sidebar-right';
 import ChatHeaderBar from '@/ui/header/chat-header';
@@ -17,7 +17,11 @@ import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
-import { MessageComposer, MessageList } from '@smartspace/chat-ui';
+import {
+  MessageComposer,
+  MessageList,
+  useWorkspace,
+} from '@smartspace/chat-ui';
 
 export default function ChatBotPage({
   workspaceId,

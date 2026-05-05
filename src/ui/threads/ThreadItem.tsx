@@ -13,10 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/mui-compat/dropdown-menu';
-import { parseDateTimeHuman } from '@/shared/utils/parseDateTime';
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
-import type { MessageThread } from '@smartspace/chat-ui';
+import { parseDateTimeHuman, type MessageThread } from '@smartspace/chat-ui';
 
 import { useThreadItemVm } from './ThreadItem.vm';
 import { ThreadRenameModal } from './ThreadRenameModal';

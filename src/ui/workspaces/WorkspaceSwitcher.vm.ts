@@ -7,14 +7,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { commentsKeys } from '@/domains/comments/queryKeys';
-import { useWorkspace, useWorkspaces } from '@/domains/workspaces';
+import { useWorkspaces } from '@/domains/workspaces';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 import type { Workspace } from '@smartspace/chat-ui';
-import { messagesKeys, threadsKeys, workspaceKeys } from '@smartspace/chat-ui';
-
-import { useWorkspaceSubscriptions } from './useWorkspaceSubscriptions';
+import {
+  messagesKeys,
+  threadsKeys,
+  useWorkspace,
+  workspaceKeys,
+} from '@smartspace/chat-ui';
 
 export function useWorkspaceSwitcherVm() {
   const [open, setOpen] = useState(false);
@@ -27,8 +30,6 @@ export function useWorkspaceSwitcherVm() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { workspaceId } = useRouteIds();
-
-  useWorkspaceSubscriptions();
 
   const queryClient = useQueryClient();
 

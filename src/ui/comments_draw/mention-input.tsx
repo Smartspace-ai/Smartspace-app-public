@@ -21,9 +21,8 @@ import {
   AvatarImage as SsAvatarImage,
 } from '@/shared/ui/mui-compat/avatar';
 import { getInitials } from '@/shared/utils/initials';
-import { getUserPhotoUrl } from '@/shared/utils/userPhoto';
 
-import { MentionUser } from '@smartspace/chat-ui';
+import { getUserPhotoUrl, MentionUser } from '@smartspace/chat-ui';
 
 interface MentionInputProps {
   value: { plain: string; withMentions: string };
