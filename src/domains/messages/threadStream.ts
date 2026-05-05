@@ -42,24 +42,26 @@ export function useThreadMessageStream(
     const byCreatedAt = (a: Message, b: Message) =>
       a.createdAt.getTime() - b.createdAt.getTime();
 
+    // The SSE is authoritative once it's open. Snapshot fully replaces; we
+    // do not preserve client-only optimistics here because the SSE only
+    // opens after `useSendMessage` has POSTed and written `[realMessage]`
+    // to the cache, so by definition no optimistic temp-ids are still live.
     const onSnapshot = (messages: Message[]) => {
       const sorted = [...messages].sort(byCreatedAt);
-      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
-        const optimistics = old.filter((m) => m.optimistic);
-        return [...sorted, ...optimistics];
-      });
+      qc.setQueryData<Message[]>(messagesKeys.list(threadId), sorted);
     };
 
+    // Brand-new message frame: replace by id if we've seen it, append+sort
+    // otherwise. No content-based merging — SSE id is the source of truth.
     const onUpsert = (messageId: string, message: Message) => {
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
-        const stable = old.filter((m) => !m.optimistic);
-        const optimistics = old.filter((m) => m.optimistic);
-        const idx = stable.findIndex((m) => m.id === messageId);
-        const nextStable =
-          idx === -1
-            ? [...stable, message].sort(byCreatedAt)
-            : stable.map((m, i) => (i === idx ? message : m));
-        return [...nextStable, ...optimistics];
+        const idx = old.findIndex((m) => m.id === messageId);
+        if (idx !== -1) {
+          const copy = old.slice();
+          copy[idx] = message;
+          return copy;
+        }
+        return [...old, message].sort(byCreatedAt);
       });
     };
 

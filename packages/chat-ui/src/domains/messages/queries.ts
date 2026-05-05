@@ -10,47 +10,8 @@ import type { ChatService } from '@/platform/chat';
 
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
-import { MessageValueType } from './enums';
 import type { Message } from './model';
 import { messagesKeys } from './queryKeys';
-
-function getPromptSignature(m: Message): string | null {
-  const prompt = m.values?.find(
-    (v) => v.type === MessageValueType.INPUT && v.name === 'prompt'
-  );
-  if (!prompt) return null;
-  try {
-    return JSON.stringify(prompt.value ?? null);
-  } catch {
-    return null;
-  }
-}
-
-function mergeFetchedWithOptimistics(
-  current: Message[] | undefined,
-  fetched: Message[]
-): Message[] {
-  if (!current?.length) return fetched;
-
-  // Only preserve optimistic/pending client messages; server-fetched is source of truth for non-optimistic.
-  const optimistics = current.filter((m) => m.optimistic);
-  if (!optimistics.length) return fetched;
-
-  // If the server already returned a matching prompt message, drop the optimistic to avoid duplicates.
-  const fetchedPromptSigs = new Set(
-    fetched
-      .map((m) => getPromptSignature(m))
-      .filter((s): s is string => typeof s === 'string' && s.length > 0)
-  );
-
-  const dedupedOptimistics = optimistics.filter((o) => {
-    const sig = getPromptSignature(o);
-    if (!sig) return true;
-    return !fetchedPromptSigs.has(sig);
-  });
-
-  return [...fetched, ...dedupedOptimistics];
-}
 
 export const messagesListOptions = (
   service: ChatService,
@@ -62,14 +23,12 @@ export const messagesListOptions = (
     // NOTE: queryKey intentionally does NOT include opts. This keeps cache updates from
     // message mutations (which write to messagesKeys.list(threadId)) working.
     // If opts changes (e.g. user clicks "Load full history"), we manually refetch.
-    queryFn: async (ctx) => {
+    queryFn: async () => {
       if (!threadId) return [];
-      const fetched = (await service.fetchMessages(threadId, opts)).reverse();
-      // IMPORTANT: read cache AFTER fetch so we merge with latest (e.g. optimistic send).
-      const current = ctx.client.getQueryData<Message[]>(
-        messagesKeys.list(threadId)
-      );
-      return mergeFetchedWithOptimistics(current, fetched);
+      // Server is the source of truth. The send mutation cancels in-flight
+      // refetches before POSTing so its `[realMessage]` write isn't races by
+      // a stale fetch landing afterwards.
+      return (await service.fetchMessages(threadId, opts)).reverse();
     },
     retry: false,
     refetchOnWindowFocus: false,

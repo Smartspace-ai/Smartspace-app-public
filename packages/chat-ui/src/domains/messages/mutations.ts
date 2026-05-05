@@ -128,19 +128,12 @@ export function useSendMessage() {
         throw err;
       }
 
-      // Replace the optimistic temp-id entry with the server-authoritative
-      // Message we just got back. If the thread SSE already added the same
-      // id (from its snapshot frame), keep its copy — it's at least as fresh
-      // as ours — and just drop the optimistic.
-      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
-        const withoutOptimistic = old.filter((m) => !m.optimistic);
-        const alreadyPresent = withoutOptimistic.some(
-          (m) => m.id === realMessage.id
-        );
-        return alreadyPresent
-          ? withoutOptimistic
-          : [...withoutOptimistic, realMessage];
-      });
+      // POST is authoritative for the user's just-sent message. Replace the
+      // entire cache with [realMessage]; the SSE snapshot will fully replace
+      // it again with the server's view (including the AI response slot) the
+      // moment the stream opens. No merging — keeps the message list a
+      // straight reflection of POST → SSE rather than a layered union.
+      qc.setQueryData<Message[]>(messagesKeys.list(threadId), [realMessage]);
 
       // POST returned successfully — the server has accepted the message
       // and the flow is now running. Mirror that in the detail cache so:
