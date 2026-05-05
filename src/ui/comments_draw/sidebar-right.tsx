@@ -33,11 +33,13 @@ import {
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
 import type { MarkdownEditorHandle } from '@smartspace/chat-ui';
-import { MarkdownEditor } from '@smartspace/chat-ui';
+import {
+  MarkdownEditor,
+  getUserPhotoUrl,
+  parseDateTime,
+} from '@smartspace/chat-ui';
 
 import { getInitials } from '../../shared/utils/initials';
-import { parseDateTime } from '../../shared/utils/parseDateTime';
-import { getUserPhotoUrl } from '../../shared/utils/userPhoto';
 
 const MAX_COMMENT_LENGTH = 350;
 

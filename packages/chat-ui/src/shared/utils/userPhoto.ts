@@ -2,10 +2,13 @@ type SsWindow = Window & {
   ssconfig?: { Chat_Api_Uri?: unknown };
 };
 
+type ViteImportMeta = ImportMeta & { env?: Record<string, unknown> };
+
 function getChatApiBaseUrl(): string {
   try {
     const w = window as unknown as SsWindow;
-    const cfg = w?.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
+    const env = (import.meta as ViteImportMeta).env;
+    const cfg = w?.ssconfig?.Chat_Api_Uri ?? env?.VITE_CHAT_API_URI;
     return typeof cfg === 'string' && cfg.trim() ? cfg.trim() : '';
   } catch {
     return '';

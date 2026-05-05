@@ -23,9 +23,9 @@ import {
 } from '@/shared/ui/mui-compat/dropdown-menu';
 import { SidebarHeader } from '@/shared/ui/mui-compat/sidebar';
 import { getInitials } from '@/shared/utils/initials';
-import { getUserPhotoUrl } from '@/shared/utils/userPhoto';
 
 import { Logo } from '@/assets/logo';
+import { getUserPhotoUrl } from '@smartspace/chat-ui';
 
 export default function SidebarUserHeader() {
   const { isInTeams } = useTeams();
