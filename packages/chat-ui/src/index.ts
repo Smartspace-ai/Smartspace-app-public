@@ -90,6 +90,14 @@ export {
   unmarkDraftThreadId,
 } from './shared/utils/threadId';
 
+// Date + photo helpers consumers reuse for app-side mappers/schemas/UI.
+export { DateFromApi, utcDate } from './shared/utils/dateFromApi';
+export {
+  parseDateTime,
+  parseDateTimeHuman,
+} from './shared/utils/parseDateTime';
+export { getUserPhotoUrl } from './shared/utils/userPhoto';
+
 // Query keys consumers may need to invalidate or seed cache.
 export {
   messagesKeys,
