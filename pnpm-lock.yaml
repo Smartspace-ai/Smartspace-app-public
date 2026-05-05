@@ -457,6 +457,12 @@ importers:
       '@smartspace/api-client':
         specifier: dev
         version: 0.1.0-dev.00e0c7c(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
+      tailwindcss:
+        specifier: ^3.4.10
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
+      tailwindcss-animate:
+        specifier: ^1.0.7
+        version: 1.0.7(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       tsup:
         specifier: ^8.5.0
         version: 8.5.1(@swc/core@1.15.30(@swc/helpers@0.5.21))(jiti@2.4.2)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.5.4)(yaml@2.8.3)
