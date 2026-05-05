@@ -21,10 +21,36 @@ type ThreadsListCache =
  * created one) can fall back to invalidating the list queries when this
  * returns `false`.
  */
+/**
+ * True when a stale summary should be ignored — the cache already holds a
+ * write whose `summaryEmittedAt` is strictly newer than the incoming one.
+ * Equal-or-undefined timestamps fall through (incoming wins) so the function
+ * stays a no-op for legacy callers that never set the field.
+ */
+function isStaleSummary(
+  incoming: Pick<MessageThread, 'summaryEmittedAt'>,
+  existing: Pick<MessageThread, 'summaryEmittedAt'> | undefined
+): boolean {
+  if (!existing) return false;
+  if (typeof existing.summaryEmittedAt !== 'number') return false;
+  if (typeof incoming.summaryEmittedAt !== 'number') return false;
+  return incoming.summaryEmittedAt < existing.summaryEmittedAt;
+}
+
 export function applyThreadToCache(
   qc: QueryClient,
   thread: MessageThread
 ): boolean {
+  // Reject stale summaries (e.g. SignalR's lagged DB write landing after a
+  // fresher SSE thread frame). The detail-cache check is authoritative
+  // because every server-emitted summary writes there first.
+  const existingDetail = qc.getQueryData<MessageThread>(
+    threadsKeys.detail(thread.workSpaceId, thread.id)
+  );
+  if (isStaleSummary(thread, existingDetail)) {
+    return false;
+  }
+
   qc.setQueryData<MessageThread>(
     threadsKeys.detail(thread.workSpaceId, thread.id),
     (old) => ({ ...(old ?? thread), ...thread })
@@ -51,6 +77,7 @@ export function applyThreadToCache(
           if (!page?.data) return page;
           const idx = page.data.findIndex((t) => t.id === thread.id);
           if (idx === -1) return page;
+          if (isStaleSummary(thread, page.data[idx])) return page;
           changed = true;
           foundInList = true;
           const nextData = page.data.slice();
@@ -63,6 +90,7 @@ export function applyThreadToCache(
       if (!list.data) return old;
       const idx = list.data.findIndex((t) => t.id === thread.id);
       if (idx === -1) return old;
+      if (isStaleSummary(thread, list.data[idx])) return old;
       foundInList = true;
       const nextData = list.data.slice();
       nextData[idx] = { ...nextData[idx], ...thread };
