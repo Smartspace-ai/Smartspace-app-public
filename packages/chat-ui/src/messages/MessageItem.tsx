@@ -119,10 +119,25 @@ export const MessageItem: FC<MessageItemProps> = ({
     return Number.isFinite(t) ? t : 0;
   };
 
-  // sort without mutating original
-  const values = (message.values ?? [])
+  // Sort and collapse duplicate (name, type) entries, retaining the LAST
+  // occurrence of each. Streaming responses can produce one OUTPUT value
+  // per chunk under the same (name, type); without this, each chunk
+  // renders as its own bubble (cumulative-text ladder).
+  const sortedValues = (message.values ?? [])
     .slice()
     .sort((a, b) => safeTime(a.createdAt) - safeTime(b.createdAt));
+  const slotByKey = new Map<string, number>();
+  const values: typeof sortedValues = [];
+  for (const v of sortedValues) {
+    const key = `${v.name}|${v.type}`;
+    const existing = slotByKey.get(key);
+    if (existing !== undefined) {
+      values[existing] = v;
+    } else {
+      slotByKey.set(key, values.length);
+      values.push(v);
+    }
+  }
 
   const bubbles: ReactNode[] = [];
 
