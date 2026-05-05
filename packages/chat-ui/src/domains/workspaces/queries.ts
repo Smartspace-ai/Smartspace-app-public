@@ -21,7 +21,10 @@ export const workspaceDetailOptions = ({
 
 export function useWorkspace(workspaceId: string) {
   const service = useChatService();
-  return useQuery(workspaceDetailOptions({ service, workspaceId }));
+  return useQuery({
+    ...workspaceDetailOptions({ service, workspaceId }),
+    enabled: !!workspaceId,
+  });
 }
 
 export const taggableUsersOptions = ({
