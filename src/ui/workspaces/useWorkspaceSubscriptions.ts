@@ -64,10 +64,15 @@ export function useWorkspaceSubscriptions() {
       );
       if (!foundInList) invalidateWorkspaceThreadLists(qc, workspaceId);
 
-      // Refetch the messages list so other-tab activity surfaces; the
-      // viewed thread's SSE will overwrite this with authoritative state
-      // on its next frame.
-      qc.invalidateQueries({ queryKey: messagesKeys.list(summary.id) });
+      // Refetch the messages list so other-tab activity surfaces — but
+      // only for threads the user is NOT currently viewing. The viewed
+      // thread is fed by its own SSE (snapshot + deltas + terminal frame)
+      // which is already authoritative; invalidating its cache here races
+      // a server fetch against the SSE's final state and produces a
+      // visible flicker the moment the flow finishes.
+      if (summary.id !== threadId) {
+        qc.invalidateQueries({ queryKey: messagesKeys.list(summary.id) });
+      }
     },
     onThreadDeleted: (summary) => {
       if (!workspaceId) return;
