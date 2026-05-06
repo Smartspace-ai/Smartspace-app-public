@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -11,6 +11,7 @@ import { filesKeys } from './queryKeys';
 export const useFileMutations = (scope: FileScope) => {
   const { workspaceId, threadId } = scope;
   const service = useChatService();
+  const queryClient = useQueryClient();
 
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
   const [fileProgress, setFileProgress] = useState<Record<string, number>>({});
@@ -85,12 +86,25 @@ export const useFileMutations = (scope: FileScope) => {
         : ('uploading' as const),
     }));
 
+  // Cache blob URLs by file id across thread switches / remounts. File bytes
+  // are immutable per id, so the entry never goes stale and we keep it for
+  // the session (gcTime: Infinity). The blob memory survives until the page
+  // unloads, which is fine for a chat session.
   const getFileBlobUrl = useCallback(
-    async (id: string) => {
-      const blob = await service.downloadFile(id, { workspaceId, threadId });
-      return URL.createObjectURL(blob);
-    },
-    [service, workspaceId, threadId]
+    (id: string) =>
+      queryClient.fetchQuery({
+        queryKey: filesKeys.downloadBlob(id),
+        queryFn: async () => {
+          const blob = await service.downloadFile(id, {
+            workspaceId,
+            threadId,
+          });
+          return URL.createObjectURL(blob);
+        },
+        staleTime: Infinity,
+        gcTime: Infinity,
+      }),
+    [queryClient, service, workspaceId, threadId]
   );
 
   return {

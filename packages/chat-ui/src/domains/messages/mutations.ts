@@ -15,6 +15,35 @@ import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
 import { messagesKeys } from './queryKeys';
 
+/**
+ * Reconcile an optimistic placeholder with a server-confirmed message.
+ *
+ * Drops every entry flagged `optimistic: true` from `old`, then merges
+ * `incoming` into the remaining list:
+ *
+ * - **No match by id** → append.
+ * - **Match exists** → behaviour controlled by `onDuplicate`:
+ *   - `keep-existing` (default): leave the existing entry untouched. Used by
+ *     `useSendMessage` so a richer SSE-delivered version isn't overwritten
+ *     by the sparse `POST /Messages/start` response.
+ *   - `replace`: overwrite the existing entry with `incoming`. Used by
+ *     `useAddInputToMessage`, where the mutation response carries the
+ *     latest server state we want to commit.
+ */
+function reconcileWithMessage(
+  old: Message[],
+  incoming: Message,
+  onDuplicate: 'keep-existing' | 'replace' = 'keep-existing'
+): Message[] {
+  const stable = old.filter((m) => !m.optimistic);
+  const idx = stable.findIndex((m) => m.id === incoming.id);
+  if (idx === -1) return [...stable, incoming];
+  if (onDuplicate === 'keep-existing') return stable;
+  const copy = stable.slice();
+  copy[idx] = incoming;
+  return copy;
+}
+
 type SendArgs = {
   workspaceId: string;
   threadId: string;
@@ -41,10 +70,10 @@ export function useSendMessage() {
 
       // Optimistic message
       const optimistic: Message = {
-        id: `temp-${Date.now()}`,
+        id: `temp-${crypto.randomUUID()}`,
         values: [
           {
-            id: `temp-${Date.now()}-prompt`,
+            id: `temp-${crypto.randomUUID()}-prompt`,
             type: MessageValueType.INPUT,
             name: 'prompt',
             value: contentList,
@@ -56,7 +85,7 @@ export function useSendMessage() {
           ...(files?.length
             ? [
                 {
-                  id: `temp-${Date.now()}-files`,
+                  id: `temp-${crypto.randomUUID()}-files`,
                   type: MessageValueType.INPUT,
                   name: 'files',
                   value: files,
@@ -70,7 +99,7 @@ export function useSendMessage() {
           ...(variables && Object.keys(variables).length
             ? [
                 {
-                  id: `temp-${Date.now()}-vars`,
+                  id: `temp-${crypto.randomUUID()}-vars`,
                   type: MessageValueType.INPUT,
                   name: 'variables',
                   value: variables,
@@ -128,12 +157,19 @@ export function useSendMessage() {
         throw err;
       }
 
-      // POST is authoritative for the user's just-sent message. Replace the
-      // entire cache with [realMessage]; the SSE snapshot will fully replace
-      // it again with the server's view (including the AI response slot) the
-      // moment the stream opens. No merging — keeps the message list a
-      // straight reflection of POST → SSE rather than a layered union.
-      qc.setQueryData<Message[]>(messagesKeys.list(threadId), [realMessage]);
+      // Reconcile the optimistic placeholder with the server's realMessage
+      // in place. We previously replaced the cache with `[realMessage]` and
+      // relied on the SSE snapshot to restore history, but with the (now
+      // in use) `/Messages/start` endpoint the POST resolves in ~50ms
+      // while the SSE snapshot can take a few hundred ms longer; the gap
+      // was producing a visible "all old messages flicker" the moment the
+      // user hit send. `reconcileWithMessage`'s default `keep-existing`
+      // duplicate strategy ensures that if the SSE happened to deliver
+      // realMessage first (carrying richer in-progress state) we don't
+      // overwrite it with the sparse POST response.
+      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
+        reconcileWithMessage(old, realMessage)
+      );
 
       // POST returned successfully — the server has accepted the message
       // and the flow is now running. Mirror that in the detail cache so:
@@ -175,7 +211,6 @@ export function useSendMessage() {
   });
 }
 
-// Optional: keep addInputToMessage in a separate hook
 type AddInputArgs = {
   workspaceId?: string; // only needed if you invalidate thread lists
   threadId: string;
@@ -228,14 +263,9 @@ export function useAddInputToMessage() {
       });
     },
     onSuccess: (message, { threadId }) => {
-      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
-        const stable = old.filter((x) => !x.optimistic);
-        const idx = stable.findIndex((x) => x.id === message.id);
-        if (idx === -1) return [...stable, message];
-        const copy = stable.slice();
-        copy[idx] = message;
-        return copy;
-      });
+      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
+        reconcileWithMessage(old, message, 'replace')
+      );
     },
     onError: (_e, { threadId }) => {
       // rollback optimistic patch

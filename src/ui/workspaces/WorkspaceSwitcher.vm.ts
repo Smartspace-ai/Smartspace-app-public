@@ -6,13 +6,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import { commentsKeys } from '@/domains/comments/queryKeys';
-import { useWorkspace, useWorkspaces } from '@/domains/workspaces';
+import { useWorkspaces } from '@/domains/workspaces';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 import type { Workspace } from '@smartspace/chat-ui';
-import { messagesKeys, threadsKeys, workspaceKeys } from '@smartspace/chat-ui';
+import { useWorkspace, workspaceKeys } from '@smartspace/chat-ui';
 
 export function useWorkspaceSwitcherVm() {
   const [open, setOpen] = useState(false);
@@ -110,21 +109,6 @@ export function useWorkspaceSwitcherVm() {
     queryClient.invalidateQueries({
       queryKey: workspaceKeys.byId(id),
     });
-
-    // Immediately clear list/detail caches so the UI shows loading states instead
-    // of stale threads/messages/comments from the previous workspace.
-    await Promise.all([
-      queryClient.cancelQueries({ queryKey: threadsKeys.all }),
-      queryClient.cancelQueries({ queryKey: messagesKeys.all }),
-      queryClient.cancelQueries({ queryKey: commentsKeys.all }),
-    ]);
-
-    queryClient.removeQueries({ queryKey: threadsKeys.all });
-    queryClient.removeQueries({ queryKey: messagesKeys.all });
-    queryClient.removeQueries({ queryKey: commentsKeys.all });
-
-    // Compatibility: some older invalidations used a raw comments key
-    queryClient.removeQueries({ queryKey: ['comments'] });
 
     navigate({
       to: '/workspace/$workspaceId',

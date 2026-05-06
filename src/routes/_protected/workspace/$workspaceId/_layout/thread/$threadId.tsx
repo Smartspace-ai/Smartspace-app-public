@@ -9,8 +9,6 @@ import { threadsListOptions } from '@/domains/threads';
 
 import { ThreadRenameModal } from '@/ui/threads/ThreadRenameModal';
 
-import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
-
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 import { threadDetailOptions, useThread } from '@smartspace/chat-ui';
@@ -110,16 +108,13 @@ function ThreadRouteComponent() {
     });
   };
 
+  if (!thread) return null;
+
   return (
-    <>
-      <ChatBotPage workspaceId={workspaceId} threadId={threadId} />
-      {thread && (
-        <ThreadRenameModal
-          isOpen={isRenameOpen}
-          onClose={closeRenameModal}
-          thread={thread}
-        />
-      )}
-    </>
+    <ThreadRenameModal
+      isOpen={isRenameOpen}
+      onClose={closeRenameModal}
+      thread={thread}
+    />
   );
 }

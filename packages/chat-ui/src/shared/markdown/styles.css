@@ -4,14 +4,17 @@
 }
 
 .ss-attach {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   vertical-align: middle;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--muted), white 80%);
-  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: hsl(var(--muted, 0 0% 96%));
+  border: 1px solid hsl(var(--border, 0 0% 89%));
   overflow: hidden;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .ss-attach--image {
@@ -21,6 +24,70 @@
 .ss-attach__img {
   display: block;
   object-fit: contain;
+  border-radius: 6px;
+}
+
+/* Loading spinner overlay shared by Milkdown node view and read-only renderer */
+.ss-attach__spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  border: 2px solid hsl(var(--muted-foreground, 0 0% 40%) / 0.25);
+  border-top-color: hsl(var(--foreground, 0 0% 10%));
+  animation: ss-attach-spin 0.7s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+@keyframes ss-attach-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Remove (X) button — only present in editable Milkdown node view. */
+.ss-attach__remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid hsl(var(--border, 0 0% 89%));
+  background: rgba(255, 255, 255, 0.95);
+  color: hsl(var(--muted-foreground, 0 0% 40%));
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font: inherit;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  z-index: 2;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.ss-attach:hover .ss-attach__remove,
+.ss-attach__remove:focus-visible {
+  opacity: 1;
+}
+
+.ss-attach__remove:hover {
+  color: #dc2626;
+  background: #fff;
+}
+
+.ss-attach__remove svg {
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 
 .md-editor .ProseMirror {

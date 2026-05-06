@@ -1,7 +1,7 @@
 import { ChatZod, SignalR } from '@smartspace/api-client';
 import type { z } from 'zod';
 
-import { utcDate } from '@/shared/utils/dateFromApi';
+import { utcDate } from '@smartspace/chat-ui';
 
 import { Comment, MentionUser } from './model';
 

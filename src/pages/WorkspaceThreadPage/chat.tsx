@@ -5,28 +5,24 @@ import { useMemo } from 'react';
 import { Toaster } from 'sonner';
 
 import { isInTeams } from '@/platform/auth/msalConfig';
-
-import { useWorkspace, useWorkspaces } from '@/domains/workspaces';
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import SidebarRightPanel from '@/ui/comments_draw/sidebar-right';
 import ChatHeaderBar from '@/ui/header/chat-header';
 import SidebarLeft from '@/ui/layout/SidebarLeft';
-import { useThreadsListVm } from '@/ui/threads/ThreadsList.vm';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
-import { MessageComposer, MessageList } from '@smartspace/chat-ui';
+import {
+  MessageComposer,
+  MessageList,
+  useWorkspace,
+} from '@smartspace/chat-ui';
 
-export default function ChatBotPage({
-  workspaceId,
-  threadId,
-}: {
-  workspaceId: string;
-  threadId: string;
-}) {
-  const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces();
+export default function ChatBotPage() {
+  const { workspaceId, threadId } = useRouteIds();
   const { data: activeWorkspace } = useWorkspace(workspaceId);
   const { leftOpen, rightOpen } = useSidebar();
   // While the route loader is redirecting from /workspace/$workspaceId/ to
@@ -36,17 +32,6 @@ export default function ChatBotPage({
     from: '/_protected/workspace/$workspaceId/_layout/',
     shouldThrow: false,
   });
-  const { firstThread, isInitialLoading: threadsInitialLoading } =
-    useThreadsListVm({
-      workspaceId,
-      pageSize: 30,
-    });
-
-  void workspacesLoading;
-  void workspaces;
-  void firstThread;
-  void threadsInitialLoading;
-  void threadId;
 
   const gradientClasses = useMemo(
     () =>

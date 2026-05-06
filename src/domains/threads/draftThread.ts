@@ -148,6 +148,7 @@ export function ensureDraftThread(
     totalMessages: 0,
     pinned: false,
     workSpaceId: workspaceId,
+    summaryEmittedAt: now.getTime(),
   };
 
   queryClient.setQueryData(

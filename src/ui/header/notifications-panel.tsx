@@ -20,9 +20,9 @@ import { Button } from '@/shared/ui/mui-compat/button';
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
 import { Switch } from '@/shared/ui/mui-compat/switch';
 import { getInitials } from '@/shared/utils/initials';
-import { parseDateTimeHuman } from '@/shared/utils/parseDateTime';
-import { getUserPhotoUrl } from '@/shared/utils/userPhoto';
 import { cn } from '@/shared/utils/utils';
+
+import { getUserPhotoUrl, parseDateTimeHuman } from '@smartspace/chat-ui';
 
 export function NotificationPanel() {
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);

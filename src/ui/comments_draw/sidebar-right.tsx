@@ -30,14 +30,18 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from '@/shared/ui/mui-compat/sidebar';
+import { Tooltip } from '@/shared/ui/mui-compat/tooltip';
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
 import type { MarkdownEditorHandle } from '@smartspace/chat-ui';
-import { MarkdownEditor } from '@smartspace/chat-ui';
+import {
+  MarkdownEditor,
+  getUserPhotoUrl,
+  parseDateTime,
+  parseDateTimeHuman,
+} from '@smartspace/chat-ui';
 
 import { getInitials } from '../../shared/utils/initials';
-import { parseDateTime } from '../../shared/utils/parseDateTime';
-import { getUserPhotoUrl } from '../../shared/utils/userPhoto';
 
 const MAX_COMMENT_LENGTH = 350;
 
@@ -219,9 +223,14 @@ export function SidebarRight() {
                         <p className="text-xs font-medium truncate">
                           {comment.createdBy}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {parseDateTime(comment.createdAt)}
-                        </p>
+                        <Tooltip
+                          title={parseDateTime(comment.createdAt)}
+                          enterDelay={300}
+                        >
+                          <p className="text-xs text-muted-foreground w-fit cursor-default">
+                            {parseDateTimeHuman(comment.createdAt)}
+                          </p>
+                        </Tooltip>
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed flex flex-wrap gap-1">

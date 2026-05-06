@@ -150,7 +150,8 @@ export const ssImageView = $view(ssImageNode, (ctx) => (node) => {
   removeBtn.type = 'button';
   removeBtn.className = 'ss-attach__remove';
   removeBtn.setAttribute('aria-label', 'Remove image');
-  removeBtn.textContent = '×';
+  removeBtn.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>';
   removeBtn.addEventListener('mousedown', (e) => {
     // prevent ProseMirror from moving selection/caret weirdly
     e.preventDefault();
@@ -171,8 +172,11 @@ export const ssImageView = $view(ssImageNode, (ctx) => (node) => {
     }
   });
 
-  // Show lightweight placeholder while downloading (do not set img.src yet)
+  // Show lightweight placeholder while downloading (do not set img.src yet).
+  // Hide the bare <img> so the broken-image icon/alt text doesn't render
+  // beneath the spinner.
   img.style.background = 'rgba(0,0,0,0.04)';
+  img.style.visibility = 'hidden';
   let hasSetRealSrc = false;
 
   // Hide spinner once image loads (or errors)
@@ -180,11 +184,13 @@ export const ssImageView = $view(ssImageNode, (ctx) => (node) => {
     if (!hasSetRealSrc) return;
     spinner.remove();
     img.style.background = '';
+    img.style.visibility = '';
   });
   img.addEventListener('error', () => {
     if (!hasSetRealSrc) return;
     spinner.remove();
     img.style.background = 'rgba(255,0,0,0.06)';
+    img.style.visibility = '';
   });
 
   // Fetch via app API (window hook to avoid bundling React inside NodeView)

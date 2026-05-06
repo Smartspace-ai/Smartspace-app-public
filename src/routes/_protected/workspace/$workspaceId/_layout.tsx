@@ -9,8 +9,9 @@ import {
   useRouteIds,
 } from '@/platform/routing/RouteIdsProvider';
 
-import { PageSkeleton } from '@/ui/feedback/Skeletons';
 import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
+
+import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
@@ -87,7 +88,8 @@ export const Route = createFileRoute(
       <ChatProviderBridge>
         <PendingThreadsProvider>
           <WorkspaceBodyBackground />
-          <Suspense fallback={<PageSkeleton />}>
+          <ChatBotPage />
+          <Suspense fallback={null}>
             <Outlet />
           </Suspense>
         </PendingThreadsProvider>

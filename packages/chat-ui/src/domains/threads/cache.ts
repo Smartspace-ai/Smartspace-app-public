@@ -21,10 +21,54 @@ type ThreadsListCache =
  * created one) can fall back to invalidating the list queries when this
  * returns `false`.
  */
+/**
+ * True when a stale summary should be ignored. The guard is intentionally
+ * narrow: we only reject writes that would resurrect a settled `running:
+ * false` back to `true`. That's the only direction the original race can
+ * cause harm in — a stale SignalR `receiveThreadUpdate` arriving after the
+ * SSE terminal frame already wrote `false`.
+ *
+ * Naively rejecting every older-timestamp write breaks the SSE terminal
+ * frame itself: `summaryEmittedAt` is derived from the server's
+ * `lastUpdatedAt` (DB row timestamp), but mid-flow SignalR broadcasts can
+ * carry fresher timestamps than the terminal frame, so a strict
+ * "incoming.ts < existing.ts" rule rejects the very write that should
+ * clear the running indicator. We sidestep that by only flagging writes
+ * that change the running flag in the dangerous direction.
+ *
+ * Equal-or-undefined timestamps always fall through so the function stays
+ * a no-op for callers that don't set the field.
+ */
+function isStaleSummary(
+  incoming: Pick<MessageThread, 'summaryEmittedAt' | 'isFlowRunning'>,
+  existing:
+    | Pick<MessageThread, 'summaryEmittedAt' | 'isFlowRunning'>
+    | undefined
+): boolean {
+  if (!existing) return false;
+  if (typeof existing.summaryEmittedAt !== 'number') return false;
+  if (typeof incoming.summaryEmittedAt !== 'number') return false;
+  if (incoming.summaryEmittedAt >= existing.summaryEmittedAt) return false;
+  // Only block stale writes that would flip a settled "not running" back
+  // to "running". Same-direction or `running → not running` writes go
+  // through even when the timestamp is older.
+  return existing.isFlowRunning === false && incoming.isFlowRunning === true;
+}
+
 export function applyThreadToCache(
   qc: QueryClient,
   thread: MessageThread
 ): boolean {
+  // Reject stale summaries (e.g. SignalR's lagged DB write landing after a
+  // fresher SSE thread frame). The detail-cache check is authoritative
+  // because every server-emitted summary writes there first.
+  const existingDetail = qc.getQueryData<MessageThread>(
+    threadsKeys.detail(thread.workSpaceId, thread.id)
+  );
+  if (isStaleSummary(thread, existingDetail)) {
+    return false;
+  }
+
   qc.setQueryData<MessageThread>(
     threadsKeys.detail(thread.workSpaceId, thread.id),
     (old) => ({ ...(old ?? thread), ...thread })
@@ -51,6 +95,7 @@ export function applyThreadToCache(
           if (!page?.data) return page;
           const idx = page.data.findIndex((t) => t.id === thread.id);
           if (idx === -1) return page;
+          if (isStaleSummary(thread, page.data[idx])) return page;
           changed = true;
           foundInList = true;
           const nextData = page.data.slice();
@@ -63,6 +108,7 @@ export function applyThreadToCache(
       if (!list.data) return old;
       const idx = list.data.findIndex((t) => t.id === thread.id);
       if (idx === -1) return old;
+      if (isStaleSummary(thread, list.data[idx])) return old;
       foundInList = true;
       const nextData = list.data.slice();
       nextData[idx] = { ...nextData[idx], ...thread };
