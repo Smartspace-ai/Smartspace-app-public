@@ -128,12 +128,24 @@ export function useSendMessage() {
         throw err;
       }
 
-      // POST is authoritative for the user's just-sent message. Replace the
-      // entire cache with [realMessage]; the SSE snapshot will fully replace
-      // it again with the server's view (including the AI response slot) the
-      // moment the stream opens. No merging — keeps the message list a
-      // straight reflection of POST → SSE rather than a layered union.
-      qc.setQueryData<Message[]>(messagesKeys.list(threadId), [realMessage]);
+      // Reconcile the optimistic placeholder with the server's realMessage in
+      // place — drop the optimistic, append realMessage if it isn't already
+      // there, otherwise leave the existing entry alone. We previously
+      // replaced the cache with `[realMessage]` and let the SSE snapshot
+      // restore history, but with the (now in use) `/Messages/start`
+      // endpoint the POST resolves in ~50ms while the SSE snapshot can take
+      // a few hundred ms longer; the gap was producing a visible "all old
+      // messages flicker" the moment the user hit send. The duplicate guard
+      // covers the edge case where the SSE happens to deliver `realMessage`
+      // before the POST resolve has run this writer (e.g. SignalR opened the
+      // stream early).
+      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
+        const withoutOptimistic = old.filter((m) => !m.optimistic);
+        if (withoutOptimistic.some((m) => m.id === realMessage.id)) {
+          return withoutOptimistic;
+        }
+        return [...withoutOptimistic, realMessage];
+      });
 
       // POST returned successfully — the server has accepted the message
       // and the flow is now running. Mirror that in the detail cache so:
