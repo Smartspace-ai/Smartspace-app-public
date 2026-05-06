@@ -58,6 +58,20 @@ export function MessageList({
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const prevMessageCountRef = useRef<number>(0);
   const hasInitialScrollRef = useRef<boolean>(false);
+  // Per-thread high-water mark of "have we ever rendered messages?". Once
+  // true, the loading / error / empty fallback branches stop returning a
+  // different DOM tree — instead we fall through to the ScrollArea with
+  // whatever's currently in cache (possibly empty for a frame). This both
+  // hides the transient "Failed to load messages" flash that surfaces from
+  // SSE/SignalR/mutation cache races at flow completion, and preserves the
+  // viewport's scrollTop across those blips so the user doesn't get
+  // bounced back to the top of the conversation. Reset on threadId change
+  // so a brand-new draft thread still gets its welcome screen on first
+  // paint.
+  const everHadMessagesRef = useRef<{ threadId: string; had: boolean }>({
+    threadId: '',
+    had: false,
+  });
   const isMobile = useIsMobile();
 
   const { data: activeWorkspace } = useWorkspace(workspaceId);
@@ -158,6 +172,18 @@ export function MessageList({
 
   const safeMessages = messages ?? [];
 
+  // Track per-thread whether we've ever rendered ≥1 message. Once true, fall
+  // through to the ScrollArea below for the rest of the thread's lifetime so
+  // transient cache states (refetch error, momentarily empty cache from a
+  // stale write at flow completion) don't unmount the viewport and bounce
+  // the user back to the top.
+  if (everHadMessagesRef.current.threadId !== threadId) {
+    everHadMessagesRef.current = { threadId, had: safeMessages.length > 0 };
+  } else if (safeMessages.length > 0) {
+    everHadMessagesRef.current.had = true;
+  }
+  const hadMessagesBefore = everHadMessagesRef.current.had;
+
   // Avoid flicker: if we already have data, keep rendering it while refetching.
   // `isChoosingThread` is opt-in via prop — see MessageListProps for usage.
   const isLoading =
@@ -165,7 +191,7 @@ export function MessageList({
     ((threadPending || threadFetching) && !thread) ||
     ((messagesPending || messagesFetching) && messages === undefined);
 
-  if (isLoading) {
+  if (isLoading && !hadMessagesBefore) {
     return (
       <div
         className={`ss-chat__body flex-shrink-10 flex-1 overflow-y-auto ${hostBg}`}
@@ -185,7 +211,7 @@ export function MessageList({
       </div>
     );
   }
-  if (threadError || messagesError) {
+  if ((threadError || messagesError) && !hadMessagesBefore) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
         <div className="w-full max-w-md space-y-3">
@@ -208,7 +234,7 @@ export function MessageList({
     );
   }
 
-  if (safeMessages.length === 0) {
+  if (safeMessages.length === 0 && !hadMessagesBefore) {
     return (
       <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
         <h3 className="text-lg font-medium mb-2">
