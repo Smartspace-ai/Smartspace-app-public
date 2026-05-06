@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyThreadToCache,
   type MessageThread,
+  type ThreadsResponse,
   threadsKeys,
 } from '@smartspace/chat-ui';
 
@@ -106,5 +107,63 @@ describe('applyThreadToCache stale-summary guard', () => {
       threadsKeys.detail(legacy.workSpaceId, legacy.id)
     );
     expect(after?.isFlowRunning).toBe(false);
+  });
+
+  it('rejects a stale false→true write inside a finite list page', () => {
+    const qc = new QueryClient();
+    const fresh = thread({ summaryEmittedAt: 2000, isFlowRunning: false });
+    qc.setQueryData<ThreadsResponse>(threadsKeys.list(fresh.workSpaceId), {
+      data: [fresh],
+      total: 1,
+    });
+
+    const stale = thread({ summaryEmittedAt: 1000, isFlowRunning: true });
+    const applied = applyThreadToCache(qc, stale);
+
+    // foundInList tracks list visits, not detail; the guard rejected the
+    // page-level write so foundInList stays false even though the entry exists.
+    expect(applied).toBe(false);
+    const after = qc.getQueryData<ThreadsResponse>(
+      threadsKeys.list(fresh.workSpaceId)
+    );
+    expect(after?.data[0].isFlowRunning).toBe(false);
+    expect(after?.data[0].summaryEmittedAt).toBe(2000);
+  });
+
+  it('rejects a stale false→true write inside an infinite list page', () => {
+    const qc = new QueryClient();
+    const fresh = thread({ summaryEmittedAt: 2000, isFlowRunning: false });
+    qc.setQueryData(threadsKeys.list(fresh.workSpaceId), {
+      pages: [{ data: [fresh], total: 1 }] as ThreadsResponse[],
+      pageParams: [0],
+    });
+
+    const stale = thread({ summaryEmittedAt: 1000, isFlowRunning: true });
+    applyThreadToCache(qc, stale);
+
+    const after = qc.getQueryData<{
+      pages: ThreadsResponse[];
+      pageParams: unknown[];
+    }>(threadsKeys.list(fresh.workSpaceId));
+    expect(after?.pages[0].data[0].isFlowRunning).toBe(false);
+    expect(after?.pages[0].data[0].summaryEmittedAt).toBe(2000);
+  });
+
+  it('accepts a true→false terminal frame inside a list page even when older', () => {
+    const qc = new QueryClient();
+    const midFlow = thread({ summaryEmittedAt: 2000, isFlowRunning: true });
+    qc.setQueryData<ThreadsResponse>(threadsKeys.list(midFlow.workSpaceId), {
+      data: [midFlow],
+      total: 1,
+    });
+
+    const terminal = thread({ summaryEmittedAt: 1000, isFlowRunning: false });
+    applyThreadToCache(qc, terminal);
+
+    const after = qc.getQueryData<ThreadsResponse>(
+      threadsKeys.list(midFlow.workSpaceId)
+    );
+    // Older timestamp but the running-direction is safe — write goes through.
+    expect(after?.data[0].isFlowRunning).toBe(false);
   });
 });
