@@ -125,6 +125,13 @@ export async function addInputToMessage({
 // with inputs populated and id assigned. The flow continues running in the
 // background; output deltas arrive on the thread SSE keyed by the returned id.
 // Callers should reconcile their optimistic temp-id entry with this Message.
+//
+// Hits `POST /Messages/start` so the call resolves the moment the flow has
+// been queued, instead of `POST /Messages` which (with default `Accept: json`)
+// blocks until the AI flow completes — that blocking variant produced an
+// end-of-flow flicker because the mutation's authoritative cache write landed
+// at the same moment the SSE terminal frame did. Uses raw `fetch` because the
+// installed SDK doesn't expose the `/start` endpoint yet.
 export async function postMessage({
   workSpaceId,
   threadId,
@@ -158,15 +165,35 @@ export async function postMessage({
     });
   }
 
-  const response = await chatApi.messagesThreadMessages({
-    inputs,
-    messageThreadId: threadId,
-    workSpaceId,
-    variables,
+  const baseUrl = (AXIOS_INSTANCE.defaults.baseURL ?? '').replace(/\/$/, '');
+  const token = await getAuthAdapter().getAccessToken({
+    silentOnly: true,
+    scopes: getApiScopes(),
   });
 
-  const raw = response.data as unknown as Record<string, unknown>;
-  if (!raw) throw new Error('POST /messages returned no body');
+  const response = await fetch(`${baseUrl}/Messages/start`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      inputs,
+      messageThreadId: threadId,
+      workSpaceId,
+      variables,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `POST /Messages/start failed with status ${response.status}`
+    );
+  }
+
+  const raw = (await response.json()) as Record<string, unknown> | null;
+  if (!raw) throw new Error('POST /Messages/start returned no body');
   coerceMessageDto(raw);
   return mapMessageDtoToModel(
     messagesResponseSchema.shape.data.element.parse(raw)
