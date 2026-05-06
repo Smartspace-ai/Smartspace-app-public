@@ -58,6 +58,15 @@ export function MessageList({
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const prevMessageCountRef = useRef<number>(0);
   const hasInitialScrollRef = useRef<boolean>(false);
+  // Per-thread high-water mark of "have we ever rendered messages?". Used to
+  // suppress the welcome / empty-state flash when the messages cache momentarily
+  // returns 0 entries during a transition (e.g. SSE/SignalR ordering at a
+  // flow's terminal frame). Reset on threadId change so a brand-new draft
+  // thread still gets the welcome screen on its first paint.
+  const everHadMessagesRef = useRef<{ threadId: string; had: boolean }>({
+    threadId: '',
+    had: false,
+  });
   const isMobile = useIsMobile();
 
   const { data: activeWorkspace } = useWorkspace(workspaceId);
@@ -156,6 +165,22 @@ export function MessageList({
     return () => ro.disconnect();
   }, [isAtBottom, scrollToBottom]);
 
+  const safeMessages = messages ?? [];
+
+  // Track per-thread whether we've ever rendered ≥1 message. Reset when the
+  // threadId changes so a fresh draft can legitimately show the welcome
+  // screen on first paint. Used below to suppress loading / error / empty
+  // states once we know the thread has content — those transient states
+  // appear during cache races at flow completion (SSE terminal frame vs.
+  // SignalR vs. mutation invalidation) and would otherwise flash a wrong
+  // page over an in-progress chat.
+  if (everHadMessagesRef.current.threadId !== threadId) {
+    everHadMessagesRef.current = { threadId, had: safeMessages.length > 0 };
+  } else if (safeMessages.length > 0) {
+    everHadMessagesRef.current.had = true;
+  }
+  const hadMessagesBefore = everHadMessagesRef.current.had;
+
   // Avoid flicker: if we already have data, keep rendering it while refetching.
   // `isChoosingThread` is opt-in via prop — see MessageListProps for usage.
   const isLoading =
@@ -163,7 +188,7 @@ export function MessageList({
     ((threadPending || threadFetching) && !thread) ||
     ((messagesPending || messagesFetching) && messages === undefined);
 
-  if (isLoading) {
+  if (isLoading && !hadMessagesBefore) {
     return (
       <div
         className={`ss-chat__body flex-shrink-10 flex-1 overflow-y-auto ${hostBg}`}
@@ -183,7 +208,7 @@ export function MessageList({
       </div>
     );
   }
-  if (threadError || messagesError) {
+  if ((threadError || messagesError) && !hadMessagesBefore) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
         <div className="w-full max-w-md space-y-3">
@@ -206,9 +231,20 @@ export function MessageList({
     );
   }
 
-  const safeMessages = messages ?? [];
-
   if (safeMessages.length === 0) {
+    // If we've previously rendered messages on this thread, a transient empty
+    // cache is almost certainly a race (e.g. mutation cache reset between
+    // POST and SSE snapshot, or a stale write from SignalR after the terminal
+    // SSE frame). Render an empty body so the user doesn't see a "no messages"
+    // flash mid-conversation — the next cache write will repaint the list.
+    if (hadMessagesBefore) {
+      return (
+        <div
+          className={`ss-chat__body flex-shrink-10 flex-1 overflow-y-auto ${hostBg}`}
+          data-ss-layer="message-list"
+        />
+      );
+    }
     return (
       <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
         <h3 className="text-lg font-medium mb-2">
