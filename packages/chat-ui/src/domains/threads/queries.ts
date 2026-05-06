@@ -1,5 +1,10 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  queryOptions,
+  skipToken,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 import { useChatService } from '@/platform/chat';
 import type { ChatService } from '@/platform/chat';
@@ -102,11 +107,26 @@ export const useThreadIsRunning = (
   workspaceId: string | undefined,
   threadId: string | undefined
 ): boolean => {
-  const { data: thread } = useThread({
-    workspaceId: workspaceId ?? '',
-    threadId: threadId ?? '',
-    enabled: !!workspaceId && !!threadId,
+  const queryClient = useQueryClient();
+
+  // Subscribe to the detail cache without ever fetching. SSE/SignalR populate
+  // it for the active thread via applyThreadToCache; for every other thread
+  // the slot stays empty and we fall back to the list cache. Avoids the N+1
+  // burst of detail GETs that fired when every sidebar ThreadItem ran its
+  // own useThread.
+  const { data: detailThread } = useQuery<MessageThread | undefined>({
+    queryKey: threadsKeys.detail(workspaceId ?? '', threadId ?? ''),
+    queryFn: skipToken,
   });
+
+  // List cache is the authoritative source for sidebar items. Re-evaluated
+  // every render — ThreadsList subscribes to the list query, so any
+  // applyThreadToCache write re-renders this component with fresh data.
+  const listThread =
+    workspaceId && threadId
+      ? getThreadPlaceholderFromListCache(queryClient, workspaceId, threadId)
+      : undefined;
+
   const { data: optimistic } = useQuery({
     queryKey: threadsKeys.optimisticRunning(threadId ?? ''),
     queryFn: () => false,
@@ -114,5 +134,6 @@ export const useThreadIsRunning = (
     staleTime: Infinity,
     enabled: !!threadId,
   });
-  return !!optimistic || !!thread?.isFlowRunning;
+
+  return !!optimistic || !!(detailThread ?? listThread)?.isFlowRunning;
 };
