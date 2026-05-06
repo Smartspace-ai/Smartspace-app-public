@@ -95,6 +95,7 @@ export function SsImage(props: ImgProps) {
         title={title}
         width={finalWidth as number | string | undefined}
         height={finalHeight as number | string | undefined}
+        style={!resolvedSrc && !errored ? { visibility: 'hidden' } : undefined}
       />
     </span>
   );
