@@ -144,6 +144,34 @@ describe('messages service', () => {
     ).rejects.toThrow(/status 500/);
   });
 
+  it('postMessage throws on a 4xx response with the status in the message', async () => {
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ message: 'bad request' }), {
+          status: 422,
+        })
+    ) as typeof fetch;
+    await expect(
+      postMessage({ workSpaceId: 'w', threadId: 't1' })
+    ).rejects.toThrow(/status 422/);
+  });
+
+  it('postMessage throws a clear error when the body isnt JSON', async () => {
+    // 200 with non-JSON body — e.g. a proxy injecting an HTML error page.
+    // `response.json()` throws; we should surface a meaningful error rather
+    // than the opaque SyntaxError that `JSON.parse` produces.
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response('<html>oops</html>', {
+          status: 200,
+          headers: { 'Content-Type': 'text/html' },
+        })
+    ) as typeof fetch;
+    await expect(
+      postMessage({ workSpaceId: 'w', threadId: 't1' })
+    ).rejects.toThrow(/non-JSON body/);
+  });
+
   it('addInputToMessage throws when no valid message received', async () => {
     globalThis.fetch = vi.fn(
       async () => new Response(bodyFromChunks([]), { status: 200 })

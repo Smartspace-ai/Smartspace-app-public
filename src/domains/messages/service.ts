@@ -1,12 +1,6 @@
-import {
-  AXIOS_INSTANCE,
-  ChatApi,
-  ChatZod,
-  SignalR,
-} from '@smartspace/api-client';
+import { ChatApi, ChatZod, SignalR } from '@smartspace/api-client';
 
-import { getAuthAdapter } from '@/platform/auth';
-import { getApiScopes } from '@/platform/auth/scopes';
+import { fetchAuthed } from '@/platform/api/fetchAuthed';
 import { parseOrThrow } from '@/platform/validation';
 
 import { parseSseStream } from '@/shared/utils/sseStream';
@@ -76,16 +70,9 @@ export async function addInputToMessage({
   value: unknown;
   channels: Record<string, number> | null;
 }): Promise<Message> {
-  const baseUrl = (AXIOS_INSTANCE.defaults.baseURL ?? '').replace(/\/$/, '');
-  const token = await getAuthAdapter().getAccessToken({
-    silentOnly: true,
-    scopes: getApiScopes(),
-  });
-
-  const response = await fetch(`${baseUrl}/messages/${messageId}/values`, {
+  const response = await fetchAuthed(`/messages/${messageId}/values`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
       Accept: 'text/event-stream',
       'Content-Type': 'application/json',
     },
@@ -165,16 +152,9 @@ export async function postMessage({
     });
   }
 
-  const baseUrl = (AXIOS_INSTANCE.defaults.baseURL ?? '').replace(/\/$/, '');
-  const token = await getAuthAdapter().getAccessToken({
-    silentOnly: true,
-    scopes: getApiScopes(),
-  });
-
-  const response = await fetch(`${baseUrl}/Messages/start`, {
+  const response = await fetchAuthed(`/Messages/start`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
@@ -192,7 +172,19 @@ export async function postMessage({
     );
   }
 
-  const raw = (await response.json()) as Record<string, unknown> | null;
+  // Wrap JSON parse so a non-JSON 200 body (e.g. an HTML error page from a
+  // proxy or sidecar) surfaces as a clear error instead of an opaque
+  // `SyntaxError: Unexpected token < in JSON`.
+  let raw: Record<string, unknown> | null;
+  try {
+    raw = (await response.json()) as Record<string, unknown> | null;
+  } catch (err) {
+    throw new Error(
+      `POST /Messages/start returned a non-JSON body: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+  }
   if (!raw) throw new Error('POST /Messages/start returned no body');
   coerceMessageDto(raw);
   return mapMessageDtoToModel(
@@ -259,18 +251,11 @@ export async function streamThreadMessages({
   threadId: string;
   signal: AbortSignal;
 } & ThreadStreamHandlers): Promise<StreamThreadMessagesResult> {
-  const baseUrl = (AXIOS_INSTANCE.defaults.baseURL ?? '').replace(/\/$/, '');
-  const token = await getAuthAdapter().getAccessToken({
-    silentOnly: true,
-    scopes: getApiScopes(),
-  });
-
-  const response = await fetch(
-    `${baseUrl}/MessageThreads/${threadId}/messages/stream`,
+  const response = await fetchAuthed(
+    `/MessageThreads/${threadId}/messages/stream`,
     {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
         Accept: 'text/event-stream',
       },
       signal,
