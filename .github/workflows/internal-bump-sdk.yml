@@ -1,5 +1,4 @@
-name: Bump @smartspace/api-client (auto)
-
+# Smartspace-internal: safe to delete in forks.
 # Listens for `sdk-published` repository_dispatch events from Smartspace-app-api
 # and refreshes this repo's lockfile to point at the new SDK version. Runs the
 # same quality gate as a normal CI build before pushing — if quality fails the
@@ -7,6 +6,8 @@ name: Bump @smartspace/api-client (auto)
 #
 # Only acts on the `dev` and `main` channels. Stable `latest` / `rc` releases
 # are intentionally left to manual review.
+
+name: Bump @smartspace/api-client (auto, internal)
 
 on:
   repository_dispatch:
