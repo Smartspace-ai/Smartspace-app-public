@@ -2,14 +2,11 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { ensureDraftThread, threadsListOptions } from '@/domains/threads';
 
-import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
-
 // routes/_protected/workspace/$workspaceId/index.tsx
 export const Route = createFileRoute(
   '/_protected/workspace/$workspaceId/_layout/'
 )({
   pendingMs: 0,
-  pendingComponent: WorkspaceIndexRouteComponent,
   loader: async ({ params, context }) => {
     const list = await context.queryClient.ensureQueryData(
       threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
@@ -33,10 +30,5 @@ export const Route = createFileRoute(
       replace: true,
     });
   },
-  component: WorkspaceIndexRouteComponent,
+  component: () => null,
 });
-
-function WorkspaceIndexRouteComponent() {
-  const { workspaceId } = Route.useParams();
-  return <ChatBotPage workspaceId={workspaceId} threadId="" />;
-}
