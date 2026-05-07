@@ -16,10 +16,14 @@ import {
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { Button } from '@/shared/ui/mui-compat/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/mui-compat/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/shared/ui/mui-compat/sheet';
 import { TooltipProvider } from '@/shared/ui/mui-compat/tooltip';
 import { cn } from '@/shared/utils/utils';
-
 
 const SIDEBAR_COOKIE_NAME = 'sidebar';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
@@ -177,7 +181,10 @@ const SidebarProvider = forwardRef<
       if (!vv) return;
       const update = () => {
         // Useful for mobile layouts (esp. on-screen keyboard); consumers can use var(--ss-viewport-height)
-        document.documentElement.style.setProperty('--ss-viewport-height', `${vv.height}px`);
+        document.documentElement.style.setProperty(
+          '--ss-viewport-height',
+          `${vv.height}px`
+        );
       };
       update();
       vv.addEventListener('resize', update);
@@ -185,11 +192,13 @@ const SidebarProvider = forwardRef<
       return () => {
         vv.removeEventListener('resize', update);
         vv.removeEventListener('scroll', update);
-        try { document.documentElement.style.removeProperty('--ss-viewport-height'); } catch { /* ignore */ }
+        try {
+          document.documentElement.style.removeProperty('--ss-viewport-height');
+        } catch {
+          /* ignore */
+        }
       };
     }, [isMobile, openMobileLeft, openMobileRight]);
-
-    
 
     useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
@@ -335,55 +344,48 @@ const Sidebar = forwardRef<
             className="p-0 bg-sidebar text-sidebar-foreground"
           >
             <SheetHeader>
-              <SheetTitle className="sr-only">{side === 'left' ? 'Left sidebar' : 'Right sidebar'}</SheetTitle>
+              <SheetTitle className="sr-only">
+                {side === 'left' ? 'Left sidebar' : 'Right sidebar'}
+              </SheetTitle>
             </SheetHeader>
-            <div className="flex h-full w-full flex-col min-h-0">{children}</div>
+            <div className="flex h-full w-full flex-col min-h-0">
+              {children}
+            </div>
           </SheetContent>
         </Sheet>
       );
     }
 
-    // Desktop view
+    // Desktop view: in-flow flex column whose width animates between
+    // SIDEBAR_WIDTH (open) and 0 (collapsed). Inner panel keeps a fixed
+    // width so content stays put while the wrapper clips it via
+    // overflow:hidden. Avoids the fragile fixed-position + spacer +
+    // group-data selector trick that previously didn't reflect state
+    // changes when the chat-ui package CSS was loaded alongside the
+    // consumer's Tailwind output.
+    const desktopWidth = isOpen ? SIDEBAR_WIDTH : '0px';
     return (
       <div
         ref={ref}
-        className="group peer hidden md:block text-sidebar-foreground"
         data-state={isOpen ? 'expanded' : 'collapsed'}
         data-collapsible={!isOpen ? collapsible : ''}
         data-variant={variant}
         data-side={side}
+        data-sidebar="root"
+        className="block text-sidebar-foreground shrink-0 self-stretch overflow-hidden transition-[width] duration-300 ease-in-out"
+        style={{ width: desktopWidth }}
       >
-        {/* This handles the sidebar gap on desktop */}
         <div
+          data-sidebar="sidebar"
           className={cn(
-            'duration-300 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-in-out',
-            'group-data-[collapsible=offcanvas]:w-0',
-            'group-data-[side=right]:rotate-180',
-            variant === 'floating' || variant === 'inset'
-              ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]'
-              : 'group-data-[collapsible=icon]:w-[--sidebar-width-icon]'
-          )}
-        />
-        <div
-          className={cn(
-            'duration-300 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width,transform] ease-in-out md:flex',
-            side === 'left'
-              ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
-              : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
-            // Adjust the padding for floating and inset variants
-            variant === 'floating' || variant === 'inset'
-              ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]'
-              : 'group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l',
+            'flex h-full flex-col bg-sidebar',
+            side === 'left' ? 'border-r' : 'border-l',
             className
           )}
+          style={{ width: SIDEBAR_WIDTH }}
           {...props}
         >
-          <div
-            data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
-          >
-            {children}
-          </div>
+          {children}
         </div>
       </div>
     );
@@ -712,6 +714,5 @@ export {
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
-  SidebarTrigger
+  SidebarTrigger,
 };
-

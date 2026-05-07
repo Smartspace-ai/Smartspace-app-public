@@ -2,7 +2,10 @@ import { ChatApi, ChatZod } from '@smartspace/api-client';
 
 import { parseOrThrow } from '@/platform/validation';
 
-import { mapThreadDtoToModel, mapThreadsResponseDtoToModel } from './mapper';
+import {
+  mapThreadDtoToModel,
+  mapThreadsResponseDtoToModel,
+} from '@smartspace/chat-ui';
 
 const {
   workSpacesThreadResponse: threadsListResponseSchema,

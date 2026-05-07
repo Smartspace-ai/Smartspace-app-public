@@ -1,7 +1,6 @@
-export type { Message, MessageContentItem } from './model';
-export * from './enums';
-export * from './mutations';
-export { messagesListOptions, useMessages } from './queries';
-export { messagesKeys, messagesMutationsKeys } from './queryKeys';
+// App-side messages domain barrel — exports the app-only SDK-bound service
+// and the legacy `useThreadMessageStream` hook. Package chat-side exports
+// (model, queries, mutations, mappers, queryKeys) live at `@smartspace/chat-ui`
+// and should be imported from there directly.
 export * from './service';
 export { useThreadMessageStream } from './threadStream';

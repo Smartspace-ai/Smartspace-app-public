@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { DateFromApi } from '@/shared/utils/dateFromApi';
+import { DateFromApi } from '@smartspace/chat-ui';
 
 export const ModelSchema = z.object({
   id: z.string(),

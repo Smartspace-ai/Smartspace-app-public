@@ -3,144 +3,167 @@ import { describe, expect, it } from 'vitest';
 
 import {
   applyThreadToCache,
-  setThreadRunningInLists,
-} from '@/domains/threads/cache';
-import type { MessageThread, ThreadsResponse } from '@/domains/threads/model';
-import { threadsKeys } from '@/domains/threads/queryKeys';
+  type MessageThread,
+  type ThreadsResponse,
+  threadsKeys,
+} from '@smartspace/chat-ui';
 
 const thread = (over: Partial<MessageThread> = {}): MessageThread => ({
   id: 't1',
   workSpaceId: 'w1',
   name: 'Thread',
   createdAt: new Date('2024-01-01T00:00:00Z'),
-  createdBy: 'User',
+  createdBy: 'me',
   createdByUserId: 'u1',
   isFlowRunning: false,
   lastUpdatedAt: new Date('2024-01-01T00:00:00Z'),
   lastUpdatedByUserId: 'u1',
   totalMessages: 0,
   pinned: false,
+  summaryEmittedAt: 1000,
   ...over,
 });
 
-describe('applyThreadToCache', () => {
-  it('writes to detail cache so observers re-render without a refetch', () => {
+describe('applyThreadToCache stale-summary guard', () => {
+  it('rejects a stale write that would resurrect a settled false back to true', () => {
+    // Original race: SSE terminal already wrote { running: false } with a
+    // fresh timestamp, then a lagged SignalR `receiveThreadUpdate` with an
+    // older timestamp arrives carrying the now-obsolete `running: true`.
     const qc = new QueryClient();
+    const fresh = thread({ summaryEmittedAt: 2000, isFlowRunning: false });
     qc.setQueryData<MessageThread>(
-      threadsKeys.detail('w1', 't1'),
-      thread({ isFlowRunning: false })
+      threadsKeys.detail(fresh.workSpaceId, fresh.id),
+      fresh
     );
 
-    applyThreadToCache(qc, thread({ isFlowRunning: true }));
+    const stale = thread({ summaryEmittedAt: 1000, isFlowRunning: true });
+    const applied = applyThreadToCache(qc, stale);
 
-    const detail = qc.getQueryData<MessageThread>(
-      threadsKeys.detail('w1', 't1')
+    expect(applied).toBe(false);
+    const after = qc.getQueryData<MessageThread>(
+      threadsKeys.detail(fresh.workSpaceId, fresh.id)
     );
-    expect(detail?.isFlowRunning).toBe(true);
+    // Detail cache still holds the fresher write — running indicator stays cleared.
+    expect(after?.isFlowRunning).toBe(false);
+    expect(after?.summaryEmittedAt).toBe(2000);
   });
 
-  it('splices into a non-infinite list cache and returns true', () => {
+  it('accepts an older-timestamp write that flips running to false (terminal frame after fresher mid-flow updates)', () => {
+    // Real-world case: SignalR mid-flow updates push summaryEmittedAt forward
+    // (each broadcast carries a fresh wall-clock timestamp), then the SSE
+    // terminal frame arrives carrying the original message-creation
+    // `lastUpdatedAt` (which is older). The terminal frame must still be
+    // applied — otherwise the running indicator never clears.
     const qc = new QueryClient();
-    qc.setQueryData<ThreadsResponse>(threadsKeys.list('w1'), {
-      data: [thread({ isFlowRunning: false })],
+    const midFlow = thread({ summaryEmittedAt: 2000, isFlowRunning: true });
+    qc.setQueryData<MessageThread>(
+      threadsKeys.detail(midFlow.workSpaceId, midFlow.id),
+      midFlow
+    );
+
+    const terminal = thread({ summaryEmittedAt: 1000, isFlowRunning: false });
+    applyThreadToCache(qc, terminal);
+
+    const after = qc.getQueryData<MessageThread>(
+      threadsKeys.detail(midFlow.workSpaceId, midFlow.id)
+    );
+    expect(after?.isFlowRunning).toBe(false);
+  });
+
+  it('accepts a write whose summaryEmittedAt is newer than the existing detail cache', () => {
+    const qc = new QueryClient();
+    const old = thread({ summaryEmittedAt: 1000, isFlowRunning: true });
+    qc.setQueryData<MessageThread>(
+      threadsKeys.detail(old.workSpaceId, old.id),
+      old
+    );
+
+    const fresh = thread({ summaryEmittedAt: 2000, isFlowRunning: false });
+    applyThreadToCache(qc, fresh);
+
+    const after = qc.getQueryData<MessageThread>(
+      threadsKeys.detail(old.workSpaceId, old.id)
+    );
+    expect(after?.isFlowRunning).toBe(false);
+    expect(after?.summaryEmittedAt).toBe(2000);
+  });
+
+  it('accepts a write when the existing cache entry has no summaryEmittedAt (legacy)', () => {
+    const qc = new QueryClient();
+    const legacy = thread({
+      isFlowRunning: true,
+      // simulate a legacy cached value without the version field
+      summaryEmittedAt: undefined as unknown as number,
+    });
+    qc.setQueryData<MessageThread>(
+      threadsKeys.detail(legacy.workSpaceId, legacy.id),
+      legacy
+    );
+
+    const incoming = thread({ summaryEmittedAt: 1000, isFlowRunning: false });
+    applyThreadToCache(qc, incoming);
+
+    const after = qc.getQueryData<MessageThread>(
+      threadsKeys.detail(legacy.workSpaceId, legacy.id)
+    );
+    expect(after?.isFlowRunning).toBe(false);
+  });
+
+  it('rejects a stale false→true write inside a finite list page', () => {
+    const qc = new QueryClient();
+    const fresh = thread({ summaryEmittedAt: 2000, isFlowRunning: false });
+    qc.setQueryData<ThreadsResponse>(threadsKeys.list(fresh.workSpaceId), {
+      data: [fresh],
       total: 1,
     });
 
-    const found = applyThreadToCache(qc, thread({ isFlowRunning: true }));
+    const stale = thread({ summaryEmittedAt: 1000, isFlowRunning: true });
+    const applied = applyThreadToCache(qc, stale);
 
-    expect(found).toBe(true);
-    const list = qc.getQueryData<ThreadsResponse>(threadsKeys.list('w1'));
-    expect(list?.data[0].isFlowRunning).toBe(true);
+    // foundInList tracks list visits, not detail; the guard rejected the
+    // page-level write so foundInList stays false even though the entry exists.
+    expect(applied).toBe(false);
+    const after = qc.getQueryData<ThreadsResponse>(
+      threadsKeys.list(fresh.workSpaceId)
+    );
+    expect(after?.data[0].isFlowRunning).toBe(false);
+    expect(after?.data[0].summaryEmittedAt).toBe(2000);
   });
 
-  it('splices into infinite-list pages', () => {
+  it('rejects a stale false→true write inside an infinite list page', () => {
     const qc = new QueryClient();
-    const infiniteKey = threadsKeys.list('w1', { take: 30 });
-    qc.setQueryData(infiniteKey, {
-      pages: [{ data: [thread({ isFlowRunning: false })], total: 1 }],
+    const fresh = thread({ summaryEmittedAt: 2000, isFlowRunning: false });
+    qc.setQueryData(threadsKeys.list(fresh.workSpaceId), {
+      pages: [{ data: [fresh], total: 1 }] as ThreadsResponse[],
       pageParams: [0],
     });
 
-    const found = applyThreadToCache(qc, thread({ isFlowRunning: true }));
+    const stale = thread({ summaryEmittedAt: 1000, isFlowRunning: true });
+    applyThreadToCache(qc, stale);
 
-    expect(found).toBe(true);
-    const cached = qc.getQueryData<{
+    const after = qc.getQueryData<{
       pages: ThreadsResponse[];
-    }>(infiniteKey);
-    expect(cached?.pages[0].data[0].isFlowRunning).toBe(true);
+      pageParams: unknown[];
+    }>(threadsKeys.list(fresh.workSpaceId));
+    expect(after?.pages[0].data[0].isFlowRunning).toBe(false);
+    expect(after?.pages[0].data[0].summaryEmittedAt).toBe(2000);
   });
 
-  it('returns false when no list cache contains the thread (caller can refetch)', () => {
+  it('accepts a true→false terminal frame inside a list page even when older', () => {
     const qc = new QueryClient();
-    qc.setQueryData<ThreadsResponse>(threadsKeys.list('w1'), {
-      data: [thread({ id: 'other' })],
+    const midFlow = thread({ summaryEmittedAt: 2000, isFlowRunning: true });
+    qc.setQueryData<ThreadsResponse>(threadsKeys.list(midFlow.workSpaceId), {
+      data: [midFlow],
       total: 1,
     });
 
-    const found = applyThreadToCache(qc, thread({ id: 't1' }));
+    const terminal = thread({ summaryEmittedAt: 1000, isFlowRunning: false });
+    applyThreadToCache(qc, terminal);
 
-    expect(found).toBe(false);
-  });
-
-  it("only touches list caches matching the thread's workspace", () => {
-    const qc = new QueryClient();
-    qc.setQueryData<ThreadsResponse>(threadsKeys.list('w1'), {
-      data: [thread({ workSpaceId: 'w1', isFlowRunning: false })],
-      total: 1,
-    });
-    qc.setQueryData<ThreadsResponse>(threadsKeys.list('w2'), {
-      data: [thread({ workSpaceId: 'w2', id: 't1', isFlowRunning: false })],
-      total: 1,
-    });
-
-    applyThreadToCache(qc, thread({ workSpaceId: 'w1', isFlowRunning: true }));
-
-    const w1 = qc.getQueryData<ThreadsResponse>(threadsKeys.list('w1'));
-    const w2 = qc.getQueryData<ThreadsResponse>(threadsKeys.list('w2'));
-    expect(w1?.data[0].isFlowRunning).toBe(true);
-    expect(w2?.data[0].isFlowRunning).toBe(false);
-  });
-});
-
-describe('setThreadRunningInLists', () => {
-  it('flips isFlowRunning in lists without touching the detail cache', () => {
-    const qc = new QueryClient();
-    qc.setQueryData<MessageThread>(
-      threadsKeys.detail('w1', 't1'),
-      thread({ isFlowRunning: false })
+    const after = qc.getQueryData<ThreadsResponse>(
+      threadsKeys.list(midFlow.workSpaceId)
     );
-    qc.setQueryData<ThreadsResponse>(threadsKeys.list('w1'), {
-      data: [thread({ isFlowRunning: false })],
-      total: 1,
-    });
-
-    setThreadRunningInLists(qc, 'w1', 't1', true);
-
-    // Detail cache stays untouched — gates the SSE, must remain
-    // server-confirmed.
-    expect(
-      qc.getQueryData<MessageThread>(threadsKeys.detail('w1', 't1'))
-        ?.isFlowRunning
-    ).toBe(false);
-    // Sidebar list reflects the optimistic flip.
-    expect(
-      qc.getQueryData<ThreadsResponse>(threadsKeys.list('w1'))?.data[0]
-        .isFlowRunning
-    ).toBe(true);
-  });
-
-  it('rolls back when toggled false', () => {
-    const qc = new QueryClient();
-    qc.setQueryData<ThreadsResponse>(threadsKeys.list('w1'), {
-      data: [thread({ isFlowRunning: true })],
-      total: 1,
-    });
-
-    setThreadRunningInLists(qc, 'w1', 't1', false);
-
-    expect(
-      qc.getQueryData<ThreadsResponse>(threadsKeys.list('w1'))?.data[0]
-        .isFlowRunning
-    ).toBe(false);
+    // Older timestamp but the running-direction is safe — write goes through.
+    expect(after?.data[0].isFlowRunning).toBe(false);
   });
 });

@@ -1,39 +1,37 @@
 // src/features/workspaces/Chat.tsx
 import { Stack } from '@mui/material';
+import { useMatch } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { Toaster } from 'sonner';
 
-import { useWorkspace, useWorkspaces } from '@/domains/workspaces/queries';
+import { isInTeams } from '@/platform/auth/msalConfig';
+import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import SidebarRightPanel from '@/ui/comments_draw/sidebar-right';
 import ChatHeaderBar from '@/ui/header/chat-header';
 import SidebarLeft from '@/ui/layout/SidebarLeft';
-import MessageComposer from '@/ui/messages/MessageComposer';
-import { MessageList } from '@/ui/messages/MessageList';
-import { useThreadsListVm } from '@/ui/threads/ThreadsList.vm';
+
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
-export default function ChatBotPage({
-  workspaceId,
-  threadId,
-}: {
-  workspaceId: string;
-  threadId: string;
-}) {
-  const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces();
-  const { data: activeWorkspace } = useWorkspace(workspaceId);
-  const { firstThread, isInitialLoading: threadsInitialLoading } =
-    useThreadsListVm({
-      workspaceId,
-      pageSize: 30,
-    });
+import {
+  MessageComposer,
+  MessageList,
+  useWorkspace,
+} from '@smartspace/chat-ui';
 
-  void workspacesLoading;
-  void workspaces;
-  void firstThread;
-  void threadsInitialLoading;
-  void threadId;
+export default function ChatBotPage() {
+  const { workspaceId, threadId } = useRouteIds();
+  const { data: activeWorkspace } = useWorkspace(workspaceId);
+  const { leftOpen, rightOpen } = useSidebar();
+  // While the route loader is redirecting from /workspace/$workspaceId/ to
+  // its first thread, MessageList shouldn't show "no messages yet" — pass
+  // the indicator explicitly so the package stays router-agnostic.
+  const workspaceIndexMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/_layout/',
+    shouldThrow: false,
+  });
 
   const gradientClasses = useMemo(
     () =>
@@ -63,8 +61,14 @@ export default function ChatBotPage({
           sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}
         >
           <ChatHeaderBar />
-          <MessageList />
-          <MessageComposer />
+          <MessageList
+            applyHostBackgroundOverride={isInTeams()}
+            expandedLayout={leftOpen || rightOpen}
+            isChoosingThread={
+              !!workspaceId && !threadId && !!workspaceIndexMatch
+            }
+          />
+          <MessageComposer expandedLayout={leftOpen || rightOpen} />
         </Stack>
         <SidebarRightPanel />
       </Stack>

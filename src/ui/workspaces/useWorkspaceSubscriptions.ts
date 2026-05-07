@@ -1,26 +1,48 @@
 // src/ui/workspaces/useWorkspaceSubscriptions.ts
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { useMatch, useNavigate } from '@tanstack/react-router';
 
+import { defaultChatService } from '@/platform/chat/defaultChatService';
 import { useWorkspaceRealtime } from '@/platform/realtime/useWorkspaceRealtime';
-import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { applyCommentToCache, commentsKeys } from '@/domains/comments';
-import { messagesKeys, useThreadMessageStream } from '@/domains/messages';
+import { useThreadMessageStream } from '@/domains/messages/threadStream';
+
 import {
   applyThreadToCache,
   invalidateWorkspaceThreadLists,
   mapSignalRThreadSummaryToModel,
+  messagesKeys,
   threadDetailOptions,
   threadsKeys,
-} from '@/domains/threads';
+} from '@smartspace/chat-ui';
 
+// Mounted at the auth layout (`_protected.tsx`) so SignalR persists across
+// workspace switches. Reads ids directly via `useMatch` (rather than
+// `useRouteIds`) so the hook can sit above the workspace layout where the
+// provider isn't mounted, and gracefully no-ops on non-workspace routes
+// like `/workspace`. Uses the singleton `defaultChatService` directly
+// because `ChatProvider` only mounts under the workspace layout.
 export function useWorkspaceSubscriptions() {
-  // Derive ids from whichever workspace route is active: thread,
-  // workspace index, or the bare workspace layout. Matching only the
-  // thread route means the SignalR join never fires on the workspace
-  // home, so broadcasts reach zero clients for that tab.
-  const { workspaceId, threadId } = useRouteIds();
+  const threadMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/_layout/thread/$threadId',
+    shouldThrow: false,
+  });
+  const workspaceIndexMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/_layout/',
+    shouldThrow: false,
+  });
+  const workspaceLayoutMatch = useMatch({
+    from: '/_protected/workspace/$workspaceId/_layout',
+    shouldThrow: false,
+  });
+  const workspaceId =
+    threadMatch?.params?.workspaceId ??
+    workspaceIndexMatch?.params?.workspaceId ??
+    workspaceLayoutMatch?.params?.workspaceId ??
+    '';
+  const threadId = threadMatch?.params?.threadId ?? '';
+  const service = defaultChatService;
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -32,6 +54,7 @@ export function useWorkspaceSubscriptions() {
   // backend hasn't actually started yet.
   const { data: thread } = useQuery({
     ...threadDetailOptions({
+      service,
       workspaceId: workspaceId || '',
       threadId: threadId || '',
     }),
@@ -59,10 +82,15 @@ export function useWorkspaceSubscriptions() {
       );
       if (!foundInList) invalidateWorkspaceThreadLists(qc, workspaceId);
 
-      // Refetch the messages list so other-tab activity surfaces; the
-      // viewed thread's SSE will overwrite this with authoritative state
-      // on its next frame.
-      qc.invalidateQueries({ queryKey: messagesKeys.list(summary.id) });
+      // Refetch the messages list so other-tab activity surfaces — but
+      // only for threads the user is NOT currently viewing. The viewed
+      // thread is fed by its own SSE (snapshot + deltas + terminal frame)
+      // which is already authoritative; invalidating its cache here races
+      // a server fetch against the SSE's final state and produces a
+      // visible flicker the moment the flow finishes.
+      if (summary.id !== threadId) {
+        qc.invalidateQueries({ queryKey: messagesKeys.list(summary.id) });
+      }
     },
     onThreadDeleted: (summary) => {
       if (!workspaceId) return;

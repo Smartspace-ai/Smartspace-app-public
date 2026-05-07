@@ -3,8 +3,8 @@ import { ChatApi, ChatZod } from '@smartspace/api-client';
 import { api } from '@/platform/api';
 import { parseOrThrow } from '@/platform/validation';
 
-import { mapFileInfoDtoToModel } from './mapper';
-import type { FileInfo, FileScope } from './model';
+import { mapFileInfoDtoToModel } from '@smartspace/chat-ui';
+import type { FileInfo, FileScope } from '@smartspace/chat-ui';
 
 export const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB
 

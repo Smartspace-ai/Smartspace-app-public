@@ -4,8 +4,6 @@ import { useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import type { MessageThread } from '@/domains/threads';
-
 import { CircleInitials } from '@/shared/components/circle-initials';
 import { Button } from '@/shared/ui/mui-compat/button';
 import {
@@ -15,8 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/mui-compat/dropdown-menu';
-import { parseDateTimeHuman } from '@/shared/utils/parseDateTime';
 import { isDraftThreadId } from '@/shared/utils/threadId';
+
+import { parseDateTimeHuman, type MessageThread } from '@smartspace/chat-ui';
 
 import { useThreadItemVm } from './ThreadItem.vm';
 import { ThreadRenameModal } from './ThreadRenameModal';

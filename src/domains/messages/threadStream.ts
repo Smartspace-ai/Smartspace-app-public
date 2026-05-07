@@ -7,11 +7,12 @@ import { ssInfo, ssWarn } from '@/platform/log';
 import {
   applyThreadToCache,
   mapSignalRThreadSummaryToModel,
-} from '@/domains/threads';
+  applyDeltaToMessage,
+  Message,
+  MessageValueType,
+  messagesKeys,
+} from '@smartspace/chat-ui';
 
-import { applyDeltaToMessage } from './mapper';
-import { Message } from './model';
-import { messagesKeys } from './queryKeys';
 import { type MessageDelta, streamThreadMessages } from './service';
 
 const RECONNECT_BASE_DELAY_MS = 500;
@@ -42,24 +43,110 @@ export function useThreadMessageStream(
     const byCreatedAt = (a: Message, b: Message) =>
       a.createdAt.getTime() - b.createdAt.getTime();
 
-    const onSnapshot = (messages: Message[]) => {
-      const sorted = [...messages].sort(byCreatedAt);
-      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
-        const optimistics = old.filter((m) => m.optimistic);
-        return [...sorted, ...optimistics];
-      });
+    // Collapse a message's `values` so each (name, type) pair appears at
+    // most once, retaining the LAST occurrence. The server's terminal
+    // message frame can carry every streaming chunk as its own response
+    // OUTPUT value side-by-side; without this collapse `MessageItem`
+    // renders one bubble per value, producing the cumulative-text-ladder
+    // we see at the end of a flow run.
+    const dedupValuesInMessage = (m: Message): Message => {
+      const values = m.values ?? [];
+      if (values.length <= 1) return m;
+      const slot = new Map<string, number>();
+      const out: typeof values = [];
+      for (const v of values) {
+        const key = `${v.name}|${v.type}`;
+        const i = slot.get(key);
+        if (i !== undefined) {
+          out[i] = v;
+        } else {
+          slot.set(key, out.length);
+          out.push(v);
+        }
+      }
+      return out.length === values.length ? m : { ...m, values: out };
     };
 
-    const onUpsert = (messageId: string, message: Message) => {
+    // True when the message has at least one OUTPUT value and no INPUT
+    // values — i.e. it's an assistant response, not a user prompt. The
+    // server emits each streaming chunk of an assistant response as a
+    // full-message frame under a fresh id; we collapse those onto the
+    // previous in-progress assistant message rather than letting each
+    // chunk render as its own bubble.
+    const isAssistantResponse = (m: Message) => {
+      const values = m.values ?? [];
+      if (!values.length) return false;
+      let hasOutput = false;
+      for (const v of values) {
+        if (v.type === MessageValueType.INPUT) return false;
+        if (v.type === MessageValueType.OUTPUT) hasOutput = true;
+      }
+      return hasOutput;
+    };
+
+    // Walk a sorted-by-createdAt list and merge runs of consecutive
+    // assistant responses whose timestamps are within 5s of each other into
+    // the latest entry of that run. The server's terminal snapshot can
+    // include every intermediate streaming frame as its own message; this
+    // collapses them so the UI shows one bubble per logical assistant turn.
+    const collapseAssistantRuns = (msgs: Message[]): Message[] => {
+      const out: Message[] = [];
+      for (const m of msgs) {
+        const prev = out[out.length - 1];
+        if (
+          prev &&
+          isAssistantResponse(prev) &&
+          isAssistantResponse(m) &&
+          Math.abs(m.createdAt.getTime() - prev.createdAt.getTime()) < 5_000
+        ) {
+          out[out.length - 1] = m;
+          continue;
+        }
+        out.push(m);
+      }
+      return out;
+    };
+
+    // The SSE is authoritative once it's open. Snapshot fully replaces; we
+    // do not preserve client-only optimistics here because the SSE only
+    // opens after `useSendMessage` has POSTed and written `[realMessage]`
+    // to the cache, so by definition no optimistic temp-ids are still live.
+    // The collapse step merges intermediate streaming frames the server may
+    // include in the snapshot.
+    const onSnapshot = (messages: Message[]) => {
+      const sorted = collapseAssistantRuns(
+        [...messages].map(dedupValuesInMessage).sort(byCreatedAt)
+      );
+      qc.setQueryData<Message[]>(messagesKeys.list(threadId), sorted);
+    };
+
+    const onUpsert = (messageId: string, rawMessage: Message) => {
+      const message = dedupValuesInMessage(rawMessage);
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
-        const stable = old.filter((m) => !m.optimistic);
-        const optimistics = old.filter((m) => m.optimistic);
-        const idx = stable.findIndex((m) => m.id === messageId);
-        const nextStable =
-          idx === -1
-            ? [...stable, message].sort(byCreatedAt)
-            : stable.map((m, i) => (i === idx ? message : m));
-        return [...nextStable, ...optimistics];
+        const idx = old.findIndex((m) => m.id === messageId);
+        if (idx !== -1) {
+          const copy = old.slice();
+          copy[idx] = message;
+          return copy;
+        }
+        // New id — but if this is an assistant response and the last cache
+        // entry is also an assistant response with a near-identical
+        // timestamp, treat the incoming as a cumulative-state update for
+        // that same logical message and replace it in place.
+        if (isAssistantResponse(message) && old.length > 0) {
+          const last = old[old.length - 1];
+          if (isAssistantResponse(last)) {
+            const dt = Math.abs(
+              message.createdAt.getTime() - last.createdAt.getTime()
+            );
+            if (dt < 5_000) {
+              const copy = old.slice();
+              copy[copy.length - 1] = message;
+              return copy;
+            }
+          }
+        }
+        return [...old, message].sort(byCreatedAt);
       });
     };
 

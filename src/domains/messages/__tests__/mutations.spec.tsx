@@ -1,204 +1,138 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook } from '@testing-library/react';
-import React from 'react';
+import { act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/platform/auth/session', () => ({
-  useUserId: () => 'test-user',
-  useUserDisplayName: () => 'Test User',
-}));
-
+import { renderHookWithChat } from '@/test/chatProviderHarness';
 import {
-  useAddInputToMessage,
+  type Message,
+  MessageValueType,
+  messagesKeys,
   useSendMessage,
-} from '@/domains/messages/mutations';
-import { messagesKeys } from '@/domains/messages/queryKeys';
-import * as service from '@/domains/messages/service';
-import { threadsKeys } from '@/domains/threads/queryKeys';
+} from '@smartspace/chat-ui';
 
-describe('messages mutations', () => {
-  it('useSendMessage swaps the optimistic entry for the real Message returned by postMessage', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
-    // Seed an existing thread detail so the post-POST isFlowRunning flip
-    // has a record to merge into.
-    client.setQueryData(threadsKeys.detail('w', 't'), {
-      id: 't',
-      isFlowRunning: false,
-    } as any);
-
-    const realMessage = {
-      id: 'real-42',
-      createdAt: new Date(),
+const baseMessage = (over: Partial<Message> = {}): Message => ({
+  id: 'm-base',
+  values: [
+    {
+      id: 'v-base',
+      type: MessageValueType.INPUT,
+      name: 'prompt',
+      value: 'baseline',
+      channels: {},
+      createdAt: new Date('2024-01-01T00:00:00Z'),
       createdBy: 'Server',
-      values: [],
-    } as any;
-    const spy = vi
-      .spyOn(service, 'postMessage')
-      .mockResolvedValueOnce(realMessage);
+      createdByUserId: 'u1',
+    },
+  ],
+  createdAt: new Date('2024-01-01T00:00:00Z'),
+  createdBy: 'Server',
+  createdByUserId: 'u1',
+  ...over,
+});
 
-    const { result } = renderHook(() => useSendMessage(), { wrapper });
-    await result.current.mutateAsync({
-      workspaceId: 'w',
-      threadId: 't',
-      contentList: [],
-      files: [],
-      variables: {},
+describe('useSendMessage merge-in-place reconciliation', () => {
+  it('drops the optimistic and appends realMessage when not already present', async () => {
+    const realMessage = baseMessage({ id: 'real-1' });
+    const sendMessage = vi.fn().mockResolvedValueOnce(realMessage);
+    const { result, queryClient } = renderHookWithChat(() => useSendMessage(), {
+      threadId: 't1',
+      service: {
+        sendMessage,
+      } as Parameters<typeof renderHookWithChat>[1] extends infer O
+        ? O extends { service?: infer S }
+          ? S
+          : never
+        : never,
     });
 
-    const data = client.getQueryData<any[]>(messagesKeys.list('t')) || [];
-    expect(data.some((m) => m.optimistic)).toBe(false);
-    expect(data.some((m) => m.id === 'real-42')).toBe(true);
-    expect(spy).toHaveBeenCalledOnce();
+    // Seed historical messages so we can verify they're preserved.
+    const m1 = baseMessage({ id: 'm1' });
+    const m2 = baseMessage({ id: 'm2' });
+    queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [m1, m2]);
 
-    // Post-POST flip closes the composer indicator gap and opens the SSE
-    // gate without waiting for SignalR.
-    const detail = client.getQueryData<any>(threadsKeys.detail('w', 't'));
-    expect(detail?.isFlowRunning).toBe(true);
-
-    spy.mockRestore();
-  });
-
-  it('useSendMessage does not flip detail.isFlowRunning on POST error', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
-    client.setQueryData(threadsKeys.detail('w', 't'), {
-      id: 't',
-      isFlowRunning: false,
-    } as any);
-
-    const spy = vi
-      .spyOn(service, 'postMessage')
-      .mockRejectedValueOnce(new Error('boom'));
-
-    const { result } = renderHook(() => useSendMessage(), { wrapper });
-    await expect(
-      result.current.mutateAsync({
-        workspaceId: 'w',
-        threadId: 't',
-        contentList: [],
-        files: [],
-        variables: {},
-      })
-    ).rejects.toThrow('boom');
-
-    const detail = client.getQueryData<any>(threadsKeys.detail('w', 't'));
-    expect(detail?.isFlowRunning).toBe(false);
-    spy.mockRestore();
-  });
-
-  it('useSendMessage keeps the thread SSE copy when it already added the real id', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
-    // Thread SSE snapshot wrote this entry before postMessage resolved.
-    client.setQueryData(messagesKeys.list('t'), [
-      { id: 'real-42', createdAt: new Date(), values: [], createdBy: 'Server' },
-    ] as any);
-
-    const spy = vi.spyOn(service, 'postMessage').mockResolvedValueOnce({
-      id: 'real-42',
-      createdAt: new Date(),
-      createdBy: 'Server',
-      values: [],
-    } as any);
-
-    const { result } = renderHook(() => useSendMessage(), { wrapper });
-    await result.current.mutateAsync({
-      workspaceId: 'w',
-      threadId: 't',
-      contentList: [],
-      files: [],
-      variables: {},
+    await act(async () => {
+      await result.current.mutateAsync({
+        workspaceId: 'w1',
+        threadId: 't1',
+        contentList: [{ text: 'hi', image: undefined }],
+      });
     });
 
-    const data = client.getQueryData<any[]>(messagesKeys.list('t')) || [];
-    expect(data.filter((m) => m.id === 'real-42').length).toBe(1);
-    expect(data.some((m) => m.optimistic)).toBe(false);
-    spy.mockRestore();
+    const after =
+      queryClient.getQueryData<Message[]>(messagesKeys.list('t1')) ?? [];
+    expect(after.map((m) => m.id)).toEqual(['m1', 'm2', 'real-1']);
+    expect(after.some((m) => m.optimistic)).toBe(false);
   });
 
-  it('useSendMessage rolls back optimistic on postMessage error', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
-    client.setQueryData(threadsKeys.detail('w', 't'), {
-      id: 't',
-      isFlowRunning: false,
-    } as any);
-
-    const spy = vi
-      .spyOn(service, 'postMessage')
-      .mockRejectedValueOnce(new Error('boom'));
-
-    const { result } = renderHook(() => useSendMessage(), { wrapper });
-    await expect(
-      result.current.mutateAsync({
-        workspaceId: 'w',
-        threadId: 't',
-        contentList: [],
-        files: [],
-        variables: {},
-      })
-    ).rejects.toThrow('boom');
-
-    const data = client.getQueryData<any[]>(messagesKeys.list('t')) || [];
-    expect(data.some((m) => m.optimistic)).toBe(false);
-    const detail = client.getQueryData<any>(threadsKeys.detail('w', 't'));
-    expect(detail?.isFlowRunning).toBe(false);
-    spy.mockRestore();
-  });
-
-  it('useAddInputToMessage optimistic patch and reconcile on success', async () => {
-    const client = new QueryClient();
-    const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-
-    // seed cache with one message
-    client.setQueryData(messagesKeys.list('t1'), [
-      { id: 'm1', values: [] },
-    ] as any);
-
-    const returned = {
-      id: 'm1',
+  it('keeps the existing entry when the SSE has already delivered realMessage', async () => {
+    // The SSE could open early (SignalR-triggered) and deliver `realMessage`
+    // with richer state — in-progress AI output, fresher fields — before this
+    // mutation's onSuccess runs. The default `keep-existing` strategy must
+    // not clobber that with the sparse POST response.
+    const richIncoming = baseMessage({
+      id: 'real-1',
       values: [
+        ...baseMessage().values!,
         {
-          id: 'v',
-          name: 'x',
-          type: 'INPUT',
-          value: 'y',
+          id: 'ai-out-1',
+          type: MessageValueType.OUTPUT,
+          name: 'response',
+          value: 'AI streaming...',
           channels: {},
-          createdAt: new Date(),
-          createdBy: 'me',
+          createdAt: new Date('2024-01-01T00:00:01Z'),
+          createdBy: 'bot',
+          createdByUserId: 'bot',
         },
       ],
-    } as any;
-    const spy = vi
-      .spyOn(service, 'addInputToMessage')
-      .mockResolvedValueOnce(returned);
-
-    const { result } = renderHook(() => useAddInputToMessage(), { wrapper });
-    await result.current.addInputToMessageMutation.mutateAsync({
+    });
+    const sparseFromPost = baseMessage({ id: 'real-1' }); // inputs only
+    const sendMessage = vi.fn().mockResolvedValueOnce(sparseFromPost);
+    const { result, queryClient } = renderHookWithChat(() => useSendMessage(), {
       threadId: 't1',
-      messageId: 'm1',
-      name: 'x',
-      value: 'y',
-      channels: {},
+      service: { sendMessage } as never,
     });
 
-    const data = client.getQueryData<any[]>(messagesKeys.list('t1')) || [];
-    expect(data[0].values?.length).toBeGreaterThan(0);
-    spy.mockRestore();
+    queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [
+      richIncoming,
+    ]);
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        workspaceId: 'w1',
+        threadId: 't1',
+        contentList: [{ text: 'hi', image: undefined }],
+      });
+    });
+
+    const after =
+      queryClient.getQueryData<Message[]>(messagesKeys.list('t1')) ?? [];
+    expect(after).toHaveLength(1);
+    // The richer SSE-delivered version is preserved (still has 2 values).
+    expect(after[0].values?.length).toBe(2);
+  });
+
+  it('rolls back the optimistic when sendMessage rejects', async () => {
+    const sendMessage = vi.fn().mockRejectedValueOnce(new Error('boom'));
+    const { result, queryClient } = renderHookWithChat(() => useSendMessage(), {
+      threadId: 't1',
+      service: { sendMessage } as never,
+    });
+
+    const m1 = baseMessage({ id: 'm1' });
+    queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [m1]);
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({
+          workspaceId: 'w1',
+          threadId: 't1',
+          contentList: [{ text: 'hi', image: undefined }],
+        })
+      ).rejects.toThrow('boom');
+    });
+
+    const after =
+      queryClient.getQueryData<Message[]>(messagesKeys.list('t1')) ?? [];
+    expect(after.map((m) => m.id)).toEqual(['m1']);
+    expect(after.some((m) => m.optimistic)).toBe(false);
   });
 });

@@ -59,7 +59,7 @@ import {
   addInputToMessage,
   fetchMessages,
   postMessage,
-} from '@/domains/messages';
+} from '@/domains/messages/service';
 
 function bodyFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -97,7 +97,7 @@ describe('messages service', () => {
     expect(res[0].id).toBe('m1');
   });
 
-  it('postMessage POSTs JSON and returns the parsed Message body', async () => {
+  it('postMessage POSTs to /Messages/start and returns the parsed Message body', async () => {
     const real = {
       id: 'real-7',
       createdAt: '2024-01-01T00:00:00Z',
@@ -108,7 +108,14 @@ describe('messages service', () => {
       errors: [],
       values: [],
     };
-    mockPostMessage.mockResolvedValueOnce({ data: real });
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify(real), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+    ) as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
 
     const result = await postMessage({
       workSpaceId: 'w',
@@ -118,18 +125,51 @@ describe('messages service', () => {
 
     expect(result.id).toBe('real-7');
 
-    expect(mockPostMessage).toHaveBeenCalledOnce();
-    const [body] = mockPostMessage.mock.calls[0];
+    const [rawUrl, init] = (fetchMock as unknown as ReturnType<typeof vi.fn>)
+      .mock.calls[0] as [string, RequestInit];
+    expect(rawUrl).toBe('https://api.test/Messages/start');
+    expect(init.method).toBe('POST');
+    const body = JSON.parse(init.body as string);
     expect(body.messageThreadId).toBe('t1');
     expect(body.workSpaceId).toBe('w');
     expect(body.inputs[0].name).toBe('prompt');
   });
 
   it('postMessage propagates errors from the request', async () => {
-    mockPostMessage.mockRejectedValueOnce(new Error('boom'));
+    globalThis.fetch = vi.fn(
+      async () => new Response('err', { status: 500 })
+    ) as typeof fetch;
     await expect(
       postMessage({ workSpaceId: 'w', threadId: 't1' })
-    ).rejects.toThrow('boom');
+    ).rejects.toThrow(/status 500/);
+  });
+
+  it('postMessage throws on a 4xx response with the status in the message', async () => {
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ message: 'bad request' }), {
+          status: 422,
+        })
+    ) as typeof fetch;
+    await expect(
+      postMessage({ workSpaceId: 'w', threadId: 't1' })
+    ).rejects.toThrow(/status 422/);
+  });
+
+  it('postMessage throws a clear error when the body isnt JSON', async () => {
+    // 200 with non-JSON body — e.g. a proxy injecting an HTML error page.
+    // `response.json()` throws; we should surface a meaningful error rather
+    // than the opaque SyntaxError that `JSON.parse` produces.
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response('<html>oops</html>', {
+          status: 200,
+          headers: { 'Content-Type': 'text/html' },
+        })
+    ) as typeof fetch;
+    await expect(
+      postMessage({ workSpaceId: 'w', threadId: 't1' })
+    ).rejects.toThrow(/non-JSON body/);
   });
 
   it('addInputToMessage throws when no valid message received', async () => {

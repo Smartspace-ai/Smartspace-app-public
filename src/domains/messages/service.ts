@@ -1,26 +1,21 @@
-import {
-  AXIOS_INSTANCE,
-  ChatApi,
-  ChatZod,
-  SignalR,
-} from '@smartspace/api-client';
+import { ChatApi, ChatZod, SignalR } from '@smartspace/api-client';
 
-import { getAuthAdapter } from '@/platform/auth';
-import { getApiScopes } from '@/platform/auth/scopes';
+import { fetchAuthed } from '@/platform/api/fetchAuthed';
 import { parseOrThrow } from '@/platform/validation';
-
-import { FileInfo } from '@/domains/files';
 
 import { parseSseStream } from '@/shared/utils/sseStream';
 
+import { FileInfo } from '@smartspace/chat-ui';
 import {
   mapMessageDtoToModel,
   mapMessageErrorDtoToModel,
   mapMessageValueDtoToModel,
   mapMessagesDtoToModels,
   type MessageError,
-} from './mapper';
-import type { Message, MessageContentItem, MessageValue } from './model';
+  Message,
+  MessageContentItem,
+  MessageValue,
+} from '@smartspace/chat-ui';
 
 const {
   messageThreadsThreadMessagesIdMessagesResponse: messagesResponseSchema,
@@ -75,16 +70,9 @@ export async function addInputToMessage({
   value: unknown;
   channels: Record<string, number> | null;
 }): Promise<Message> {
-  const baseUrl = (AXIOS_INSTANCE.defaults.baseURL ?? '').replace(/\/$/, '');
-  const token = await getAuthAdapter().getAccessToken({
-    silentOnly: true,
-    scopes: getApiScopes(),
-  });
-
-  const response = await fetch(`${baseUrl}/messages/${messageId}/values`, {
+  const response = await fetchAuthed(`/messages/${messageId}/values`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
       Accept: 'text/event-stream',
       'Content-Type': 'application/json',
     },
@@ -124,6 +112,13 @@ export async function addInputToMessage({
 // with inputs populated and id assigned. The flow continues running in the
 // background; output deltas arrive on the thread SSE keyed by the returned id.
 // Callers should reconcile their optimistic temp-id entry with this Message.
+//
+// Hits `POST /Messages/start` so the call resolves the moment the flow has
+// been queued, instead of `POST /Messages` which (with default `Accept: json`)
+// blocks until the AI flow completes — that blocking variant produced an
+// end-of-flow flicker because the mutation's authoritative cache write landed
+// at the same moment the SSE terminal frame did. Uses raw `fetch` because the
+// installed SDK doesn't expose the `/start` endpoint yet.
 export async function postMessage({
   workSpaceId,
   threadId,
@@ -157,15 +152,40 @@ export async function postMessage({
     });
   }
 
-  const response = await chatApi.messagesThreadMessages({
-    inputs,
-    messageThreadId: threadId,
-    workSpaceId,
-    variables,
+  const response = await fetchAuthed(`/Messages/start`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      inputs,
+      messageThreadId: threadId,
+      workSpaceId,
+      variables,
+    }),
   });
 
-  const raw = response.data as unknown as Record<string, unknown>;
-  if (!raw) throw new Error('POST /messages returned no body');
+  if (!response.ok) {
+    throw new Error(
+      `POST /Messages/start failed with status ${response.status}`
+    );
+  }
+
+  // Wrap JSON parse so a non-JSON 200 body (e.g. an HTML error page from a
+  // proxy or sidecar) surfaces as a clear error instead of an opaque
+  // `SyntaxError: Unexpected token < in JSON`.
+  let raw: Record<string, unknown> | null;
+  try {
+    raw = (await response.json()) as Record<string, unknown> | null;
+  } catch (err) {
+    throw new Error(
+      `POST /Messages/start returned a non-JSON body: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+  }
+  if (!raw) throw new Error('POST /Messages/start returned no body');
   coerceMessageDto(raw);
   return mapMessageDtoToModel(
     messagesResponseSchema.shape.data.element.parse(raw)
@@ -231,18 +251,11 @@ export async function streamThreadMessages({
   threadId: string;
   signal: AbortSignal;
 } & ThreadStreamHandlers): Promise<StreamThreadMessagesResult> {
-  const baseUrl = (AXIOS_INSTANCE.defaults.baseURL ?? '').replace(/\/$/, '');
-  const token = await getAuthAdapter().getAccessToken({
-    silentOnly: true,
-    scopes: getApiScopes(),
-  });
-
-  const response = await fetch(
-    `${baseUrl}/MessageThreads/${threadId}/messages/stream`,
+  const response = await fetchAuthed(
+    `/MessageThreads/${threadId}/messages/stream`,
     {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
         Accept: 'text/event-stream',
       },
       signal,

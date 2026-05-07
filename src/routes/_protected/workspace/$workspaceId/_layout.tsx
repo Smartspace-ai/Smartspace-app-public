@@ -1,21 +1,45 @@
 // routes/_protected/workspace/$workspaceId/_layout.tsx
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo, type ReactNode } from 'react';
 
+import { useUserDisplayName, useUserId } from '@/platform/auth/session';
+import { defaultChatService } from '@/platform/chat/defaultChatService';
 import {
   RouteIdsProvider,
   useRouteIds,
 } from '@/platform/routing/RouteIdsProvider';
 
-import {
-  useWorkspace,
-  workspaceDetailOptions,
-} from '@/domains/workspaces/queries';
-
-import { PageSkeleton } from '@/ui/feedback/Skeletons';
 import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
 
+import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
+
 import { getBackgroundGradientClasses } from '@/theme/tag-styles';
+
+import {
+  useWorkspace,
+  ChatProvider,
+  workspaceDetailOptions,
+} from '@smartspace/chat-ui';
+
+/**
+ * Exported for the integration test in `__tests__/ChatProviderBridge.spec.tsx`.
+ * The route component is the only production consumer.
+ */
+export function ChatProviderBridge({ children }: { children: ReactNode }) {
+  const { workspaceId, threadId } = useRouteIds();
+  const userId = useUserId();
+  const displayName = useUserDisplayName();
+  return (
+    <ChatProvider
+      service={defaultChatService}
+      workspaceId={workspaceId}
+      threadId={threadId}
+      identity={{ userId, displayName }}
+    >
+      {children}
+    </ChatProvider>
+  );
+}
 
 function WorkspaceBodyBackground() {
   const { workspaceId } = useRouteIds();
@@ -54,16 +78,22 @@ export const Route = createFileRoute(
 )({
   loader: ({ params, context }) =>
     context.queryClient.ensureQueryData(
-      workspaceDetailOptions(params.workspaceId)
+      workspaceDetailOptions({
+        service: defaultChatService,
+        workspaceId: params.workspaceId,
+      })
     ),
   component: () => (
     <RouteIdsProvider>
-      <PendingThreadsProvider>
-        <WorkspaceBodyBackground />
-        <Suspense fallback={<PageSkeleton />}>
-          <Outlet />
-        </Suspense>
-      </PendingThreadsProvider>
+      <ChatProviderBridge>
+        <PendingThreadsProvider>
+          <WorkspaceBodyBackground />
+          <ChatBotPage />
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
+        </PendingThreadsProvider>
+      </ChatProviderBridge>
     </RouteIdsProvider>
   ),
 });

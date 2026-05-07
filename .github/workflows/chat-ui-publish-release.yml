@@ -1,0 +1,78 @@
+name: chat-ui publish (release)
+
+# Triggered by a GitHub Release with a `v*` tag (the SmartSpace platform
+# version tag). Publishes that exact version under the `latest` dist-tag,
+# or `rc` if the tag includes a pre-release suffix (e.g. v1.13.1-rc.1).
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chat-ui-publish-release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: |
+      github.repository == 'Smartspace-ai/Smartspace-app-public' &&
+      startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Extract version from release tag
+        id: ver
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "::error::Tag '$TAG' does not produce a valid semver version: '$VERSION'"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Determine dist-tag
+        id: tag
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          if [[ "$VERSION" == *-* ]]; then
+            echo "tag=rc" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stamp version into package.json
+        run: |
+          cd packages/chat-ui
+          jq --arg v "${{ steps.ver.outputs.version }}" '.version = $v' package.json > p.json
+          mv p.json package.json
+
+      - run: pnpm --filter @smartspace/chat-ui build
+
+      - name: Publish release to npmjs.com
+        run: |
+          cd packages/chat-ui
+          pnpm publish --tag ${{ steps.tag.outputs.tag }} --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "Published \`@smartspace/chat-ui@${{ steps.ver.outputs.version }}\` (dist-tag \`${{ steps.tag.outputs.tag }}\`)" >> "$GITHUB_STEP_SUMMARY"
