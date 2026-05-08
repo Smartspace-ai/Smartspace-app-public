@@ -1,0 +1,147 @@
+# Smartspace-internal: safe to delete in forks.
+# Listens for `sdk-published` repository_dispatch events from Smartspace-app-api
+# and refreshes this repo's lockfile to point at the new SDK version. Runs the
+# same quality gate as a normal CI build before pushing — if quality fails the
+# branch is NOT updated and an issue is opened instead.
+#
+# Only acts on the `dev` and `main` channels. Stable `latest` / `rc` releases
+# are intentionally left to manual review.
+
+name: Bump @smartspace/api-client (auto, internal)
+
+on:
+  repository_dispatch:
+    types: [sdk-published]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: bump-sdk-${{ github.event.client_payload.target_branch }}
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    if: |
+      github.repository == 'Smartspace-ai/Smartspace-app-public' &&
+      (github.event.client_payload.tag == 'dev' || github.event.client_payload.tag == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Generate CI_DISPATCH_APP token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CI_DISPATCH_APP_ID }}
+          private-key: ${{ secrets.CI_DISPATCH_APP_PRIVATE_KEY }}
+          owner: Smartspace-ai
+          repositories: Smartspace-app-public
+
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.target_branch }}
+          # App token (contents: write) so the push re-triggers downstream
+          # workflows. The default GITHUB_TOKEN is anti-recursive and won't.
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Bump SDK lockfile and restore literal channel pin
+        env:
+          NEW_VERSION: ${{ github.event.client_payload.version }}
+          CHANNEL: ${{ github.event.client_payload.tag }}
+        run: |
+          # Pin the exact resolved version. This forces pnpm to refresh the
+          # lockfile entry — the literal "dev"/"main" tag spec doesn't trigger
+          # re-resolution on its own once a version is locked.
+          pnpm add --save-exact "@smartspace/api-client@${NEW_VERSION}"
+
+          # Revert the package.json spec back to the channel literal so the
+          # existing check-package-json-channel.yml swap workflow keeps working.
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json','utf8'));
+            p.dependencies['@smartspace/api-client'] = process.env.CHANNEL;
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          "
+
+          # Resync the lockfile spec field to the literal tag. Resolved version
+          # is unchanged, so this is fast.
+          pnpm install --no-frozen-lockfile
+
+      - name: Detect changes and validate scope
+        id: diff
+        run: |
+          if git diff --quiet -- package.json pnpm-lock.yaml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "OK: SDK already at @${{ github.event.client_payload.tag }}=${{ github.event.client_payload.version }}; nothing to commit."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Refuse to push if anything outside package.json + pnpm-lock.yaml
+          # was modified. Belt-and-braces against an upstream side effect.
+          if ! git diff --quiet -- ':!package.json' ':!pnpm-lock.yaml'; then
+            echo "::error::Unexpected files modified by bump; refusing to push."
+            git diff --stat
+            exit 1
+          fi
+
+      - name: Quality gate
+        if: steps.diff.outputs.changed == 'true'
+        uses: dagger/dagger-for-github@v7
+        with:
+          version: "0.20.3"
+          verb: call
+          module: ./ci
+          args: >-
+            quality-check
+            --source=.
+
+      - name: Commit and push
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          NEW_VERSION: ${{ github.event.client_payload.version }}
+          CHANNEL: ${{ github.event.client_payload.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml
+          git commit -m "chore(deps): bump @smartspace/api-client to ${NEW_VERSION} (@${CHANNEL})"
+          git push
+
+      - name: Open issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          # Default GITHUB_TOKEN — has issues:write via the workflow permissions
+          # block above. The App token doesn't carry Issues permission.
+          script: |
+            const tag = context.payload.client_payload.tag;
+            const version = context.payload.client_payload.version;
+            const branch = context.payload.client_payload.target_branch;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Auto-bump failed: @smartspace/api-client@${version} on ${branch}`,
+              body: [
+                `Automated SDK bump failed.`,
+                ``,
+                `- Channel: \`${tag}\``,
+                `- Version: \`${version}\``,
+                `- Target branch: \`${branch}\``,
+                `- Workflow run: ${runUrl}`,
+                ``,
+                `The branch was NOT updated. Resolve manually or wait for the next ${tag} publish.`,
+              ].join('\n'),
+              labels: ['ci', 'auto-bump-failed'],
+            });
