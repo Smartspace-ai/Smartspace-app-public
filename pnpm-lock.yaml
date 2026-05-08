@@ -91,7 +91,7 @@ importers:
         version: 1.2.4(@types/react@18.3.1)(react@18.3.1)
       '@smartspace/api-client':
         specifier: dev
-        version: 0.1.0-dev.00e0c7c(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
+        version: 0.1.0-dev.e77221b(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
       '@smartspace/chat-ui':
         specifier: workspace:*
         version: link:packages/chat-ui
@@ -456,7 +456,7 @@ importers:
     devDependencies:
       '@smartspace/api-client':
         specifier: dev
-        version: 0.1.0-dev.00e0c7c(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
+        version: 0.1.0-dev.e77221b(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
       tailwindcss:
         specifier: ^3.4.10
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
@@ -465,7 +465,7 @@ importers:
         version: 1.0.7(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
       tsup:
         specifier: ^8.5.0
-        version: 8.5.1(@swc/core@1.15.30(@swc/helpers@0.5.21))(jiti@2.4.2)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.5.4)(yaml@2.8.3)
+        version: 8.5.1(@swc/core@1.15.30(@swc/helpers@0.5.21))(jiti@1.21.7)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.5.4)(yaml@2.8.3)
       typescript:
         specifier: 5.5.4
         version: 5.5.4
@@ -2830,8 +2830,8 @@ packages:
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
     engines: {node: '>=10'}
 
-  '@smartspace/api-client@0.1.0-dev.00e0c7c':
-    resolution: {integrity: sha512-eqPjwO+iEKvIonXIP8AkWzqdjnuCL3MaxNL7pRn5HLTOhi3fZTyEQe+sXtdJl/YkYzndMTKdSzDPAYWliXLn7w==}
+  '@smartspace/api-client@0.1.0-dev.e77221b':
+    resolution: {integrity: sha512-oW+1grwAsDI2FxhEt0xNkJoAkecDqai4D32oxoN4ea3HPiDDCd0WeZQGolNh/gUlIwXv3tA+Reh06ocatEhkpg==}
     peerDependencies:
       '@microsoft/signalr': '>=8.0.0'
       axios: '>=1.0.0'
@@ -3404,6 +3404,7 @@ packages:
 
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
+    deprecated: Potential CWE-502 - Update to 1.3.1 or higher
 
   '@vitejs/plugin-react@4.3.4':
     resolution: {integrity: sha512-SCCPBJtYLdE8PX/7ZQAs1QAZ8Jqwih+0VBLum1EGqmCCQal+MIUqLCzj3ZUy8ufbC0cAM4LRlSTm7IQJwWT4ug==}
@@ -10699,7 +10700,7 @@ snapshots:
 
   '@sindresorhus/is@4.6.0': {}
 
-  '@smartspace/api-client@0.1.0-dev.00e0c7c(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)':
+  '@smartspace/api-client@0.1.0-dev.e77221b(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)':
     dependencies:
       '@microsoft/signalr': 8.0.17(encoding@0.1.13)
       axios: 1.15.1
@@ -14898,15 +14899,6 @@ snapshots:
       tsx: 4.21.0
       yaml: 2.8.3
 
-  postcss-load-config@6.0.1(jiti@2.4.2)(postcss@8.5.10)(tsx@4.21.0)(yaml@2.8.3):
-    dependencies:
-      lilconfig: 3.1.3
-    optionalDependencies:
-      jiti: 2.4.2
-      postcss: 8.5.10
-      tsx: 4.21.0
-      yaml: 2.8.3
-
   postcss-modules-extract-imports@3.1.0(postcss@8.5.10):
     dependencies:
       postcss: 8.5.10
@@ -16093,7 +16085,7 @@ snapshots:
 
   tslib@2.8.1: {}
 
-  tsup@8.5.1(@swc/core@1.15.30(@swc/helpers@0.5.21))(jiti@2.4.2)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.5.4)(yaml@2.8.3):
+  tsup@8.5.1(@swc/core@1.15.30(@swc/helpers@0.5.21))(jiti@1.21.7)(postcss@8.5.10)(tsx@4.21.0)(typescript@5.5.4)(yaml@2.8.3):
     dependencies:
       bundle-require: 5.1.0(esbuild@0.27.7)
       cac: 6.7.14
@@ -16104,7 +16096,7 @@ snapshots:
       fix-dts-default-cjs-exports: 1.0.1
       joycon: 3.1.1
       picocolors: 1.1.1
-      postcss-load-config: 6.0.1(jiti@2.4.2)(postcss@8.5.10)(tsx@4.21.0)(yaml@2.8.3)
+      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.10)(tsx@4.21.0)(yaml@2.8.3)
       resolve-from: 5.0.0
       rollup: 4.60.2
       source-map: 0.7.6
