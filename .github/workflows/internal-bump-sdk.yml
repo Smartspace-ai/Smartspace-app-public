@@ -62,7 +62,9 @@ jobs:
           # Pin the exact resolved version. This forces pnpm to refresh the
           # lockfile entry — the literal "dev"/"main" tag spec doesn't trigger
           # re-resolution on its own once a version is locked.
-          pnpm add --save-exact "@smartspace/api-client@${NEW_VERSION}"
+          # --workspace-root: this repo is a pnpm workspace; pnpm refuses to
+          # add deps to the root without it.
+          pnpm add --workspace-root --save-exact "@smartspace/api-client@${NEW_VERSION}"
 
           # Revert the package.json spec back to the channel literal so the
           # existing check-package-json-channel.yml swap workflow keeps working.
