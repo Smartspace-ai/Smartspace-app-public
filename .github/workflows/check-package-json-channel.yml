@@ -17,9 +17,13 @@ jobs:
     # channel scheme, so this workflow has nothing useful to do for them.
     # Also skip PRs from forks of the canonical repo (bot can't push to fork
     # branches; those PRs fall back to manual fix).
+    # Also skip when the PR head is `develop` itself: the swap pushes back to
+    # the head ref, which would permanently flip develop's pin to `main`.
+    # develop→main syncs must go through a temporary `sync/...` branch.
     if: |
       github.repository == 'Smartspace-ai/Smartspace-app-public' &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref != 'develop'
     name: Swap '@smartspace/*' SDK pins from 'dev' to 'main'
     runs-on: ubuntu-latest
     steps:
