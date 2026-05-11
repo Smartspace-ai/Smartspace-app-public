@@ -10,21 +10,23 @@ SmartSpace Chat UI — a React 18.3 + TypeScript chat interface built with Vite,
 
 | Task                | Command                |
 | ------------------- | ---------------------- |
-| Dev server          | `npm run serve`        |
-| Dev with .env.local | `npm run start:local`  |
-| Dev with .env.dev   | `npm run start:dev`    |
-| Build               | `npm run build`        |
-| Test                | `npm test`             |
-| Lint (quiet)        | `npm run lint`         |
-| Lint (full)         | `npm run lint:all`     |
-| Lint fix            | `npm run lint:fix`     |
-| Typecheck           | `npm run typecheck`    |
-| OpenAPI sync        | `npm run openapi:sync` |
-| Teams manifest      | `npm run build:teams`  |
+| Install deps        | `pnpm install`         |
+| Dev server          | `pnpm run serve`       |
+| Dev with .env.local | `pnpm run start:local` |
+| Dev with .env.dev   | `pnpm run start:dev`   |
+| Build               | `pnpm run build`       |
+| Test                | `pnpm test`            |
+| Lint (quiet)        | `pnpm run lint`        |
+| Lint (full)         | `pnpm run lint:all`    |
+| Lint fix            | `pnpm run lint:fix`    |
+| Typecheck           | `pnpm run typecheck`   |
+| Teams manifest      | `pnpm run build:teams` |
 
-Run a single test file: `npx vitest run src/path/to/file.spec.ts`
+Run a single test file: `pnpm exec vitest run src/path/to/file.spec.ts`
 
-CI pipeline runs: `npm run openapi:sync` → `npm run lint:all` → `npm run typecheck` → `npm test` → `npm run build`
+Package manager: **pnpm** (pinned via `packageManager` field in `package.json`, resolved by Corepack). Do not use `npm install` — it creates `package-lock.json` and causes lockfile drift.
+
+CI pipeline runs: `pnpm run lint:all` → `pnpm run typecheck` → `pnpm test` → `pnpm run build`
 
 ## Architecture
 
@@ -58,7 +60,7 @@ Each domain (`src/domains/<feature>/`) follows:
 
 - `model.ts` — TypeScript interfaces
 - `schemas.ts` — Zod validation
-- `service.ts` — API calls (Orval-generated or manual)
+- `service.ts` — API calls
 - `mapper.ts` — DTO ↔ model transformation
 - `queries.ts` / `mutations.ts` — TanStack Query hooks
 - `queryKeys.ts` — Query key factories
@@ -76,7 +78,7 @@ Dual-mode auth via `AuthAdapter` interface:
 
 ### API Layer
 
-- Orval + Axios generates typed API client from OpenAPI spec (`orval.config.ts`)
+- `@smartspace/api-client` npm package provides the typed API client
 - Request interceptor attaches Bearer tokens silently
 - Do **not** import `axios` outside `src/platform/` (lint error)
 

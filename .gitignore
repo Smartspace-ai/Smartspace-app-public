@@ -59,6 +59,3 @@ Thumbs.db
 
 /teams/*.zip
 /teams/manifest.json
-
-# OpenAPI generated client (spec is committed, generated code is not)
-/src/platform/api/generated/

@@ -7,8 +7,8 @@ import {
   unmarkDraftThreadId,
 } from '@/shared/utils/threadId';
 
-import type { MessageThread, ThreadsResponse } from './model';
-import { threadsKeys } from './queryKeys';
+import type { MessageThread, ThreadsResponse } from '@smartspace/chat-ui';
+import { threadsKeys } from '@smartspace/chat-ui';
 
 type ThreadsListMeta = { workspaceId?: string };
 type ThreadsListKey = readonly unknown[];
@@ -148,6 +148,7 @@ export function ensureDraftThread(
     totalMessages: 0,
     pinned: false,
     workSpaceId: workspaceId,
+    summaryEmittedAt: now.getTime(),
   };
 
   queryClient.setQueryData(

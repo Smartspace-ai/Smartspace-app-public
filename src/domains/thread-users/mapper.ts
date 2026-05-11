@@ -3,7 +3,7 @@ import type { z } from 'zod';
 
 import type { ThreadUser } from './model';
 
-const { getMessageThreadsThreadIdUsersResponseItem: threadUserItemSchema } =
+const { messageThreadsGetThreadUsersResponseItem: threadUserItemSchema } =
   ChatZod;
 
 type ThreadUserDto = z.infer<typeof threadUserItemSchema>;

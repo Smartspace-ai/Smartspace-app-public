@@ -5,14 +5,14 @@ import { parseOrThrow } from '@/platform/validation';
 import { mapThreadUserDtoToModel } from './mapper';
 import type { ThreadUser } from './model';
 
-const { getMessageThreadsThreadIdUsersResponse: threadUsersResponseSchema } =
+const { messageThreadsGetThreadUsersResponse: threadUsersResponseSchema } =
   ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 export async function fetchThreadUsers(
   threadId: string
 ): Promise<ThreadUser[]> {
-  const response = await chatApi.getMessageThreadsThreadIdUsers(threadId);
+  const response = await chatApi.messageThreadsGetThreadUsers(threadId);
   const parsed = parseOrThrow(
     threadUsersResponseSchema,
     response.data,
@@ -25,12 +25,12 @@ export async function addThreadUser(
   threadId: string,
   userId: string
 ): Promise<void> {
-  await chatApi.postMessageThreadsThreadIdUsersUserId(threadId, userId);
+  await chatApi.messageThreadsAddThreadUser(threadId, userId);
 }
 
 export async function removeThreadUser(
   threadId: string,
   userId: string
 ): Promise<void> {
-  await chatApi.deleteMessageThreadsThreadIdUsersUserId(threadId, userId);
+  await chatApi.messageThreadsRemoveThreadUser(threadId, userId);
 }

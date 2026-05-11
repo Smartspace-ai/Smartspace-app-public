@@ -1,19 +1,6 @@
-// src/domains/workspaces/index.ts
-// Public API of the workspaces domain
-
-// Types the UI/pages should use
-export type {
-    MentionUser, Variables, Workspace
-} from './model';
-  
-  // React Query keys
-  export { workspaceKeys } from './queryKeys';
-  
-  // Queries (hooks + options)
-  export {
-    taggableUsersOptions, useTaggableWorkspaceUsers, useWorkspace, useWorkspaces, workspaceDetailOptions, workspacesListOptions
-} from './queries';
-  
-// Service surface (for tests and advanced callers)
+// App-side workspaces domain barrel — exports the app-only sidebar surface
+// (paginated workspaces list, fetch helpers). Package chat-side exports
+// (model, queryKeys, useWorkspace, taggable users) live at `@smartspace/chat-ui`
+// and should be imported from there directly.
+export { useWorkspaces, workspacesListOptions } from './queries';
 export { fetchTaggableUsers, fetchWorkspace, fetchWorkspaces } from './service';
-  

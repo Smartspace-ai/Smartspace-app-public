@@ -25,7 +25,11 @@ A modern, customizable chat interface built with React 18.3, utilizing [shadcn U
 Ensure you have the following installed:
 
 - [Node.js](https://nodejs.org/en/download/) (version 20 or higher)
-- [npm](https://www.npmjs.com/get-npm) or [yarn](https://yarnpkg.com/getting-started/install)
+- [pnpm](https://pnpm.io/installation) (version 9). Easiest install: enable Corepack (bundled with Node.js) and let it resolve the version pinned in `package.json`:
+
+  ```bash
+  corepack enable
+  ```
 
 ### Versioning
 
@@ -46,6 +50,21 @@ git ls-remote --tags https://github.com/Smartspace-ai/Smartspace-app-public.git
 
 > **Do not clone from `main` directly** unless you are running the latest version of SmartSpace. The `main` branch tracks the most recent release and may include API changes that are incompatible with older SmartSpace versions.
 
+#### Updating an existing fork
+
+When pulling in upstream changes, merge the SmartSpace version tag that matches your instance — **not** `main`. This keeps your fork aligned with a known-compatible release instead of whatever is currently on `main`.
+
+```bash
+# Add the upstream template as a remote (one-time setup)
+git remote add upstream https://github.com/Smartspace-ai/Smartspace-app-public.git
+
+# Fetch tags from upstream
+git fetch upstream --tags
+
+# Merge the tag that matches your SmartSpace version
+git merge v1.13.1
+```
+
 ### Installation
 
 1. **Fork [this repository](https://github.com/Smartspace-ai/Smartspace-app-public) to your own GitHub account.**
@@ -65,7 +84,7 @@ git ls-remote --tags https://github.com/Smartspace-ai/Smartspace-app-public.git
 4. **Install the dependencies:**
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 ### SDK Dependency
@@ -94,9 +113,7 @@ In the project directory, you can run the following scripts:
 - **Start the development server:**
 
   ```bash
-  npm run start
-  # or
-  yarn start
+  pnpm run start
   ```
 
 ### Dev tunnels (optional)
@@ -106,17 +123,17 @@ If you need a public URL to your local dev server (e.g. for Teams manifests / ca
 - **Start the app (no tunnel):**
 
   ```bash
-  npm run start:local
+  pnpm run start:local
   # or
-  npm run start:dev
+  pnpm run start:dev
   ```
 
 - **Start the tunnel (separate command):**
 
   ```bash
-  npm run start:tunnel
+  pnpm run start:tunnel
   # or
-  npm run start:tunnel:dev
+  pnpm run start:tunnel:dev
   ```
 
 - **Env vars** (in `.env.local` / `.env.dev`):
@@ -127,17 +144,13 @@ If you need a public URL to your local dev server (e.g. for Teams manifests / ca
 - **Build the application for production:**
 
   ```bash
-  npm run build
-  # or
-  yarn build
+  pnpm run build
   ```
 
 - **Run tests:**
 
   ```bash
-  npm run test
-  # or
-  yarn test
+  pnpm run test
   ```
 
 ---

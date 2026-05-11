@@ -7,7 +7,6 @@ import type { Comment, MentionUser } from './model';
 import { commentsKeys } from './queryKeys';
 import { addComment } from './service';
 
-
 export function useAddComment(threadId: string) {
   const queryClient = useQueryClient();
   const activeUserId = useUserId();
@@ -34,10 +33,14 @@ export function useAddComment(threadId: string) {
       return await addComment(threadId, content, mentionedUsers);
     },
     onMutate: async ({ threadId, content, mentionedUsers = [] }) => {
-      await queryClient.cancelQueries({ queryKey: commentsKeys.list(threadId) });
+      await queryClient.cancelQueries({
+        queryKey: commentsKeys.list(threadId),
+      });
 
-      const previous = queryClient.getQueryData<Comment[]>(commentsKeys.list(threadId));
-      const tempId = `temp-${Date.now()}`;
+      const previous = queryClient.getQueryData<Comment[]>(
+        commentsKeys.list(threadId)
+      );
+      const tempId = `temp-${crypto.randomUUID()}`;
       const optimisticComment: Comment = {
         id: tempId,
         content,
@@ -50,7 +53,7 @@ export function useAddComment(threadId: string) {
 
       queryClient.setQueryData(
         commentsKeys.list(threadId),
-        (old: Comment[] | undefined) => ([...(old ?? []), optimisticComment]),
+        (old: Comment[] | undefined) => [...(old ?? []), optimisticComment]
       );
 
       return { threadId, tempId, previous };
@@ -64,12 +67,20 @@ export function useAddComment(threadId: string) {
         commentsKeys.list(tid),
         (old: Comment[] | undefined) => {
           const list = old ?? [];
-          const idx = list.findIndex((c) => c.id === tempId);
-          if (idx === -1) return [...list, realComment];
+          const tempIdx = list.findIndex((c) => c.id === tempId);
+          const realIdx = list.findIndex((c) => c.id === realComment.id);
+
+          // The SignalR `receiveCommentsUpdate` push can land before the POST
+          // response. When it does, the real comment is already in the cache,
+          // and naively replacing the placeholder would leave two copies.
+          if (realIdx !== -1) {
+            return tempIdx === -1 ? list : list.filter((c) => c.id !== tempId);
+          }
+          if (tempIdx === -1) return [...list, realComment];
           const next = list.slice();
-          next[idx] = realComment;
+          next[tempIdx] = realComment;
           return next;
-        },
+        }
       );
     },
     onError: (_error, variables, ctx) => {
@@ -79,7 +90,8 @@ export function useAddComment(threadId: string) {
       } else if (ctx?.tempId) {
         queryClient.setQueryData(
           commentsKeys.list(variables.threadId),
-          (old: Comment[] | undefined) => (old ?? []).filter((c) => c.id !== ctx.tempId),
+          (old: Comment[] | undefined) =>
+            (old ?? []).filter((c) => c.id !== ctx.tempId)
         );
       }
       // eslint-disable-next-line no-console
@@ -87,10 +99,4 @@ export function useAddComment(threadId: string) {
       toast.error('Failed to add comment. Please try again.');
     },
   });
-
 }
-
-
-
-
-

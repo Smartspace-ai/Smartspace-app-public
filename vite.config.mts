@@ -15,7 +15,7 @@ const publicOriginHost = (() => {
   }
 })();
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   root: __dirname,
   cacheDir: './node_modules/.vite/smartspace',
 
@@ -34,24 +34,35 @@ export default defineConfig({
   },
 
   plugins: [
-    // Dynamically resolve the TanStack Router Vite plugin to avoid editor/moduleResolution issues
-    ((() => {
-      const require = createRequire(import.meta.url);
-      try {
-        // Avoid static analysis resolution by constructing the module name dynamically
-        const moduleName = ['@tanstack', 'router-plugin', 'vite'].join('/');
-        const mod = require(moduleName) as { default?: unknown };
-        if (typeof mod?.default === 'function') {
-          return mod.default as (opts: { routeFileIgnorePattern?: string }) => PluginOption;
-        }
-      } catch {
-        // ignore
-      }
-      return () => ({ name: 'tanstack-router-plugin-noop' }) as PluginOption;
-    })())({
-      // Ignore tests and test directories when scanning for route files
-      routeFileIgnorePattern: '__tests__|\\.(test|spec)\\.(t|j)sx?$',
-    }),
+    // Skip the TanStack Router plugin in test mode. Tests import route
+    // modules directly (routeTree.gen.ts is already generated and committed),
+    // so the plugin's route-tree regeneration and HMR injection are unused.
+    // Under @nx/vite:test the plugin's output gets layered on top of the
+    // transform @vitejs/plugin-react already applies, producing
+    // "Duplicate declaration 'hot'" in Babel when test files import routes.
+    // This gate is targeted — the plugin still runs for dev/build/preview.
+    ...(mode === 'test'
+      ? []
+      : [
+          // Dynamically resolve the TanStack Router Vite plugin to avoid editor/moduleResolution issues
+          ((() => {
+            const require = createRequire(import.meta.url);
+            try {
+              // Avoid static analysis resolution by constructing the module name dynamically
+              const moduleName = ['@tanstack', 'router-plugin', 'vite'].join('/');
+              const mod = require(moduleName) as { default?: unknown };
+              if (typeof mod?.default === 'function') {
+                return mod.default as (opts: { routeFileIgnorePattern?: string }) => PluginOption;
+              }
+            } catch {
+              // ignore
+            }
+            return () => ({ name: 'tanstack-router-plugin-noop' }) as PluginOption;
+          })())({
+            // Ignore tests and test directories when scanning for route files
+            routeFileIgnorePattern: '__tests__|\\.(test|spec)\\.(t|j)sx?$',
+          }),
+        ]),
     react(),
     nxViteTsPaths(),
   ],
@@ -118,13 +129,61 @@ export default defineConfig({
       },
       output: {
         // Practical code-splitting to keep bundles smaller and reduce chunk-size warnings.
+        // Order matters — first match wins.
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
+          // Note: React core is intentionally NOT split into its own chunk.
+          // Doing so caused `Cannot read properties of undefined (reading 'useState')`
+          // in the vendor chunk at runtime — CJS-interop'd consumers (react-is,
+          // use-sync-external-store, prop-types, etc.) ended up in `vendor` and
+          // received an undefined React namespace when React lived in a sibling
+          // chunk. Letting Rollup co-locate React with its consumers fixes it.
+
+          // UI libraries
           if (id.includes('/@mui/')) return 'mui';
-          if (id.includes('/@milkdown/')) return 'milkdown';
+          if (id.includes('/@emotion/')) return 'emotion';
+          if (id.includes('/@radix-ui/')) return 'radix';
+          if (id.includes('/lucide-react/') || id.includes('/@heroicons/'))
+            return 'icons';
+          if (id.includes('/framer-motion/')) return 'motion';
+
+          // Editor libraries (heaviest third-party surfaces)
+          if (id.includes('/@milkdown/') || id.includes('/@milkdown-next/'))
+            return 'milkdown';
+          if (id.includes('/ace-builds/') || id.includes('/react-ace/'))
+            return 'ace';
+
+          // Router + data
           if (id.includes('/@tanstack/')) return 'tanstack';
-          if (id.includes('/ace-builds/')) return 'ace';
+
+          // Auth + identity
+          if (
+            id.includes('/@azure/msal') ||
+            id.includes('/jwt-decode/')
+          )
+            return 'msal';
+          if (id.includes('/@microsoft/teams-js/')) return 'teams';
+
+          // Realtime
+          if (id.includes('/@microsoft/signalr/')) return 'signalr';
+
+          // Markdown pipeline — unified, remark/rehype, mdast/hast utils, visit
+          if (
+            id.includes('/react-markdown/') ||
+            id.includes('/remark-') ||
+            id.includes('/rehype-') ||
+            id.includes('/unified/') ||
+            id.includes('/unist-util-') ||
+            id.includes('/mdast-util-') ||
+            id.includes('/hast-util-') ||
+            id.includes('/micromark') ||
+            id.includes('/decode-named-character-reference/')
+          )
+            return 'markdown';
+
+          // Form schema rendering
+          if (id.includes('/@jsonforms/')) return 'jsonforms';
 
           return 'vendor';
         },
@@ -157,4 +216,4 @@ export default defineConfig({
       reportOnFailure: true,
     },
   },
-});
+}));

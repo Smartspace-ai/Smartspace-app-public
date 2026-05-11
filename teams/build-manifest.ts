@@ -1,5 +1,5 @@
-// To use this script, run: npm install archiver dotenv
-// If using TypeScript, you may also want: npm install --save-dev @types/archiver
+// To use this script, run: pnpm add archiver dotenv
+// If using TypeScript, you may also want: pnpm add -D @types/archiver
 const fs = require('fs');
 const path = require('path');
 

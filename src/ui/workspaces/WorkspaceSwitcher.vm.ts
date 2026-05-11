@@ -1,24 +1,17 @@
 // src/ui/workspaces/WorkspaceSwitcher.vm.ts
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import debounce from 'lodash/debounce';
+import debounce from 'lodash.debounce';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import { commentsKeys } from '@/domains/comments/queryKeys';
-import { messagesKeys } from '@/domains/messages/queryKeys';
-import { threadsKeys } from '@/domains/threads/queryKeys';
-import type { Workspace } from '@/domains/workspaces/model';
-import {
-  useWorkspace,
-  useWorkspaces,
-  workspaceDetailOptions,
-} from '@/domains/workspaces/queries';
+import { useWorkspaces } from '@/domains/workspaces';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
-import { useWorkspaceSubscriptions } from './useWorkspaceSubscriptions';
+import type { Workspace } from '@smartspace/chat-ui';
+import { useWorkspace, workspaceKeys } from '@smartspace/chat-ui';
 
 export function useWorkspaceSwitcherVm() {
   const [open, setOpen] = useState(false);
@@ -31,8 +24,6 @@ export function useWorkspaceSwitcherVm() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { workspaceId } = useRouteIds();
-
-  useWorkspaceSubscriptions();
 
   const queryClient = useQueryClient();
 
@@ -100,7 +91,7 @@ export function useWorkspaceSwitcherVm() {
     // Seed the active-workspace query cache immediately from the dropdown list item,
     // so header + dropdown reflect the new workspace without waiting for a refetch.
     queryClient.setQueryData(
-      workspaceDetailOptions(id).queryKey,
+      workspaceKeys.byId(id),
       (old: Workspace | undefined) => {
         const base: Partial<Workspace> = old ?? {};
         return {
@@ -116,23 +107,8 @@ export function useWorkspaceSwitcherVm() {
     // The seeded data above is partial (no `variables`, etc.).  Mark it stale so
     // the layout loader's `ensureQueryData` refetches the full workspace from the API.
     queryClient.invalidateQueries({
-      queryKey: workspaceDetailOptions(id).queryKey,
+      queryKey: workspaceKeys.byId(id),
     });
-
-    // Immediately clear list/detail caches so the UI shows loading states instead
-    // of stale threads/messages/comments from the previous workspace.
-    await Promise.all([
-      queryClient.cancelQueries({ queryKey: threadsKeys.all }),
-      queryClient.cancelQueries({ queryKey: messagesKeys.all }),
-      queryClient.cancelQueries({ queryKey: commentsKeys.all }),
-    ]);
-
-    queryClient.removeQueries({ queryKey: threadsKeys.all });
-    queryClient.removeQueries({ queryKey: messagesKeys.all });
-    queryClient.removeQueries({ queryKey: commentsKeys.all });
-
-    // Compatibility: some older invalidations used a raw comments key
-    queryClient.removeQueries({ queryKey: ['comments'] });
 
     navigate({
       to: '/workspace/$workspaceId',

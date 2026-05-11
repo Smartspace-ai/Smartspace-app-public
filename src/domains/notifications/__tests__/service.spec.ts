@@ -1,41 +1,79 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { apiParsed } from '@/platform/apiParsed';
+const { mockGet, mockPutUpdate, mockPutUpdateAll } = vi.hoisted(() => ({
+  mockGet: vi.fn(),
+  mockPutUpdate: vi.fn(),
+  mockPutUpdateAll: vi.fn(),
+}));
 
-import { fetchNotifications, markAllNotificationsAsRead, markNotificationAsRead } from '@/domains/notifications/service';
+vi.mock('@smartspace/api-client', () => ({
+  ChatApi: {
+    getSmartSpaceChatAPI: () => ({
+      notificationGet: mockGet,
+      notificationPutUpdate: mockPutUpdate,
+      notificationPutUpdateall: mockPutUpdateAll,
+    }),
+  },
+  ChatZod: {
+    notificationGetResponse: {},
+  },
+  AXIOS_INSTANCE: {},
+}));
+vi.mock('@/platform/validation', () => ({
+  parseOrThrow: vi.fn((_schema: unknown, data: unknown) => data),
+}));
+
+import {
+  fetchNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from '@/domains/notifications/service';
 
 describe('notifications service', () => {
   it('fetchNotifications returns sorted items and counts', async () => {
-    const env = {
-      data: [
-        { id: '2', notificationType: 0, description: 'b', workSpaceId: null, threadId: null, createdBy: 'u', createdAt: '2024-01-02', dismissedAt: null, avatar: null },
-        { id: '1', notificationType: 1, description: 'a', workSpaceId: null, threadId: null, createdBy: 'u', createdAt: '2024-01-01', dismissedAt: null, avatar: null },
-      ],
-      total: 2,
-      totalUnread: 1,
-    };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const spy = vi.spyOn(apiParsed, 'get').mockResolvedValueOnce(env as any);
+    mockGet.mockResolvedValueOnce({
+      data: {
+        data: [
+          {
+            id: '2',
+            notificationType: 'WorkSpaceUpdated',
+            description: 'b',
+            workSpaceId: null,
+            threadId: null,
+            createdBy: 'u',
+            createdAt: '2024-01-02T00:00:00Z',
+            dismissedAt: null,
+          },
+          {
+            id: '1',
+            notificationType: 'MessageThreadUpdated',
+            description: 'a',
+            workSpaceId: null,
+            threadId: null,
+            createdBy: 'u',
+            createdAt: '2024-01-01T00:00:00Z',
+            dismissedAt: null,
+          },
+        ],
+        total: 2,
+        totalUnread: 1,
+      },
+    });
     const res = await fetchNotifications(1, false, 10);
     expect(res.items[0].id).toBe('2');
     expect(res.totalCount).toBe(2);
     expect(res.unreadCount).toBe(1);
-    spy.mockRestore();
   });
 
-  it('markNotificationAsRead delegates to apiParsed.put', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const spy = vi.spyOn(apiParsed, 'put').mockResolvedValueOnce(undefined as any);
+  it('markNotificationAsRead delegates to SDK', async () => {
+    mockPutUpdate.mockResolvedValueOnce({});
     await expect(markNotificationAsRead('n1')).resolves.toBeUndefined();
-    spy.mockRestore();
+    expect(mockPutUpdate).toHaveBeenCalledWith(['n1']);
   });
 
-  it('markAllNotificationsAsRead delegates to apiParsed.put', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const spy = vi.spyOn(apiParsed, 'put').mockResolvedValueOnce(undefined as any);
+  it('markAllNotificationsAsRead delegates to SDK', async () => {
+    mockPutUpdateAll.mockResolvedValueOnce({});
     await expect(markAllNotificationsAsRead()).resolves.toBeUndefined();
-    spy.mockRestore();
+    expect(mockPutUpdateAll).toHaveBeenCalled();
   });
 });
-
-

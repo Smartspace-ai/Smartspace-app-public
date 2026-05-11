@@ -11,8 +11,6 @@ import { useComments } from '@/domains/comments/queries';
 import { fetchTaggableUsers } from '@/domains/workspaces';
 
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
-import { MarkdownEditor } from '@/shared/ui/markdown/MarkdownEditor';
-import type { MarkdownEditorHandle } from '@/shared/ui/markdown/MarkdownEditor';
 import {
   Avatar,
   AvatarFallback,
@@ -32,11 +30,18 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from '@/shared/ui/mui-compat/sidebar';
+import { Tooltip } from '@/shared/ui/mui-compat/tooltip';
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
+import type { MarkdownEditorHandle } from '@smartspace/chat-ui';
+import {
+  MarkdownEditor,
+  getUserPhotoUrl,
+  parseDateTime,
+  parseDateTimeHuman,
+} from '@smartspace/chat-ui';
+
 import { getInitials } from '../../shared/utils/initials';
-import { parseDateTime } from '../../shared/utils/parseDateTime';
-import { getUserPhotoUrl } from '../../shared/utils/userPhoto';
 
 const MAX_COMMENT_LENGTH = 350;
 
@@ -112,8 +117,7 @@ export function SidebarRight() {
   });
   const isMobile = useIsMobile();
 
-  const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const submitComment = async () => {
     if (isAddingComment) return;
     if (isDraft) return;
     const content = editorRef.current?.getPlainText?.() ?? threadComment.plain;
@@ -131,6 +135,21 @@ export function SidebarRight() {
       editorRef.current?.clear?.();
     } catch {
       // Error handled in hook
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await submitComment();
+  };
+
+  const handleEditorKeyDown = (e: React.KeyboardEvent) => {
+    // Ctrl/Cmd + Enter posts. Plain Enter inserts a newline (or selects a
+    // mention candidate when the mention popup is open — the editor
+    // intercepts that case before this handler runs).
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      void submitComment();
     }
   };
 
@@ -224,9 +243,14 @@ export function SidebarRight() {
                         <p className="text-xs font-medium truncate">
                           {comment.createdBy}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {parseDateTime(comment.createdAt)}
-                        </p>
+                        <Tooltip
+                          title={parseDateTime(comment.createdAt)}
+                          enterDelay={300}
+                        >
+                          <p className="text-xs text-muted-foreground w-fit cursor-default">
+                            {parseDateTimeHuman(comment.createdAt)}
+                          </p>
+                        </Tooltip>
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed flex flex-wrap gap-1">
@@ -271,6 +295,7 @@ export function SidebarRight() {
                   className="md-editor--bare text-sm pr-12 pb-10"
                   minHeight={90}
                   placeholder="Type a comment..."
+                  onKeyDown={handleEditorKeyDown}
                 />
 
                 <UIButton
@@ -317,6 +342,7 @@ export function SidebarRight() {
                   className="md-editor--bare text-sm pr-28 pb-12"
                   minHeight={120}
                   placeholder="Type a comment..."
+                  onKeyDown={handleEditorKeyDown}
                 />
 
                 <UIButton

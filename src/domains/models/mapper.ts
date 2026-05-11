@@ -1,13 +1,13 @@
 import { ChatZod } from '@smartspace/api-client';
 import type { z } from 'zod';
 
-import { utcDate } from '@/shared/utils/dateFromApi';
+import { utcDate } from '@smartspace/chat-ui';
 
 import { Model } from './model';
 
 const {
-  getModelsIdResponse: modelResponseSchema,
-  getModelsResponse: modelsResponseSchema,
+  modelsGetModelResponse: modelResponseSchema,
+  modelsGetModelsResponse: modelsResponseSchema,
 } = ChatZod;
 
 type ModelsResponseDto = z.infer<typeof modelsResponseSchema>;
@@ -41,6 +41,11 @@ export function mapModelDtoToModel(dto: ModelDto | ModelDetailDto): Model {
       (dto as { deploymentStatus?: unknown }).deploymentStatus
     ),
     modelDeploymentProviderType: toStringEnum(dto.modelDeploymentProviderType),
+    modelPublisher:
+      ((dto as { modelPublisher?: unknown }).modelPublisher as
+        | string
+        | null
+        | undefined) ?? null,
     createdByUserId: dto.createdByUserId ?? '',
     createdAt: dto.createdAt ? utcDate(dto.createdAt) : new Date(0),
     properties: dto.properties.map(mapPropertyDtoToModel),

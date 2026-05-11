@@ -10,7 +10,6 @@ import {
   useRemoveThreadUser,
 } from '@/domains/thread-users';
 import { useThreadUsers } from '@/domains/thread-users/queries';
-import { useTaggableWorkspaceUsers } from '@/domains/workspaces/queries';
 
 import {
   Avatar,
@@ -29,7 +28,11 @@ import {
 import { Input } from '@/shared/ui/mui-compat/input';
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
 import { isDraftThreadId } from '@/shared/utils/threadId';
-import { getUserPhotoUrl } from '@/shared/utils/userPhoto';
+
+import {
+  getUserPhotoUrl,
+  useTaggableWorkspaceUsers,
+} from '@smartspace/chat-ui';
 
 interface Props {
   open: boolean;

@@ -5,11 +5,11 @@ import { parseOrThrow } from '@/platform/validation';
 
 import { mapFlowRunVariablesDtoToModel } from './mapper';
 
-const { getFlowRunsIdVariablesResponse: flowRunVariablesSchema } = ChatZod;
+const { flowRunsGetVariablesResponse: flowRunVariablesSchema } = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 export async function fetchFlowRunVariables(flowRunId: string) {
-  const response = await chatApi.getFlowRunsIdVariables(flowRunId);
+  const response = await chatApi.flowRunsGetVariables(flowRunId);
   const parsed = parseOrThrow(
     flowRunVariablesSchema,
     response.data,

@@ -1,24 +1,38 @@
-import { ChatApi, ChatZod } from '@smartspace/api-client';
-import { Subject } from 'rxjs';
+import { ChatApi, ChatZod, SignalR } from '@smartspace/api-client';
 
-import { api } from '@/platform/api';
-import { ssDebug, ssWarn, ssError } from '@/platform/log';
+import { fetchAuthed } from '@/platform/api/fetchAuthed';
 import { parseOrThrow } from '@/platform/validation';
 
-import { FileInfo } from '@/domains/files';
+import { parseSseStream } from '@/shared/utils/sseStream';
 
-import { mapMessageDtoToModel, mapMessagesDtoToModels } from './mapper';
-import type { Message, MessageContentItem } from './model';
+import { FileInfo } from '@smartspace/chat-ui';
+import {
+  mapMessageDtoToModel,
+  mapMessageErrorDtoToModel,
+  mapMessageValueDtoToModel,
+  mapMessagesDtoToModels,
+  type MessageError,
+  Message,
+  MessageContentItem,
+  MessageValue,
+} from '@smartspace/chat-ui';
 
-const { getMessageThreadsIdMessagesResponse: messagesResponseSchema } = ChatZod;
+const {
+  messageThreadsThreadMessagesIdMessagesResponse: messagesResponseSchema,
+} = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 /** Backend sends null createdByUserId on system-generated values; Zod schema requires string. */
+function coerceMessageValueDto(v: Record<string, unknown>): void {
+  if (v.createdByUserId == null) v.createdByUserId = '';
+  if (v.channels == null) v.channels = {};
+}
+
 function coerceMessageDto(raw: Record<string, unknown>): void {
   if (raw.createdByUserId == null) raw.createdByUserId = '';
   if (Array.isArray(raw.values)) {
     for (const v of raw.values as Record<string, unknown>[]) {
-      if (v.createdByUserId == null) v.createdByUserId = '';
+      coerceMessageValueDto(v);
     }
   }
 }
@@ -28,7 +42,10 @@ export async function fetchMessages(
   threadId: string,
   opts?: { take?: number; skip?: number }
 ): Promise<Message[]> {
-  const response = await chatApi.getMessageThreadsIdMessages(threadId, opts);
+  const response = await chatApi.messageThreadsThreadMessagesIdMessages(
+    threadId,
+    opts
+  );
   const parsed = parseOrThrow(
     messagesResponseSchema,
     response.data,
@@ -37,7 +54,11 @@ export async function fetchMessages(
   return mapMessagesDtoToModels(parsed.data);
 }
 
-// Send structured input (e.g. form values) to a specific message
+// Send structured input (e.g. form values) to a specific message. The server
+// streams an `IAsyncEnumerable<Message>` of intermediate states and a final
+// state — we read the stream to completion and return the last successfully
+// parsed Message. Used by sandbox / iterative-input flows; the standard chat
+// send path uses `postMessage` + the thread SSE instead.
 export async function addInputToMessage({
   messageId,
   name,
@@ -49,47 +70,56 @@ export async function addInputToMessage({
   value: unknown;
   channels: Record<string, number> | null;
 }): Promise<Message> {
-  let result: Message | null = null;
+  const response = await fetchAuthed(`/messages/${messageId}/values`, {
+    method: 'POST',
+    headers: {
+      Accept: 'text/event-stream',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name, value, channels }),
+  });
 
-  await api.post(
-    `/messages/${messageId}/values`,
-    { name, value, channels },
-    {
-      adapter: 'xhr',
-      headers: { Accept: 'text/event-stream' },
-      onDownloadProgress: (event) => {
-        const xhr = event.event?.currentTarget as XMLHttpRequest | undefined;
-        const raw = String(xhr?.response ?? '');
-        // Split by server-sent event message delimiter and normalize "data:" prefix
-        const chunks = raw
-          .split('\n\n')
-          .map((c) => c.trim())
-          .filter(Boolean);
-        const last = chunks[chunks.length - 1] || '';
-        const dataLine = last.startsWith('data:') ? last.slice(5).trim() : last;
-        if (!dataLine) return;
-        try {
-          const parsed = JSON.parse(dataLine);
-          coerceMessageDto(parsed);
-          const dto = messagesResponseSchema.shape.data.element.parse(parsed);
-          result = mapMessageDtoToModel(dto);
-        } catch (error) {
-          // Ignore incomplete JSON frames; wait for more data
-        }
-      },
-    }
-  );
-
-  if (!result) {
-    throw new Error('No valid message received from stream');
+  if (!response.ok) {
+    throw new Error(
+      `POST /messages/${messageId}/values failed with status ${response.status}`
+    );
+  }
+  if (!response.body) {
+    throw new Error('POST /messages/:id/values returned no body');
   }
 
-  return result;
+  const messageDtoSchema = messagesResponseSchema.shape.data.element;
+  let last: Message | null = null;
+  for await (const frame of parseSseStream(response.body)) {
+    if (!frame.data) continue;
+    try {
+      const parsed = JSON.parse(frame.data) as Record<string, unknown>;
+      coerceMessageDto(parsed);
+      last = mapMessageDtoToModel(messageDtoSchema.parse(parsed));
+    } catch {
+      // Ignore malformed/partial frames; the next frame will bring fresh state.
+    }
+  }
+
+  if (!last) {
+    throw new Error('No valid message received from stream');
+  }
+  return last;
 }
 
 // Post a new user message to a thread (supports content + files + variables).
-// Returns a Subject synchronously so the caller can subscribe *before* data arrives.
-export function postMessage({
+// Returns a single JSON Message synchronously — the row created server-side
+// with inputs populated and id assigned. The flow continues running in the
+// background; output deltas arrive on the thread SSE keyed by the returned id.
+// Callers should reconcile their optimistic temp-id entry with this Message.
+//
+// Hits `POST /Messages/start` so the call resolves the moment the flow has
+// been queued, instead of `POST /Messages` which (with default `Accept: json`)
+// blocks until the AI flow completes — that blocking variant produced an
+// end-of-flow flicker because the mutation's authoritative cache write landed
+// at the same moment the SSE terminal frame did. Uses raw `fetch` because the
+// installed SDK doesn't expose the `/start` endpoint yet.
+export async function postMessage({
   workSpaceId,
   threadId,
   contentList,
@@ -101,7 +131,7 @@ export function postMessage({
   contentList?: MessageContentItem[];
   files?: FileInfo[];
   variables?: Record<string, unknown>;
-}): Subject<Message> {
+}): Promise<Message> {
   const inputs: Array<{ name: string; value: unknown }> = [];
 
   if (contentList?.length) {
@@ -122,56 +152,189 @@ export function postMessage({
     });
   }
 
-  const payload = {
-    inputs,
-    messageThreadId: threadId,
-    workspaceId: workSpaceId,
-    variables,
-  };
+  const response = await fetchAuthed(`/Messages/start`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      inputs,
+      messageThreadId: threadId,
+      workSpaceId,
+      variables,
+    }),
+  });
 
-  const observable = new Subject<Message>();
+  if (!response.ok) {
+    throw new Error(
+      `POST /Messages/start failed with status ${response.status}`
+    );
+  }
 
-  api
-    .post(`/messages`, payload, {
-      adapter: 'xhr',
-      headers: { Accept: 'text/event-stream' },
-      onDownloadProgress: (e) => {
-        const xhr = e.event?.currentTarget as XMLHttpRequest | undefined;
-        const raw = String(xhr?.response ?? '');
-        ssDebug('sse', 'onDownloadProgress fired', {
-          rawLength: raw.length,
-          xhrExists: !!xhr,
-        });
-        const chunks = raw
-          .split('\n\n')
-          .map((c) => c.trim())
-          .filter(Boolean);
-        if (!chunks.length) return;
-        const last = chunks[chunks.length - 1];
-        const dataLine = last.startsWith('data:') ? last.slice(5).trim() : last;
-        if (!dataLine) return;
-        try {
-          const parsed = JSON.parse(dataLine);
-          coerceMessageDto(parsed);
-          const dto = messagesResponseSchema.shape.data.element.parse(parsed);
-          const parsedMessage = mapMessageDtoToModel(dto);
-          ssDebug('sse', `emitting message: ${parsedMessage.id}`, {
-            values: parsedMessage.values?.map((v) => v.name),
-          });
-          observable.next(parsedMessage);
-        } catch (err) {
-          ssWarn('sse', 'parse failed', err);
-        }
+  // Wrap JSON parse so a non-JSON 200 body (e.g. an HTML error page from a
+  // proxy or sidecar) surfaces as a clear error instead of an opaque
+  // `SyntaxError: Unexpected token < in JSON`.
+  let raw: Record<string, unknown> | null;
+  try {
+    raw = (await response.json()) as Record<string, unknown> | null;
+  } catch (err) {
+    throw new Error(
+      `POST /Messages/start returned a non-JSON body: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+  }
+  if (!raw) throw new Error('POST /Messages/start returned no body');
+  coerceMessageDto(raw);
+  return mapMessageDtoToModel(
+    messagesResponseSchema.shape.data.element.parse(raw)
+  );
+}
+
+/**
+ * A streaming delta for an existing message. `outputs` is a cumulative
+ * snapshot keyed by `(name, type)` — when an output streams from "He" → "Hel"
+ * → "Hello" we receive three deltas each carrying the full text-so-far, so
+ * the caller replaces by key rather than appending. Errors aren't documented
+ * as cumulative.
+ */
+export type MessageDelta = {
+  outputs: MessageValue[];
+  errors: MessageError[];
+};
+
+export type ThreadStreamHandlers = {
+  /** First frame: authoritative snapshot of the thread's messages. */
+  onSnapshot: (messages: Message[]) => void;
+  /**
+   * Full-message frame. Fires when a brand-new message is added to the thread
+   * (inputs populated, outputs empty). Subsequent updates to that same
+   * message arrive via `onDelta`.
+   */
+  onMessage: (messageId: string, message: Message, terminal: boolean) => void;
+  /**
+   * Cumulative update for an existing message. `outputs` is keyed by
+   * (name, type) — replace, do not append.
+   */
+  onDelta?: (messageId: string, delta: MessageDelta, terminal: boolean) => void;
+  /**
+   * Authoritative thread summary attached to the initial snapshot frame (so
+   * late joiners see the current `isFlowRunning`) and to terminal frames
+   * (so the client learns flow-complete even if SignalR flakes). Not present
+   * on intermediate chunk frames.
+   */
+  onThread?: (thread: SignalR.MessageThreadSummary) => void;
+};
+
+export type StreamThreadMessagesResult =
+  | { status: 'completed' }
+  | { status: 'not-found' };
+
+/**
+ * Tails the GET `/MessageThreads/{threadId}/messages/stream` SSE endpoint.
+ * Every viewer of a thread (initiator + other tabs + late joiners) subscribes
+ * here. The first frame is a full snapshot; subsequent frames carry full-
+ * message frames (chunk #0 for a brand-new message) or cumulative deltas
+ * (chunks #1+, keyed by name+type). On reconnect we just reopen — the next
+ * snapshot frame brings authoritative state, no cursor handshake needed.
+ * Returns `not-found` when the server responds 404 (thread does not exist).
+ */
+export async function streamThreadMessages({
+  threadId,
+  signal,
+  onSnapshot,
+  onMessage,
+  onDelta,
+  onThread,
+}: {
+  threadId: string;
+  signal: AbortSignal;
+} & ThreadStreamHandlers): Promise<StreamThreadMessagesResult> {
+  const response = await fetchAuthed(
+    `/MessageThreads/${threadId}/messages/stream`,
+    {
+      method: 'GET',
+      headers: {
+        Accept: 'text/event-stream',
       },
-    })
-    .then(() => {
-      ssDebug('sse', 'stream complete');
-      observable.complete();
-    })
-    .catch((error) => {
-      ssError('sse', 'stream error', error);
-      observable.error(error);
-    });
+      signal,
+    }
+  );
 
-  return observable;
+  if (response.status === 404) return { status: 'not-found' };
+  if (!response.ok) {
+    throw new Error(`Stream open failed with status ${response.status}`);
+  }
+  if (!response.body) {
+    throw new Error('Stream response missing body');
+  }
+
+  const messageDtoSchema = messagesResponseSchema.shape.data.element;
+  const valueDtoSchema = messageDtoSchema.shape.values.element;
+  const errorDtoSchema = messageDtoSchema.shape.errors.element;
+
+  for await (const frame of parseSseStream(response.body, signal)) {
+    if (!frame.data) continue;
+    try {
+      const envelope = JSON.parse(frame.data) as {
+        snapshot?: unknown[];
+        messageId?: string;
+        message?: unknown;
+        delta?: {
+          messageId?: string;
+          outputs?: unknown[];
+          errors?: unknown[];
+        } | null;
+        terminal?: boolean;
+        thread?: SignalR.MessageThreadSummary | null;
+      };
+      const terminal = Boolean(envelope.terminal);
+
+      // `thread` is attached to initial snapshot + terminal frames. Surface
+      // it first so the cache flips `isFlowRunning` before we apply the
+      // message payload that came with the same frame.
+      if (envelope.thread && onThread) {
+        onThread(envelope.thread);
+      }
+
+      if (Array.isArray(envelope.snapshot)) {
+        const messages = envelope.snapshot.map((raw) => {
+          const obj = raw as Record<string, unknown>;
+          coerceMessageDto(obj);
+          return mapMessageDtoToModel(messageDtoSchema.parse(obj));
+        });
+        onSnapshot(messages);
+        continue;
+      }
+
+      // Chunk #0 for a new message — full Message payload.
+      if (envelope.messageId && envelope.message) {
+        const raw = envelope.message as Record<string, unknown>;
+        coerceMessageDto(raw);
+        const message = mapMessageDtoToModel(messageDtoSchema.parse(raw));
+        onMessage(envelope.messageId, message, terminal);
+        continue;
+      }
+
+      // Chunks #1+ for an existing message — cumulative deltas.
+      if (envelope.delta) {
+        const targetId = envelope.delta.messageId ?? envelope.messageId;
+        if (!targetId || !onDelta) continue;
+        const outputs = (envelope.delta.outputs ?? []).map((raw) => {
+          const obj = raw as Record<string, unknown>;
+          coerceMessageValueDto(obj);
+          return mapMessageValueDtoToModel(valueDtoSchema.parse(obj));
+        });
+        const errors = (envelope.delta.errors ?? []).map((raw) =>
+          mapMessageErrorDtoToModel(errorDtoSchema.parse(raw))
+        );
+        onDelta(targetId, { outputs, errors }, terminal);
+      }
+    } catch {
+      // Ignore malformed/partial frames — server will send another envelope.
+    }
+  }
+
+  return { status: 'completed' };
 }

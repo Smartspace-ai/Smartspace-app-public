@@ -2,8 +2,9 @@ import type { InfiniteData } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import type { MessageThread, ThreadsResponse } from './model';
-import { threadsKeys } from './queryKeys';
+import type { MessageThread, ThreadsResponse } from '@smartspace/chat-ui';
+import { threadsKeys } from '@smartspace/chat-ui';
+
 import { deleteThread, renameThread, setPin } from './service';
 
 // Variable update mutation moved to flowruns domain

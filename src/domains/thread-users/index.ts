@@ -9,3 +9,4 @@ export {
 export { threadUsersListOptions, useThreadUsers } from './queries';
 export { threadUsersKeys } from './queryKeys';
 export { addThreadUser, fetchThreadUsers, removeThreadUser } from './service';
+export { useDrainPendingThreadUsersOnSend } from './useDrainPendingThreadUsersOnSend';

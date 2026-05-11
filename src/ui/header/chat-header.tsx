@@ -7,12 +7,11 @@ import { useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import { useThread } from '@/domains/threads/queries';
-import { useWorkspace } from '@/domains/workspaces/queries';
-
 import { SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
 
 import { getTagChipClasses } from '@/theme/tag-styles';
+
+import { useThread, useWorkspace } from '@smartspace/chat-ui';
 
 import { AddUsersToThreadDialog } from './add-users-dialog';
 import { NotificationPanel } from './notifications-panel';

@@ -20,8 +20,9 @@ import { Button } from '@/shared/ui/mui-compat/button';
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
 import { Switch } from '@/shared/ui/mui-compat/switch';
 import { getInitials } from '@/shared/utils/initials';
-import { parseDateTimeHuman } from '@/shared/utils/parseDateTime';
 import { cn } from '@/shared/utils/utils';
+
+import { getUserPhotoUrl, parseDateTimeHuman } from '@smartspace/chat-ui';
 
 export function NotificationPanel() {
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
@@ -29,11 +30,11 @@ export function NotificationPanel() {
   const navigate = useNavigate();
 
   const workspaceThreadMatch = useMatch({
-    from: '/_protected/workspace/$workspaceId/thread/$threadId',
+    from: '/_protected/workspace/$workspaceId/_layout/thread/$threadId',
     shouldThrow: false,
   });
   const workspaceIndexMatch = useMatch({
-    from: '/_protected/workspace/$workspaceId/',
+    from: '/_protected/workspace/$workspaceId/_layout/',
     shouldThrow: false,
   });
   const workspaceId =
@@ -202,12 +203,13 @@ export function NotificationPanel() {
                       >
                         <Avatar className="h-8 w-8 rounded-full">
                           <AvatarImage
-                            src={notification.avatar || '/placeholder.svg'}
+                            src={getUserPhotoUrl(notification.createdByUserId)}
                             alt={notification.createdBy}
-                          />
-                          <AvatarFallback className="text-xs font-medium">
-                            {getInitials(notification.createdBy || '')}
-                          </AvatarFallback>
+                          >
+                            <AvatarFallback className="text-xs font-medium">
+                              {getInitials(notification.createdBy || '')}
+                            </AvatarFallback>
+                          </AvatarImage>
                         </Avatar>
 
                         <div className="flex-1 min-w-0">

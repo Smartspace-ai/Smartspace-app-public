@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { DateFromApi } from '@/shared/utils/dateFromApi';
+import { DateFromApi } from '@smartspace/chat-ui';
 
 export const ModelSchema = z.object({
   id: z.string(),
@@ -8,6 +8,7 @@ export const ModelSchema = z.object({
   displayName: z.string(),
   deploymentStatus: z.string(),
   modelDeploymentProviderType: z.string(),
+  modelPublisher: z.string().nullable(),
   createdByUserId: z.string(),
   createdAt: DateFromApi,
   properties: z.array(
@@ -32,7 +33,6 @@ export const ModelPropertiesSchema = z
   })
   .catchall(z.any());
 
-export type Model = z.infer<typeof ModelSchema>;
 export const ModelListSchema = z.array(ModelSchema);
 export type ModelList = z.infer<typeof ModelListSchema>;
 /** Envelope the API returns for list endpoints */
