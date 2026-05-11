@@ -259,7 +259,15 @@ export function createMsalWebAdapter(): AuthAdapter {
         hasFallback: !!popupFallbackToken,
       });
       if (a) {
-        return { accountId: a.homeAccountId, displayName: a.name ?? undefined };
+        // `a.name` is sourced from the ID token's `name` claim and is not
+        // guaranteed to be populated (some tenants strip it). `a.username` is
+        // the UPN/email and is always present — better than the 'You' fallback
+        // downstream consumers (e.g. optimistic comment placeholders) hit when
+        // displayName is undefined.
+        return {
+          accountId: a.homeAccountId,
+          displayName: a.name ?? a.username ?? undefined,
+        };
       }
       // Fallback: popup token available but MSAL cache is partitioned (Teams Mobile).
       if (popupFallbackToken) {
