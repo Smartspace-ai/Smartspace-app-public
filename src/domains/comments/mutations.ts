@@ -67,10 +67,18 @@ export function useAddComment(threadId: string) {
         commentsKeys.list(tid),
         (old: Comment[] | undefined) => {
           const list = old ?? [];
-          const idx = list.findIndex((c) => c.id === tempId);
-          if (idx === -1) return [...list, realComment];
+          const tempIdx = list.findIndex((c) => c.id === tempId);
+          const realIdx = list.findIndex((c) => c.id === realComment.id);
+
+          // The SignalR `receiveCommentsUpdate` push can land before the POST
+          // response. When it does, the real comment is already in the cache,
+          // and naively replacing the placeholder would leave two copies.
+          if (realIdx !== -1) {
+            return tempIdx === -1 ? list : list.filter((c) => c.id !== tempId);
+          }
+          if (tempIdx === -1) return [...list, realComment];
           const next = list.slice();
-          next[idx] = realComment;
+          next[tempIdx] = realComment;
           return next;
         }
       );

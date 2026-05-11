@@ -111,8 +111,7 @@ export function SidebarRight() {
   });
   const isMobile = useIsMobile();
 
-  const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const submitComment = async () => {
     if (isAddingComment) return;
     if (isDraft) return;
     const content = editorRef.current?.getPlainText?.() ?? threadComment.plain;
@@ -130,6 +129,21 @@ export function SidebarRight() {
       editorRef.current?.clear?.();
     } catch {
       // Error handled in hook
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await submitComment();
+  };
+
+  const handleEditorKeyDown = (e: React.KeyboardEvent) => {
+    // Ctrl/Cmd + Enter posts. Plain Enter inserts a newline (or selects a
+    // mention candidate when the mention popup is open — the editor
+    // intercepts that case before this handler runs).
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      void submitComment();
     }
   };
 
@@ -275,6 +289,7 @@ export function SidebarRight() {
                   className="md-editor--bare text-sm pr-12 pb-10"
                   minHeight={90}
                   placeholder="Type a comment..."
+                  onKeyDown={handleEditorKeyDown}
                 />
 
                 <UIButton
@@ -321,6 +336,7 @@ export function SidebarRight() {
                   className="md-editor--bare text-sm pr-28 pb-12"
                   minHeight={120}
                   placeholder="Type a comment..."
+                  onKeyDown={handleEditorKeyDown}
                 />
 
                 <UIButton
