@@ -1,0 +1,182 @@
+# Smartspace-internal: safe to delete in forks.
+# Maintains the standing `release/next → main` PR.
+#
+# On every push to `develop`:
+#   1. Hard-resets `release/next` to develop's HEAD
+#   2. Merges `main` in — auto-resolves SDK-pin conflicts in favor of develop's
+#      `dev` pins (check-package-json-channel.yml then swaps to `main` on the PR)
+#   3. Force-pushes `release/next`
+#   4. Opens the standing PR if it doesn't already exist
+#
+# Releasing develop → main becomes "click Merge on the standing PR".
+# No human ever creates or checks out `release/next`.
+
+name: Update standing release PR
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: update-release-next
+  cancel-in-progress: true
+
+jobs:
+  update:
+    if: github.repository == 'Smartspace-ai/Smartspace-app-public'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # App token (not GITHUB_TOKEN) so the push to release/next re-triggers
+      # check-package-json-channel.yml. GITHUB_TOKEN is anti-recursive.
+      # Required app permissions: contents:write, pull_requests:write.
+      - name: Generate CI_DISPATCH_APP token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CI_DISPATCH_APP_ID }}
+          private-key: ${{ secrets.CI_DISPATCH_APP_PRIVATE_KEY }}
+          owner: Smartspace-ai
+          repositories: Smartspace-app-public
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Reset release/next to develop
+        run: |
+          git fetch origin main develop
+          git checkout -B release/next origin/develop
+
+      - name: Merge main into release/next
+        run: |
+          if git merge origin/main --no-edit -m "Merge main into release/next"; then
+            echo "Clean merge — no SDK-pin conflict to resolve."
+            exit 0
+          fi
+
+          # Conflict. Only auto-resolve SDK-pin files; bail on anything else
+          # so a human notices the unexpected change.
+          UNMERGED=$(git diff --name-only --diff-filter=U)
+          echo "Unmerged paths:"
+          echo "$UNMERGED"
+
+          UNKNOWN=$(echo "$UNMERGED" | grep -vE '^(package\.json|pnpm-lock\.yaml)$' || true)
+          if [ -n "$UNKNOWN" ]; then
+            echo "::error::Merge conflicts outside SDK-pin files; manual resolution required."
+            echo "$UNKNOWN"
+            git merge --abort
+            exit 1
+          fi
+
+          # Keep develop's `dev` pins. check-package-json-channel.yml will
+          # swap them to `main` once the PR is in sync.
+          git checkout --ours -- package.json pnpm-lock.yaml
+
+          # Reconcile lockfile to package.json after taking 'ours'. Refreshing
+          # the lockfile guarantees the swap workflow's path filter fires on
+          # the PR synchronize event.
+          pnpm install --no-frozen-lockfile
+          git add package.json pnpm-lock.yaml
+          git commit --no-edit
+
+      # Force-push: release/next is fully derived from develop + main each run.
+      # Local commits to release/next are intentionally lost.
+      - name: Force-push release/next
+        run: git push origin release/next --force
+
+      - name: Ensure standing release PR exists
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          OPEN=$(gh pr list --head release/next --base main --state open --json number --jq 'length')
+          if [ "$OPEN" != "0" ]; then
+            NUM=$(gh pr list --head release/next --base main --state open --json number --jq '.[0].number')
+            echo "Standing release PR already open at #$NUM — force-push has updated it."
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head release/next \
+            --title "Release: develop → main (standing)" \
+            --body-file - <<'EOF'
+          Standing release PR. Auto-updated on every push to `develop`.
+
+          **Merging this PR releases whatever is currently on `develop` to `main`.**
+
+          ## How this works
+
+          [`update-release-next.yml`](.github/workflows/update-release-next.yml) runs on every push to `develop`:
+
+          1. Resets `release/next` to develop's HEAD
+          2. Merges `main` in (auto-resolves SDK-pin conflicts in favor of develop's `dev` pins)
+          3. Force-pushes `release/next`
+          4. [`check-package-json-channel.yml`](.github/workflows/check-package-json-channel.yml) then swaps SDK pins `dev` → `main` on this PR
+
+          ## Don't commit to `release/next`
+
+          The branch is force-pushed by automation. Any local commits will be lost on the next sync.
+
+          ## If auto-sync fails
+
+          The workflow opens an issue tagged `release-sync-failed`. Resolve manually:
+
+          ```sh
+          git fetch origin main develop
+          git checkout -B release/next origin/develop
+          git merge origin/main      # resolve conflicts
+          git push origin release/next --force-with-lease
+          ```
+          EOF
+
+      - name: Open issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Release sync failed: release/next not updated`,
+              body: [
+                `The auto-sync of \`release/next\` failed.`,
+                ``,
+                `Likely cause: merge conflict between \`develop\` and \`main\` in files other than the SDK-pin files.`,
+                ``,
+                `- Workflow run: ${runUrl}`,
+                `- Triggering commit: \`${context.sha}\``,
+                ``,
+                `## Resolve manually`,
+                ``,
+                '```sh',
+                'git fetch origin main develop',
+                'git checkout -B release/next origin/develop',
+                'git merge origin/main      # resolve conflicts',
+                'git push origin release/next --force-with-lease',
+                '```',
+                ``,
+                `The standing release PR will pick up the resolved branch on the next push to develop.`,
+              ].join('\n'),
+              labels: ['ci', 'release-sync-failed'],
+            });
