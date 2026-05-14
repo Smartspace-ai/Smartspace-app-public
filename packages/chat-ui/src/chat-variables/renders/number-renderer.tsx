@@ -55,16 +55,25 @@ const NumberRenderer: React.FC<ControlProps> = ({
   const step = isInteger ? 1 : fieldSchema?.multipleOf ?? 'any';
 
   return (
-    <div className="ss-jsonforms-field ss-jsonforms-number compact-field">
+    <div
+      className="ss-jsonforms-field ss-jsonforms-number"
+      style={{
+        display: 'inline-flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        minHeight: '40px',
+      }}
+    >
       {label && (
         <label
           htmlFor={`number-${path}`}
           style={{
-            display: 'block',
             color: hasError ? '#ef4444' : '#475569',
             fontSize: '0.875rem',
             fontWeight: 500,
-            marginBottom: '0.375rem',
+            whiteSpace: 'nowrap',
+            lineHeight: '24px',
           }}
         >
           {label}
@@ -72,18 +81,6 @@ const NumberRenderer: React.FC<ControlProps> = ({
             <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>
           )}
         </label>
-      )}
-
-      {description && (
-        <div
-          style={{
-            color: '#6b7280',
-            fontSize: '0.75rem',
-            marginBottom: '0.5rem',
-          }}
-        >
-          {description}
-        </div>
       )}
 
       <input
@@ -96,32 +93,18 @@ const NumberRenderer: React.FC<ControlProps> = ({
         max={max}
         step={step}
         style={{
-          width: '100%',
-          padding: '0.5rem 0.75rem',
+          width: '80px',
+          height: '24px',
+          padding: '0 0.5rem',
           border: hasError ? '2px solid #ef4444' : '1px solid #d1d5db',
           borderRadius: '6px',
           fontSize: '0.875rem',
-          lineHeight: '1.5',
+          lineHeight: '24px',
           fontFamily: 'inherit',
           backgroundColor: isDisabled ? '#f9fafb' : '#ffffff',
           color: isDisabled ? '#9ca3af' : '#111827',
           outline: 'none',
           boxSizing: 'border-box',
-          transition:
-            'border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-          boxShadow: hasError ? '0 0 0 1px #ef4444' : 'none',
-        }}
-        onFocus={(e) => {
-          if (!hasError) {
-            e.target.style.borderColor = '#6366f1';
-            e.target.style.boxShadow = '0 0 0 1px #6366f1';
-          }
-        }}
-        onBlur={(e) => {
-          if (!hasError) {
-            e.target.style.borderColor = '#d1d5db';
-            e.target.style.boxShadow = 'none';
-          }
         }}
       />
 
@@ -130,7 +113,6 @@ const NumberRenderer: React.FC<ControlProps> = ({
           style={{
             color: '#ef4444',
             fontSize: '0.75rem',
-            marginTop: '0.25rem',
           }}
         >
           {errors}
