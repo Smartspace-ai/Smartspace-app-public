@@ -190,8 +190,9 @@ export const MessageItem: FC<MessageItemProps> = ({
     const name = v.name.toLowerCase();
 
     switch (name) {
-      case 'variables': {
-        // Do not display message variables payloads
+      case 'variables':
+      case 'userinfo': {
+        // Internal system inputs — never render
         continue;
       }
       case 'status': {
