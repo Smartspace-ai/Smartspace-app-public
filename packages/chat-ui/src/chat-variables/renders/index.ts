@@ -20,6 +20,7 @@ import {
   ModelIdRendererControl,
   modelIdRendererTester,
 } from './model-id-renderer';
+import { NumberRendererControl, numberRendererTester } from './number-renderer';
 import {
   TextareaRendererControl,
   textareaRendererTester,
@@ -35,6 +36,7 @@ export const renderers = [
   { tester: modelIdRendererTester, renderer: ModelIdRendererControl },
   { tester: booleanRendererTester, renderer: BooleanRendererControl },
   { tester: dropdownRendererTester, renderer: DropdownRendererControl },
+  { tester: numberRendererTester, renderer: NumberRendererControl },
   { tester: textareaRendererTester, renderer: TextareaRendererControl },
   ...vanillaRenderers,
   { tester: jsonEditorTester, renderer: JsonEditorRendererControl },
