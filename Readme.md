@@ -108,13 +108,18 @@ This project depends on `@smartspace/api-client`, published to [npmjs.com](https
 Create a file named `.env` in your project root directory with the following environment variables:
 
 ```env
-VITE_CLIENT_ID=         # Your client ID
-VITE_CLIENT_AUTHORITY=  # Your authentication authority
-VITE_CLIENT_SCOPES=     # Required scopes (comma-separated)
-VITE_CHAT_API_URI=      # Chat API endpoint
+VITE_CLIENT_ID=             # Your Entra ID app client ID
+VITE_CLIENT_AUTHORITY=      # https://login.microsoftonline.com/{tenantId}
+VITE_CLIENT_SCOPES=         # Required scopes (comma-separated)
+VITE_CHAT_API_URI=          # SmartSpace chat API endpoint
+
+# Optional (Teams SSO / cross-tenant)
+VITE_TENANT_ID=             # Tenant GUID — used by MSAL config and Teams NAA fallback
+VITE_TEAMS_SSO_RESOURCE=    # App ID URI of your Teams app registration (NAA / on-behalf-of flows)
+VITE_TEAMS_USE_MSAL=        # true to force MSAL popup/redirect inside Teams (cross-tenant)
 ```
 
-> **Note:** These variables are required for authentication and API access. Fill them in with values appropriate for your environment.
+> **Note:** The first four variables are required for authentication and API access. The Teams-related vars are only needed if you are deploying inside Microsoft Teams. See [.env.example](.env.example) for a copy-pasteable template.
 
 ---
 
