@@ -33,7 +33,7 @@ Ensure you have the following installed:
 
 ### Versioning
 
-This repository is tagged to match SmartSpace deployment versions. **Always clone the tag that matches the version of SmartSpace your instance is running.**
+This repository is tagged to match SmartSpace deployment versions. **Always pull by the tag that matches the version of SmartSpace your instance is running** — this is the only way to be sure you have the stable, up-to-date version of the UI that is known to work with your backend. Apply the same rule every time you want to update.
 
 You can check your SmartSpace version in the admin portal, then clone the matching tag:
 
@@ -52,7 +52,7 @@ git ls-remote --tags https://github.com/Smartspace-ai/Smartspace-app-public.git
 
 #### Updating an existing fork
 
-When pulling in upstream changes, merge the SmartSpace version tag that matches your instance — **not** `main`. This keeps your fork aligned with a known-compatible release instead of whatever is currently on `main`.
+Any time you want to refresh your fork, merge the SmartSpace version tag that matches your instance — **not** `main`. This keeps your fork aligned with a known-compatible release instead of whatever is currently on `main`. If nothing has changed between the tag you're on and the tag you're merging, the merge will be a no-op and git will tell you "Already up to date." — that's your signal there's nothing new to pick up.
 
 ```bash
 # Add the upstream template as a remote (one-time setup)
@@ -64,6 +64,18 @@ git fetch upstream --tags
 # Merge the tag that matches your SmartSpace version
 git merge v1.13.1
 ```
+
+#### Optional cleanup after forking
+
+This repo ships a few GitHub Actions workflows that only exist for SmartSpace-internal automation (SDK bumps, cross-repo notifications, the standing `release/next` PR). They are gated on the upstream repo and won't run in your fork even if you leave them in place, but you can delete them for cleanliness:
+
+```bash
+rm .github/workflows/internal-bump-sdk.yml
+rm .github/workflows/internal-notify-app.yml
+rm .github/workflows/update-release-next.yml
+```
+
+Each of these files has a `# Smartspace-internal: safe to delete in forks.` comment at the top so you can identify them at a glance.
 
 ### Installation
 
@@ -96,13 +108,18 @@ This project depends on `@smartspace/api-client`, published to [npmjs.com](https
 Create a file named `.env` in your project root directory with the following environment variables:
 
 ```env
-VITE_CLIENT_ID=         # Your client ID
-VITE_CLIENT_AUTHORITY=  # Your authentication authority
-VITE_CLIENT_SCOPES=     # Required scopes (comma-separated)
-VITE_CHAT_API_URI=      # Chat API endpoint
+VITE_CLIENT_ID=             # Your Entra ID app client ID
+VITE_CLIENT_AUTHORITY=      # https://login.microsoftonline.com/{tenantId}
+VITE_CLIENT_SCOPES=         # Required scopes (comma-separated)
+VITE_CHAT_API_URI=          # SmartSpace chat API endpoint
+
+# Optional (Teams SSO / cross-tenant)
+VITE_TENANT_ID=             # Tenant GUID — used by MSAL config and Teams NAA fallback
+VITE_TEAMS_SSO_RESOURCE=    # App ID URI of your Teams app registration (NAA / on-behalf-of flows)
+VITE_TEAMS_USE_MSAL=        # true to force MSAL popup/redirect inside Teams (cross-tenant)
 ```
 
-> **Note:** These variables are required for authentication and API access. Fill them in with values appropriate for your environment.
+> **Note:** The first four variables are required for authentication and API access. The Teams-related vars are only needed if you are deploying inside Microsoft Teams. See [.env.example](.env.example) for a copy-pasteable template.
 
 ---
 
@@ -182,13 +199,13 @@ When you push to the `main` branch, GitHub Actions will use the `AZURE_STORAGE_C
 
 ## 🎨 Theming
 
-The application uses CSS variables for theming, allowing easy customization of colors and styles. The primary color is defined in the `theme.scss` file, located in the `styles` directory.
+The application uses CSS variables for theming, allowing easy customization of colors and styles. The primary color is defined in `src/_theme.scss`.
 
 ### Changing the Primary Color
 
 To update the primary color of the application:
 
-1. **Open the `theme.scss` file in the `styles` directory.**
+1. **Open `src/_theme.scss`.**
 2. **Locate the `$primary-hex` variable:**
 
    ```scss
@@ -199,7 +216,7 @@ To update the primary color of the application:
 3. **Replace the `#6443f4` value with your desired hex color code.**
 4. **Save the file.** The application's primary color will now reflect the new value.
 
-> **Note:** The `theme.scss` file uses HSL (Hue, Saturation, Lightness) values derived from the `$primary-hex` to define various color variables. Ensure that the new primary color provides sufficient contrast and accessibility.
+> **Note:** `src/_theme.scss` uses HSL (Hue, Saturation, Lightness) values derived from `$primary-hex` to generate the full palette of CSS custom properties. Ensure that the new primary color provides sufficient contrast and accessibility.
 
 For more detailed information on theming with shadcn UI and Tailwind CSS, refer to the [shadcn UI Theming Documentation](https://ui.shadcn.com/docs/theming).
 
@@ -207,25 +224,25 @@ For more detailed information on theming with shadcn UI and Tailwind CSS, refer 
 
 ## 🖼️ Updating the Logo
 
-The logo component is located at `components/Logo.tsx`. To update the logo:
+The logo component is located at `src/assets/logo.tsx` and ships as an inline SVG so it can be styled via CSS (`currentColor`, sizing classes, etc.). To replace it:
 
-1. **Open the `Logo.tsx` file in the `components` directory.**
-2. **Modify the `Logo` component to return your desired logo.** For example, to use an image file:
+1. **Open `src/assets/logo.tsx`.**
+2. **Replace the inline SVG with your own**, or swap to an imported image file. For example, to use an image:
 
    ```tsx
    import React from 'react';
-   import logo from '../assets/logo.png'; // Adjust the path as necessary
+   import logoUrl from './my-logo.png'; // Drop your file next to logo.tsx
 
    interface LogoProps {
      className?: string;
    }
 
    export const Logo: React.FC<LogoProps> = ({ className }) => {
-     return <img src={logo} alt="SmartSpace Logo" className={className} />;
+     return <img src={logoUrl} alt="Your Brand" className={className} />;
    };
    ```
 
-3. **Replace `'../assets/logo.png'` with the path to your logo file as needed.**
+3. **Keep the `LogoProps` shape (`className`) so consumers across the app stay unchanged.**
 4. **Save the file.** The application will now display the updated logo.
 
 ---

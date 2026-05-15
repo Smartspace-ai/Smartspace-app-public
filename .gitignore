@@ -8,6 +8,11 @@ tmp
 # dependencies
 node_modules
 
+# This repo uses pnpm (see "packageManager" in package.json). Ignore npm/yarn
+# lockfiles so an accidental `npm install` doesn't drift the committed lockfile.
+package-lock.json
+yarn.lock
+
 # IDEs and editors
 /.idea
 .project
