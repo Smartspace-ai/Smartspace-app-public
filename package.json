@@ -7,6 +7,7 @@
   },
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "start": "env-cmd -f .env concurrently -n TUNNEL,APP \"pnpm run dev:tunnel\" \"pnpm run serve\"",
     "serve": "nx serve --open --verbose",
     "build": "nx build",

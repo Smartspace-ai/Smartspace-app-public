@@ -46,6 +46,11 @@ src/
 └── assets/       # Static files (logos, icons)
 ```
 
+`src/forms/` is declared as a layer in `.eslintrc.js` boundaries but is currently empty — validation lives in `src/domains/*/schemas.ts` (Zod) and `src/shared/`. Two more directories sit **outside** the layered architecture and are not governed by `boundaries/elements`:
+
+- `src/hooks/` — shared React hooks used across layers.
+- `src/test/` — Vitest setup and test harnesses (fixtures only, not a runtime dependency).
+
 **Dependency rules** (violations cause lint errors):
 
 - `platform` → cannot import app, domains, theme, ui, pages
