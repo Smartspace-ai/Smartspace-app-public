@@ -82,10 +82,6 @@ export function mapWorkspaceDtoToModel(dto: WorkspaceDto): Workspace {
     outputSchema: dto.outputSchema ?? undefined,
     inputs: dto.inputs ?? undefined,
 
-    isPromptAndResponseLoggingEnabled: truthy(
-      dto.isPromptAndResponseLoggingEnabled
-    ),
-
     variables,
 
     sandBoxThreadId: dto.sandBoxThreadId ?? undefined,
