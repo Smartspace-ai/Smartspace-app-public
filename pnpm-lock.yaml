@@ -90,8 +90,8 @@ importers:
         specifier: ^1.2.4
         version: 1.2.4(@types/react@18.3.1)(react@18.3.1)
       '@smartspace/api-client':
-        specifier: dev
-        version: 0.1.0-dev.e0eec1a(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
+        specifier: main
+        version: 0.1.0-main.d4b4ad1(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
       '@smartspace/chat-ui':
         specifier: workspace:*
         version: link:packages/chat-ui
@@ -2832,6 +2832,13 @@ packages:
 
   '@smartspace/api-client@0.1.0-dev.e0eec1a':
     resolution: {integrity: sha512-BERWuvX9nJ0Hhb++ASOBGJXv5D0W5yaXJAPTw1RrijeNLI+cH1Spsx0iaV47BXIwk+sFdiuK4HOg4L5lukjInQ==}
+    peerDependencies:
+      '@microsoft/signalr': '>=8.0.0'
+      axios: '>=1.0.0'
+      zod: ^4.0.0
+
+  '@smartspace/api-client@0.1.0-main.d4b4ad1':
+    resolution: {integrity: sha512-o7X5enjiOgKROzOH1x8BuwWxPVQ3Xt5+ovvXhgpZBs8x11IfP49uJNicJmx7F6uf/SUTbNkizg+h6H9nHshi+Q==}
     peerDependencies:
       '@microsoft/signalr': '>=8.0.0'
       axios: '>=1.0.0'
@@ -10701,6 +10708,12 @@ snapshots:
   '@sindresorhus/is@4.6.0': {}
 
   '@smartspace/api-client@0.1.0-dev.e0eec1a(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)':
+    dependencies:
+      '@microsoft/signalr': 8.0.17(encoding@0.1.13)
+      axios: 1.15.1
+      zod: 4.3.6
+
+  '@smartspace/api-client@0.1.0-main.d4b4ad1(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)':
     dependencies:
       '@microsoft/signalr': 8.0.17(encoding@0.1.13)
       axios: 1.15.1
