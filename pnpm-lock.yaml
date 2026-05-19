@@ -91,7 +91,7 @@ importers:
         version: 1.2.4(@types/react@18.3.1)(react@18.3.1)
       '@smartspace/api-client':
         specifier: dev
-        version: 0.1.0-dev.7e0ae34(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
+        version: 0.1.0-dev.91d78d6(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
       '@smartspace/chat-ui':
         specifier: workspace:*
         version: link:packages/chat-ui
@@ -456,7 +456,7 @@ importers:
     devDependencies:
       '@smartspace/api-client':
         specifier: dev
-        version: 0.1.0-dev.7e0ae34(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
+        version: 0.1.0-dev.91d78d6(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
       tailwindcss:
         specifier: ^3.4.10
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
@@ -2830,8 +2830,8 @@ packages:
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
     engines: {node: '>=10'}
 
-  '@smartspace/api-client@0.1.0-dev.7e0ae34':
-    resolution: {integrity: sha512-zVC1bB1e2vARtIFzG3NNpbJOHJm4B6P+v7d2XFc0Rj6FYPdNXcDroZoGeVPYPOQK7X5/AH/ScS0XRQVx32TdAQ==}
+  '@smartspace/api-client@0.1.0-dev.91d78d6':
+    resolution: {integrity: sha512-MKdd48GFig8QSNbPUsqUEeU21jflJUEMdeU69YXsoOOw4j4HXgugBHzkWXrC7Nz4TNp6XkugeY3z2O1LpAhOXA==}
     peerDependencies:
       '@microsoft/signalr': '>=8.0.0'
       axios: '>=1.0.0'
@@ -10700,7 +10700,7 @@ snapshots:
 
   '@sindresorhus/is@4.6.0': {}
 
-  '@smartspace/api-client@0.1.0-dev.7e0ae34(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)':
+  '@smartspace/api-client@0.1.0-dev.91d78d6(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)':
     dependencies:
       '@microsoft/signalr': 8.0.17(encoding@0.1.13)
       axios: 1.15.1
