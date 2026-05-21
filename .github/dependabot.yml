@@ -1,0 +1,79 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Pacific/Auckland
+    target-branch: develop
+    open-pull-requests-limit: 5
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "react-*"
+          - "@types/react"
+          - "@types/react-dom"
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      milkdown:
+        patterns:
+          - "@milkdown/*"
+      mui:
+        patterns:
+          - "@mui/*"
+          - "@emotion/*"
+      azure-msal:
+        patterns:
+          - "@azure/*"
+          - "@microsoft/*"
+      nx:
+        patterns:
+          - "nx"
+          - "@nx/*"
+          - "@swc/*"
+          - "@swc-node/*"
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+    labels:
+      - dependencies
+      - npm
+
+  - package-ecosystem: npm
+    directory: "/packages/chat-ui"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Pacific/Auckland
+    target-branch: develop
+    open-pull-requests-limit: 5
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "react-*"
+          - "@types/react"
+          - "@types/react-dom"
+    labels:
+      - dependencies
+      - npm
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Pacific/Auckland
+    target-branch: develop
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
