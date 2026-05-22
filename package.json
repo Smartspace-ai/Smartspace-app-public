@@ -93,6 +93,7 @@
     "unist-util-visit": "5.1.0"
   },
   "devDependencies": {
+    "@faker-js/faker": "10.4.0",
     "@nx/eslint": "22.6.5",
     "@nx/eslint-plugin": "22.6.5",
     "@nx/js": "22.6.5",
@@ -135,6 +136,7 @@
     "husky": "^9.1.7",
     "jsdom": "~22.1.0",
     "lint-staged": "^15.5.2",
+    "msw": "2.14.6",
     "nx": "22.6.5",
     "postcss": "^8.4.41",
     "prettier": "^2.6.2",

@@ -7,13 +7,27 @@ import {
 } from '@/domains/comments/mapper';
 
 describe('comments mapper', () => {
-  it('maps mention user and preserves provided initials', () => {
+  it('maps mention user dto to model', () => {
     const m = mapMentionUserDtoToModel({
-      id: 'u',
-      displayName: 'John Doe',
-      initials: null,
+      userId: 'u',
+      name: 'John Doe',
     });
     expect(m.id).toBe('u');
+    expect(m.displayName).toBe('John Doe');
+    expect(m.initials).toBeNull();
+  });
+
+  it('maps mention user dto with null name to empty displayName', () => {
+    const m = mapMentionUserDtoToModel({ userId: 'u', name: null });
+    expect(m.id).toBe('u');
+    expect(m.displayName).toBe('');
+    expect(m.initials).toBeNull();
+  });
+
+  it('maps mention user string id to model', () => {
+    const m = mapMentionUserDtoToModel('some-id');
+    expect(m.id).toBe('some-id');
+    expect(m.displayName).toBe('');
     expect(m.initials).toBeNull();
   });
 
