@@ -1,32 +1,22 @@
-import { faker } from '@faker-js/faker';
-import type { ChatModels } from '@smartspace/api-client';
+import './setup';
 
-import { isoDate, uuid } from './primitives';
+import { ChatModels, ChatZod } from '@smartspace/api-client';
+import { fake } from 'zod-schema-faker/v4';
 
-export const makeMessageValue = (
-  overrides: Partial<ChatModels.MessagesMessageValue> = {}
-): ChatModels.MessagesMessageValue => ({
-  id: uuid(),
-  name: 'text',
-  type: faker.helpers.arrayElement(['Input', 'Output'] as const),
-  createdAt: isoDate(),
-  createdBy: faker.person.fullName(),
-  createdByUserId: uuid(),
-  channels: {},
-  value: faker.lorem.paragraph(),
-  ...overrides,
-});
+
+const messageSchema =
+  ChatZod.messageThreadsThreadMessagesIdMessagesResponse.shape.data.element;
 
 export const makeMessage = (
   overrides: Partial<ChatModels.MessagesMessage> = {}
 ): ChatModels.MessagesMessage => ({
-  id: uuid(),
-  createdAt: isoDate(),
-  createdBy: faker.person.fullName(),
-  createdByUserId: uuid(),
-  messageThreadId: uuid(),
-  hasComments: false,
-  errors: [],
-  values: [makeMessageValue({ type: 'Output' })],
+  ...fake(messageSchema),
+  ...overrides,
+});
+
+export const makeMessageValue = (
+  overrides: Partial<ChatModels.MessagesMessageValue> = {}
+): ChatModels.MessagesMessageValue => ({
+  ...fake(messageSchema).values[0],
   ...overrides,
 });

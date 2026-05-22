@@ -1,32 +1,19 @@
-import { faker } from '@faker-js/faker';
-import type { ChatModels } from '@smartspace/api-client';
+import './setup';
+
+import { ChatModels, ChatZod } from '@smartspace/api-client';
+import { fake } from 'zod-schema-faker/v4';
+
 
 import type { Notification } from '@/domains/notifications/model';
 import { NotificationType } from '@/domains/notifications/model';
 
-import { isoDate, uuid } from './primitives';
-
-// The DTO uses string literals matching the OpenAPI spec; the domain model uses
-// the NotificationType enum. Factories intentionally keep these separate so each
-// layer is tested against its own contract.
-const notificationTypes = [
-  'WorkSpaceUpdated',
-  'MessageThreadUpdated',
-  'CommentUpdated',
-] as const;
+const notificationItemSchema =
+  ChatZod.notificationGetResponse.shape.data.element;
 
 export const makeNotificationDto = (
   overrides: Partial<ChatModels.NotificationsNotification> = {}
 ): ChatModels.NotificationsNotification => ({
-  id: uuid(),
-  notificationType: faker.helpers.arrayElement(notificationTypes),
-  description: faker.lorem.sentence(),
-  createdAt: isoDate(),
-  createdBy: faker.person.fullName(),
-  createdByUserId: uuid(),
-  workSpaceId: uuid(),
-  threadId: null,
-  dismissedAt: null,
+  ...fake(notificationItemSchema),
   ...overrides,
 });
 
@@ -38,17 +25,23 @@ export const makeNotificationsResponse = (
   totalUnread: items.filter((n) => !n.dismissedAt).length,
 });
 
+// Notification is a local domain model that uses a typed enum rather than the
+// raw string literal the API returns. We build it from the DTO shape so any new
+// DTO fields are visible, then remap the two fields that differ.
 export const makeNotification = (
   overrides: Partial<Notification> = {}
-): Notification => ({
-  id: uuid(),
-  notificationType: NotificationType.MessageThreadUpdated,
-  description: faker.lorem.sentence(),
-  createdAt: new Date(),
-  createdBy: faker.person.fullName(),
-  createdByUserId: uuid(),
-  workSpaceId: uuid(),
-  threadId: null,
-  dismissedAt: null,
-  ...overrides,
-});
+): Notification => {
+  const dto = fake(notificationItemSchema);
+  return {
+    id: dto.id,
+    notificationType: NotificationType.MessageThreadUpdated,
+    description: dto.description ?? '',
+    createdAt: new Date(dto.createdAt),
+    createdBy: dto.createdBy ?? '',
+    createdByUserId: dto.createdByUserId ?? '',
+    workSpaceId: dto.workSpaceId ?? '',
+    threadId: dto.threadId ?? null,
+    dismissedAt: dto.dismissedAt ?? null,
+    ...overrides,
+  };
+};

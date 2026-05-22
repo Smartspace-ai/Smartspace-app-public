@@ -1,23 +1,15 @@
-import { faker } from '@faker-js/faker';
-import type { ChatModels } from '@smartspace/api-client';
+import './setup';
 
-import { isoDate, uuid } from './primitives';
+import { ChatModels, ChatZod } from '@smartspace/api-client';
+import { fake } from 'zod-schema-faker/v4';
+
+
+const threadSummarySchema = ChatZod.workSpacesThreadResponse.shape.data.element;
 
 export const makeThreadSummary = (
   overrides: Partial<ChatModels.MessageThreadMessageThreadSummary> = {}
 ): ChatModels.MessageThreadMessageThreadSummary => ({
-  id: uuid(),
-  workSpaceId: uuid(),
-  name: faker.lorem.words(3),
-  createdAt: isoDate(),
-  createdBy: faker.person.fullName(),
-  createdByUserId: uuid(),
-  lastUpdatedAt: isoDate(),
-  lastUpdatedByUserId: uuid(),
-  lastUpdated: null,
-  favorited: false,
-  isFlowRunning: false,
-  totalMessages: faker.number.int({ min: 0, max: 50 }),
+  ...fake(threadSummarySchema),
   ...overrides,
 });
 
