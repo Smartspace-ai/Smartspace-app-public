@@ -222,6 +222,7 @@ module.exports = {
     {
       files: [
         'src/**/*.{ts,tsx}',
+        '.storybook/**/*.{ts,tsx}',
         'theme/**/*.{ts,tsx}',
         'teams/**/*.ts',
         'packages/**/*.{ts,tsx}',
@@ -360,5 +361,8 @@ module.exports = {
     'src/routeTree.gen.ts',
     // Dagger CI module (separate tsconfig, decorators)
     'ci',
+    // Storybook build output
+    'storybook-static',
+    '.storybook-out',
   ],
 };

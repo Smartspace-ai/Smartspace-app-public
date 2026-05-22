@@ -68,6 +68,13 @@
         "command": "pnpm exec playwright test",
         "cwd": "{projectRoot}"
       }
+    },
+    "storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm storybook",
+        "cwd": "{projectRoot}"
+      }
     }
   }
 }
