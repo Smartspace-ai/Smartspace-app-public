@@ -63,18 +63,21 @@ const queryClient = new QueryClient({
 
 const preview: Preview = {
   decorators: [
-    (Story) => (
-      <QueryClientProvider client={queryClient}>
-        <ChatProvider
-          service={stubService}
-          workspaceId="story-workspace"
-          threadId="story-thread"
-          identity={{ userId: 'story-user', displayName: 'Story User' }}
-        >
-          <Story />
-        </ChatProvider>
-      </QueryClientProvider>
-    ),
+    (Story) => {
+      queryClient.clear();
+      return (
+        <QueryClientProvider client={queryClient}>
+          <ChatProvider
+            service={stubService}
+            workspaceId="story-workspace"
+            threadId="story-thread"
+            identity={{ userId: 'story-user', displayName: 'Story User' }}
+          >
+            <Story />
+          </ChatProvider>
+        </QueryClientProvider>
+      );
+    },
   ],
   parameters: {
     layout: 'centered',
