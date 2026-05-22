@@ -58,128 +58,173 @@ function fallbackRender({ error }: { error: unknown }) {
   );
 }
 
-// Must run before any ChatApi / AXIOS_INSTANCE usage (e.g. router context below).
-configureApiClient();
-
-const router = createRouter({
-  routeTree,
-  context: {
-    queryClient,
-    api: ChatApi.getSmartSpaceChatAPI(),
-  },
-  defaultPreload: 'intent',
-  scrollRestoration: true,
-  defaultNotFoundComponent: ({ data }) => <NotFoundPage data={data} />,
-});
-
+// Module augmentation must be at the top level — not inside any function or block.
 declare module '@tanstack/react-router' {
   interface Register {
-    router: typeof router;
+    router: ReturnType<typeof createRouter>;
   }
 }
 
-// Popup guard: if this page loaded inside an MSAL popup (window.opener is set
-// AND the URL contains an auth response hash), do NOT render the full SPA.
-// The parent window's MSAL instance monitors the popup URL, extracts the auth
-// hash, and closes it. Rendering the SPA here causes the "full app in popup"
-// and "double popup" bugs.
-// We require an auth hash so that normal window.open(...) links (e.g. from the
-// admin portal) don't accidentally skip the entire app.
-const isInPopup = (() => {
-  try {
-    const hasOpener = !!window.opener && window.opener !== window;
-    const hasAuthHash =
-      window.location.hash.includes('code=') ||
-      window.location.hash.includes('error=');
-    return hasOpener && hasAuthHash;
-  } catch {
-    return false;
+// Wrap all bootstrap logic in an async IIFE so we can conditionally start MSW
+// before the app initialises. The IIFE avoids top-level await (which TypeScript
+// rejects at target: es2015) while preserving the original startup sequence.
+(async () => {
+  // Conditionally start MSW in the browser for integration testing.
+  // Controlled by VITE_ENABLE_MSW=true — never set in production builds.
+  // A 5-second timeout prevents the service worker registration from blocking
+  // the full app startup if it fails or hangs (e.g. in Playwright contexts).
+  if (import.meta.env.VITE_ENABLE_MSW === 'true') {
+    const { worker } = await import('./test/mocks/browser');
+    await Promise.race([
+      worker.start({ onUnhandledRequest: 'warn' }),
+      new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+    ]);
   }
-})();
 
-if (isInPopup) {
-  removeSplash();
-  const rootEl = document.getElementById('root');
-  if (rootEl) rootEl.textContent = 'Completing sign-in...';
-  ssInfoAlways('boot', 'Popup context detected; SPA bootstrap skipped.');
-} else {
-  let msal: ReturnType<typeof getMsalInstance> | null = null;
-  try {
-    msal = getMsalInstance();
-  } catch (e) {
-    // Don't leave users stuck on an infinite splash screen.
+  // Must run before any ChatApi / AXIOS_INSTANCE usage (e.g. router context below).
+  configureApiClient();
+
+  const router = createRouter({
+    routeTree,
+    context: {
+      queryClient,
+      api: ChatApi.getSmartSpaceChatAPI(),
+    },
+    defaultPreload: 'intent',
+    scrollRestoration: true,
+    defaultNotFoundComponent: ({ data }) => <NotFoundPage data={data} />,
+  });
+
+  // E2E bypass: skip MSAL entirely when running Playwright browser integration tests.
+  // VITE_E2E_AUTH_BYPASS=true is set by playwright.config.ts webServer.env.
+  // The auth adapter in src/platform/auth/index.ts also checks this flag and
+  // returns a synthetic session + fake bearer token.
+  if (import.meta.env.VITE_E2E_AUTH_BYPASS === 'true') {
+    ssInfoAlways('boot', 'E2E auth bypass: skipping MSAL, rendering directly.');
     removeSplash();
-    ssError('boot', 'MSAL config error', e);
-    renderBootstrapError(String((e as Error)?.message ?? e));
+    const rootElement =
+      (document.getElementById('root') as HTMLElement) ??
+      document.body.appendChild(document.createElement('div'));
+    rootElement.id = 'root';
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
+      <StrictMode>
+        <ErrorBoundary fallbackRender={fallbackRender}>
+          <AppProviders>
+            <RouterProvider router={router} />
+            {import.meta.env.DEV ? (
+              <TanStackRouterDevtools router={router} position="bottom-right" />
+            ) : null}
+          </AppProviders>
+        </ErrorBoundary>
+      </StrictMode>
+    );
+    return;
   }
 
-  if (!msal) {
-    // Config issue already rendered.
-    ssWarn('boot', 'MSAL not configured; app bootstrap halted.');
+  // Popup guard: if this page loaded inside an MSAL popup (window.opener is set
+  // AND the URL contains an auth response hash), do NOT render the full SPA.
+  // The parent window's MSAL instance monitors the popup URL, extracts the auth
+  // hash, and closes it. Rendering the SPA here causes the "full app in popup"
+  // and "double popup" bugs.
+  // We require an auth hash so that normal window.open(...) links (e.g. from the
+  // admin portal) don't accidentally skip the entire app.
+  const isInPopup = (() => {
+    try {
+      const hasOpener = !!window.opener && window.opener !== window;
+      const hasAuthHash =
+        window.location.hash.includes('code=') ||
+        window.location.hash.includes('error=');
+      return hasOpener && hasAuthHash;
+    } catch {
+      return false;
+    }
+  })();
+
+  if (isInPopup) {
+    removeSplash();
+    const rootEl = document.getElementById('root');
+    if (rootEl) rootEl.textContent = 'Completing sign-in...';
+    ssInfoAlways('boot', 'Popup context detected; SPA bootstrap skipped.');
   } else {
-    msal
-      .initialize()
-      .then(async () => {
-        // Handle redirect promise to process authentication responses.
-        // IMPORTANT: Use the result to set the correct active account —
-        // with multiple cached accounts, accounts[0] may be stale.
-        const redirectResult = await msal.handleRedirectPromise();
+    let msal: ReturnType<typeof getMsalInstance> | null = null;
+    try {
+      msal = getMsalInstance();
+    } catch (e) {
+      // Don't leave users stuck on an infinite splash screen.
+      removeSplash();
+      ssError('boot', 'MSAL config error', e);
+      renderBootstrapError(String((e as Error)?.message ?? e));
+    }
 
-        if (redirectResult?.account) {
-          // Redirect just completed — use the authenticated account
-          msal.setActiveAccount(redirectResult.account);
-        } else {
-          // Normal page load (no redirect) — pick existing account
-          const accounts = msal.getAllAccounts();
-          if (accounts.length > 0) {
-            msal.setActiveAccount(accounts[0]);
-          }
-        }
+    if (!msal) {
+      // Config issue already rendered.
+      ssWarn('boot', 'MSAL not configured; app bootstrap halted.');
+    } else {
+      msal
+        .initialize()
+        .then(async () => {
+          // Handle redirect promise to process authentication responses.
+          // IMPORTANT: Use the result to set the correct active account —
+          // with multiple cached accounts, accounts[0] may be stale.
+          const redirectResult = await msal.handleRedirectPromise();
 
-        // Update active account only on successful auth events (not every event),
-        // using the event payload to avoid blindly picking accounts[0].
-        msal.addEventCallback((event: EventMessage) => {
-          if (
-            event.eventType === EventType.LOGIN_SUCCESS ||
-            event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS ||
-            event.eventType === EventType.SSO_SILENT_SUCCESS
-          ) {
-            const payload = event.payload as AuthenticationResult | null;
-            if (payload?.account) {
-              msal.setActiveAccount(payload.account);
+          if (redirectResult?.account) {
+            // Redirect just completed — use the authenticated account
+            msal.setActiveAccount(redirectResult.account);
+          } else {
+            // Normal page load (no redirect) — pick existing account
+            const accounts = msal.getAllAccounts();
+            if (accounts.length > 0) {
+              msal.setActiveAccount(accounts[0]);
             }
           }
+
+          // Update active account only on successful auth events (not every event),
+          // using the event payload to avoid blindly picking accounts[0].
+          msal.addEventCallback((event: EventMessage) => {
+            if (
+              event.eventType === EventType.LOGIN_SUCCESS ||
+              event.eventType === EventType.ACQUIRE_TOKEN_SUCCESS ||
+              event.eventType === EventType.SSO_SILENT_SUCCESS
+            ) {
+              const payload = event.payload as AuthenticationResult | null;
+              if (payload?.account) {
+                msal.setActiveAccount(payload.account);
+              }
+            }
+          });
+
+          const rootElement =
+            (document.getElementById('root') as HTMLElement) ??
+            document.body.appendChild(document.createElement('div'));
+          rootElement.id = 'root';
+
+          const root = ReactDOM.createRoot(rootElement);
+          root.render(
+            <StrictMode>
+              <ErrorBoundary fallbackRender={fallbackRender}>
+                <MsalProvider instance={msal}>
+                  <AppProviders>
+                    <RouterProvider router={router} />
+                    {import.meta.env.DEV ? (
+                      <TanStackRouterDevtools
+                        router={router}
+                        position="bottom-right"
+                      />
+                    ) : null}
+                  </AppProviders>
+                </MsalProvider>
+              </ErrorBoundary>
+            </StrictMode>
+          );
+        })
+        .catch((e) => {
+          // Don't leave users stuck on an infinite splash screen.
+          removeSplash();
+          ssError('boot', 'MSAL initialization failed', e);
+          renderBootstrapError(String((e as Error)?.message ?? e));
         });
-
-        const rootElement =
-          (document.getElementById('root') as HTMLElement) ??
-          document.body.appendChild(document.createElement('div'));
-        rootElement.id = 'root';
-
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(
-          <StrictMode>
-            <ErrorBoundary fallbackRender={fallbackRender}>
-              <MsalProvider instance={msal}>
-                <AppProviders>
-                  <RouterProvider router={router} />
-                  {import.meta.env.DEV ? (
-                    <TanStackRouterDevtools
-                      router={router}
-                      position="bottom-right"
-                    />
-                  ) : null}
-                </AppProviders>
-              </MsalProvider>
-            </ErrorBoundary>
-          </StrictMode>
-        );
-      })
-      .catch((e) => {
-        // Don't leave users stuck on an infinite splash screen.
-        removeSplash();
-        ssError('boot', 'MSAL initialization failed', e);
-        renderBootstrapError(String((e as Error)?.message ?? e));
-      });
+    }
   }
-}
+})();

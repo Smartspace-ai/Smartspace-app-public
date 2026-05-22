@@ -15,10 +15,46 @@ function adapterKey(): string {
 }
 
 /**
+ * Stub auth adapter used during Playwright browser integration tests.
+ * Activated by VITE_E2E_AUTH_BYPASS=true — never set in production builds.
+ * Returns a synthetic session and a fake bearer token so the /_protected
+ * auth guard passes and axios attaches an Authorization header, while
+ * MSW intercepts all downstream API calls.
+ */
+function createE2EAuthAdapter(): AuthAdapter {
+  ssInfoAlways('auth', 'getAuthAdapter -> e2e-bypass (VITE_E2E_AUTH_BYPASS)');
+  return {
+    async getAccessToken() {
+      return 'e2e-fake-bearer-token';
+    },
+    async getSession() {
+      return { accountId: 'e2e-user-id', displayName: 'E2E Test User' };
+    },
+    async signIn() {
+      // No-op in E2E
+    },
+    async signOut() {
+      // No-op in E2E
+    },
+    getStoredRedirectUrl() {
+      return null;
+    },
+  };
+}
+
+/**
  * Returns a singleton AuthAdapter cached by runtime state fingerprint.
  * When Teams detection changes, the cached adapter is replaced.
  */
 export function getAuthAdapter(): AuthAdapter {
+  // Short-circuit to stub adapter for Playwright browser integration tests.
+  if (import.meta.env.VITE_E2E_AUTH_BYPASS === 'true') {
+    if (cached?.key === 'e2e') return cached.adapter;
+    const adapter = createE2EAuthAdapter();
+    cached = { adapter, key: 'e2e' };
+    return adapter;
+  }
+
   const key = adapterKey();
   if (cached?.key === key) return cached.adapter;
 

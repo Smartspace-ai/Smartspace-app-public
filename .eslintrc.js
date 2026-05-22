@@ -309,6 +309,20 @@ module.exports = {
 
     // UI compatibility layers (shadcn/MUI wrappers) are still held to strict typing in tech-test mode.
 
+    // E2E Playwright tests (outside src/ — need explicit TypeScript override)
+    {
+      files: ['e2e/**/*.{ts,tsx}'],
+      extends: ['plugin:@nx/typescript'],
+      rules: {
+        // E2E tests don't go through layered architecture linting
+        'boundaries/element-types': 'off',
+        'no-restricted-imports': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
+        'no-restricted-syntax': 'off',
+      },
+    },
+
     // Mocks
     {
       files: ['src/mocks/**/*.{ts,tsx,js,jsx}'],
@@ -346,5 +360,7 @@ module.exports = {
     'src/routeTree.gen.ts',
     // Dagger CI module (separate tsconfig, decorators)
     'ci',
+    // MSW service worker — generated file with private class fields syntax
+    'public/mockServiceWorker.js',
   ],
 };

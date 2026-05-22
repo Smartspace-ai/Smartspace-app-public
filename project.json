@@ -61,6 +61,13 @@
       "options": {
         "lintFilePatterns": ["src/**/*.{ts,tsx,js,jsx}"]
       }
+    },
+    "playwright": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec playwright test",
+        "cwd": "{projectRoot}"
+      }
     }
   }
 }

@@ -2,9 +2,14 @@ import { http, HttpResponse } from 'msw';
 
 import { makeThreadSummary, makeThreadsResponse } from '@/test/factories';
 
+// Stable thread ID so the router can redirect to /thread/$threadId reliably.
+const E2E_THREAD_ID = 'e2e00000-0000-0000-0000-000000000002';
+
 export const threadHandlers = [
   http.get('*/workspaces/:workspaceId/messagethreads', () =>
-    HttpResponse.json(makeThreadsResponse())
+    HttpResponse.json(
+      makeThreadsResponse([makeThreadSummary({ id: E2E_THREAD_ID })])
+    )
   ),
 
   http.get('*/workspaces/:workspaceId/messagethreads/:threadId', ({ params }) =>
