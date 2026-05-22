@@ -65,7 +65,7 @@ export const mention = $node('mention', () => ({
     match: (node) => node.type.name === 'mention',
     runner: (state, node) => {
       const { id, label } = node.attrs as { id: string; label: string };
-      state.addNode('mention', undefined, `${id}|${label}`);
+      state.addNode('text', undefined, label || `@${id}`);
     },
   } as NodeSerializerSpec,
 }));

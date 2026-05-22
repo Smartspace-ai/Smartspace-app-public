@@ -9,6 +9,8 @@ import {
   useRouteIds,
 } from '@/platform/routing/RouteIdsProvider';
 
+import { useDrainPendingThreadUsersOnSend } from '@/domains/thread-users';
+
 import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
 
 import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
@@ -39,6 +41,11 @@ export function ChatProviderBridge({ children }: { children: ReactNode }) {
       {children}
     </ChatProvider>
   );
+}
+
+function DrainPendingThreadUsers() {
+  useDrainPendingThreadUsersOnSend();
+  return null;
 }
 
 function WorkspaceBodyBackground() {
@@ -88,6 +95,7 @@ export const Route = createFileRoute(
       <ChatProviderBridge>
         <PendingThreadsProvider>
           <WorkspaceBodyBackground />
+          <DrainPendingThreadUsers />
           <ChatBotPage />
           <Suspense fallback={null}>
             <Outlet />

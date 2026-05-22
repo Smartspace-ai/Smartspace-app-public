@@ -238,7 +238,7 @@ export function useAddInputToMessage() {
                 values: [
                   ...(m.values ?? []),
                   {
-                    id: `temp-${Date.now()}-add`,
+                    id: `temp-${crypto.randomUUID()}-add`,
                     type: MessageValueType.INPUT,
                     name,
                     value,

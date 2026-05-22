@@ -1,6 +1,9 @@
 import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
 import Skeleton from '@mui/material/Skeleton';
-import { MessageSquare, PanelLeft } from 'lucide-react';
+import Tooltip from '@mui/material/Tooltip';
+import { MessageSquare, PanelLeft, UserPlus } from 'lucide-react';
+import { useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
@@ -10,6 +13,7 @@ import { getTagChipClasses } from '@/theme/tag-styles';
 
 import { useThread, useWorkspace } from '@smartspace/chat-ui';
 
+import { AddUsersToThreadDialog } from './add-users-dialog';
 import { NotificationPanel } from './notifications-panel';
 
 export function ChatHeader() {
@@ -20,6 +24,8 @@ export function ChatHeader() {
     isError: workspaceError,
   } = useWorkspace(workspaceId);
   const { data: activeThread } = useThread({ workspaceId, threadId });
+  const [addUsersOpen, setAddUsersOpen] = useState(false);
+  const canAddUsers = !!workspaceId && !!threadId;
 
   // Render all tags as chips; color-code safe/unsafe (and other known tags)
   const tagChips = (() => {
@@ -89,6 +95,18 @@ export function ChatHeader() {
       </div>
       <div className="flex items-center gap-2 px-4">
         <NotificationPanel />
+        {canAddUsers && (
+          <Tooltip title="Add users to thread">
+            <IconButton
+              size="small"
+              onClick={() => setAddUsersOpen(true)}
+              className="text-muted-foreground hover:text-foreground h-8 w-8"
+              aria-label="Add users to thread"
+            >
+              <UserPlus className="h-4 w-4" />
+            </IconButton>
+          </Tooltip>
+        )}
         <Divider orientation="vertical" className="h-4" />
         <SidebarTrigger
           side="right"
@@ -96,6 +114,14 @@ export function ChatHeader() {
           className="text-muted-foreground hover:text-foreground h-8 w-8"
         />
       </div>
+      {canAddUsers && (
+        <AddUsersToThreadDialog
+          open={addUsersOpen}
+          onClose={() => setAddUsersOpen(false)}
+          workspaceId={workspaceId}
+          threadId={threadId}
+        />
+      )}
     </header>
   );
 }
