@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 
 import { useChatIdentity, useChatService } from '@/platform/chat';
 
+
 import { FileInfo } from '@/domains/files';
 import {
   type MessageThread,
@@ -10,6 +11,8 @@ import {
   setThreadRunningInLists,
   threadsKeys,
 } from '@/domains/threads';
+
+import { randomUUID } from '@/shared/utils/randomUUID';
 
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
@@ -70,10 +73,10 @@ export function useSendMessage() {
 
       // Optimistic message
       const optimistic: Message = {
-        id: `temp-${crypto.randomUUID()}`,
+        id: `temp-${randomUUID()}`,
         values: [
           {
-            id: `temp-${crypto.randomUUID()}-prompt`,
+            id: `temp-${randomUUID()}-prompt`,
             type: MessageValueType.INPUT,
             name: 'prompt',
             value: contentList,
@@ -85,7 +88,7 @@ export function useSendMessage() {
           ...(files?.length
             ? [
                 {
-                  id: `temp-${crypto.randomUUID()}-files`,
+                  id: `temp-${randomUUID()}-files`,
                   type: MessageValueType.INPUT,
                   name: 'files',
                   value: files,
@@ -99,7 +102,7 @@ export function useSendMessage() {
           ...(variables && Object.keys(variables).length
             ? [
                 {
-                  id: `temp-${crypto.randomUUID()}-vars`,
+                  id: `temp-${randomUUID()}-vars`,
                   type: MessageValueType.INPUT,
                   name: 'variables',
                   value: variables,
@@ -238,7 +241,7 @@ export function useAddInputToMessage() {
                 values: [
                   ...(m.values ?? []),
                   {
-                    id: `temp-${crypto.randomUUID()}-add`,
+                    id: `temp-${randomUUID()}-add`,
                     type: MessageValueType.INPUT,
                     name,
                     value,
