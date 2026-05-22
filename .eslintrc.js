@@ -360,7 +360,5 @@ module.exports = {
     'src/routeTree.gen.ts',
     // Dagger CI module (separate tsconfig, decorators)
     'ci',
-    // MSW service worker — generated file with private class fields syntax
-    'public/mockServiceWorker.js',
   ],
 };

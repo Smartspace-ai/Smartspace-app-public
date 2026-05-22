@@ -16,7 +16,7 @@ export default defineConfig({
     command: 'pnpm run serve',
     url: 'http://localhost:4300',
     reuseExistingServer: !process.env.CI,
-    env: { VITE_ENABLE_MSW: 'true', VITE_E2E_AUTH_BYPASS: 'true' },
+    env: { VITE_E2E_AUTH_BYPASS: 'true' },
     timeout: 120000,
   },
 });

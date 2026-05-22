@@ -1,18 +1,10 @@
 /**
  * Playwright auth helpers for E2E browser integration tests.
  *
- * Auth bypass architecture:
- * - VITE_E2E_AUTH_BYPASS=true is passed to the Vite dev server via playwright.config.ts.
- * - main.tsx detects this flag and skips MSAL entirely, rendering the app directly.
- * - src/platform/auth/index.ts detects the same flag and returns a synthetic
- *   AuthAdapter (getSession returns a fake user, getAccessToken returns a fake token).
- * - The /_protected route's beforeLoad passes because the session is non-null.
- * - All downstream API calls are intercepted by MSW (enabled via VITE_ENABLE_MSW=true).
- *
- * This file provides the `setupAuthBypass` helper for test files. In the current
- * architecture there is nothing to set up at the Playwright level (auth bypass is
- * entirely env-var driven), but the helper is kept as a stable import point for
- * future per-test auth customisation (e.g. different user roles).
+ * Auth bypass: VITE_E2E_AUTH_BYPASS=true is passed to the Vite dev server via
+ * playwright.config.ts. main.tsx skips MSAL; src/platform/auth/index.ts returns a
+ * synthetic adapter so the /_protected guard passes. API calls are intercepted
+ * per-test via page.route().
  */
 
 import type { Page } from '@playwright/test';

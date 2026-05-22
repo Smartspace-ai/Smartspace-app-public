@@ -65,22 +65,7 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// Wrap all bootstrap logic in an async IIFE so we can conditionally start MSW
-// before the app initialises. The IIFE avoids top-level await (which TypeScript
-// rejects at target: es2015) while preserving the original startup sequence.
 (async () => {
-  // Conditionally start MSW in the browser for integration testing.
-  // Controlled by VITE_ENABLE_MSW=true — never set in production builds.
-  // A 5-second timeout prevents the service worker registration from blocking
-  // the full app startup if it fails or hangs (e.g. in Playwright contexts).
-  if (import.meta.env.VITE_ENABLE_MSW === 'true') {
-    const { worker } = await import('./test/mocks/browser');
-    await Promise.race([
-      worker.start({ onUnhandledRequest: 'warn' }),
-      new Promise<void>((resolve) => setTimeout(resolve, 5000)),
-    ]);
-  }
-
   // Must run before any ChatApi / AXIOS_INSTANCE usage (e.g. router context below).
   configureApiClient();
 
