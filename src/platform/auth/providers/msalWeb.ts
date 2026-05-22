@@ -265,13 +265,22 @@ export function createMsalWebAdapter(): AuthAdapter {
         // downstream consumers (e.g. optimistic comment placeholders) hit when
         // displayName is undefined.
         return {
-          accountId: a.homeAccountId,
+          // localAccountId is the `oid` claim — the objectId in the current
+          // (resource) tenant. homeAccountId is "{oid}.{tenantId}" which diverges
+          // from the server's createdByUserId for B2B guest accounts.
+          accountId: a.localAccountId,
           displayName: a.name ?? a.username ?? undefined,
         };
       }
       // Fallback: popup token available but MSAL cache is partitioned (Teams Mobile).
       if (popupFallbackToken) {
-        return { accountId: popupFallbackToken.homeAccountId };
+        const fallbackAccount = msalInstance.getAccountByHomeId(
+          popupFallbackToken.homeAccountId
+        );
+        return {
+          accountId:
+            fallbackAccount?.localAccountId ?? popupFallbackToken.homeAccountId,
+        };
       }
       return null;
     },

@@ -21,9 +21,11 @@ export function mapMentionUserDtoToModel(
   if (typeof dto === 'string') {
     return { id: dto, displayName: '', initials: null };
   }
+  // API may return {userId, name} or {id, name} depending on endpoint version
+  const obj = dto as unknown as Record<string, string | undefined>;
   return {
-    id: dto.id,
-    displayName: dto.name ?? '',
+    id: obj.id ?? obj.userId ?? '',
+    displayName: obj.displayName ?? obj.name ?? '',
     initials: null,
   };
 }

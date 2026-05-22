@@ -71,10 +71,16 @@ export function useAddComment(threadId: string) {
           const realIdx = list.findIndex((c) => c.id === realComment.id);
 
           // The SignalR `receiveCommentsUpdate` push can land before the POST
-          // response. When it does, the real comment is already in the cache,
-          // and naively replacing the placeholder would leave two copies.
+          // response. When it does, the real comment is already in the cache.
+          // Replace the SignalR entry with the POST response — it is the
+          // authoritative source and may carry fields (e.g. createdBy for B2B
+          // guests) that the SignalR payload omits.
           if (realIdx !== -1) {
-            return tempIdx === -1 ? list : list.filter((c) => c.id !== tempId);
+            const without =
+              tempIdx === -1 ? list : list.filter((c) => c.id !== tempId);
+            return without.map((c) =>
+              c.id === realComment.id ? realComment : c
+            );
           }
           if (tempIdx === -1) return [...list, realComment];
           const next = list.slice();
