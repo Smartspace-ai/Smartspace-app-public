@@ -6,46 +6,34 @@ import {
 } from '@/domains/notifications/mapper';
 import { NotificationType } from '@/domains/notifications/model';
 
-const baseDto = {
-  id: '1',
-  description: 'a',
-  workSpaceId: null,
-  threadId: null,
-  createdBy: 'u',
-  createdAt: '2024-01-01T00:00:00Z',
-  dismissedAt: null,
-};
+import { makeNotificationDto } from '@/test/factories';
 
 describe('notifications mapper', () => {
   it('maps WorkSpaceUpdated string enum from SDK', () => {
-    const n = mapNotificationDtoToModel({
-      ...baseDto,
-      notificationType: 'WorkSpaceUpdated',
-    } as never);
+    const n = mapNotificationDtoToModel(
+      makeNotificationDto({ notificationType: 'WorkSpaceUpdated' })
+    );
     expect(n.notificationType).toBe(NotificationType.WorkSpaceUpdated);
   });
 
   it('maps MessageThreadUpdated string enum from SDK', () => {
-    const n = mapNotificationDtoToModel({
-      ...baseDto,
-      notificationType: 'MessageThreadUpdated',
-    } as never);
+    const n = mapNotificationDtoToModel(
+      makeNotificationDto({ notificationType: 'MessageThreadUpdated' })
+    );
     expect(n.notificationType).toBe(NotificationType.MessageThreadUpdated);
   });
 
   it('maps CommentUpdated string enum from SDK', () => {
-    const n = mapNotificationDtoToModel({
-      ...baseDto,
-      notificationType: 'CommentUpdated',
-    } as never);
+    const n = mapNotificationDtoToModel(
+      makeNotificationDto({ notificationType: 'CommentUpdated' })
+    );
     expect(n.notificationType).toBe(NotificationType.CommentUpdated);
   });
 
   it('falls back to WorkSpaceUpdated for unknown values', () => {
-    const n = mapNotificationDtoToModel({
-      ...baseDto,
-      notificationType: 'unknown',
-    } as never);
+    const n = mapNotificationDtoToModel(
+      makeNotificationDto({ notificationType: 'unknown' as never })
+    );
     expect(n.notificationType).toBe(NotificationType.WorkSpaceUpdated);
   });
 

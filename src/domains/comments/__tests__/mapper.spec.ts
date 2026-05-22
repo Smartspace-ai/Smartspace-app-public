@@ -6,6 +6,8 @@ import {
   mapMentionUserDtoToModel,
 } from '@/domains/comments/mapper';
 
+import { makeCommentSummary } from '@/test/factories';
+
 describe('comments mapper', () => {
   it('maps mention user dto to model', () => {
     const m = mapMentionUserDtoToModel({
@@ -32,33 +34,16 @@ describe('comments mapper', () => {
   });
 
   it('maps single comment dto to model', () => {
-    const dto = {
-      id: 'c1',
-      createdAt: '2024-01-01',
-      createdByUserId: 'u',
-      createdBy: 'User',
-      content: 'Hello',
-      mentionedUsers: [],
-      messageThreadId: 't1',
-    } as any;
+    const dto = makeCommentSummary({ id: 'c1', content: 'Hello' });
     const m = mapCommentDtoToModel(dto);
     expect(m.id).toBe('c1');
-    expect(m.mentionedUsers).toEqual([]);
+    expect(m.content).toBe('Hello');
+    expect(Array.isArray(m.mentionedUsers)).toBe(true);
   });
 
   it('maps list of comments', () => {
-    const arr = [
-      {
-        id: '1',
-        createdAt: '2024-01-01T00:00:00Z',
-        createdByUserId: 'u',
-        createdBy: 'U',
-        content: 'a',
-        mentionedUsers: [],
-        messageThreadId: 't',
-      },
-    ];
-    const res = mapCommentsDtoToModels(arr as any);
-    expect(res.length).toBe(1);
+    const arr = [makeCommentSummary(), makeCommentSummary()];
+    const res = mapCommentsDtoToModels(arr);
+    expect(res).toHaveLength(2);
   });
 });

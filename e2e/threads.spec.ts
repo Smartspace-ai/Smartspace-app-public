@@ -1,40 +1,17 @@
 import { expect, test } from '@playwright/test';
 
-const WORKSPACE_ID = 'test-workspace-01';
-const THREAD_ID = 'test-thread-01';
-
-const workspacesResponse = {
-  data: [
-    {
-      id: WORKSPACE_ID,
-      name: 'Test Workspace',
-      description: '',
-      isEnabled: true,
-    },
-  ],
-  total: 1,
-};
-
-const threadsResponse = {
-  data: [
-    {
-      id: THREAD_ID,
-      name: 'Test Thread',
-      lastMessageAt: new Date().toISOString(),
-      unreadCount: 0,
-      isFlowRunning: false,
-      isPinned: false,
-    },
-  ],
-  total: 1,
-};
+import {
+  threadsResponse,
+  workspaceFixture,
+  workspacesResponse,
+} from './fixtures';
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/workspaces', (route) =>
     route.fulfill({ json: workspacesResponse })
   );
   await page.route('**/workspaces/**', (route) =>
-    route.fulfill({ json: workspacesResponse.data[0] })
+    route.fulfill({ json: workspaceFixture })
   );
   await page.route('**/messagethreads', (route) =>
     route.fulfill({ json: threadsResponse })
