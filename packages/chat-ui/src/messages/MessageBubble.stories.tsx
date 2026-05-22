@@ -6,7 +6,6 @@ import {
   MessageValueType,
 } from '../domains/messages/enums';
 
-
 const meta: Meta<typeof MessageBubble> = {
   title: 'Messages/MessageBubble',
   component: MessageBubble,

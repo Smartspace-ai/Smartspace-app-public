@@ -19,7 +19,7 @@ export const threadFixture = {
   lastMessageAt: '2024-01-01T00:00:00.000Z',
   unreadCount: 0,
   isFlowRunning: false,
-  isPinned: false,
+  pinned: false,
 };
 
 export const threadsResponse = {

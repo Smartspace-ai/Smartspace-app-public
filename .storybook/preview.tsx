@@ -57,25 +57,24 @@ const stubService: ChatService = {
   fetchModels: async () => ({ data: [], total: 0 }),
 };
 
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
+
 const preview: Preview = {
   decorators: [
-    (Story) => {
-      const client = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-      });
-      return (
-        <QueryClientProvider client={client}>
-          <ChatProvider
-            service={stubService}
-            workspaceId="story-workspace"
-            threadId="story-thread"
-            identity={{ userId: 'story-user', displayName: 'Story User' }}
-          >
-            <Story />
-          </ChatProvider>
-        </QueryClientProvider>
-      );
-    },
+    (Story) => (
+      <QueryClientProvider client={queryClient}>
+        <ChatProvider
+          service={stubService}
+          workspaceId="story-workspace"
+          threadId="story-thread"
+          identity={{ userId: 'story-user', displayName: 'Story User' }}
+        >
+          <Story />
+        </ChatProvider>
+      </QueryClientProvider>
+    ),
   ],
   parameters: {
     layout: 'centered',

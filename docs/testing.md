@@ -75,7 +75,7 @@ const comment = mapCommentDtoToModel(makeCommentSummary());
 
 ## MSW handlers (`src/test/mocks/handlers/`)
 
-MSW intercepts HTTP at the network level in both Vitest (node server) and Playwright (browser service worker). Handlers use factories for response bodies so response shapes always match the schema.
+MSW intercepts HTTP at the network level in Vitest (node server). Playwright E2E tests use `page.route()` for per-test network mocking — no service worker is required. Handlers use factories for response bodies so response shapes always match the schema.
 
 ### Pattern
 

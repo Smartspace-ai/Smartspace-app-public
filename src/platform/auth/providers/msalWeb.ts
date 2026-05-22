@@ -268,7 +268,7 @@ export function createMsalWebAdapter(): AuthAdapter {
           // localAccountId is the `oid` claim — the objectId in the current
           // (resource) tenant. homeAccountId is "{oid}.{tenantId}" which diverges
           // from the server's createdByUserId for B2B guest accounts.
-          accountId: a.localAccountId,
+          accountId: a.localAccountId ?? a.homeAccountId,
           displayName: a.name ?? a.username ?? undefined,
         };
       }
