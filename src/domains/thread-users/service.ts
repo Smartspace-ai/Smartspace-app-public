@@ -27,10 +27,3 @@ export async function addThreadUser(
 ): Promise<void> {
   await chatApi.messageThreadsAddThreadUser(threadId, userId);
 }
-
-export async function removeThreadUser(
-  threadId: string,
-  userId: string
-): Promise<void> {
-  await chatApi.messageThreadsRemoveThreadUser(threadId, userId);
-}

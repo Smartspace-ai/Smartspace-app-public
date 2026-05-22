@@ -1,5 +1,5 @@
 export type { ThreadUser } from './model';
-export { useAddThreadUser, useRemoveThreadUser } from './mutations';
+export { useAddThreadUser } from './mutations';
 export {
   clearPendingThreadUsers,
   getPendingThreadUsers,
@@ -8,5 +8,5 @@ export {
 } from './pendingThreadUsers';
 export { threadUsersListOptions, useThreadUsers } from './queries';
 export { threadUsersKeys } from './queryKeys';
-export { addThreadUser, fetchThreadUsers, removeThreadUser } from './service';
+export { addThreadUser, fetchThreadUsers } from './service';
 export { useDrainPendingThreadUsersOnSend } from './useDrainPendingThreadUsersOnSend';

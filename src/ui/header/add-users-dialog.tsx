@@ -1,3 +1,5 @@
+
+import { Check } from 'lucide-react';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { useUserId } from '@/platform/auth/session';
@@ -7,7 +9,6 @@ import {
   setPendingThreadUsers,
   subscribePendingThreadUsers,
   useAddThreadUser,
-  useRemoveThreadUser,
 } from '@/domains/thread-users';
 import { useThreadUsers } from '@/domains/thread-users/queries';
 
@@ -28,6 +29,7 @@ import {
 import { Input } from '@/shared/ui/mui-compat/input';
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
 import { isDraftThreadId } from '@/shared/utils/threadId';
+import { cn } from '@/shared/utils/utils';
 
 import {
   getUserPhotoUrl,
@@ -69,7 +71,6 @@ export function AddUsersToThreadDialog({
     useTaggableWorkspaceUsers(workspaceId);
   const { data: threadUsers = [] } = useThreadUsers(isDraft ? null : threadId);
   const addUser = useAddThreadUser(isDraft ? null : threadId);
-  const removeUser = useRemoveThreadUser(isDraft ? null : threadId);
 
   const pending = usePendingThreadUsersSnapshot(threadId);
 
@@ -96,28 +97,21 @@ export function AddUsersToThreadDialog({
 
   const toggleUser = (userId: string, displayName: string) => {
     if (userId === currentUserId) return; // always a member
-    const isMember = memberIds.has(userId);
+    if (memberIds.has(userId)) return; // can only add, not remove
 
     if (isDraft) {
-      const next = isMember
-        ? pending.filter((id) => id !== userId)
-        : [...pending, userId];
-      setPendingThreadUsers(threadId, next);
+      setPendingThreadUsers(threadId, [...pending, userId]);
       return;
     }
 
-    if (isMember) {
-      removeUser.mutate({ userId });
-    } else {
-      addUser.mutate({ userId, user: { displayName } });
-    }
+    addUser.mutate({ userId, user: { displayName } });
   };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Update thread users</DialogTitle>
+          <DialogTitle>Add users to thread</DialogTitle>
         </DialogHeader>
 
         <div className="mt-2">
@@ -129,7 +123,7 @@ export function AddUsersToThreadDialog({
         </div>
 
         <ScrollArea className="h-72 mt-2 rounded-md border">
-          <ul className="divide-y">
+          <ul className="divide-y pr-3">
             {workspaceUsersLoading && (
               <li className="p-3 text-sm text-muted-foreground">
                 Loading users...
@@ -143,11 +137,12 @@ export function AddUsersToThreadDialog({
             {filteredUsers.map((user) => {
               const isCurrent = user.userId === currentUserId;
               const isMember = memberIds.has(user.userId);
+              const isDisabled = isCurrent || isMember;
               return (
                 <li key={user.id}>
                   <button
                     type="button"
-                    disabled={isCurrent}
+                    disabled={isDisabled}
                     onClick={() => toggleUser(user.userId, user.displayName)}
                     className="flex w-full items-center gap-3 p-2 text-left hover:bg-muted/50 disabled:opacity-60 disabled:hover:bg-transparent"
                   >
@@ -165,23 +160,32 @@ export function AddUsersToThreadDialog({
                       <p className="text-sm font-medium truncate">
                         {user.displayName}
                       </p>
-                      {isCurrent && (
+                      {isMember && (
                         <p className="text-xs text-muted-foreground">
-                          Already in thread
-                        </p>
-                      )}
-                      {!isCurrent && isDraft && isMember && (
-                        <p className="text-xs text-muted-foreground">
-                          Will be added with first message
+                          {isDraft && !isCurrent
+                            ? 'Will be added with first message'
+                            : 'Already in thread'}
                         </p>
                       )}
                     </div>
-                    <Checkbox
-                      checked={isMember}
-                      disabled={isCurrent}
-                      onChange={() => toggleUser(user.userId, user.displayName)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
+                    {isMember ? (
+                      <span
+                        className={cn(
+                          'flex h-5 w-5 items-center justify-center rounded-full',
+                          'bg-primary text-primary-foreground'
+                        )}
+                      >
+                        <Check className="h-3 w-3" />
+                      </span>
+                    ) : (
+                      <Checkbox
+                        checked={false}
+                        onChange={() =>
+                          toggleUser(user.userId, user.displayName)
+                        }
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
                   </button>
                 </li>
               );
