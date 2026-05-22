@@ -4,8 +4,11 @@ import type { ChatModels } from '@smartspace/api-client';
 import type { Notification } from '@/domains/notifications/model';
 import { NotificationType } from '@/domains/notifications/model';
 
-import { isoDate, oneOf, uuid } from './primitives';
+import { isoDate, uuid } from './primitives';
 
+// The DTO uses string literals matching the OpenAPI spec; the domain model uses
+// the NotificationType enum. Factories intentionally keep these separate so each
+// layer is tested against its own contract.
 const notificationTypes = [
   'WorkSpaceUpdated',
   'MessageThreadUpdated',
@@ -16,7 +19,7 @@ export const makeNotificationDto = (
   overrides: Partial<ChatModels.NotificationsNotification> = {}
 ): ChatModels.NotificationsNotification => ({
   id: uuid(),
-  notificationType: oneOf(notificationTypes),
+  notificationType: faker.helpers.arrayElement(notificationTypes),
   description: faker.lorem.sentence(),
   createdAt: isoDate(),
   createdBy: faker.person.fullName(),

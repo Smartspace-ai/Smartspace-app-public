@@ -1,14 +1,14 @@
 import { faker } from '@faker-js/faker';
 import type { ChatModels } from '@smartspace/api-client';
 
-import { isoDate, oneOf, uuid } from './primitives';
+import { isoDate, uuid } from './primitives';
 
 export const makeMessageValue = (
   overrides: Partial<ChatModels.MessagesMessageValue> = {}
 ): ChatModels.MessagesMessageValue => ({
   id: uuid(),
   name: 'text',
-  type: oneOf(['Input', 'Output'] as const),
+  type: faker.helpers.arrayElement(['Input', 'Output'] as const),
   createdAt: isoDate(),
   createdBy: faker.person.fullName(),
   createdByUserId: uuid(),

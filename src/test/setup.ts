@@ -4,12 +4,11 @@ import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { server } from './mocks/server';
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-
 afterEach(() => {
+  server.resetHandlers();
   cleanup();
 });
+afterAll(() => server.close());
 
 // Silence app logger in unit tests (tests can assert behavior without noisy stderr).
 vi.mock('@/platform/log', () => ({

@@ -17,6 +17,20 @@ describe('comments mapper', () => {
     expect(m.initials).toBeNull();
   });
 
+  it('maps mention user dto with null name to empty displayName', () => {
+    const m = mapMentionUserDtoToModel({ userId: 'u', name: null });
+    expect(m.id).toBe('u');
+    expect(m.displayName).toBe('');
+    expect(m.initials).toBeNull();
+  });
+
+  it('maps mention user string id to model', () => {
+    const m = mapMentionUserDtoToModel('some-id');
+    expect(m.id).toBe('some-id');
+    expect(m.displayName).toBe('');
+    expect(m.initials).toBeNull();
+  });
+
   it('maps single comment dto to model', () => {
     const dto = {
       id: 'c1',
