@@ -228,11 +228,21 @@ export function useAddInputToMessage() {
   const { userId, displayName: userName } = useChatIdentity();
   const service = useChatService();
 
-  const addInputToMessageMutation = useMutation<Message, Error, AddInputArgs>({
-    mutationFn: async ({ threadId, messageId, name, value, channels }) => {
-      if (!threadId) throw new Error('Thread ID is required');
+  const addInputToMessageMutation = useMutation<
+    Message,
+    Error,
+    AddInputArgs,
+    { previousMessages: Message[] }
+  >({
+    onMutate: async ({ threadId, messageId, name, value, channels }) => {
+      // Cancel in-flight refetches so they don't overwrite the optimistic patch.
+      await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
-      // optimistic local patch
+      // Snapshot before mutating — used for rollback.
+      const previousMessages =
+        qc.getQueryData<Message[]>(messagesKeys.list(threadId)) ?? [];
+
+      // Apply optimistic patch.
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
         old.map((m) =>
           m.id === messageId
@@ -256,7 +266,10 @@ export function useAddInputToMessage() {
         )
       );
 
-      await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
+      return { previousMessages };
+    },
+    mutationFn: async ({ threadId, messageId, name, value, channels }) => {
+      if (!threadId) throw new Error('Thread ID is required');
 
       return await service.addInputToMessage({
         messageId,
@@ -270,11 +283,14 @@ export function useAddInputToMessage() {
         reconcileWithMessage(old, message, 'replace')
       );
     },
-    onError: (_e, { threadId }) => {
-      // rollback optimistic patch
-      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
-        old.filter((m) => !m.optimistic)
-      );
+    onError: (_e, { threadId }, context) => {
+      // Restore the pre-mutation snapshot.
+      if (context) {
+        qc.setQueryData<Message[]>(
+          messagesKeys.list(threadId),
+          context.previousMessages
+        );
+      }
       toast.error('There was an error posting your form input');
     },
     retry: false,

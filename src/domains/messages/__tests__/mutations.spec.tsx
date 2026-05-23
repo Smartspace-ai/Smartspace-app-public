@@ -203,17 +203,13 @@ describe('useAddInputToMessage', () => {
       }
     );
 
-    // Seed with two messages: one plain server message and one that is explicitly
-    // marked optimistic. The onError handler filters out every `optimistic: true`
-    // entry from the list — so after rollback only the plain message should remain.
+    // Seed with a plain server message (no optimistic flag — this is the real
+    // production path; the patched message is never marked optimistic: true).
     const plain = baseMessage({ id: 'msg-1' });
-    const optimisticMsg = baseMessage({
-      id: 'optimistic-msg',
-      optimistic: true,
-    });
+    const plain2 = baseMessage({ id: 'msg-2' });
     queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [
       plain,
-      optimisticMsg,
+      plain2,
     ]);
 
     await act(async () => {
@@ -230,12 +226,13 @@ describe('useAddInputToMessage', () => {
 
     const after =
       queryClient.getQueryData<Message[]>(messagesKeys.list('t1')) ?? [];
-    // onError strips every message flagged optimistic: true.
-    expect(after.some((m) => m.optimistic)).toBe(false);
-    // The explicitly optimistic message was removed.
-    expect(after.map((m) => m.id)).not.toContain('optimistic-msg');
-    // The plain message survives.
-    expect(after.map((m) => m.id)).toContain('msg-1');
+    // onError restores the pre-mutation snapshot — both plain messages survive.
+    expect(after.map((m) => m.id)).toEqual(['msg-1', 'msg-2']);
+    // No temp- values remain on the target message.
+    const targetMsg = after.find((m) => m.id === 'msg-1');
+    expect(
+      targetMsg?.values?.some((v) => v.id.startsWith('temp-'))
+    ).toBe(false);
   });
 
   it('two rapid calls produce different IDs, neither matching a timestamp-only format', async () => {
