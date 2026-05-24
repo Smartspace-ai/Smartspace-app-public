@@ -10,6 +10,11 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/workspaces', (route) =>
     route.fulfill({ json: workspacesResponse })
   );
+  // Must be registered before **/workspaces/** so it wins for message-list URLs
+  // (e.g. /workspaces/:id/messageThreads/:id/messages).
+  await page.route('**/messages', (route) =>
+    route.fulfill({ json: { data: [], total: 0 } })
+  );
   await page.route('**/workspaces/**', (route) =>
     route.fulfill({ json: workspaceFixture })
   );

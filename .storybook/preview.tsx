@@ -57,14 +57,12 @@ const stubService: ChatService = {
   fetchModels: async () => ({ data: [], total: 0 }),
 };
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false } },
-});
-
 const preview: Preview = {
   decorators: [
     (Story) => {
-      queryClient.clear();
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
       return (
         <QueryClientProvider client={queryClient}>
           <ChatProvider
