@@ -3,29 +3,42 @@ import { expect, test } from '@playwright/test';
 const WORKSPACE_ID = 'test-workspace-01';
 const THREAD_ID = 'test-thread-01';
 
+const workspaceFixture = {
+  id: WORKSPACE_ID,
+  name: 'Test Workspace',
+  description: '',
+  isEnabled: true,
+  tags: [],
+  showSources: false,
+  dataSpaces: [],
+  favorited: false,
+  summary: '',
+  firstPrompt: '',
+  variables: {},
+  supportsFiles: false,
+};
+
 const workspacesResponse = {
-  data: [
-    {
-      id: WORKSPACE_ID,
-      name: 'Test Workspace',
-      description: '',
-      isEnabled: true,
-    },
-  ],
+  data: [workspaceFixture],
   total: 1,
 };
 
+const threadFixture = {
+  id: THREAD_ID,
+  name: 'Test Thread',
+  createdAt: '2024-01-01T00:00:00.000Z',
+  createdBy: 'Test User',
+  createdByUserId: 'test-user-01',
+  isFlowRunning: false,
+  lastUpdatedAt: '2024-01-01T00:00:00.000Z',
+  lastUpdatedByUserId: 'test-user-01',
+  totalMessages: 0,
+  favorited: false,
+  workSpaceId: WORKSPACE_ID,
+};
+
 const threadsResponse = {
-  data: [
-    {
-      id: THREAD_ID,
-      name: 'Test Thread',
-      lastMessageAt: new Date().toISOString(),
-      unreadCount: 0,
-      isFlowRunning: false,
-      isPinned: false,
-    },
-  ],
+  data: [threadFixture],
   total: 1,
 };
 
@@ -33,14 +46,19 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/workspaces', (route) =>
     route.fulfill({ json: workspacesResponse })
   );
+  // Must be registered before **/workspaces/** so it wins for message-list URLs
+  // (e.g. /workspaces/:id/messageThreads/:id/messages).
+  await page.route('**/messages', (route) =>
+    route.fulfill({ json: { data: [], total: 0 } })
+  );
   await page.route('**/workspaces/**', (route) =>
-    route.fulfill({ json: workspacesResponse.data[0] })
+    route.fulfill({ json: workspaceFixture })
   );
   await page.route('**/messagethreads', (route) =>
     route.fulfill({ json: threadsResponse })
   );
   await page.route('**/messagethreads/**', (route) =>
-    route.fulfill({ json: threadsResponse.data[0] })
+    route.fulfill({ json: threadFixture })
   );
 });
 
