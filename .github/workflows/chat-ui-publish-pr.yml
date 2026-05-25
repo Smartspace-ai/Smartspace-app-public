@@ -53,6 +53,11 @@ jobs:
           jq --arg v "${{ steps.ver.outputs.version }}" '.version = $v' package.json > p.json
           mv p.json package.json
 
+      - name: Rename package to personal npm scope (temporary — remove when @smartspace npm account is restored)
+        run: |
+          cd packages/chat-ui
+          jq '.name = "@sentuar/chat-ui"' package.json > p.json && mv p.json package.json
+
       - run: pnpm --filter @smartspace/chat-ui build
 
       - name: Publish pre-release to npmjs.com (tag=pr)
@@ -73,7 +78,7 @@ jobs:
               `## chat-ui pre-release published`,
               ``,
               '```bash',
-              `pnpm add @smartspace/chat-ui@${version}`,
+              `pnpm add @smartspace/chat-ui@npm:@sentuar/chat-ui@${version}`,
               '```',
               ``,
               `Version: \`${version}\` (dist-tag \`pr\`)`,

@@ -85,7 +85,7 @@ function ThreadRouteComponent() {
     if (prevRightOpenRef.current && !rightOpen && search.panel === 'comments') {
       navigate({
         to: '.',
-        search: (prev) => ({
+        search: (prev: ThreadRouteSearch) => ({
           ...prev,
           panel: undefined,
           focusMessageId: undefined,
@@ -99,7 +99,7 @@ function ThreadRouteComponent() {
   const closeRenameModal = () => {
     navigate({
       to: '.',
-      search: (prev) => ({
+      search: (prev: ThreadRouteSearch) => ({
         ...prev,
         modal: undefined,
         targetId: undefined,
