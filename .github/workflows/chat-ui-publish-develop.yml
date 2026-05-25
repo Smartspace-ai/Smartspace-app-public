@@ -52,6 +52,11 @@ jobs:
           jq --arg v "${{ steps.ver.outputs.version }}" '.version = $v' package.json > p.json
           mv p.json package.json
 
+      - name: Rename package to personal npm scope (temporary — remove when @smartspace npm account is restored)
+        run: |
+          cd packages/chat-ui
+          jq '.name = "@sentuar/chat-ui"' package.json > p.json && mv p.json package.json
+
       - run: pnpm --filter @smartspace/chat-ui build
 
       - name: Publish dev to npmjs.com (tag=dev)
@@ -77,10 +82,11 @@ jobs:
             -f event_type=chat-ui-published \
             -f "client_payload[tag]=dev" \
             -f "client_payload[version]=${{ steps.ver.outputs.version }}" \
-            -f "client_payload[target_branch]=develop"
+            -f "client_payload[target_branch]=develop" \
+            -f "client_payload[package_name]=@sentuar/chat-ui"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Summary
         run: |
-          echo "Published \`@smartspace/chat-ui@${{ steps.ver.outputs.version }}\` (dist-tag \`dev\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Published \`@sentuar/chat-ui@${{ steps.ver.outputs.version }}\` (dist-tag \`dev\`) — install as \`@smartspace/chat-ui@npm:@sentuar/chat-ui@${{ steps.ver.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
