@@ -1,7 +1,10 @@
 import { act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { renderHookWithChat } from '@/test/chatProviderHarness';
+import {
+  createFakeChatService,
+  renderHookWithChat,
+} from '@/test/chatProviderHarness';
 import {
   type Message,
   MessageValueType,
@@ -36,13 +39,7 @@ describe('useSendMessage merge-in-place reconciliation', () => {
     const sendMessage = vi.fn().mockResolvedValueOnce(realMessage);
     const { result, queryClient } = renderHookWithChat(() => useSendMessage(), {
       threadId: 't1',
-      service: {
-        sendMessage,
-      } as Parameters<typeof renderHookWithChat>[1] extends infer O
-        ? O extends { service?: infer S }
-          ? S
-          : never
-        : never,
+      service: createFakeChatService({ sendMessage }),
     });
 
     // Seed historical messages so we can verify they're preserved.
@@ -89,7 +86,7 @@ describe('useSendMessage merge-in-place reconciliation', () => {
     const sendMessage = vi.fn().mockResolvedValueOnce(sparseFromPost);
     const { result, queryClient } = renderHookWithChat(() => useSendMessage(), {
       threadId: 't1',
-      service: { sendMessage } as never,
+      service: createFakeChatService({ sendMessage }),
     });
 
     queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [
@@ -115,7 +112,7 @@ describe('useSendMessage merge-in-place reconciliation', () => {
     const sendMessage = vi.fn().mockRejectedValueOnce(new Error('boom'));
     const { result, queryClient } = renderHookWithChat(() => useSendMessage(), {
       threadId: 't1',
-      service: { sendMessage } as never,
+      service: createFakeChatService({ sendMessage }),
     });
 
     const m1 = baseMessage({ id: 'm1' });
@@ -139,6 +136,40 @@ describe('useSendMessage merge-in-place reconciliation', () => {
 });
 
 describe('useAddInputToMessage', () => {
+  it('applies the optimistic patch before the API call fires', async () => {
+    // mutationFn runs after onMutate — capture cache state inside mutationFn
+    // to prove the optimistic patch is already applied at that point.
+    let cacheAtCallTime: Message[] = [];
+    const serverMsg = baseMessage({ id: 'msg-1' });
+    const addInputToMessage = vi.fn(async () => {
+      cacheAtCallTime =
+        queryClient.getQueryData<Message[]>(messagesKeys.list('t1')) ?? [];
+      return serverMsg;
+    });
+
+    const { result, queryClient } = renderHookWithChat(
+      () => useAddInputToMessage(),
+      { threadId: 't1', service: createFakeChatService({ addInputToMessage }) }
+    );
+
+    queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [
+      baseMessage({ id: 'msg-1' }),
+    ]);
+
+    await act(async () => {
+      await result.current.addInputToMessageMutation.mutateAsync({
+        threadId: 't1',
+        messageId: 'msg-1',
+        name: 'rating',
+        value: 5,
+        channels: null,
+      });
+    });
+
+    expect(cacheAtCallTime[0].values).toHaveLength(2);
+    expect(cacheAtCallTime[0].values?.[1].name).toBe('rating');
+  });
+
   it('applies an optimistic value patch and replaces it with the server response on success', async () => {
     // The server returns the full updated message including the new value.
     const serverMessage = baseMessage({
@@ -162,7 +193,7 @@ describe('useAddInputToMessage', () => {
       () => useAddInputToMessage(),
       {
         threadId: 't1',
-        service: { addInputToMessage } as never,
+        service: createFakeChatService({ addInputToMessage }),
       }
     );
 
@@ -199,7 +230,7 @@ describe('useAddInputToMessage', () => {
       () => useAddInputToMessage(),
       {
         threadId: 't1',
-        service: { addInputToMessage } as never,
+        service: createFakeChatService({ addInputToMessage }),
       }
     );
 
@@ -249,7 +280,7 @@ describe('useAddInputToMessage', () => {
       () => useAddInputToMessage(),
       {
         threadId: 't1',
-        service: { addInputToMessage } as never,
+        service: createFakeChatService({ addInputToMessage }),
       }
     );
 

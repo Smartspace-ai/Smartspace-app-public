@@ -6,9 +6,8 @@
  * factory without starting Milkdown by mocking `$node` and `$inputRule`.
  */
 
-import { describe, expect, it, vi } from 'vitest';
-
 import type { NodeSerializerSpec } from '@milkdown/transformer';
+import { describe, expect, it, vi } from 'vitest';
 
 // Stub Milkdown's $node so it calls the factory immediately (with null ctx)
 // and returns an object with the resulting schema.  This lets us extract
