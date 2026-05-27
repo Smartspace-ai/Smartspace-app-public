@@ -10,53 +10,38 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # required for npm OIDC trusted publishing
 
 concurrency:
   group: chat-ui-publish-main
   cancel-in-progress: false
 
 jobs:
-  publish:
-    if: github.repository == 'Smartspace-ai/Smartspace-app-public'
+  compute-version:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # need tag history for git describe
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-          registry-url: 'https://registry.npmjs.org'
-
-      - run: pnpm install --frozen-lockfile
-
+          fetch-depth: 0
       - name: Compute main version
         id: ver
         run: |
           BASE_TAG=$(git describe --tags --match='v*' --abbrev=0 2>/dev/null || echo 'v0.0.0')
           BASE="${BASE_TAG#v}"
-          VERSION="${BASE}-main.${GITHUB_SHA:0:7}"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=${BASE}-main.${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
 
-      - name: Stamp version into package.json
-        run: |
-          cd packages/chat-ui
-          jq --arg v "${{ steps.ver.outputs.version }}" '.version = $v' package.json > p.json
-          mv p.json package.json
+  publish:
+    needs: compute-version
+    uses: ./.github/workflows/_chat-ui-publish-core.yml
+    with:
+      version: ${{ needs.compute-version.outputs.version }}
+      tag: main
 
-      - run: pnpm --filter @smartspace/chat-ui build
-
-      - name: Publish main to npmjs.com (tag=main)
-        run: |
-          cd packages/chat-ui
-          pnpm publish --tag main --access public --no-git-checks --provenance
-
+  notify:
+    needs: [compute-version, publish]
+    runs-on: ubuntu-latest
+    steps:
       - name: Generate CI_DISPATCH_APP token
         id: app-token
         uses: actions/create-github-app-token@v1
@@ -72,11 +57,11 @@ jobs:
             --method POST \
             -f event_type=chat-ui-published \
             -f "client_payload[tag]=main" \
-            -f "client_payload[version]=${{ steps.ver.outputs.version }}" \
+            -f "client_payload[version]=${{ needs.compute-version.outputs.version }}" \
             -f "client_payload[target_branch]=main"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Summary
         run: |
-          echo "Published \`@smartspace/chat-ui@${{ steps.ver.outputs.version }}\` (dist-tag \`main\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Published \`@smartspace/chat-ui@${{ needs.compute-version.outputs.version }}\` (dist-tag \`main\`)" >> "$GITHUB_STEP_SUMMARY"

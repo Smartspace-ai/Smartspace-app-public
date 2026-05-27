@@ -10,34 +10,21 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # required for npm OIDC trusted publishing
 
 concurrency:
   group: chat-ui-publish-release-${{ github.event.release.tag_name }}
   cancel-in-progress: false
 
 jobs:
-  publish:
+  compute-version:
     if: |
       github.repository == 'Smartspace-ai/Smartspace-app-public' &&
       startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.release.tag_name }}
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-          registry-url: 'https://registry.npmjs.org'
-
-      - run: pnpm install --frozen-lockfile
-
       - name: Extract version from release tag
         id: ver
         run: |
@@ -59,19 +46,17 @@ jobs:
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Stamp version into package.json
-        run: |
-          cd packages/chat-ui
-          jq --arg v "${{ steps.ver.outputs.version }}" '.version = $v' package.json > p.json
-          mv p.json package.json
+  publish:
+    needs: compute-version
+    uses: ./.github/workflows/_chat-ui-publish-core.yml
+    with:
+      version: ${{ needs.compute-version.outputs.version }}
+      tag: ${{ needs.compute-version.outputs.tag }}
 
-      - run: pnpm --filter @smartspace/chat-ui build
-
-      - name: Publish release to npmjs.com
-        run: |
-          cd packages/chat-ui
-          pnpm publish --tag ${{ steps.tag.outputs.tag }} --access public --no-git-checks --provenance
-
+  summary:
+    needs: [compute-version, publish]
+    runs-on: ubuntu-latest
+    steps:
       - name: Summary
         run: |
-          echo "Published \`@smartspace/chat-ui@${{ steps.ver.outputs.version }}\` (dist-tag \`${{ steps.tag.outputs.tag }}\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Published \`@smartspace/chat-ui@${{ needs.compute-version.outputs.version }}\` (dist-tag \`${{ needs.compute-version.outputs.tag }}\`)" >> "$GITHUB_STEP_SUMMARY"
