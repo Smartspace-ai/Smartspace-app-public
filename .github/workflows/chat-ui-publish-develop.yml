@@ -33,7 +33,7 @@ jobs:
 
   publish:
     needs: compute-version
-    uses: ./.github/workflows/_chat-ui-publish-core.yml
+    uses: Smartspace-ai/ci-workflows/.github/workflows/shared-chat-ui-publish.yml@main
     with:
       version: ${{ needs.compute-version.outputs.version }}
       tag: dev
