@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # required for npm OIDC trusted publishing
 
 concurrency:
   group: chat-ui-publish-main
@@ -54,9 +55,7 @@ jobs:
       - name: Publish main to npmjs.com (tag=main)
         run: |
           cd packages/chat-ui
-          pnpm publish --tag main --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          pnpm publish --tag main --access public --no-git-checks --provenance
 
       - name: Generate CI_DISPATCH_APP token
         id: app-token
