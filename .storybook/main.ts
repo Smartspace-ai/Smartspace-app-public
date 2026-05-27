@@ -2,37 +2,46 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 
 import type { StorybookConfig } from '@storybook/react-vite';
+import type { Plugin } from 'vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const chatUiSrc = path.resolve(__dirname, '../packages/chat-ui/src');
+const appSrc = path.resolve(__dirname, '../src');
+
+/**
+ * Routes `@/` imports to the correct source root based on the importer's
+ * location. Files inside packages/chat-ui/src/ resolve `@/` to that package's
+ * own source root; everything else (app stories in src/) resolves to src/.
+ *
+ * A plain alias can't do this — it has no knowledge of the importer path —
+ * so we use a Vite plugin resolveId hook instead.
+ */
+function atAliasRouter(): Plugin {
+  return {
+    name: 'storybook-at-alias-router',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (!source.startsWith('@/')) return null;
+      const subpath = source.slice(2); // strip '@/'
+      const norm = (importer ?? '').replace(/\\/g, '/');
+      const base = norm.includes('/packages/chat-ui/src/') ? chatUiSrc : appSrc;
+      return path.resolve(base, subpath);
+    },
+  };
+}
 
 const config: StorybookConfig = {
   stories: [
     '../src/**/*.stories.@(ts|tsx)',
     '../packages/chat-ui/src/**/*.stories.@(ts|tsx)',
   ],
-  addons: [
-    // Essentials (controls, actions, backgrounds, viewport, toolbars, docs)
-    // and interactions are bundled into the core storybook package in v10.
-    // Only list third-party addons that need explicit registration.
-    '@storybook/addon-a11y',
-  ],
+  addons: ['@storybook/addon-a11y'],
   framework: {
     name: '@storybook/react-vite',
     options: {},
   },
   viteFinal(baseConfig) {
-    /**
-     * Storybook processes chat-ui package sources directly (not via dist).
-     * The package uses `@/` aliased to `packages/chat-ui/src/`, but the
-     * root vite config maps `@/` to `src/`.  We override it here so package
-     * internals resolve correctly.
-     *
-     * App stories (src/**) must avoid the `@/` alias and instead use
-     * `@smartspace/*` package imports or relative paths.
-     *
-     * Also drop the TanStack Router plugin — it is only needed in the app
-     * dev-server context, not in Storybook.
-     */
     const filteredPlugins = (baseConfig.plugins ?? []).filter((plugin) => {
       if (!plugin || typeof plugin !== 'object' || Array.isArray(plugin)) {
         return true;
@@ -41,49 +50,39 @@ const config: StorybookConfig = {
       return p.name !== 'vite-plugin-tanstack-router';
     });
 
-    // Normalise existing aliases to array form so we can prepend our override.
-    // Vite resolves array aliases in order (first match wins), while object
-    // aliases use last-key-wins semantics — array format is the only safe way
-    // to guarantee our '@/' → packages/chat-ui/src/ override takes precedence
-    // over the nxViteTsPaths entry that maps '@/' → src/.
-    const existingAliases = Array.isArray(baseConfig.resolve?.alias)
-      ? baseConfig.resolve.alias
-      : Object.entries(baseConfig.resolve?.alias ?? {}).map(
-          ([find, replacement]) => ({
-            find,
-            replacement,
-          })
-        );
+    // Normalise existing aliases to array form. We strip out any '@' entry
+    // from nxViteTsPaths because atAliasRouter() handles @/ routing instead.
+    const existingAliases = (
+      Array.isArray(baseConfig.resolve?.alias)
+        ? baseConfig.resolve.alias
+        : Object.entries(baseConfig.resolve?.alias ?? {}).map(
+            ([find, replacement]) => ({ find, replacement })
+          )
+    ).filter((a) => {
+      const f = typeof a === 'object' && 'find' in a ? a.find : null;
+      return f !== '@' && f !== '@/';
+    });
 
     return {
       ...baseConfig,
-      plugins: filteredPlugins,
+      plugins: [
+        ...filteredPlugins,
+        // Must come after Storybook's own plugins so we intercept first.
+        atAliasRouter(),
+      ],
       resolve: {
         ...baseConfig.resolve,
         alias: [
-          // Both aliases point at the same source tree so all modules share
-          // a single React Context instance — without this, ChatProvider
-          // imported from @smartspace/chat-ui (dist) creates a different
-          // context object than useChatContext imported via @/ (source),
-          // causing "Chat hook used outside <ChatProvider>" errors.
+          // Redirect @smartspace/chat-ui imports to source so all modules
+          // share a single React Context instance (prevents "hook used outside
+          // ChatProvider" errors caused by dist vs source context mismatch).
           {
             find: '@smartspace/chat-ui/styles.css',
-            replacement: path.resolve(
-              __dirname,
-              '../packages/chat-ui/src/styles.css'
-            ),
+            replacement: path.resolve(chatUiSrc, 'styles.css'),
           },
           {
             find: '@smartspace/chat-ui',
-            replacement: path.resolve(
-              __dirname,
-              '../packages/chat-ui/src/index.ts'
-            ),
-          },
-          // '@/' → packages/chat-ui/src/ for chat-ui internal imports.
-          {
-            find: '@',
-            replacement: path.resolve(__dirname, '../packages/chat-ui/src'),
+            replacement: path.resolve(chatUiSrc, 'index.ts'),
           },
           ...existingAliases,
         ],
