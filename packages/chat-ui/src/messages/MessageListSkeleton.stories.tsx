@@ -5,10 +5,26 @@ import { MessageListSkeleton } from './MessageList.skeleton';
 const meta: Meta<typeof MessageListSkeleton> = {
   title: 'Messages/MessageListSkeleton',
   component: MessageListSkeleton,
-  parameters: { layout: 'padded' },
+  parameters: { layout: 'fullscreen' },
 };
 
 export default meta;
 type Story = StoryObj<typeof MessageListSkeleton>;
 
-export const Default: Story = {};
+/** Loading state shown while the message list fetches — fills the chat panel. */
+export const Default: Story = {
+  decorators: [
+    (Story) => (
+      <div
+        style={{
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
+};
