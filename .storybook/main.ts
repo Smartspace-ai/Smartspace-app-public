@@ -61,8 +61,19 @@ const config: StorybookConfig = {
       resolve: {
         ...baseConfig.resolve,
         alias: [
-          // First match wins — '@/' resolves to packages/chat-ui/src/ for
-          // chat-ui internal imports instead of the app's src/ directory.
+          // Both aliases point at the same source tree so all modules share
+          // a single React Context instance — without this, ChatProvider
+          // imported from @smartspace/chat-ui (dist) creates a different
+          // context object than useChatContext imported via @/ (source),
+          // causing "Chat hook used outside <ChatProvider>" errors.
+          {
+            find: '@smartspace/chat-ui',
+            replacement: path.resolve(
+              __dirname,
+              '../packages/chat-ui/src/index.ts'
+            ),
+          },
+          // '@/' → packages/chat-ui/src/ for chat-ui internal imports.
           {
             find: '@',
             replacement: path.resolve(__dirname, '../packages/chat-ui/src'),
