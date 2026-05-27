@@ -5,6 +5,7 @@ import React from 'react';
 import { ChatProvider, type ChatService } from '@smartspace/chat-ui';
 
 import '@smartspace/chat-ui/styles.css';
+import '../src/styles.scss';
 
 /**
  * Minimal stub ChatService — returns empty/inert data for every call.
@@ -71,7 +72,9 @@ const preview: Preview = {
             threadId="story-thread"
             identity={{ userId: 'story-user', displayName: 'Story User' }}
           >
-            <Story />
+            <div className="bg-background text-foreground">
+              <Story />
+            </div>
           </ChatProvider>
         </QueryClientProvider>
       );
@@ -79,9 +82,6 @@ const preview: Preview = {
   ],
   parameters: {
     layout: 'centered',
-    backgrounds: {
-      default: 'light',
-    },
   },
 };
 
