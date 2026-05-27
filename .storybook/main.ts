@@ -67,6 +67,13 @@ const config: StorybookConfig = {
           // context object than useChatContext imported via @/ (source),
           // causing "Chat hook used outside <ChatProvider>" errors.
           {
+            find: '@smartspace/chat-ui/styles.css',
+            replacement: path.resolve(
+              __dirname,
+              '../packages/chat-ui/src/styles.css'
+            ),
+          },
+          {
             find: '@smartspace/chat-ui',
             replacement: path.resolve(
               __dirname,
