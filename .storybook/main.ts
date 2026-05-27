@@ -1,6 +1,9 @@
+import { fileURLToPath } from 'url';
 import path from 'path';
 
 import type { StorybookConfig } from '@storybook/react-vite';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
   stories: [
@@ -38,25 +41,34 @@ const config: StorybookConfig = {
       return p.name !== 'vite-plugin-tanstack-router';
     });
 
-    // Existing aliases from nxViteTsPaths (and any others injected by Storybook)
-    const existingAlias =
-      typeof baseConfig.resolve?.alias === 'object' &&
-      !Array.isArray(baseConfig.resolve.alias)
-        ? baseConfig.resolve.alias
-        : {};
+    // Normalise existing aliases to array form so we can prepend our override.
+    // Vite resolves array aliases in order (first match wins), while object
+    // aliases use last-key-wins semantics — array format is the only safe way
+    // to guarantee our '@/' → packages/chat-ui/src/ override takes precedence
+    // over the nxViteTsPaths entry that maps '@/' → src/.
+    const existingAliases = Array.isArray(baseConfig.resolve?.alias)
+      ? baseConfig.resolve.alias
+      : Object.entries(baseConfig.resolve?.alias ?? {}).map(
+          ([find, replacement]) => ({
+            find,
+            replacement,
+          })
+        );
 
     return {
       ...baseConfig,
       plugins: filteredPlugins,
       resolve: {
         ...baseConfig.resolve,
-        alias: {
-          // Put our override FIRST so Vite picks it over the nxViteTsPaths entry.
-          // `@/` → packages/chat-ui/src/ for chat-ui internal imports.
-          '@': path.resolve(__dirname, '../packages/chat-ui/src'),
-          // Keep all other aliases intact.
-          ...existingAlias,
-        },
+        alias: [
+          // First match wins — '@/' resolves to packages/chat-ui/src/ for
+          // chat-ui internal imports instead of the app's src/ directory.
+          {
+            find: '@',
+            replacement: path.resolve(__dirname, '../packages/chat-ui/src'),
+          },
+          ...existingAliases,
+        ],
       },
     };
   },

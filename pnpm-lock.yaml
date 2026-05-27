@@ -216,6 +216,9 @@ importers:
       '@nx/workspace':
         specifier: 22.6.5
         version: 22.6.5(@swc-node/register@1.11.1(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@swc/core@1.15.30(@swc/helpers@0.5.21))(@swc/types@0.1.26)(typescript@5.5.4))(@swc/core@1.15.30(@swc/helpers@0.5.21))
+      '@oxc-parser/binding-win32-x64-msvc':
+        specifier: 0.127.0
+        version: 0.127.0
       '@playwright/test':
         specifier: 1.60.0
         version: 1.60.0
@@ -12220,8 +12223,7 @@ snapshots:
   '@oxc-parser/binding-win32-ia32-msvc@0.127.0':
     optional: true
 
-  '@oxc-parser/binding-win32-x64-msvc@0.127.0':
-    optional: true
+  '@oxc-parser/binding-win32-x64-msvc@0.127.0': {}
 
   '@oxc-project/types@0.127.0': {}
 
