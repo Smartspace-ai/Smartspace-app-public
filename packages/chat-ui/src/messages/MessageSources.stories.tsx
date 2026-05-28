@@ -6,7 +6,6 @@ import {
 } from './MessageSources';
 import { MessageResponseSourceType } from '../domains/messages/enums';
 
-
 const meta: Meta<typeof ChatMessageSources> = {
   title: 'Messages/MessageSources',
   component: ChatMessageSources,
