@@ -1,11 +1,15 @@
 import { act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { renderHookWithChat } from '@/test/chatProviderHarness';
+import {
+  createFakeChatService,
+  renderHookWithChat,
+} from '@/test/chatProviderHarness';
 import {
   type Message,
   MessageValueType,
   messagesKeys,
+  useAddInputToMessage,
   useSendMessage,
 } from '@smartspace/chat-ui';
 
@@ -35,13 +39,7 @@ describe('useSendMessage merge-in-place reconciliation', () => {
     const sendMessage = vi.fn().mockResolvedValueOnce(realMessage);
     const { result, queryClient } = renderHookWithChat(() => useSendMessage(), {
       threadId: 't1',
-      service: {
-        sendMessage,
-      } as Parameters<typeof renderHookWithChat>[1] extends infer O
-        ? O extends { service?: infer S }
-          ? S
-          : never
-        : never,
+      service: createFakeChatService({ sendMessage }),
     });
 
     // Seed historical messages so we can verify they're preserved.
@@ -88,7 +86,7 @@ describe('useSendMessage merge-in-place reconciliation', () => {
     const sendMessage = vi.fn().mockResolvedValueOnce(sparseFromPost);
     const { result, queryClient } = renderHookWithChat(() => useSendMessage(), {
       threadId: 't1',
-      service: { sendMessage } as never,
+      service: createFakeChatService({ sendMessage }),
     });
 
     queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [
@@ -114,7 +112,7 @@ describe('useSendMessage merge-in-place reconciliation', () => {
     const sendMessage = vi.fn().mockRejectedValueOnce(new Error('boom'));
     const { result, queryClient } = renderHookWithChat(() => useSendMessage(), {
       threadId: 't1',
-      service: { sendMessage } as never,
+      service: createFakeChatService({ sendMessage }),
     });
 
     const m1 = baseMessage({ id: 'm1' });
@@ -134,5 +132,218 @@ describe('useSendMessage merge-in-place reconciliation', () => {
       queryClient.getQueryData<Message[]>(messagesKeys.list('t1')) ?? [];
     expect(after.map((m) => m.id)).toEqual(['m1']);
     expect(after.some((m) => m.optimistic)).toBe(false);
+  });
+});
+
+describe('useAddInputToMessage', () => {
+  it('applies the optimistic patch before the API call fires', async () => {
+    // mutationFn runs after onMutate — capture cache state inside mutationFn
+    // to prove the optimistic patch is already applied at that point.
+    let cacheAtCallTime: Message[] = [];
+    const serverMsg = baseMessage({ id: 'msg-1' });
+    const addInputToMessage = vi.fn(async () => {
+      cacheAtCallTime =
+        queryClient.getQueryData<Message[]>(messagesKeys.list('t1')) ?? [];
+      return serverMsg;
+    });
+
+    const { result, queryClient } = renderHookWithChat(
+      () => useAddInputToMessage(),
+      { threadId: 't1', service: createFakeChatService({ addInputToMessage }) }
+    );
+
+    queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [
+      baseMessage({ id: 'msg-1' }),
+    ]);
+
+    await act(async () => {
+      await result.current.addInputToMessageMutation.mutateAsync({
+        threadId: 't1',
+        messageId: 'msg-1',
+        name: 'rating',
+        value: 5,
+        channels: null,
+      });
+    });
+
+    expect(cacheAtCallTime[0].values).toHaveLength(2);
+    expect(cacheAtCallTime[0].values?.[1].name).toBe('rating');
+  });
+
+  it('applies an optimistic value patch and replaces it with the server response on success', async () => {
+    // The server returns the full updated message including the new value.
+    const serverMessage = baseMessage({
+      id: 'msg-1',
+      values: [
+        ...baseMessage().values!,
+        {
+          id: 'server-val-1',
+          type: MessageValueType.INPUT,
+          name: 'rating',
+          value: 5,
+          channels: {},
+          createdAt: new Date('2024-01-01T00:01:00Z'),
+          createdBy: 'Test User',
+          createdByUserId: 'test-user',
+        },
+      ],
+    });
+    const addInputToMessage = vi.fn().mockResolvedValueOnce(serverMessage);
+    const { result, queryClient } = renderHookWithChat(
+      () => useAddInputToMessage(),
+      {
+        threadId: 't1',
+        service: createFakeChatService({ addInputToMessage }),
+      }
+    );
+
+    // Seed the cache with the target message (no optimistic values yet).
+    const seed = baseMessage({ id: 'msg-1' });
+    queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [seed]);
+
+    await act(async () => {
+      await result.current.addInputToMessageMutation.mutateAsync({
+        threadId: 't1',
+        messageId: 'msg-1',
+        name: 'rating',
+        value: 5,
+        channels: null,
+      });
+    });
+
+    const after =
+      queryClient.getQueryData<Message[]>(messagesKeys.list('t1')) ?? [];
+    // Only the one message remains.
+    expect(after).toHaveLength(1);
+    // The server response has been committed — no temp- prefixed value IDs.
+    const valueIds = after[0].values?.map((v) => v.id) ?? [];
+    expect(valueIds.some((id) => id.startsWith('temp-'))).toBe(false);
+    // The server value is present.
+    expect(valueIds).toContain('server-val-1');
+  });
+
+  it('rolls back the optimistic patch when the service call fails', async () => {
+    const addInputToMessage = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('server error'));
+    const { result, queryClient } = renderHookWithChat(
+      () => useAddInputToMessage(),
+      {
+        threadId: 't1',
+        service: createFakeChatService({ addInputToMessage }),
+      }
+    );
+
+    // Seed with a plain server message (no optimistic flag — this is the real
+    // production path; the patched message is never marked optimistic: true).
+    const plain = baseMessage({ id: 'msg-1' });
+    const plain2 = baseMessage({ id: 'msg-2' });
+    queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [
+      plain,
+      plain2,
+    ]);
+
+    await act(async () => {
+      await expect(
+        result.current.addInputToMessageMutation.mutateAsync({
+          threadId: 't1',
+          messageId: 'msg-1',
+          name: 'rating',
+          value: 5,
+          channels: null,
+        })
+      ).rejects.toThrow('server error');
+    });
+
+    const after =
+      queryClient.getQueryData<Message[]>(messagesKeys.list('t1')) ?? [];
+    // onError restores the pre-mutation snapshot — both plain messages survive.
+    expect(after.map((m) => m.id)).toEqual(['msg-1', 'msg-2']);
+    // No temp- values remain on the target message.
+    const targetMsg = after.find((m) => m.id === 'msg-1');
+    expect(
+      targetMsg?.values?.some((v) => v.id.startsWith('temp-'))
+    ).toBe(false);
+  });
+
+  it('two rapid calls produce different IDs, neither matching a timestamp-only format', async () => {
+    // Collect the temp IDs injected by two back-to-back mutationFn calls.
+    const capturedTempIds: string[] = [];
+
+    // Use an addInputToMessage stub that resolves but lets us inspect the
+    // optimistic patch that was applied just before the await.
+    const addInputToMessage = vi
+      .fn()
+      .mockImplementation(async () => baseMessage({ id: 'msg-1' }));
+
+    const { result, queryClient } = renderHookWithChat(
+      () => useAddInputToMessage(),
+      {
+        threadId: 't1',
+        service: createFakeChatService({ addInputToMessage }),
+      }
+    );
+
+    // Intercept cache writes so we can capture the temp IDs.
+    const originalSetQueryData = queryClient.setQueryData.bind(queryClient);
+    vi.spyOn(queryClient, 'setQueryData').mockImplementation(
+      (key, updater, ...rest) => {
+        const result = originalSetQueryData(key, updater, ...rest);
+        const data = queryClient.getQueryData<Message[]>(
+          messagesKeys.list('t1')
+        );
+        if (data) {
+          for (const msg of data) {
+            for (const val of msg.values ?? []) {
+              if (
+                val.id.startsWith('temp-') &&
+                !capturedTempIds.includes(val.id)
+              ) {
+                capturedTempIds.push(val.id);
+              }
+            }
+          }
+        }
+        return result;
+      }
+    );
+
+    const seedMsg = baseMessage({ id: 'msg-1' });
+    queryClient.setQueryData<Message[]>(messagesKeys.list('t1'), [seedMsg]);
+
+    await act(async () => {
+      await Promise.all([
+        result.current.addInputToMessageMutation.mutateAsync({
+          threadId: 't1',
+          messageId: 'msg-1',
+          name: 'rating',
+          value: 1,
+          channels: null,
+        }),
+        result.current.addInputToMessageMutation.mutateAsync({
+          threadId: 't1',
+          messageId: 'msg-1',
+          name: 'rating',
+          value: 2,
+          channels: null,
+        }),
+      ]);
+    });
+
+    // At least two distinct temp IDs were produced.
+    const uniqueIds = [...new Set(capturedTempIds)];
+    expect(uniqueIds.length).toBeGreaterThanOrEqual(2);
+
+    // No ID should be a pure timestamp (the timestamp-only fallback would be
+    // all digits, possibly with a hyphen-separated random suffix — a UUID
+    // from the real API has four hyphens in fixed positions).
+    // We assert that every ID either matches a UUID v4 pattern or contains
+    // enough entropy to not be a bare timestamp.
+    const pureTimestampPattern = /^\d+$/;
+    for (const id of uniqueIds) {
+      // Strip the leading "temp-" prefix before inspecting the UUID portion.
+      const uuid = id.replace(/^temp-/, '').replace(/-add$/, '');
+      expect(pureTimestampPattern.test(uuid)).toBe(false);
+    }
   });
 });

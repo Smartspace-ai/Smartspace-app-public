@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 
+import { randomUUID } from '@smartspace/chat-ui';
+
 import type { Comment, MentionUser } from './model';
 import { commentsKeys } from './queryKeys';
 import { addComment } from './service';
@@ -40,7 +42,7 @@ export function useAddComment(threadId: string) {
       const previous = queryClient.getQueryData<Comment[]>(
         commentsKeys.list(threadId)
       );
-      const tempId = `temp-${crypto.randomUUID()}`;
+      const tempId = `temp-${randomUUID()}`;
       const optimisticComment: Comment = {
         id: tempId,
         content,

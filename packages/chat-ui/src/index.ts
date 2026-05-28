@@ -90,6 +90,9 @@ export {
   unmarkDraftThreadId,
 } from './shared/utils/threadId';
 
+// Safe crypto.randomUUID() wrapper with environment fallback.
+export { randomUUID } from './shared/utils/randomUUID';
+
 // Date + photo helpers consumers reuse for app-side mappers/schemas/UI.
 export { DateFromApi, utcDate } from './shared/utils/dateFromApi';
 export {
