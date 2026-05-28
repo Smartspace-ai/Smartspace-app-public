@@ -70,9 +70,10 @@ const config: StorybookConfig = {
     return {
       ...baseConfig,
       plugins: [
-        ...filteredPlugins,
-        // Must come after Storybook's own plugins so we intercept first.
+        // Must be first so it wins over nxViteTsPaths which also has
+        // enforce: 'pre' and would otherwise resolve @/ → src/ for all files.
         atAliasRouter(),
+        ...filteredPlugins,
       ],
       resolve: {
         ...baseConfig.resolve,
