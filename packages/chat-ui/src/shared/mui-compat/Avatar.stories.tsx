@@ -4,7 +4,6 @@ import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 
 const meta: Meta = {
   title: 'Primitives/Avatar',
-  parameters: { layout: 'centered' },
 };
 
 export default meta;

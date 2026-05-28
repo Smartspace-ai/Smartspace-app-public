@@ -5,7 +5,6 @@ import { Button } from './button';
 const meta: Meta<typeof Button> = {
   title: 'Primitives/Button',
   component: Button,
-  parameters: { layout: 'centered' },
   argTypes: {
     variant: {
       control: 'select',

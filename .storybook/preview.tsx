@@ -55,12 +55,13 @@ const stubService: ChatService = {
 };
 
 /**
- * Global shell — wraps every story in the chat column background so
- * components render with realistic colours without any per-story wrapper code.
+ * Global shell — wraps every story in a realistic chat-column container.
  *
- * Stories that need fullscreen layout (e.g. PageSkeleton, MessageComposer)
- * set `parameters: { layout: 'fullscreen' }` — Storybook removes the canvas
- * padding automatically, and the shell expands to fill the viewport.
+ * Non-fullscreen stories: centred, max 760px wide, with the same soft
+ * background gradient the real chat column uses.
+ *
+ * Fullscreen stories (PageSkeleton, MessageComposer etc.) set
+ * `parameters: { layout: 'fullscreen' }` and get a full-viewport container.
  */
 function ChatShell({
   children,
@@ -69,13 +70,17 @@ function ChatShell({
   children: React.ReactNode;
   fullscreen: boolean;
 }) {
+  if (fullscreen) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-b from-background from-10% via-muted/20 to-muted/40 text-foreground flex flex-col">
+        {children}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`bg-gradient-to-b from-background from-10% to-background/90 text-foreground ${
-        fullscreen ? 'min-h-screen w-full' : 'min-h-[200px] p-6'
-      }`}
-    >
-      {children}
+    <div className="min-h-screen w-full bg-gradient-to-b from-background from-10% via-muted/20 to-muted/40 text-foreground py-8">
+      <div className="max-w-[760px] mx-auto px-6">{children}</div>
     </div>
   );
 }
@@ -104,7 +109,7 @@ const preview: Preview = {
     },
   ],
   parameters: {
-    layout: 'padded',
+    layout: 'fullscreen',
   },
 };
 
