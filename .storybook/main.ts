@@ -21,12 +21,16 @@ function atAliasRouter(): Plugin {
   return {
     name: 'storybook-at-alias-router',
     enforce: 'pre',
-    resolveId(source, importer) {
+    async resolveId(source, importer) {
       if (!source.startsWith('@/')) return null;
       const subpath = source.slice(2); // strip '@/'
       const norm = (importer ?? '').replace(/\\/g, '/');
       const base = norm.includes('/packages/chat-ui/src/') ? chatUiSrc : appSrc;
-      return path.resolve(base, subpath);
+      // Delegate back into Vite's full resolution pipeline so it handles
+      // extension appending (.tsx/.ts) and directory index lookup (index.ts).
+      return this.resolve(path.resolve(base, subpath), importer, {
+        skipSelf: true,
+      });
     },
   };
 }
