@@ -7,10 +7,6 @@ import { ChatProvider, type ChatService } from '@smartspace/chat-ui';
 import '@smartspace/chat-ui/styles.css';
 import '../src/styles.scss';
 
-/**
- * Minimal stub ChatService — returns empty/inert data for every call.
- * Stories that need real service behaviour should override via decorators.
- */
 const stubService: ChatService = {
   fetchMessages: async () => [],
   sendMessage: async () => {
@@ -58,12 +54,39 @@ const stubService: ChatService = {
   fetchModels: async () => ({ data: [], total: 0 }),
 };
 
+/**
+ * Global shell — wraps every story in the chat column background so
+ * components render with realistic colours without any per-story wrapper code.
+ *
+ * Stories that need fullscreen layout (e.g. PageSkeleton, MessageComposer)
+ * set `parameters: { layout: 'fullscreen' }` — Storybook removes the canvas
+ * padding automatically, and the shell expands to fill the viewport.
+ */
+function ChatShell({
+  children,
+  fullscreen,
+}: {
+  children: React.ReactNode;
+  fullscreen: boolean;
+}) {
+  return (
+    <div
+      className={`bg-gradient-to-b from-background from-10% to-background/90 text-foreground ${
+        fullscreen ? 'min-h-screen w-full' : 'min-h-[200px] p-6'
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
 const preview: Preview = {
   decorators: [
-    (Story) => {
+    (Story, context) => {
       const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });
+      const fullscreen = context.parameters?.layout === 'fullscreen';
       return (
         <QueryClientProvider client={queryClient}>
           <ChatProvider
@@ -72,16 +95,16 @@ const preview: Preview = {
             threadId="story-thread"
             identity={{ userId: 'story-user', displayName: 'Story User' }}
           >
-            <div className="bg-background text-foreground">
+            <ChatShell fullscreen={fullscreen}>
               <Story />
-            </div>
+            </ChatShell>
           </ChatProvider>
         </QueryClientProvider>
       );
     },
   ],
   parameters: {
-    layout: 'centered',
+    layout: 'padded',
   },
 };
 
