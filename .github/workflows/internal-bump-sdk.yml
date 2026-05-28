@@ -58,37 +58,26 @@ jobs:
         env:
           NEW_VERSION: ${{ github.event.client_payload.version }}
           CHANNEL: ${{ github.event.client_payload.tag }}
-          PKG_NAME: ${{ github.event.client_payload.package_name }}
         run: |
-          # Determine whether we're installing from the temp personal scope or
-          # the real @smartspace scope. When package_name is set (e.g.
-          # @sentuar/api-client) use an npm alias so imports stay @smartspace/*.
-          if [ -n "$PKG_NAME" ] && [ "$PKG_NAME" != "@smartspace/api-client" ]; then
-            pnpm add --workspace-root --save-exact "@smartspace/api-client@npm:${PKG_NAME}@${NEW_VERSION}"
-            # Do NOT restore the channel literal — @sentuar/* doesn't have a
-            # dev/main dist-tag, so the alias spec must remain in package.json.
-            pnpm install --no-frozen-lockfile
-          else
-            # Pin the exact resolved version. This forces pnpm to refresh the
-            # lockfile entry — the literal "dev"/"main" tag spec doesn't trigger
-            # re-resolution on its own once a version is locked.
-            # --workspace-root: this repo is a pnpm workspace; pnpm refuses to
-            # add deps to the root without it.
-            pnpm add --workspace-root --save-exact "@smartspace/api-client@${NEW_VERSION}"
+          # Pin the exact resolved version. This forces pnpm to refresh the
+          # lockfile entry — the literal "dev"/"main" tag spec doesn't trigger
+          # re-resolution on its own once a version is locked.
+          # --workspace-root: this repo is a pnpm workspace; pnpm refuses to
+          # add deps to the root without it.
+          pnpm add --workspace-root --save-exact "@smartspace/api-client@${NEW_VERSION}"
 
-            # Revert the package.json spec back to the channel literal so the
-            # existing check-package-json-channel.yml swap workflow keeps working.
-            node -e "
-              const fs = require('fs');
-              const p = JSON.parse(fs.readFileSync('package.json','utf8'));
-              p.dependencies['@smartspace/api-client'] = process.env.CHANNEL;
-              fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
-            "
+          # Revert the package.json spec back to the channel literal so the
+          # existing check-package-json-channel.yml swap workflow keeps working.
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json','utf8'));
+            p.dependencies['@smartspace/api-client'] = process.env.CHANNEL;
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          "
 
-            # Resync the lockfile spec field to the literal tag. Resolved version
-            # is unchanged, so this is fast.
-            pnpm install --no-frozen-lockfile
-          fi
+          # Resync the lockfile spec field to the literal tag. Resolved version
+          # is unchanged, so this is fast.
+          pnpm install --no-frozen-lockfile
 
       - name: Detect changes and validate scope
         id: diff

@@ -6,7 +6,7 @@ import { handleTrailingSlash } from '@/platform/auth/msalConfig';
 
 import { useTeams } from '@/app/providers';
 
-import { useActiveUser } from '@/domains/users/use-active-user';
+import { useActiveUser } from '@/domains/users';
 
 import {
   Avatar,

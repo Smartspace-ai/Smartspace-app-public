@@ -6,6 +6,8 @@ export type Variables = Record<
 
 export type MentionUser = {
   id: string;
+  /** AppUser id (the principal id used by thread-membership endpoints). */
+  userId: string;
   displayName: string;
   initials: string; // always computed, never null/undefined in the model
 };
