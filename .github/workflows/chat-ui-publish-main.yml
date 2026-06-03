@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # OIDC trusted publishing for @smartspace/chat-ui (shared-chat-ui-publish.yml)
 
 concurrency:
   group: chat-ui-publish-main
