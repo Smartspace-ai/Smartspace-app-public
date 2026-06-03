@@ -6,6 +6,7 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - package.json
+      - packages/*/package.json
       - pnpm-lock.yaml
 
 permissions:
@@ -35,11 +36,16 @@ jobs:
       - name: Detect 'dev' SDK pins
         id: detect
         run: |
-          if grep -qE '"@smartspace/[^"]+"\s*:\s*"dev"' package.json; then
+          # Cover every workspace manifest (root + packages/*), not just the
+          # root. chat-ui carries its own '@smartspace/api-client: "dev"' pin;
+          # swapping only the root left release/next resolving a split
+          # dev/main dependency graph (two api-client versions at once).
+          manifests=$(git ls-files 'package.json' 'packages/*/package.json')
+          if grep -lE '"@smartspace/[^"]+"\s*:\s*"dev"' $manifests; then
             echo "needs-swap=true" >> "$GITHUB_OUTPUT"
           else
             echo "needs-swap=false" >> "$GITHUB_OUTPUT"
-            echo "OK: no develop-channel SDK pins in package.json — nothing to do."
+            echo "OK: no develop-channel SDK pins in any workspace manifest — nothing to do."
           fi
 
       - name: Generate CI_DISPATCH_APP token
@@ -76,7 +82,9 @@ jobs:
       - name: Swap pins and refresh lockfile
         if: steps.detect.outputs.needs-swap == 'true'
         run: |
-          sed -i -E 's|("@smartspace/[^"]+"\s*:\s*)"dev"|\1"main"|g' package.json
+          manifests=$(git ls-files 'package.json' 'packages/*/package.json')
+          echo "Swapping dev→main in: $manifests"
+          sed -i -E 's|("@smartspace/[^"]+"\s*:\s*)"dev"|\1"main"|g' $manifests
           pnpm install --no-frozen-lockfile
 
       - name: Commit and push
@@ -84,6 +92,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json pnpm-lock.yaml
+          git add $(git ls-files 'package.json' 'packages/*/package.json') pnpm-lock.yaml
           git commit -m "auto: swap @smartspace/* SDK pins from 'dev' to 'main' for main-targeted PR"
           git push
