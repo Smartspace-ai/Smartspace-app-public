@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 
 import { useChatIdentity, useChatService } from '@/platform/chat';
 
+
 import { FileInfo } from '@/domains/files';
 import {
   type MessageThread,
@@ -10,6 +11,8 @@ import {
   setThreadRunningInLists,
   threadsKeys,
 } from '@/domains/threads';
+
+import { randomUUID } from '@/shared/utils/randomUUID';
 
 import { MessageValueType } from './enums';
 import { Message, MessageContentItem } from './model';
@@ -70,10 +73,10 @@ export function useSendMessage() {
 
       // Optimistic message
       const optimistic: Message = {
-        id: `temp-${crypto.randomUUID()}`,
+        id: `temp-${randomUUID()}`,
         values: [
           {
-            id: `temp-${crypto.randomUUID()}-prompt`,
+            id: `temp-${randomUUID()}-prompt`,
             type: MessageValueType.INPUT,
             name: 'prompt',
             value: contentList,
@@ -85,7 +88,7 @@ export function useSendMessage() {
           ...(files?.length
             ? [
                 {
-                  id: `temp-${crypto.randomUUID()}-files`,
+                  id: `temp-${randomUUID()}-files`,
                   type: MessageValueType.INPUT,
                   name: 'files',
                   value: files,
@@ -99,7 +102,7 @@ export function useSendMessage() {
           ...(variables && Object.keys(variables).length
             ? [
                 {
-                  id: `temp-${crypto.randomUUID()}-vars`,
+                  id: `temp-${randomUUID()}-vars`,
                   type: MessageValueType.INPUT,
                   name: 'variables',
                   value: variables,
@@ -225,11 +228,21 @@ export function useAddInputToMessage() {
   const { userId, displayName: userName } = useChatIdentity();
   const service = useChatService();
 
-  const addInputToMessageMutation = useMutation<Message, Error, AddInputArgs>({
-    mutationFn: async ({ threadId, messageId, name, value, channels }) => {
-      if (!threadId) throw new Error('Thread ID is required');
+  const addInputToMessageMutation = useMutation<
+    Message,
+    Error,
+    AddInputArgs,
+    { previousMessages: Message[] }
+  >({
+    onMutate: async ({ threadId, messageId, name, value, channels }) => {
+      // Cancel in-flight refetches so they don't overwrite the optimistic patch.
+      await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
 
-      // optimistic local patch
+      // Snapshot before mutating — used for rollback.
+      const previousMessages =
+        qc.getQueryData<Message[]>(messagesKeys.list(threadId)) ?? [];
+
+      // Apply optimistic patch.
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
         old.map((m) =>
           m.id === messageId
@@ -238,7 +251,7 @@ export function useAddInputToMessage() {
                 values: [
                   ...(m.values ?? []),
                   {
-                    id: `temp-${Date.now()}-add`,
+                    id: `temp-${randomUUID()}-add`,
                     type: MessageValueType.INPUT,
                     name,
                     value,
@@ -253,7 +266,10 @@ export function useAddInputToMessage() {
         )
       );
 
-      await qc.cancelQueries({ queryKey: messagesKeys.list(threadId) });
+      return { previousMessages };
+    },
+    mutationFn: async ({ threadId, messageId, name, value, channels }) => {
+      if (!threadId) throw new Error('Thread ID is required');
 
       return await service.addInputToMessage({
         messageId,
@@ -267,11 +283,14 @@ export function useAddInputToMessage() {
         reconcileWithMessage(old, message, 'replace')
       );
     },
-    onError: (_e, { threadId }) => {
-      // rollback optimistic patch
-      qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) =>
-        old.filter((m) => !m.optimistic)
-      );
+    onError: (_e, { threadId }, context) => {
+      // Restore the pre-mutation snapshot.
+      if (context) {
+        qc.setQueryData<Message[]>(
+          messagesKeys.list(threadId),
+          context.previousMessages
+        );
+      }
       toast.error('There was an error posting your form input');
     },
     retry: false,

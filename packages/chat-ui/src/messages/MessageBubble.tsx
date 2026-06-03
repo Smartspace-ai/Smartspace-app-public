@@ -10,7 +10,6 @@ import { getDefaultValues } from '@/domains/json_forms/utils';
 import { MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 
-
 import { MessageMarkdown } from '@/shared/markdown/MessageMarkdown';
 import {
   Avatar,

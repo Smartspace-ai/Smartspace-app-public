@@ -4,8 +4,12 @@
 # same quality gate as a normal CI build before pushing — if quality fails the
 # branch is NOT updated and an issue is opened instead.
 #
-# Only acts on the `dev` and `main` channels. Stable `latest` / `rc` releases
-# are intentionally left to manual review.
+# Only acts on the `dev` channel. The `main` channel is deliberately ignored:
+# app-public's code tracks the `dev` SDK, so compiling it against a fresh `main`
+# build deadlocks the bump (and spams auto-bump-failed issues). The release/next
+# `main` pin is set by check-package-json-channel.yml at release time, not here.
+# Stable `latest` / `rc` releases are likewise left to manual review.
+# (Matches Smartspace-app's bump-sdk.yml, which also only acts on `dev`.)
 
 name: Bump @smartspace/api-client (auto, internal)
 
@@ -25,7 +29,7 @@ jobs:
   bump:
     if: |
       github.repository == 'Smartspace-ai/Smartspace-app-public' &&
-      (github.event.client_payload.tag == 'dev' || github.event.client_payload.tag == 'main')
+      github.event.client_payload.tag == 'dev'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

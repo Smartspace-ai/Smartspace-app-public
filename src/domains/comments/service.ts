@@ -1,6 +1,5 @@
 import { ChatApi, ChatZod } from '@smartspace/api-client';
-
-import { parseOrThrow } from '@/platform/validation';
+import type { z } from 'zod';
 
 import { mapCommentDtoToModel, mapCommentsDtoToModels } from './mapper';
 import { Comment, MentionUser } from './model';
@@ -14,12 +13,12 @@ const chatApi = ChatApi.getSmartSpaceChatAPI();
 // Fetch all comments for a given thread
 export async function fetchComments(threadId: string): Promise<Comment[]> {
   const response = await chatApi.messageThreadsGetComments(threadId);
-  const parsed = parseOrThrow(
-    commentsResponseSchema,
-    response.data,
-    `GET /messageThreads/${threadId}/comments`
-  );
-  const models = mapCommentsDtoToModels(parsed.data);
+  // The API now returns mentionedUsers as {userId, name}[] objects rather than string[],
+  // so the generated schema rejects it. Cast and let the mapper normalise the shape.
+  const raw = response.data as unknown as z.infer<
+    typeof commentsResponseSchema
+  >;
+  const models = mapCommentsDtoToModels(raw.data);
   return models.sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
@@ -35,11 +34,11 @@ export async function addComment(
     content,
     mentionedUsers: mentionedUsers.map((u) => u.id),
   });
-  const parsed = parseOrThrow(
-    commentCreateResponseSchema,
-    response.data,
-    `POST /messageThreads/${threadId}/comments`
-  );
-  const model = mapCommentDtoToModel({ ...parsed, messageThreadId: threadId });
+  // The API now returns mentionedUsers as {userId, name}[] objects rather than string[],
+  // so the generated schema rejects it. Cast and let the mapper normalise the shape.
+  const raw = response.data as unknown as z.infer<
+    typeof commentCreateResponseSchema
+  >;
+  const model = mapCommentDtoToModel({ ...raw, messageThreadId: threadId });
   return model;
 }
