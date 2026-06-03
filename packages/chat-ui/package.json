@@ -70,7 +70,7 @@
   },
   "devDependencies": {
     "@smartspace/api-client": "dev",
-    "tailwindcss": "^3.4.10",
+    "tailwindcss": "^4.3.0",
     "tailwindcss-animate": "^1.0.7",
     "tsup": "^8.5.0",
     "typescript": "5.5.4"
