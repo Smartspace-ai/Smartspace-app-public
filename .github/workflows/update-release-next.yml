@@ -99,7 +99,8 @@ jobs:
           git checkout --ours -- package.json pnpm-lock.yaml
 
           # Reconcile the lockfile to package.json after taking 'ours'.
-          pnpm install --no-frozen-lockfile
+          # --ignore-scripts: lockfile-only; don't run package build scripts here.
+          pnpm install --no-frozen-lockfile --ignore-scripts
           git add package.json pnpm-lock.yaml
           git commit --no-edit
 
@@ -128,7 +129,12 @@ jobs:
               fs.writeFileSync(f, JSON.stringify(p, null, 2) + '\n');
             }
           "
-          pnpm install --no-frozen-lockfile
+          # --ignore-scripts: don't run chat-ui's `prepare` build here. We only
+          # need to resolve the lockfile; if chat-ui is incompatible with the
+          # released SDK, the standing PR's `quality` check surfaces it as a red
+          # check (the "develop is ahead of the released API" signal) — it must
+          # NOT break this release-sync workflow.
+          pnpm install --no-frozen-lockfile --ignore-scripts
           git add package.json packages/chat-ui/package.json pnpm-lock.yaml
           git commit -m "release: pin @smartspace/api-client to released latest ($LATEST)" \
             || echo "Already at released latest — nothing to pin."
