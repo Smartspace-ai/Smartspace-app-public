@@ -91,7 +91,10 @@ jobs:
 
           # Resync the lockfile spec field to the literal tag. Resolved version
           # is unchanged, so this is fast.
-          pnpm install --no-frozen-lockfile
+          # --ignore-scripts: lockfile-only. If a new dev SDK is incompatible with
+          # chat-ui, let the bump-PR's `quality` check show it as a red check
+          # rather than failing this workflow before the PR is even opened.
+          pnpm install --no-frozen-lockfile --ignore-scripts
 
       - name: Detect changes and validate scope
         id: diff
