@@ -27,7 +27,7 @@ jobs:
         with:
           fetch-depth: 0   # need tag history for git describe
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v4
         with:

@@ -61,7 +61,7 @@ jobs:
           # triggers CI on it. The default GITHUB_TOKEN is anti-recursive.
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v4
         with:
