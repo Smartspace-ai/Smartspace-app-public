@@ -17,15 +17,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  compute-version:
+  publish:
+    # Customer forks can't reach our npm token; skip there.
     if: github.repository == 'Smartspace-ai/Smartspace-app-public'
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.ver.outputs.version }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # need tag history for git describe
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: pnpm install --frozen-lockfile
+
       - name: Compute pre-release version
         id: ver
         run: |
@@ -33,23 +44,29 @@ jobs:
           BASE="${BASE_TAG#v}"
           SHORT_SHA="${{ github.event.pull_request.head.sha }}"
           SHORT_SHA="${SHORT_SHA:0:7}"
-          echo "version=${BASE}-pr.${{ github.event.pull_request.number }}.${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          VERSION="${BASE}-pr.${{ github.event.pull_request.number }}.${SHORT_SHA}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-  publish:
-    needs: compute-version
-    uses: Smartspace-ai/ci-workflows/.github/workflows/shared-chat-ui-publish.yml@main
-    with:
-      version: ${{ needs.compute-version.outputs.version }}
-      tag: pr
+      - name: Stamp version into package.json
+        run: |
+          cd packages/chat-ui
+          jq --arg v "${{ steps.ver.outputs.version }}" '.version = $v' package.json > p.json
+          mv p.json package.json
 
-  comment:
-    needs: [compute-version, publish]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/github-script@v7
+      - run: pnpm --filter @smartspace/chat-ui build
+
+      - name: Publish pre-release to npmjs.com (tag=pr)
+        run: |
+          cd packages/chat-ui
+          pnpm publish --tag pr --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Comment install command on PR
+        uses: actions/github-script@v7
         with:
           script: |
-            const version = '${{ needs.compute-version.outputs.version }}';
+            const version = '${{ steps.ver.outputs.version }}';
             const marker = '<!-- chat-ui-prerelease-comment -->';
             const body = [
               marker,

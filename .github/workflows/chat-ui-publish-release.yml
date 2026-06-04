@@ -16,15 +16,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  compute-version:
+  publish:
     if: |
       github.repository == 'Smartspace-ai/Smartspace-app-public' &&
       startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.ver.outputs.version }}
-      tag: ${{ steps.tag.outputs.tag }}
+    timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: pnpm install --frozen-lockfile
+
       - name: Extract version from release tag
         id: ver
         run: |
@@ -46,17 +58,21 @@ jobs:
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
 
-  publish:
-    needs: compute-version
-    uses: Smartspace-ai/ci-workflows/.github/workflows/shared-chat-ui-publish.yml@main
-    with:
-      version: ${{ needs.compute-version.outputs.version }}
-      tag: ${{ needs.compute-version.outputs.tag }}
+      - name: Stamp version into package.json
+        run: |
+          cd packages/chat-ui
+          jq --arg v "${{ steps.ver.outputs.version }}" '.version = $v' package.json > p.json
+          mv p.json package.json
 
-  summary:
-    needs: [compute-version, publish]
-    runs-on: ubuntu-latest
-    steps:
+      - run: pnpm --filter @smartspace/chat-ui build
+
+      - name: Publish release to npmjs.com
+        run: |
+          cd packages/chat-ui
+          pnpm publish --tag ${{ steps.tag.outputs.tag }} --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Summary
         run: |
-          echo "Published \`@smartspace/chat-ui@${{ needs.compute-version.outputs.version }}\` (dist-tag \`${{ needs.compute-version.outputs.tag }}\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Published \`@smartspace/chat-ui@${{ steps.ver.outputs.version }}\` (dist-tag \`${{ steps.tag.outputs.tag }}\`)" >> "$GITHUB_STEP_SUMMARY"

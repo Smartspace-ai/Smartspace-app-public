@@ -16,32 +16,51 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  compute-version:
+  publish:
+    if: github.repository == 'Smartspace-ai/Smartspace-app-public'
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.ver.outputs.version }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # need tag history for git describe
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: pnpm install --frozen-lockfile
+
       - name: Compute dev version
         id: ver
         run: |
+          # Base = most recent v* tag, stripped of the leading 'v'.
+          # Falls back to 0.0.0 if no platform tags exist yet (first
+          # release pre-cut situation).
           BASE_TAG=$(git describe --tags --match='v*' --abbrev=0 2>/dev/null || echo 'v0.0.0')
           BASE="${BASE_TAG#v}"
-          echo "version=${BASE}-dev.${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          VERSION="${BASE}-dev.${GITHUB_SHA:0:7}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-  publish:
-    needs: compute-version
-    uses: Smartspace-ai/ci-workflows/.github/workflows/shared-chat-ui-publish.yml@main
-    with:
-      version: ${{ needs.compute-version.outputs.version }}
-      tag: dev
+      - name: Stamp version into package.json
+        run: |
+          cd packages/chat-ui
+          jq --arg v "${{ steps.ver.outputs.version }}" '.version = $v' package.json > p.json
+          mv p.json package.json
 
-  notify:
-    needs: [compute-version, publish]
-    runs-on: ubuntu-latest
-    steps:
+      - run: pnpm --filter @smartspace/chat-ui build
+
+      - name: Publish dev to npmjs.com (tag=dev)
+        run: |
+          cd packages/chat-ui
+          pnpm publish --tag dev --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Generate CI_DISPATCH_APP token
         id: app-token
         uses: actions/create-github-app-token@v1
@@ -57,11 +76,11 @@ jobs:
             --method POST \
             -f event_type=chat-ui-published \
             -f "client_payload[tag]=dev" \
-            -f "client_payload[version]=${{ needs.compute-version.outputs.version }}" \
+            -f "client_payload[version]=${{ steps.ver.outputs.version }}" \
             -f "client_payload[target_branch]=develop"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Summary
         run: |
-          echo "Published \`@smartspace/chat-ui@${{ needs.compute-version.outputs.version }}\` (dist-tag \`dev\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Published \`@smartspace/chat-ui@${{ steps.ver.outputs.version }}\` (dist-tag \`dev\`)" >> "$GITHUB_STEP_SUMMARY"
