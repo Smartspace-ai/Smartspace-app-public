@@ -1,15 +1,24 @@
 # Smartspace-internal: safe to delete in forks.
 # Listens for `sdk-published` repository_dispatch events from Smartspace-app-api
-# and refreshes this repo's lockfile to point at the new SDK version. Runs the
-# same quality gate as a normal CI build before pushing — if quality fails the
-# branch is NOT updated and an issue is opened instead.
+# and opens a PR bumping this repo's lockfile to the new SDK version. CI runs the
+# quality gate ON THE PR: a clean bump auto-merges (squash); a breaking SDK change
+# surfaces as a visible RED bump-PR to fix in place — instead of silently freezing
+# the branch and opening an issue (the old gate-then-push behaviour).
 #
 # Only acts on the `dev` channel. The `main` channel is deliberately ignored:
 # app-public's code tracks the `dev` SDK, so compiling it against a fresh `main`
-# build deadlocks the bump (and spams auto-bump-failed issues). The release/next
-# `main` pin is set by check-package-json-channel.yml at release time, not here.
-# Stable `latest` / `rc` releases are likewise left to manual review.
+# build deadlocks the bump. The release/next `main` pin is set by
+# check-package-json-channel.yml at release time, not here. Stable `latest` / `rc`
+# releases are likewise left to manual review.
 # (Matches Smartspace-app's bump-sdk.yml, which also only acts on `dev`.)
+#
+# NOTE: repository_dispatch always runs the workflow file from the DEFAULT branch
+# (main), so changes here only take effect once released to main.
+#
+# REQUIRES: the CI_DISPATCH_APP GitHub App must have `pull_requests: write`. The
+# bump PR is opened with the App token (not GITHUB_TOKEN) precisely so it TRIGGERS
+# the `quality` check — GITHUB_TOKEN is anti-recursive and would suppress it,
+# letting auto-merge merge an unchecked bump.
 
 name: Bump @smartspace/api-client (auto, internal)
 
@@ -32,6 +41,10 @@ jobs:
       github.event.client_payload.tag == 'dev'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      NEW_VERSION: ${{ github.event.client_payload.version }}
+      CHANNEL: ${{ github.event.client_payload.tag }}
+      TARGET_BRANCH: ${{ github.event.client_payload.target_branch }}
     steps:
       - name: Generate CI_DISPATCH_APP token
         id: app-token
@@ -45,9 +58,9 @@ jobs:
       - name: Checkout target branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.client_payload.target_branch }}
-          # App token (contents: write) so the push re-triggers downstream
-          # workflows. The default GITHUB_TOKEN is anti-recursive and won't.
+          ref: ${{ env.TARGET_BRANCH }}
+          # App token so the bump PR is authored by the App and therefore
+          # triggers CI on it. The default GITHUB_TOKEN is anti-recursive.
           token: ${{ steps.app-token.outputs.token }}
 
       - uses: pnpm/action-setup@v4
@@ -59,9 +72,6 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Bump SDK lockfile and restore literal channel pin
-        env:
-          NEW_VERSION: ${{ github.event.client_payload.version }}
-          CHANNEL: ${{ github.event.client_payload.tag }}
         run: |
           # Pin the exact resolved version. This forces pnpm to refresh the
           # lockfile entry — the literal "dev"/"main" tag spec doesn't trigger
@@ -72,6 +82,7 @@ jobs:
 
           # Revert the package.json spec back to the channel literal so the
           # existing check-package-json-channel.yml swap workflow keeps working.
+          # (A later PR will pin the exact version here and drop the swap.)
           node -e "
             const fs = require('fs');
             const p = JSON.parse(fs.readFileSync('package.json','utf8'));
@@ -88,41 +99,52 @@ jobs:
         run: |
           if git diff --quiet -- package.json pnpm-lock.yaml; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "OK: SDK already at @${{ github.event.client_payload.tag }}=${{ github.event.client_payload.version }}; nothing to commit."
+            echo "OK: SDK already at @${CHANNEL}=${NEW_VERSION}; nothing to do."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-          # Refuse to push if anything outside package.json + pnpm-lock.yaml
+          # Refuse to proceed if anything outside package.json + pnpm-lock.yaml
           # was modified. Belt-and-braces against an upstream side effect.
           if ! git diff --quiet -- ':!package.json' ':!pnpm-lock.yaml'; then
-            echo "::error::Unexpected files modified by bump; refusing to push."
+            echo "::error::Unexpected files modified by bump; refusing to open a PR."
             git diff --stat
             exit 1
           fi
 
-      - name: Quality gate
-        if: steps.diff.outputs.changed == 'true'
-        uses: dagger/dagger-for-github@v7
-        with:
-          version: "0.20.3"
-          verb: call
-          module: ./ci
-          args: >-
-            quality-check
-            --source=.
-
-      - name: Commit and push
+      - name: Open bump PR (auto-merge on green)
         if: steps.diff.outputs.changed == 'true'
         env:
-          NEW_VERSION: ${{ github.event.client_payload.version }}
-          CHANNEL: ${{ github.event.client_payload.tag }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          BUMP_BRANCH="chore/bump-sdk-${CHANNEL}"
+
+          # Don't clobber an in-flight bump PR. If a green one exists it
+          # auto-merges on its own; if it's RED a human is fixing a breaking
+          # change in it — leave their work alone. The next publish after it
+          # resolves picks up the newest version.
+          EXISTING=$(gh pr list --head "$BUMP_BRANCH" --base "$TARGET_BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "Bump PR #${EXISTING} already open for ${BUMP_BRANCH}; leaving it untouched."
+            exit 0
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BUMP_BRANCH"
           git add package.json pnpm-lock.yaml
           git commit -m "chore(deps): bump @smartspace/api-client to ${NEW_VERSION} (@${CHANNEL})"
-          git push
+          git push --force origin "$BUMP_BRANCH"
+
+          PR_URL=$(gh pr create \
+            --base "$TARGET_BRANCH" \
+            --head "$BUMP_BRANCH" \
+            --title "chore(deps): bump @smartspace/api-client to ${NEW_VERSION} (@${CHANNEL})" \
+            --body "$(printf 'Automated SDK bump to `%s` (channel `%s`).\n\nThe `quality` check runs on this PR. If it is **green**, the PR auto-merges (squash). If it is **red**, the new SDK changed the generated types in a breaking way — fix the consumer code **in this PR** before it merges.\n\nReplaces the old gate-then-push flow (which silently froze the branch and opened an issue on failure). Generated by `internal-bump-sdk.yml`.' "$NEW_VERSION" "$CHANNEL")")
+          echo "Opened ${PR_URL}"
+
+          gh pr merge "$PR_URL" --auto --squash \
+            || echo "::warning::Could not enable auto-merge — check the repo 'Allow auto-merge' setting and the App's pull_requests permission. The PR is still open for manual merge."
 
       - name: Open issue on failure
         if: failure()
@@ -138,16 +160,20 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Auto-bump failed: @smartspace/api-client@${version} on ${branch}`,
+              title: `Auto-bump could not open a PR: @smartspace/api-client@${version} on ${branch}`,
               body: [
-                `Automated SDK bump failed.`,
+                `The automated SDK bump failed before a PR could be opened`,
+                `(e.g. the version does not exist, the push failed, or the App`,
+                `lacks \`pull_requests: write\`).`,
                 ``,
                 `- Channel: \`${tag}\``,
                 `- Version: \`${version}\``,
                 `- Target branch: \`${branch}\``,
                 `- Workflow run: ${runUrl}`,
                 ``,
-                `The branch was NOT updated. Resolve manually or wait for the next ${tag} publish.`,
+                `Note: a *breaking* SDK change is NOT this — that shows up as a red`,
+                `\`quality\` check on the bump PR, not here. Resolve and re-dispatch,`,
+                `or wait for the next ${tag} publish.`,
               ].join('\n'),
               labels: ['ci', 'auto-bump-failed'],
             });
