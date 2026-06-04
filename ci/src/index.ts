@@ -145,6 +145,6 @@ class WebPipeline {
       .withEnvVariable('COREPACK_ENABLE_DOWNLOAD_PROMPT', '0')
       .withExec(['corepack', 'enable'])
       .withExec(['pnpm', 'config', 'set', 'store-dir', '/pnpm-store'])
-      .withExec(['pnpm', 'install', '--no-frozen-lockfile']);
+      .withExec(['pnpm', 'install', '--frozen-lockfile']);
   }
 }
