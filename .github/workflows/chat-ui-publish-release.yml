@@ -1,12 +1,23 @@
 name: chat-ui publish (release)
 
-# Triggered by a GitHub Release with a `v*` tag (the SmartSpace platform
-# version tag). Publishes that exact version under the `latest` dist-tag,
-# or `rc` if the tag includes a pre-release suffix (e.g. v1.13.1-rc.1).
+# GitHub Release with a `v*` tag (the SmartSpace platform version): build the
+# chat-ui package ONCE as a release candidate, then PROMOTE it to `latest` by
+# re-tagging when the release goes public — never rebuilt.
+#
+#   Release `vX.Y.Z` published as a PRE-RELEASE   → build + publish X.Y.Z, tag `rc`
+#   Pre-release marked a full release             → re-tag X.Y.Z  `rc` → `latest`
+#
+# The same immutable artifact flows `rc → latest` — mirroring the deployment
+# repo's `InternalOnly` 1→0 flip. Version is lockstep with the SmartSpace release
+# (the `v*` tag). A bug in the candidate → cut `vX.Y.(Z+1)`; never mutate a
+# published version. Per vault ADR 2026-06-05.
+#
+# NOTE: `release` events run the workflow from the DEFAULT branch (main), so a
+# change here takes effect once merged to main.
 
 on:
   release:
-    types: [published]
+    types: [prereleased, released]
 
 permissions:
   contents: read
@@ -16,9 +27,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  # Pre-release published → build the candidate ONCE and publish it tagged `rc`.
+  build-candidate:
+    name: Build release candidate (rc)
     if: |
       github.repository == 'Smartspace-ai/Smartspace-app-public' &&
+      github.event.action == 'prereleased' &&
       startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -48,16 +62,6 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Determine dist-tag
-        id: tag
-        run: |
-          VERSION="${{ steps.ver.outputs.version }}"
-          if [[ "$VERSION" == *-* ]]; then
-            echo "tag=rc" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Stamp version into package.json
         run: |
           cd packages/chat-ui
@@ -66,13 +70,46 @@ jobs:
 
       - run: pnpm --filter @smartspace/chat-ui build
 
-      - name: Publish release to npmjs.com
+      - name: Publish candidate to npmjs.com (tag rc)
         run: |
           cd packages/chat-ui
-          pnpm publish --tag ${{ steps.tag.outputs.tag }} --access public --no-git-checks
+          pnpm publish --tag rc --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Summary
         run: |
-          echo "Published \`@smartspace/chat-ui@${{ steps.ver.outputs.version }}\` (dist-tag \`${{ steps.tag.outputs.tag }}\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Published candidate \`@smartspace/chat-ui@${{ steps.ver.outputs.version }}\` (dist-tag \`rc\`)" >> "$GITHUB_STEP_SUMMARY"
+
+  # Full release (pre-release un-checked) → promote the SAME version `rc → latest`
+  # by re-tagging. No rebuild, so `latest` is byte-identical to the tested rc.
+  # If the version was never published as an rc, fail loudly: the build-once model
+  # requires a validated pre-release candidate before going public.
+  promote:
+    name: Promote candidate to latest
+    if: |
+      github.repository == 'Smartspace-ai/Smartspace-app-public' &&
+      github.event.action == 'released' &&
+      startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Promote rc → latest (re-tag, no rebuild)
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          V="${TAG_NAME#v}"
+          if npm view "@smartspace/chat-ui@${V}" version >/dev/null 2>&1; then
+            echo "Promoting @smartspace/chat-ui@${V}: rc → latest (byte-identical, no rebuild)"
+            npm dist-tag add "@smartspace/chat-ui@${V}" latest
+            echo "Promoted \`@smartspace/chat-ui@${V}\` rc → \`latest\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::@smartspace/chat-ui@${V} is not published. Publish this release as a PRE-RELEASE first (builds the rc candidate), validate it, then mark it a full release to promote."
+            exit 1
+          fi

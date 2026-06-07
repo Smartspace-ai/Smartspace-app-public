@@ -3,13 +3,20 @@
 #
 # On every push to `develop`:
 #   1. Hard-resets `release/next` to develop's HEAD
-#   2. Merges `main` in — auto-resolves SDK-pin conflicts in favor of develop's
-#      `dev` pins (check-package-json-channel.yml then swaps to `main` on the PR)
-#   3. Force-pushes `release/next`
-#   4. Opens the standing PR if it doesn't already exist
+#   2. Merges `main` in (auto-resolves dependency-pin conflicts in favor of develop)
+#   3. Pins @smartspace/api-client to the exact `main`-channel version — the
+#      candidate SDK (app-api `main`) — across every workspace manifest
+#   4. Force-pushes `release/next`
+#   5. Opens the standing PR if it doesn't already exist
 #
 # Releasing develop → main becomes "click Merge on the standing PR".
 # No human ever creates or checks out `release/next`.
+#
+# NOTE: the release branch pins the exact `main`-channel (candidate) SDK, not
+# develop's `dev` SDK. So the standing PR's `quality` check goes RED whenever
+# develop's code uses API surface not yet on app-api `main` — fix by landing it
+# on app-api `main` (its develop→main). The `latest` (public) promotion is a
+# separate, later step.
 
 name: Update standing release PR
 
@@ -33,9 +40,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      # App token (not GITHUB_TOKEN) so the push to release/next re-triggers
-      # check-package-json-channel.yml. GITHUB_TOKEN is anti-recursive.
-      # Required app permissions: contents:write, pull_requests:write.
+      # App token (not GITHUB_TOKEN) so the push to release/next re-triggers the
+      # standing PR's CI (the `quality` check). GITHUB_TOKEN is anti-recursive and
+      # would suppress it. Required app permissions: contents:write, pull_requests:write.
       - name: Generate CI_DISPATCH_APP token
         id: app-token
         uses: actions/create-github-app-token@v1
@@ -88,16 +95,51 @@ jobs:
             exit 1
           fi
 
-          # Keep develop's `dev` pins. check-package-json-channel.yml will
-          # swap them to `main` once the PR is in sync.
+          # Keep develop's side of any dependency-pin conflict; the next step
+          # re-pins @smartspace/api-client to the `main`-channel SDK regardless.
           git checkout --ours -- package.json pnpm-lock.yaml
 
-          # Reconcile lockfile to package.json after taking 'ours'. Refreshing
-          # the lockfile guarantees the swap workflow's path filter fires on
-          # the PR synchronize event.
-          pnpm install --no-frozen-lockfile
+          # Reconcile the lockfile to package.json after taking 'ours'.
+          # --ignore-scripts: lockfile-only; don't run package build scripts here.
+          pnpm install --no-frozen-lockfile --ignore-scripts
           git add package.json pnpm-lock.yaml
           git commit --no-edit
+
+      - name: Pin @smartspace/api-client to the `main`-channel (candidate) SDK
+        run: |
+          # The release branch pins the EXACT `main`-channel SDK — the candidate
+          # corresponding to app-api `main` (deployed to the test client) — not
+          # develop's `dev` SDK. Resolve the `main` tag to its exact version and
+          # pin it across every workspace manifest. This replaces the old dev->main
+          # channel swap (check-package-json-channel.yml, now removed). The
+          # `latest` (public) promotion is a separate, later step.
+          MAIN=$(npm view @smartspace/api-client@main version)
+          if [ -z "$MAIN" ]; then
+            echo "::error::Could not resolve @smartspace/api-client@main from npm."
+            exit 1
+          fi
+          echo "Pinning @smartspace/api-client to main-channel: $MAIN"
+          MAIN="$MAIN" node -e "
+            const fs = require('fs');
+            const v = process.env.MAIN;
+            for (const f of ['package.json', 'packages/chat-ui/package.json']) {
+              const p = JSON.parse(fs.readFileSync(f, 'utf8'));
+              for (const k of ['dependencies', 'devDependencies']) {
+                const cur = p[k] && p[k]['@smartspace/api-client'];
+                if (cur && cur !== '*') p[k]['@smartspace/api-client'] = v;
+              }
+              fs.writeFileSync(f, JSON.stringify(p, null, 2) + '\n');
+            }
+          "
+          # --ignore-scripts: don't run chat-ui's `prepare` build here. We only
+          # need to resolve the lockfile; if chat-ui is incompatible with the
+          # main-channel SDK, the standing PR's `quality` check surfaces it as a
+          # red check (the "develop is ahead of app-api main" signal) — it must
+          # NOT break this release-sync workflow.
+          pnpm install --no-frozen-lockfile --ignore-scripts
+          git add package.json packages/chat-ui/package.json pnpm-lock.yaml
+          git commit -m "release: pin @smartspace/api-client to main-channel ($MAIN)" \
+            || echo "Already at the main-channel SDK — nothing to pin."
 
       # Force-push: release/next is fully derived from develop + main each run.
       # Local commits to release/next are intentionally lost.
@@ -129,9 +171,11 @@ jobs:
           [`update-release-next.yml`](.github/workflows/update-release-next.yml) runs on every push to `develop`:
 
           1. Resets `release/next` to develop's HEAD
-          2. Merges `main` in (auto-resolves SDK-pin conflicts in favor of develop's `dev` pins)
-          3. Force-pushes `release/next`
-          4. [`check-package-json-channel.yml`](.github/workflows/check-package-json-channel.yml) then swaps SDK pins `dev` → `main` on this PR
+          2. Merges `main` in
+          3. Pins `@smartspace/api-client` to the exact `main`-channel SDK (the candidate matching app-api `main`)
+          4. Force-pushes `release/next`
+
+          **A red `quality` check means develop's code uses API surface not yet on app-api `main` — land it there first, then this goes green.**
 
           ## Don't commit to `release/next`
 

@@ -5,12 +5,10 @@
 # surfaces as a visible RED bump-PR to fix in place — instead of silently freezing
 # the branch and opening an issue (the old gate-then-push behaviour).
 #
-# Only acts on the `dev` channel. The `main` channel is deliberately ignored:
-# app-public's code tracks the `dev` SDK, so compiling it against a fresh `main`
-# build deadlocks the bump. The release/next `main` pin is set by
-# check-package-json-channel.yml at release time, not here. Stable `latest` / `rc`
-# releases are likewise left to manual review.
-# (Matches Smartspace-app's bump-sdk.yml, which also only acts on `dev`.)
+# Only acts on the `dev` channel — develop tracks the `dev` SDK. The release
+# branch is re-pinned to the released `latest` SDK by update-release-next.yml,
+# not here. The `main` channel and stable `latest` / `rc` are deliberately
+# ignored. (Matches Smartspace-app's bump-sdk.yml, which also only acts on `dev`.)
 #
 # NOTE: repository_dispatch always runs the workflow file from the DEFAULT branch
 # (main), so changes here only take effect once released to main.
@@ -80,9 +78,10 @@ jobs:
           # add deps to the root without it.
           pnpm add --workspace-root --save-exact "@smartspace/api-client@${NEW_VERSION}"
 
-          # Revert the package.json spec back to the channel literal so the
-          # existing check-package-json-channel.yml swap workflow keeps working.
-          # (A later PR will pin the exact version here and drop the swap.)
+          # Keep package.json on the literal channel spec ("dev"); the lockfile
+          # carries the exact resolved version (above), which frozen-lockfile CI
+          # makes authoritative. The release branch re-pins to the exact `latest`
+          # SDK in update-release-next.yml.
           node -e "
             const fs = require('fs');
             const p = JSON.parse(fs.readFileSync('package.json','utf8'));
@@ -92,7 +91,10 @@ jobs:
 
           # Resync the lockfile spec field to the literal tag. Resolved version
           # is unchanged, so this is fast.
-          pnpm install --no-frozen-lockfile
+          # --ignore-scripts: lockfile-only. If a new dev SDK is incompatible with
+          # chat-ui, let the bump-PR's `quality` check show it as a red check
+          # rather than failing this workflow before the PR is even opened.
+          pnpm install --no-frozen-lockfile --ignore-scripts
 
       - name: Detect changes and validate scope
         id: diff
