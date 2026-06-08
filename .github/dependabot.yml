@@ -8,7 +8,7 @@ updates:
       time: "06:00"
       timezone: Pacific/Auckland
     target-branch: develop
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
       react:
         patterns:
@@ -40,6 +40,12 @@ updates:
       radix-ui:
         patterns:
           - "@radix-ui/*"
+      # Catch-all — MUST stay last. Dependabot assigns each dependency to the
+      # first group it matches, so the specific groups above win and this bundles
+      # every remaining npm update into ONE weekly PR instead of per-package PRs.
+      other:
+        patterns:
+          - "*"
     labels:
       - dependencies
       - npm
@@ -52,7 +58,7 @@ updates:
       time: "06:00"
       timezone: Pacific/Auckland
     target-branch: develop
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
       react:
         patterns:
@@ -61,6 +67,10 @@ updates:
           - "react-*"
           - "@types/react"
           - "@types/react-dom"
+      # Catch-all — MUST stay last; bundles every remaining npm update into ONE PR.
+      other:
+        patterns:
+          - "*"
     labels:
       - dependencies
       - npm
@@ -73,7 +83,11 @@ updates:
       time: "06:00"
       timezone: Pacific/Auckland
     target-branch: develop
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns:
+          - "*"
     labels:
       - dependencies
       - github-actions
