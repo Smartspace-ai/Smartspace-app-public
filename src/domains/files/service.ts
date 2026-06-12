@@ -18,7 +18,8 @@ const chatApi = ChatApi.getSmartSpaceChatAPI();
 // upload responses, but the SDK's generated Zod schema marks them as required
 // non-nullable strings. The mapper doesn't use these fields, so coerce nulls
 // to empty strings before validation rather than forking the SDK.
-const coerceFileUploadResponse = (data: unknown): unknown => {
+// Exported for the spec-conformance suite.
+export const coerceFileUploadResponse = (data: unknown): unknown => {
   if (!Array.isArray(data)) return data;
   return data.map((item) => {
     if (!item || typeof item !== 'object') return item;
