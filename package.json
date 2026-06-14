@@ -57,7 +57,7 @@
     "@mui/system": "^6.5.0",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-slot": "^1.2.4",
-    "@smartspace/api-client": "0.1.0-main.9415e74",
+    "@smartspace/api-client": "0.1.0-main.5b9ae16",
     "@smartspace/chat-ui": "workspace:*",
     "@tanstack/react-query": "^5.96.2",
     "@tanstack/react-router": "^1.168.10",

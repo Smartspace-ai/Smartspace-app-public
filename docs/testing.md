@@ -124,6 +124,23 @@ Some endpoints return a `{ data: [...] }` envelope; others return a bare object 
 
 ---
 
+## Spec-conformance fuzz suite (`src/test/conformance/`)
+
+`spec-conformance.spec.ts` enforces one invariant per domain pipeline: **any
+response that conforms to the SDK's generated Zod schema must survive the
+local parse + mapper pipeline**. Each table entry fakes payloads from the
+generated response schema (deterministically seeded — failures print the seed
+and payload), strips every optional field for a "minimal" case, and forces
+each enum branch the mappers switch on. The payload then flows through the
+exact code the service runs: same `parseOrThrow` call, same coercion helpers
+(exported from the service for this purpose), same mappers.
+
+This is the gate that catches "the spec widened but our pipeline didn't" when
+bumping `@smartspace/api-client`. If a bump fails here, relax the local
+pipeline (mapper default / coercion) rather than weakening the test.
+
+---
+
 ## Vitest setup (`src/test/setup.ts`)
 
 - Starts the MSW node server before all tests, resets handlers and calls `cleanup()` after each test, closes the server after all tests.
