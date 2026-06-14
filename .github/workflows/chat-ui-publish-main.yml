@@ -21,13 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0   # need tag history for git describe
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: pnpm
@@ -60,7 +60,7 @@ jobs:
 
       - name: Generate CI_DISPATCH_APP token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.CI_DISPATCH_APP_ID }}
           private-key: ${{ secrets.CI_DISPATCH_APP_PRIVATE_KEY }}
