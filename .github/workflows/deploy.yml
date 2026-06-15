@@ -29,6 +29,7 @@ jobs:
             echo "VITE_CLIENT_SCOPES=${{ vars.VITE_CLIENT_SCOPES }}"
             echo "VITE_CHAT_API_URI=${{ vars.VITE_CHAT_API_URI }}"
             echo "VITE_TEAMS_USE_MSAL=${{ vars.VITE_TEAMS_USE_MSAL }}"
+            echo "VITE_TENANT_ID=${{ vars.VITE_TENANT_ID }}"
           } > .env
 
       - name: Validate .env
