@@ -1,0 +1,67 @@
+name: Build Teams package
+
+# Builds the Microsoft Teams app package (manifest.json + smartspace.zip) on
+# demand and uploads it as a downloadable artifact. The Teams manifest rarely
+# changes, so this is a manual workflow rather than part of every deploy.
+#
+# The Teams app id, base URL, name and client id are read from the selected
+# GitHub environment so they stay in lockstep with the web deploy. Bump the
+# version input whenever you re-upload to Teams (Teams requires an increasing
+# version for an update to apply).
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment to read Teams config from
+        type: choice
+        options:
+          - develop
+          - production
+        default: develop
+      version:
+        description: Manifest version (increment when re-uploading to Teams)
+        type: string
+        default: 1.0.0
+
+permissions:
+  contents: read
+
+jobs:
+  build-teams-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Teams package
+        run: pnpm run build:teams
+        env:
+          VITE_CLIENT_ID: ${{ vars.VITE_CLIENT_ID }}
+          TEAMS_APP_ID: ${{ vars.TEAMS_APP_ID }}
+          TEAMS_BASE_URL: ${{ vars.TEAMS_BASE_URL }}
+          TEAMS_APP_NAME: ${{ vars.TEAMS_APP_NAME }}
+          TEAMS_VERSION: ${{ inputs.version }}
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: teams-package-${{ inputs.environment }}-${{ inputs.version }}
+          path: |
+            teams/manifest.json
+            teams/smartspace.zip
+          if-no-files-found: error
