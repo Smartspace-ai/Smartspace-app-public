@@ -1,14 +1,17 @@
-// To use this script, run: pnpm add archiver dotenv
-// If using TypeScript, you may also want: pnpm add -D @types/archiver
+// Generates teams/manifest.json + teams/smartspace.zip.
+// Values come from env vars (CI) and fall back to teams/config.json (local).
 const fs = require('fs');
 const path = require('path');
 
 const archiver = require('archiver');
-const dotenv = require('dotenv');
 
-// Load .env
-const envPath = path.join(__dirname, '..', '.env');
-dotenv.config({ path: envPath });
+// Load a local .env if present, as a convenience for local builds. In CI the
+// values are supplied directly via process.env, so dotenv is optional here.
+try {
+  require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+} catch {
+  // dotenv not installed / no .env file — fall back to process.env.
+}
 
 const teamsDir = __dirname;
 const configPath = path.join(teamsDir, 'config.json');
@@ -16,14 +19,22 @@ const manifestPath = path.join(teamsDir, 'manifest.json');
 const zipPath = path.join(teamsDir, 'smartspace.zip');
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-const baseUrl = config.baseUrl;
-const appName = config.appName;
-const appId = config.appId;
-const version = config.version;
+
+// Env overrides (CI) take precedence; config.json is the local-dev fallback.
+const appId = process.env.TEAMS_APP_ID || config.appId;
+const appName = process.env.TEAMS_APP_NAME || config.appName;
+const version = process.env.TEAMS_VERSION || config.version;
+// Normalise the base URL once: strip trailing slashes so every derived URL and
+// validDomain is built cleanly (avoids '//privacy' and a trailing-slash domain).
+const baseUrl = String(process.env.TEAMS_BASE_URL || config.baseUrl).replace(
+  /\/+$/,
+  ''
+);
+const host = baseUrl.replace(/^https?:\/\//, '');
 
 const clientId = process.env.VITE_CLIENT_ID;
 if (!clientId) {
-  throw new Error('VITE_CLIENT_ID is not set in .env');
+  throw new Error('VITE_CLIENT_ID is not set (env var or .env)');
 }
 
 const manifest = {
@@ -59,23 +70,16 @@ const manifest = {
     {
       entityId: 'smartspace-tab',
       name: appName,
-      contentUrl: baseUrl + '?inTeams=true',
+      contentUrl: baseUrl + '/?inTeams=true',
       websiteUrl: baseUrl,
       scopes: ['personal', 'team'],
     },
   ],
   permissions: ['identity', 'messageTeamMembers'],
-  validDomains: [
-    baseUrl.replace(/^https?:\/\//, ''),
-    'login.microsoftonline.com',
-  ],
+  validDomains: [host, 'login.microsoftonline.com'],
   webApplicationInfo: {
     id: clientId,
-    resource:
-      'api://' +
-      baseUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '') +
-      '/' +
-      clientId,
+    resource: 'api://' + host + '/' + clientId,
   },
 };
 
