@@ -7,6 +7,11 @@ on:
         required: true
         type: string
         description: GitHub environment name (dev or production)
+      ref:
+        required: false
+        type: string
+        default: ""
+        description: Git ref (tag/branch/SHA) to build. Empty = the triggering ref.
 
 permissions:
   contents: read
@@ -20,6 +25,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Generate .env from environment
         run: |

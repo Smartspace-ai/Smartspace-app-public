@@ -3,6 +3,13 @@ name: Deploy to dev
 on:
   push:
     branches: [develop]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Ref (tag/branch/SHA) to build & deploy to dev. Defaults to develop.
+        required: false
+        type: string
+        default: develop
 
 concurrency:
   group: deploy-dev
@@ -13,4 +20,7 @@ jobs:
     uses: ./.github/workflows/deploy.yml
     with:
       environment: develop
+      # On push, inputs.ref is empty, so deploy.yml checks out the pushed commit
+      # (unchanged behaviour). On manual runs, build the requested ref instead.
+      ref: ${{ inputs.ref }}
     secrets: inherit
