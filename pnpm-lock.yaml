@@ -42,8 +42,8 @@ importers:
         specifier: ^8.0.17
         version: 8.0.17(encoding@0.1.13)
       '@microsoft/teams-js':
-        specifier: ^2.51.0
-        version: 2.52.0
+        specifier: 2.50.0
+        version: 2.50.0
       '@milkdown/core':
         specifier: ^7.20.0
         version: 7.20.0
@@ -91,7 +91,7 @@ importers:
         version: 1.2.4(@types/react@18.3.1)(react@18.3.1)
       '@smartspace/api-client':
         specifier: dev
-        version: 0.1.0-dev.c4e51cf(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
+        version: 0.1.0-dev.0f42f60(@faker-js/faker@10.4.0)(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(msw@2.14.6(@types/node@25.6.0)(typescript@5.5.4))(zod@4.3.6)
       '@smartspace/chat-ui':
         specifier: workspace:*
         version: link:packages/chat-ui
@@ -465,7 +465,7 @@ importers:
     devDependencies:
       '@smartspace/api-client':
         specifier: dev
-        version: 0.1.0-dev.c4e51cf(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)
+        version: 0.1.0-dev.0f42f60(@faker-js/faker@10.4.0)(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(msw@2.14.6(@types/node@25.6.0)(typescript@5.5.4))(zod@4.3.6)
       tailwindcss:
         specifier: ^3.4.10
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
@@ -1761,8 +1761,8 @@ packages:
   '@microsoft/signalr@8.0.17':
     resolution: {integrity: sha512-5pM6xPtKZNJLO0Tq5nQasVyPFwi/WBY3QB5uc/v3dIPTpS1JXQbaXAQAPxFoQ5rTBFE094w8bbqkp17F9ReQvA==}
 
-  '@microsoft/teams-js@2.52.0':
-    resolution: {integrity: sha512-DFAcqhpW+hEjKeCLR3km134n3CzH50qqKWJfFrk6hZcMIr8GXzxRpSETlLMQ/o5J1U3Hpii6NsjN6CduwVIzJw==}
+  '@microsoft/teams-js@2.50.0':
+    resolution: {integrity: sha512-XFebLYmixEXn2fu681PVyU+4ygZSRQ9oMLy11IiIwkEPGssUDzT6sHaoS8rgHg7P8hvfhMIiWdAYu8dkS0sA+Q==}
 
   '@milkdown/components@7.20.0':
     resolution: {integrity: sha512-Qn91/oZugGjf17ARE51nbEsH4YklZQaomRSsfxOAtIcwGEJe5osq+zhhKGtgAYFfUb6rU3W86Pe4XDlXN6vFjg==}
@@ -2894,12 +2894,19 @@ packages:
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
     engines: {node: '>=10'}
 
-  '@smartspace/api-client@0.1.0-dev.c4e51cf':
-    resolution: {integrity: sha512-S2M5RDaS1+zRJc8yzo3NL7csWkh7PBCYBhQNKhOP4nXO9AfoL6LRorZiLCFlx/FPDLW0cPDt/58pgJsEVvGERQ==}
+  '@smartspace/api-client@0.1.0-dev.0f42f60':
+    resolution: {integrity: sha512-IqMu6eD627OMmTCA2w3Vd9r686ZAiCNtv2GrCAPQ6o/viYU3BKN7NHft4qd1BDMuvtBD+rWv40nsKHcFbqaGcw==}
     peerDependencies:
+      '@faker-js/faker': '>=9.0.0'
       '@microsoft/signalr': '>=8.0.0'
       axios: '>=1.0.0'
+      msw: ^2.0.0
       zod: ^4.0.0
+    peerDependenciesMeta:
+      '@faker-js/faker':
+        optional: true
+      msw:
+        optional: true
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
@@ -9474,7 +9481,7 @@ snapshots:
       - encoding
       - utf-8-validate
 
-  '@microsoft/teams-js@2.52.0':
+  '@microsoft/teams-js@2.50.0':
     dependencies:
       base64-js: 1.5.1
       debug: 4.4.3
@@ -10917,11 +10924,14 @@ snapshots:
 
   '@sindresorhus/is@4.6.0': {}
 
-  '@smartspace/api-client@0.1.0-dev.c4e51cf(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(zod@4.3.6)':
+  '@smartspace/api-client@0.1.0-dev.0f42f60(@faker-js/faker@10.4.0)(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(msw@2.14.6(@types/node@25.6.0)(typescript@5.5.4))(zod@4.3.6)':
     dependencies:
       '@microsoft/signalr': 8.0.17(encoding@0.1.13)
       axios: 1.15.1
       zod: 4.3.6
+    optionalDependencies:
+      '@faker-js/faker': 10.4.0
+      msw: 2.14.6(@types/node@25.6.0)(typescript@5.5.4)
 
   '@standard-schema/utils@0.3.0': {}
 
