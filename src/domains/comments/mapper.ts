@@ -22,7 +22,7 @@ export function mapMentionUserDtoToModel(
     return { id: dto, displayName: '', initials: null };
   }
   return {
-    id: dto.id,
+    id: dto.userId,
     displayName: dto.name ?? '',
     initials: null,
   };
@@ -61,7 +61,7 @@ export function mapSignalRCommentSummaryToModel(
     createdBy: summary.createdBy ?? '',
     content: summary.content,
     mentionedUsers: (summary.mentionedUsers ?? []).map((u) => ({
-      id: u.id,
+      id: u.userId,
       displayName: u.name ?? '',
       initials: null,
     })),
