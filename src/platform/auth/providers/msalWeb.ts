@@ -38,17 +38,81 @@ let popupFallbackToken: {
   expiresOn: Date | null;
 } | null = null;
 
+/**
+ * Persist the popup token in the iframe's OWN storage partition.
+ *
+ * In Teams *web* the app runs in a partitioned iframe whose MSAL account cache
+ * is empty (the popup authenticated in the unpartitioned top-level context and
+ * cached the account there). This bridge token is therefore the only session we
+ * have. It was previously in-memory only — a redirect-style Teams auth round-trip
+ * reloads the iframe and wipes module state, dropping the session and causing the
+ * /login redirect loop. localStorage survives that reload (and frame recreation)
+ * within the same partition, so we persist + rehydrate the bridge here.
+ */
+const POPUP_FALLBACK_KEY = 'ss.teams.popupFallbackToken';
+
+function persistPopupFallback(
+  homeAccountId: string,
+  accessToken: string,
+  expiresOnIso: string | undefined
+): void {
+  try {
+    localStorage.setItem(
+      POPUP_FALLBACK_KEY,
+      JSON.stringify({
+        homeAccountId,
+        accessToken,
+        expiresOn: expiresOnIso ?? null,
+      })
+    );
+  } catch {
+    // storage unavailable (private mode / full) — in-memory copy still applies
+  }
+}
+
+function hydratePopupFallback(): void {
+  if (popupFallbackToken) return;
+  try {
+    const raw = localStorage.getItem(POPUP_FALLBACK_KEY);
+    if (!raw) return;
+    const p = JSON.parse(raw) as {
+      homeAccountId?: string;
+      accessToken?: string;
+      expiresOn?: string | null;
+    };
+    if (p?.homeAccountId && p?.accessToken) {
+      popupFallbackToken = {
+        homeAccountId: p.homeAccountId,
+        accessToken: p.accessToken,
+        expiresOn: p.expiresOn ? new Date(p.expiresOn) : null,
+      };
+    }
+  } catch {
+    // ignore malformed/inaccessible storage
+  }
+}
+
+function clearPopupFallback(): void {
+  popupFallbackToken = null;
+  try {
+    localStorage.removeItem(POPUP_FALLBACK_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 function setPopupFallbackToken(
   homeAccountId: string,
   accessToken: string | undefined,
   expiresOnIso: string | undefined
 ): void {
   if (!accessToken) {
-    popupFallbackToken = null;
+    clearPopupFallback();
     return;
   }
   const expiresOn = expiresOnIso ? new Date(expiresOnIso) : null;
   popupFallbackToken = { homeAccountId, accessToken, expiresOn };
+  persistPopupFallback(homeAccountId, accessToken, expiresOnIso);
   ssInfo('auth:web', 'Popup fallback token stored', {
     homeAccountId,
     hasExpiresOn: !!expiresOn,
@@ -56,13 +120,14 @@ function setPopupFallbackToken(
 }
 
 function consumePopupFallbackToken(): string | null {
+  hydratePopupFallback();
   if (!popupFallbackToken) return null;
   const { accessToken, expiresOn } = popupFallbackToken;
 
   // Check expiry with a 60-second buffer
   if (expiresOn && expiresOn.getTime() - 60_000 <= Date.now()) {
     ssInfo('auth:web', 'Popup fallback token expired, clearing');
-    popupFallbackToken = null;
+    clearPopupFallback();
     return null;
   }
 
@@ -254,6 +319,9 @@ export function createMsalWebAdapter(): AuthAdapter {
       await ensureActive();
       const a =
         msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
+      // Teams web: no MSAL account in the partitioned iframe — rehydrate the
+      // persisted popup bridge token so the session survives iframe reloads.
+      if (!a) hydratePopupFallback();
       ssInfo('auth:web', 'getSession', {
         hasSession: !!a,
         hasFallback: !!popupFallbackToken,
@@ -340,6 +408,7 @@ export function createMsalWebAdapter(): AuthAdapter {
     },
     async signOut() {
       if (isInTeams()) setStoredUseMsalInTeams(false);
+      clearPopupFallback();
       await msalInstance.logoutPopup();
     },
     getStoredRedirectUrl() {
