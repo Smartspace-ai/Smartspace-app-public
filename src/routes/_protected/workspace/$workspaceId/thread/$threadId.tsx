@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { z } from 'zod';
 
 import { isNotFoundError } from '@/platform/envelopes';
+import { ssError, ssInfoAlways } from '@/platform/log';
 
 import {
   threadDetailOptions,
@@ -33,17 +34,37 @@ export const Route = createFileRoute(
     threadRouteSearchSchema.parse(search),
   pendingMs: 0,
   loader: async ({ params, context }) => {
+    const t0 = Date.now();
+    ssInfoAlways('route:thread-detail', 'loader: fetching thread detail…', {
+      workspaceId: params.workspaceId,
+      threadId: params.threadId,
+    });
     try {
-      return await context.queryClient.ensureQueryData(
+      const detail = await context.queryClient.ensureQueryData(
         threadDetailOptions({
           workspaceId: params.workspaceId,
           threadId: params.threadId,
         })
       );
+      ssInfoAlways('route:thread-detail', 'thread detail resolved', {
+        ms: Date.now() - t0,
+      });
+      return detail;
     } catch (e: unknown) {
       // If user deep-links to a random GUID that doesn't exist, redirect to the first thread
       // (same behavior as /workspace/$workspaceId/ without a threadId).
-      if (!isNotFoundError(e)) throw e;
+      if (!isNotFoundError(e)) {
+        ssError('route:thread-detail', 'thread detail FAILED', {
+          ms: Date.now() - t0,
+          error: e instanceof Error ? e.message : String(e),
+        });
+        throw e;
+      }
+      ssInfoAlways(
+        'route:thread-detail',
+        'thread not found → redirecting to first thread',
+        { ms: Date.now() - t0 }
+      );
 
       const list = await context.queryClient.ensureQueryData(
         threadsListOptions(params.workspaceId, { take: 1, skip: 0 })

@@ -2,6 +2,7 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { Suspense, useEffect, useMemo } from 'react';
 
+import { ssError, ssInfoAlways } from '@/platform/log';
 import {
   RouteIdsProvider,
   useRouteIds,
@@ -52,10 +53,31 @@ function WorkspaceBodyBackground() {
 export const Route = createFileRoute(
   '/_protected/workspace/$workspaceId/__layout'
 )({
-  loader: ({ params, context }) =>
-    context.queryClient.ensureQueryData(
-      workspaceDetailOptions(params.workspaceId)
-    ),
+  loader: async ({ params, context }) => {
+    const t0 = Date.now();
+    ssInfoAlways(
+      'route:workspace-detail',
+      'loader: fetching workspace detail…',
+      {
+        workspaceId: params.workspaceId,
+      }
+    );
+    try {
+      const ws = await context.queryClient.ensureQueryData(
+        workspaceDetailOptions(params.workspaceId)
+      );
+      ssInfoAlways('route:workspace-detail', 'workspace detail resolved', {
+        ms: Date.now() - t0,
+      });
+      return ws;
+    } catch (e) {
+      ssError('route:workspace-detail', 'workspace detail FAILED', {
+        ms: Date.now() - t0,
+        error: e instanceof Error ? e.message : String(e),
+      });
+      throw e;
+    }
+  },
   component: () => (
     <RouteIdsProvider>
       <PendingThreadsProvider>
