@@ -36,8 +36,6 @@ export type Workspace = {
   outputSchema?: unknown;
   inputs?: unknown;
 
-  isPromptAndResponseLoggingEnabled: boolean; // normalized default false
-
   variables: Variables; // normalized default {}
 
   // Sandbox thread is genuinely optional — many workspaces don't have one.
