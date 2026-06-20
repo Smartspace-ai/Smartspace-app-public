@@ -8,6 +8,9 @@ const { mockAxiosInstance, mockGetAuthAdapter, mockSetRuntimeAuthError } =
         request: {
           use: vi.fn(),
         },
+        response: {
+          use: vi.fn(),
+        },
       },
     },
     mockGetAuthAdapter: vi.fn(),
@@ -37,8 +40,13 @@ vi.mock('@/platform/auth/msalConfig', () => ({
 }));
 
 vi.mock('@/platform/auth/runtime', () => ({
-  getAuthRuntimeState: () => ({ isInTeams: null, lastError: null }),
+  getAuthRuntimeState: () => ({
+    isInTeams: null,
+    lastError: null,
+    sessionExpired: false,
+  }),
   setRuntimeAuthError: mockSetRuntimeAuthError,
+  setSessionExpired: vi.fn(),
 }));
 
 vi.mock('@/platform/auth/scopes', () => ({
@@ -52,6 +60,7 @@ vi.mock('@/platform/auth/sessionQuery', () => ({
 vi.mock('@/platform/log', () => ({
   ssInfo: vi.fn(),
   ssWarn: vi.fn(),
+  ssInfoAlways: vi.fn(),
 }));
 
 vi.mock('@/platform/reactQueryClient', () => ({
@@ -64,6 +73,7 @@ describe('configureApiClient', () => {
   beforeEach(() => {
     mockAxiosInstance.defaults = { baseURL: '' };
     mockAxiosInstance.interceptors.request.use.mockReset();
+    mockAxiosInstance.interceptors.response.use.mockReset();
     mockGetAuthAdapter.mockReset();
     mockSetRuntimeAuthError.mockReset();
   });

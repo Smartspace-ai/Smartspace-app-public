@@ -14,6 +14,10 @@ import { AXIOS_INSTANCE } from '@smartspace/api-client';
 
 import { getAuthAdapter } from '@/platform/auth';
 import { getApiScopes } from '@/platform/auth/scopes';
+import {
+  handleSessionExpired,
+  isReauthRequired,
+} from '@/platform/auth/sessionExpiry';
 
 export type FetchAuthedInit = Omit<RequestInit, 'headers'> & {
   headers?: Record<string, string>;
@@ -31,11 +35,17 @@ export async function fetchAuthed(
   const url = `${baseUrl}${
     endpoint.startsWith('/') ? endpoint : `/${endpoint}`
   }`;
-  return fetch(url, {
+  const res = await fetch(url, {
     ...init,
     headers: {
       Authorization: `Bearer ${token}`,
       ...init.headers,
     },
   });
+  // Raw fetch bypasses the axios response interceptor — funnel an
+  // auth-middleware 401 into the same de-duped re-auth escalation.
+  if (res.status === 401 && isReauthRequired(res.headers)) {
+    void handleSessionExpired();
+  }
+  return res;
 }

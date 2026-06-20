@@ -9,6 +9,8 @@ import { sessionQueryOptions } from '@/platform/auth/sessionQuery';
 import { queryClient } from '@/platform/reactQueryClient';
 import { RealtimeProvider } from '@/platform/realtime/RealtimeProvider';
 
+import { SessionExpiryPrompt } from '@/app/ui/SessionExpiryPrompt';
+
 import { muiTheme } from '@/shared/ui/mui-bridge/theme';
 import { SidebarProvider } from '@/shared/ui/mui-compat/sidebar';
 
@@ -33,6 +35,7 @@ export default function AppProviders({ children }: { children: ReactNode }) {
     <TeamsProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <SessionExpiryPrompt />
           <RealtimeBridge>
             <StyledEngineProvider injectFirst>
               <ThemeProvider theme={muiTheme}>

@@ -12,6 +12,13 @@ export type AuthRuntimeState = {
   /** `null` until we have any signal; `true` inside Teams, `false` otherwise. */
   isInTeams: boolean | null;
   lastError: AuthRuntimeError | null;
+  /**
+   * Set when the session can no longer be silently refreshed and interactive
+   * re-auth needs a user gesture (Teams). A root-level prompt reads this to
+   * offer a "sign in" button. On web, recovery is an automatic redirect, so
+   * this stays false.
+   */
+  sessionExpired: boolean;
 };
 
 type Listener = () => void;
@@ -19,6 +26,7 @@ type Listener = () => void;
 let state: AuthRuntimeState = {
   isInTeams: null,
   lastError: null,
+  sessionExpired: false,
 };
 const listeners = new Set<Listener>();
 
@@ -46,6 +54,12 @@ export function setRuntimeAuthError(
 ) {
   const next = error ? { ...error, at: Date.now() } : null;
   state = { ...state, lastError: next };
+  emit();
+}
+
+export function setSessionExpired(expired: boolean) {
+  if (state.sessionExpired === expired) return;
+  state = { ...state, sessionExpired: expired };
   emit();
 }
 
