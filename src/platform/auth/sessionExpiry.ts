@@ -56,7 +56,14 @@ export async function handleSessionExpired(): Promise<void> {
       return;
     }
     ssInfoAlways('auth', 'session expired -> interactive sign-in redirect');
-    await getAuthAdapter().signIn();
+    // Pass the current page so the user returns here after sign-in (the index
+    // route consumes the stored URL), rather than landing on the workspace root.
+    await getAuthAdapter().signIn({
+      redirectUrl:
+        window.location.pathname +
+        window.location.search +
+        window.location.hash,
+    });
   } catch (e) {
     ssWarn('auth', 'session-expiry recovery failed', e);
     // Allow a retry on the next failure rather than wedging the guard.

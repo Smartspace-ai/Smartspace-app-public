@@ -354,6 +354,7 @@ export function createMsalWebAdapter(): AuthAdapter {
     },
     async signIn(opts?: SignInOptions) {
       const redirectUrl =
+        opts?.redirectUrl ||
         new URLSearchParams(window.location.search).get('redirect') ||
         '/workspace';
       sessionStorage.setItem('msalRedirectUrl', redirectUrl);
