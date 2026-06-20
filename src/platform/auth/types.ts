@@ -7,12 +7,6 @@ export type GetTokenOptions = {
 export type SignInOptions = {
   /** UPN or email hint so Azure AD can auto-select the account (avoids "Pick an account" prompt). */
   loginHint?: string;
-  /**
-   * Where to return after sign-in completes. Defaults to the `?redirect` query
-   * param, else `/workspace`. Passed by reactive re-auth so the user lands back
-   * on the page they were on, not the workspace root.
-   */
-  redirectUrl?: string;
 };
 
 export interface AuthAdapter {
