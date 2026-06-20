@@ -14,11 +14,37 @@ import { getAuthAdapter } from '@/platform/auth/index';
 import { isInTeams } from '@/platform/auth/msalConfig';
 import {
   getAuthRuntimeState,
+  setAuthStuck,
   setSessionExpired,
 } from '@/platform/auth/runtime';
 import { ssInfoAlways, ssWarn } from '@/platform/log';
 
 let reauthInProgress = false;
+
+// Loop-breaker: each re-auth is a full-page redirect, so in-memory guards reset
+// on reload. Persist a sliding window of attempt timestamps in sessionStorage;
+// after too many in a short window, stop redirecting (re-auth isn't clearing the
+// 401 — revoked access, a conditional-access gate, or a backend rejecting a
+// valid token) and surface a terminal prompt instead of an infinite loop.
+const REAUTH_LOG_KEY = 'ss_reauth_log';
+const REAUTH_MAX = 3;
+const REAUTH_WINDOW_MS = 60_000;
+
+/** Record an attempt; return false once too many have fired within the window. */
+function withinReauthBudget(): boolean {
+  try {
+    const now = Date.now();
+    const raw = sessionStorage.getItem(REAUTH_LOG_KEY);
+    const recent = (raw ? (JSON.parse(raw) as number[]) : []).filter(
+      (t) => now - t < REAUTH_WINDOW_MS
+    );
+    recent.push(now);
+    sessionStorage.setItem(REAUTH_LOG_KEY, JSON.stringify(recent));
+    return recent.length <= REAUTH_MAX;
+  } catch {
+    return true; // storage unavailable — don't block recovery
+  }
+}
 
 function isE2E(): boolean {
   return import.meta.env.VITE_E2E_AUTH_BYPASS === 'true';
@@ -47,6 +73,14 @@ function inTeamsEnvironment(): boolean {
  */
 export async function handleSessionExpired(): Promise<void> {
   if (isE2E() || reauthInProgress || onLoginScreen()) return;
+
+  // Stop looping if re-auth keeps firing without resolving the 401.
+  if (!withinReauthBudget()) {
+    ssWarn('auth', 'too many re-auth attempts — surfacing stuck state');
+    setAuthStuck(true);
+    return;
+  }
+
   reauthInProgress = true;
 
   try {
@@ -71,10 +105,16 @@ export async function handleSessionExpired(): Promise<void> {
   }
 }
 
-/** Clear the guard + prompt once a fresh session is established. */
+/** Clear the guard + prompt + attempt log once a fresh session is established. */
 export function resetSessionExpiry(): void {
   reauthInProgress = false;
   setSessionExpired(false);
+  setAuthStuck(false);
+  try {
+    sessionStorage.removeItem(REAUTH_LOG_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 /**

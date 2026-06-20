@@ -19,6 +19,13 @@ export type AuthRuntimeState = {
    * this stays false.
    */
   sessionExpired: boolean;
+  /**
+   * Set when re-auth has fired too many times in a short window — i.e. signing
+   * in didn't resolve the 401 (revoked access, conditional-access gate, backend
+   * rejecting a valid token). Recovery stops auto-redirecting and a terminal
+   * prompt is shown instead of looping the user through login indefinitely.
+   */
+  authStuck: boolean;
 };
 
 type Listener = () => void;
@@ -27,6 +34,7 @@ let state: AuthRuntimeState = {
   isInTeams: null,
   lastError: null,
   sessionExpired: false,
+  authStuck: false,
 };
 const listeners = new Set<Listener>();
 
@@ -60,6 +68,12 @@ export function setRuntimeAuthError(
 export function setSessionExpired(expired: boolean) {
   if (state.sessionExpired === expired) return;
   state = { ...state, sessionExpired: expired };
+  emit();
+}
+
+export function setAuthStuck(stuck: boolean) {
+  if (state.authStuck === stuck) return;
+  state = { ...state, authStuck: stuck };
   emit();
 }
 

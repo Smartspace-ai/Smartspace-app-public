@@ -50,16 +50,20 @@ const button: React.CSSProperties = {
 
 export function SessionExpiryPrompt() {
   const adapter = useAuth();
-  const { sessionExpired } = useAuthRuntime();
+  const { sessionExpired, authStuck } = useAuthRuntime();
   const [signingIn, setSigningIn] = useState(false);
 
-  if (!sessionExpired) return null;
+  // authStuck (re-auth looped without resolving) is terminal and takes
+  // precedence over the ordinary Teams gesture prompt.
+  if (!sessionExpired && !authStuck) return null;
 
   const onSignIn = async () => {
     setSigningIn(true);
+    // Clear flags + attempt budget before retrying so the redirect starts
+    // fresh (signIn() navigates away on web, so post-call cleanup won't run).
+    resetSessionExpiry();
     try {
       await adapter.signIn();
-      resetSessionExpiry();
       queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
     } catch (e) {
       ssWarn('auth', 'sign-in from session-expiry prompt failed', e);
@@ -71,13 +75,17 @@ export function SessionExpiryPrompt() {
     <div
       role="alertdialog"
       aria-modal="true"
-      aria-label="Session expired"
+      aria-label={authStuck ? 'Unable to sign in' : 'Session expired'}
       style={overlay}
     >
       <div style={card}>
-        <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Session expired</h2>
+        <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>
+          {authStuck ? "We couldn't sign you in" : 'Session expired'}
+        </h2>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>
-          Your session timed out. Sign in again to keep working.
+          {authStuck
+            ? 'Signing in didn’t resolve the problem. Try again, or contact your administrator if it keeps happening.'
+            : 'Your session timed out. Sign in again to keep working.'}
         </p>
         <button
           type="button"
@@ -85,7 +93,7 @@ export function SessionExpiryPrompt() {
           disabled={signingIn}
           style={{ ...button, opacity: signingIn ? 0.6 : 1 }}
         >
-          {signingIn ? 'Signing in…' : 'Sign in'}
+          {signingIn ? 'Signing in…' : 'Try again'}
         </button>
       </div>
     </div>

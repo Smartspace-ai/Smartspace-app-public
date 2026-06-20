@@ -1,11 +1,13 @@
 import { AxiosHeaders } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockSignIn, mockSetSessionExpired, state } = vi.hoisted(() => ({
-  mockSignIn: vi.fn().mockResolvedValue(undefined),
-  mockSetSessionExpired: vi.fn(),
-  state: { inTeams: false },
-}));
+const { mockSignIn, mockSetSessionExpired, mockSetAuthStuck, state } =
+  vi.hoisted(() => ({
+    mockSignIn: vi.fn().mockResolvedValue(undefined),
+    mockSetSessionExpired: vi.fn(),
+    mockSetAuthStuck: vi.fn(),
+    state: { inTeams: false },
+  }));
 
 vi.mock('@/platform/auth/index', () => ({
   getAuthAdapter: () => ({ signIn: mockSignIn }),
@@ -18,6 +20,7 @@ vi.mock('@/platform/auth/msalConfig', () => ({
 vi.mock('@/platform/auth/runtime', () => ({
   getAuthRuntimeState: () => ({ isInTeams: null }),
   setSessionExpired: mockSetSessionExpired,
+  setAuthStuck: mockSetAuthStuck,
 }));
 
 vi.mock('@/platform/log', () => ({
@@ -61,8 +64,10 @@ describe('handleSessionExpired', () => {
   beforeEach(() => {
     state.inTeams = false;
     resetSessionExpiry();
-    mockSignIn.mockClear();
+    mockSignIn.mockReset();
+    mockSignIn.mockResolvedValue(undefined);
     mockSetSessionExpired.mockClear();
+    mockSetAuthStuck.mockClear();
   });
 
   it('web: redirects via signIn() exactly once for concurrent failures', async () => {
@@ -80,5 +85,22 @@ describe('handleSessionExpired', () => {
     await handleSessionExpired();
     expect(mockSetSessionExpired).toHaveBeenCalledWith(true);
     expect(mockSignIn).not.toHaveBeenCalled();
+  });
+
+  it('stops redirecting and flags authStuck after too many attempts', async () => {
+    // signIn rejects so the in-progress guard resets between attempts (mirrors
+    // the page reload that would happen after each real redirect).
+    mockSignIn.mockReset();
+    mockSignIn.mockRejectedValue(new Error('still 401'));
+
+    await handleSessionExpired();
+    await handleSessionExpired();
+    await handleSessionExpired();
+    expect(mockSignIn).toHaveBeenCalledTimes(3);
+
+    mockSignIn.mockClear();
+    await handleSessionExpired(); // 4th within the window — over budget
+    expect(mockSignIn).not.toHaveBeenCalled();
+    expect(mockSetAuthStuck).toHaveBeenCalledWith(true);
   });
 });
