@@ -18,21 +18,13 @@ import {
 } from 'react';
 
 import { parseScopes } from '@/platform/auth/scopes';
-import { handleSessionExpired } from '@/platform/auth/sessionExpiry';
+import {
+  handleSessionExpired,
+  isUnauthorizedError,
+} from '@/platform/auth/sessionExpiry';
 
 const createChatHub = (connection: HubConnection) =>
   SignalR.getHubProxyFactory('IChatHubInvoker').createHubProxy(connection);
-
-/**
- * True when a SignalR error is an auth rejection — the negotiate request 401s
- * once the token can no longer be silently refreshed. This is the reliable
- * expiry signal (the accessTokenFactory swallows failures and returns '').
- */
-const isUnauthorizedError = (err: unknown): boolean => {
-  const e = err as { statusCode?: number; message?: string } | undefined;
-  if (e?.statusCode === 401) return true;
-  return /\b401\b|unauthorized/i.test(String(e?.message ?? ''));
-};
 
 type RealtimeCtx = {
   connection?: HubConnection;

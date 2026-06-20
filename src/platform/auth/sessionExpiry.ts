@@ -56,7 +56,13 @@ export async function handleSessionExpired(): Promise<void> {
       return;
     }
     ssInfoAlways('auth', 'session expired -> interactive sign-in redirect');
-    await getAuthAdapter().signIn();
+    // Return to the current page after sign-in, not the workspace root.
+    await getAuthAdapter().signIn({
+      redirectUrl:
+        window.location.pathname +
+        window.location.search +
+        window.location.hash,
+    });
   } catch (e) {
     ssWarn('auth', 'session-expiry recovery failed', e);
     // Allow a retry on the next failure rather than wedging the guard.
@@ -94,4 +100,15 @@ export function isReauthRequired(headers: unknown): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * True when a SignalR error is an auth rejection — the negotiate request 401s
+ * once the token can no longer be silently refreshed. This is the reliable
+ * expiry signal (the accessTokenFactory swallows failures and returns '').
+ */
+export function isUnauthorizedError(err: unknown): boolean {
+  const e = err as { statusCode?: number; message?: string } | undefined;
+  if (e?.statusCode === 401) return true;
+  return /\b401\b|unauthorized/i.test(String(e?.message ?? ''));
 }
