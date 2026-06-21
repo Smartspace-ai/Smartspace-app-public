@@ -1,18 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockAxiosInstance, mockGetAuthAdapter, mockSetRuntimeAuthError } =
-  vi.hoisted(() => ({
-    mockAxiosInstance: {
-      defaults: { baseURL: '' } as Record<string, unknown>,
-      interceptors: {
-        request: {
-          use: vi.fn(),
-        },
+const {
+  mockAxiosInstance,
+  mockGetAuthAdapter,
+  mockSetRuntimeAuthError,
+  mockHandleSessionExpired,
+  mockIsReauthRequired,
+} = vi.hoisted(() => ({
+  mockAxiosInstance: {
+    defaults: { baseURL: '' } as Record<string, unknown>,
+    interceptors: {
+      request: {
+        use: vi.fn(),
+      },
+      response: {
+        use: vi.fn(),
       },
     },
-    mockGetAuthAdapter: vi.fn(),
-    mockSetRuntimeAuthError: vi.fn(),
-  }));
+  },
+  mockGetAuthAdapter: vi.fn(),
+  mockSetRuntimeAuthError: vi.fn(),
+  mockHandleSessionExpired: vi.fn(),
+  mockIsReauthRequired: vi.fn(),
+}));
 
 vi.mock('@smartspace/api-client', () => ({
   AXIOS_INSTANCE: mockAxiosInstance,
@@ -37,12 +47,22 @@ vi.mock('@/platform/auth/msalConfig', () => ({
 }));
 
 vi.mock('@/platform/auth/runtime', () => ({
-  getAuthRuntimeState: () => ({ isInTeams: null, lastError: null }),
+  getAuthRuntimeState: () => ({
+    isInTeams: null,
+    lastError: null,
+    sessionExpired: false,
+  }),
   setRuntimeAuthError: mockSetRuntimeAuthError,
+  setSessionExpired: vi.fn(),
 }));
 
 vi.mock('@/platform/auth/scopes', () => ({
   getApiScopes: () => ['api://scope'],
+}));
+
+vi.mock('@/platform/auth/sessionExpiry', () => ({
+  handleSessionExpired: mockHandleSessionExpired,
+  isReauthRequired: mockIsReauthRequired,
 }));
 
 vi.mock('@/platform/auth/sessionQuery', () => ({
@@ -52,6 +72,7 @@ vi.mock('@/platform/auth/sessionQuery', () => ({
 vi.mock('@/platform/log', () => ({
   ssInfo: vi.fn(),
   ssWarn: vi.fn(),
+  ssInfoAlways: vi.fn(),
 }));
 
 vi.mock('@/platform/reactQueryClient', () => ({
@@ -64,6 +85,7 @@ describe('configureApiClient', () => {
   beforeEach(() => {
     mockAxiosInstance.defaults = { baseURL: '' };
     mockAxiosInstance.interceptors.request.use.mockReset();
+    mockAxiosInstance.interceptors.response.use.mockReset();
     mockGetAuthAdapter.mockReset();
     mockSetRuntimeAuthError.mockReset();
   });
@@ -165,6 +187,50 @@ describe('configureApiClient', () => {
         writable: true,
         configurable: true,
       });
+    });
+  });
+
+  describe('response interceptor (re-auth on marked 401)', () => {
+    let onRejected: (error: unknown) => Promise<unknown>;
+
+    beforeEach(() => {
+      mockHandleSessionExpired.mockReset();
+      mockIsReauthRequired.mockReset();
+      configureApiClient();
+      onRejected = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
+    });
+
+    it('escalates on a 401 marked X-Reauth-Required and re-rejects', async () => {
+      mockIsReauthRequired.mockReturnValue(true);
+      const err = {
+        isAxiosError: true,
+        response: { status: 401, headers: {} },
+      };
+
+      await expect(onRejected(err)).rejects.toBe(err);
+      expect(mockHandleSessionExpired).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores a domain 401 without the header', async () => {
+      mockIsReauthRequired.mockReturnValue(false);
+      const err = {
+        isAxiosError: true,
+        response: { status: 401, headers: {} },
+      };
+
+      await expect(onRejected(err)).rejects.toBe(err);
+      expect(mockHandleSessionExpired).not.toHaveBeenCalled();
+    });
+
+    it('ignores non-401 errors', async () => {
+      mockIsReauthRequired.mockReturnValue(true);
+      const err = {
+        isAxiosError: true,
+        response: { status: 500, headers: {} },
+      };
+
+      await expect(onRejected(err)).rejects.toBe(err);
+      expect(mockHandleSessionExpired).not.toHaveBeenCalled();
     });
   });
 });

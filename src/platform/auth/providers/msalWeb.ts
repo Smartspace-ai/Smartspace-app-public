@@ -354,9 +354,9 @@ export function createMsalWebAdapter(): AuthAdapter {
     },
     async signIn(opts?: SignInOptions) {
       const redirectUrl =
+        opts?.redirectUrl ||
         new URLSearchParams(window.location.search).get('redirect') ||
         '/workspace';
-      sessionStorage.setItem('msalRedirectUrl', redirectUrl);
       if (isInTeams()) {
         // Build a loginHint from: caller-provided hint → cached account → nothing.
         const hint =
@@ -400,6 +400,10 @@ export function createMsalWebAdapter(): AuthAdapter {
         );
       } else {
         ssInfo('auth:web', 'signIn -> loginRedirect', { redirectUrl });
+        // Persist the return URL only on the web flow: it lands back on '/'
+        // where the index route consumes it. The Teams popup path stays on the
+        // current page, so storing it there would only leave a stale value.
+        sessionStorage.setItem('msalRedirectUrl', redirectUrl);
         await msalInstance.loginRedirect({
           ...interactiveLoginRequest,
           redirectUri: handleTrailingSlash(window.location.origin),

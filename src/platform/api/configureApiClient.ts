@@ -1,5 +1,5 @@
 import { AXIOS_INSTANCE } from '@smartspace/api-client';
-import { AxiosHeaders } from 'axios';
+import axios, { AxiosHeaders } from 'axios';
 
 import { AuthRequiredError } from '@/platform/auth/errors';
 import { getAuthAdapter } from '@/platform/auth/index';
@@ -9,6 +9,10 @@ import {
   setRuntimeAuthError,
 } from '@/platform/auth/runtime';
 import { getApiScopes } from '@/platform/auth/scopes';
+import {
+  handleSessionExpired,
+  isReauthRequired,
+} from '@/platform/auth/sessionExpiry';
 import { SESSION_QUERY_KEY } from '@/platform/auth/sessionQuery';
 import { ssInfo, ssWarn } from '@/platform/log';
 import { queryClient } from '@/platform/reactQueryClient';
@@ -102,10 +106,32 @@ export function configureApiClient() {
       // Invalidate session query so UI reacts to auth failure
       queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
 
+      // Reactively escalate to interactive re-auth (redirect on web, prompt in
+      // Teams). De-duped inside handleSessionExpired — fire-and-forget.
+      void handleSessionExpired();
+
       ssWarn('api', 'silent token attach failed (blocking request)', e);
       throw e instanceof AuthRequiredError ? e : new AuthRequiredError();
     }
 
     return config;
   });
+
+  // Response interceptor — a live 401 the server marks with X-Reauth-Required is
+  // an auth-middleware rejection (expired/invalid token), not a domain 401. Most
+  // app-public expiries are caught request-side above (silent acquisition throws
+  // before the request is sent); this covers token-present-but-server-rejects.
+  AXIOS_INSTANCE.interceptors.response.use(
+    (response) => response,
+    (error: unknown) => {
+      if (
+        axios.isAxiosError(error) &&
+        error.response?.status === 401 &&
+        isReauthRequired(error.response.headers)
+      ) {
+        void handleSessionExpired();
+      }
+      return Promise.reject(error);
+    }
+  );
 }

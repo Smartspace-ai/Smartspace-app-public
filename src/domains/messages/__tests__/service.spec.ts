@@ -55,6 +55,15 @@ vi.mock('@/platform/auth/scopes', () => ({
   getApiScopes: () => ['scope.read'],
 }));
 
+// fetchAuthed imports sessionExpiry, which (via msalConfig) would otherwise
+// pull the real auth/scopes chain past the barrel mock above.
+vi.mock('@/platform/auth/sessionExpiry', () => ({
+  handleSessionExpired: vi.fn(),
+  resetSessionExpiry: vi.fn(),
+  isReauthRequired: () => false,
+  isUnauthorizedError: () => false,
+}));
+
 import {
   addInputToMessage,
   fetchMessages,
