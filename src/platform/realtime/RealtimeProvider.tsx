@@ -18,6 +18,10 @@ import {
 } from 'react';
 
 import { parseScopes } from '@/platform/auth/scopes';
+import {
+  handleSessionExpired,
+  isUnauthorizedError,
+} from '@/platform/auth/sessionExpiry';
 
 const createChatHub = (connection: HubConnection) =>
   SignalR.getHubProxyFactory('IChatHubInvoker').createHubProxy(connection);
@@ -77,10 +81,17 @@ export function RealtimeProvider({
   scopes = parseScopes(import.meta.env.VITE_CLIENT_SCOPES),
 }: RealtimeProviderProps) {
   const [connection, setConnection] = useState<HubConnection>();
+  // Bumped when a connection closes permanently (automatic-reconnect exhausted)
+  // so the build effect rebuilds a fresh connection — without it the hub stays
+  // dead until a full page reload (e.g. after re-auth in Teams).
+  const [rebuildTick, setRebuildTick] = useState(0);
   const desiredGroups = useRef<Set<string>>(new Set());
   const startPromise = useRef<Promise<void> | null>(null);
 
   const hubUrl = (baseUrl ?? '').replace(/\/$/, '') + hubPath;
+  // Stable key for the scopes array so the effect dep is a simple value
+  // (react-hooks/exhaustive-deps rejects complex expressions in the deps array).
+  const scopesKey = JSON.stringify(scopes);
 
   const isConnected = useCallback(
     () => connection?.state === HubConnectionState.Connected,
@@ -197,25 +208,44 @@ export function RealtimeProvider({
     };
     conn.onreconnected(rejoin);
 
+    let disposed = false;
+    let rebuildTimer: ReturnType<typeof setTimeout> | undefined;
+
     // start
     startPromise.current = conn
       .start()
       .catch((err) => {
         console.error('Error starting realtime connection', err);
+        // A negotiate 401 means the session expired — escalate to re-auth.
+        if (isUnauthorizedError(err)) void handleSessionExpired();
       })
       .finally(() => {
         startPromise.current = null;
       });
+
+    // withAutomaticReconnect() gives up after its retry schedule; without this
+    // the hub stays dead until a full page reload. Rebuild a fresh connection
+    // shortly after — by then re-auth has typically restored a usable token.
+    conn.onclose((err) => {
+      if (disposed) return;
+      if (isUnauthorizedError(err)) void handleSessionExpired();
+      rebuildTimer = setTimeout(() => {
+        if (!disposed) setRebuildTick((t) => t + 1);
+      }, 5_000);
+    });
+
     setConnection(conn);
 
     return () => {
+      disposed = true;
+      if (rebuildTimer) clearTimeout(rebuildTimer);
       startPromise.current = null;
       conn.stop().catch(() => {
         console.error('Error stopping connection');
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hubUrl, getAccessToken, webSocketsOnly, JSON.stringify(scopes)]);
+  }, [hubUrl, getAccessToken, webSocketsOnly, scopesKey, rebuildTick]);
 
   const value = useMemo<RealtimeCtx>(
     () => ({
