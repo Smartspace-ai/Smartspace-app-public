@@ -7,10 +7,7 @@ import {
   isInTeams,
   loginRequest,
 } from '@/platform/auth/msalConfig';
-import {
-  authenticateViaTeamsSdk,
-  setActiveAccountFromTeamsAuth,
-} from '@/platform/auth/teamsAuthHelper';
+import { interactiveTeamsAuth } from '@/platform/auth/teamsAuthHelper';
 import { ssInfo, ssWarn } from '@/platform/log';
 
 import { setStoredUseMsalInTeams } from '../runtime';
@@ -158,8 +155,10 @@ export function createMsalWebAdapter(): AuthAdapter {
           throw new Error('No active account');
         }
         if (isInTeams()) {
-          const result = await authenticateViaTeamsSdk();
-          setActiveAccountFromTeamsAuth(msalInstance, result.homeAccountId);
+          const result = await interactiveTeamsAuth(
+            msalInstance,
+            interactiveLoginRequest
+          );
           setPopupFallbackToken(
             result.homeAccountId,
             result.accessToken,
@@ -250,11 +249,14 @@ export function createMsalWebAdapter(): AuthAdapter {
           if (inFlightPopupPromise) return inFlightPopupPromise;
           inFlightPopupPromise = (async () => {
             if (isInTeams()) {
-              // Teams SDK popup flow instead of acquireTokenPopup
+              // Client-aware interactive popup: native on Teams web, Teams SDK on desktop.
               const account = msalInstance.getActiveAccount();
               const hint = account?.username;
-              const result = await authenticateViaTeamsSdk(hint);
-              setActiveAccountFromTeamsAuth(msalInstance, result.homeAccountId);
+              const result = await interactiveTeamsAuth(
+                msalInstance,
+                interactiveLoginRequest,
+                hint
+              );
               setPopupFallbackToken(
                 result.homeAccountId,
                 result.accessToken,
@@ -389,10 +391,13 @@ export function createMsalWebAdapter(): AuthAdapter {
             );
           }
         }
-        // 2) Teams SDK popup flow — uses authentication.authenticate() which
-        //    opens a Teams-controlled popup (bypasses WebView2 popup blocking).
-        const result = await authenticateViaTeamsSdk(hint);
-        setActiveAccountFromTeamsAuth(msalInstance, result.homeAccountId);
+        // 2) Interactive popup — native acquireTokenPopup on Teams web, with a
+        //    Teams SDK popup fallback for desktop (WebView2 popup blocking).
+        const result = await interactiveTeamsAuth(
+          msalInstance,
+          interactiveLoginRequest,
+          hint
+        );
         setPopupFallbackToken(
           result.homeAccountId,
           result.accessToken,

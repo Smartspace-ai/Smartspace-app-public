@@ -1,6 +1,5 @@
 import {
   createNestablePublicClientApplication,
-  InteractionRequiredAuthError,
   type Configuration,
   type IPublicClientApplication,
 } from '@azure/msal-browser';
@@ -143,6 +142,19 @@ const isExpired = (exp: number, skew = 60) =>
 
 export type AcquireNaaTokenOptions = { silentOnly?: boolean };
 
+/** Login hint from the Teams context — used to seed ssoSilent on first load. */
+async function getTeamsLoginHint(): Promise<string | undefined> {
+  try {
+    const ctx = await teamsApp.getContext();
+    const user = ctx.user as
+      | { loginHint?: string; userPrincipalName?: string }
+      | undefined;
+    return user?.loginHint ?? user?.userPrincipalName ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export const acquireNaaToken = async (
   scopes: string[],
   opts?: AcquireNaaTokenOptions
@@ -160,13 +172,29 @@ export const acquireNaaToken = async (
   const account = accounts[0];
 
   try {
-    if (!account) {
-      ssWarn('auth:naa', 'No account found for NAA token acquisition');
-      throw new InteractionRequiredAuthError('No account available');
+    let res;
+    if (account) {
+      ssInfo(
+        'auth:naa',
+        'Attempting silent token acquisition (cached account)'
+      );
+      res = await pca.acquireTokenSilent({ account, scopes });
+    } else {
+      // No account in the nested PCA (expected on first load / after a reload in
+      // the partitioned Teams web iframe). Acquire via the host broker with
+      // ssoSilent. Unlike a hidden-iframe ssoSilent, the NAA broker path is NOT
+      // blocked by third-party-cookie partitioning — this is the seamless,
+      // popup-free SSO that NAA is designed to provide.
+      const loginHint = await getTeamsLoginHint();
+      ssInfo('auth:naa', 'No cached account — ssoSilent via host broker', {
+        hasLoginHint: !!loginHint,
+      });
+      res = await pca.ssoSilent({
+        scopes,
+        ...(loginHint ? { loginHint } : {}),
+      });
+      if (res.account) pca.setActiveAccount(res.account);
     }
-
-    ssInfo('auth:naa', 'Attempting silent token acquisition');
-    const res = await pca.acquireTokenSilent({ account, scopes });
     const token = res.accessToken;
     const exp = JSON.parse(atob(token.split('.')[1])).exp as number | undefined;
     setCachedToken(key, token, exp ?? Math.floor(Date.now() / 1000) + 900);

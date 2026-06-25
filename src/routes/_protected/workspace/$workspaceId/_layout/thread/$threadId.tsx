@@ -39,8 +39,13 @@ export const Route = createFileRoute(
         })
       );
     } catch (e: unknown) {
-      // If user deep-links to a random GUID that doesn't exist, redirect to the first thread
-      // (same behavior as /workspace/$workspaceId/ without a threadId).
+      // If a thread can't be loaded, fall back to the first thread — but ONLY if
+      // it's a DIFFERENT thread. A thread can appear in the list while its detail
+      // endpoint 404s (data inconsistency); "redirect to first" then resolves
+      // back to the same id → an infinite redirect loop that never commits, so
+      // the boot splash stays up forever and requests fire endlessly. When there
+      // is no different thread to show, commit the route with no thread instead
+      // of looping (the component renders an empty state and the splash lifts).
       if (!isNotFoundError(e)) throw e;
 
       const list = await context.queryClient.ensureQueryData(
@@ -48,7 +53,7 @@ export const Route = createFileRoute(
       );
       const first = list.data[0];
 
-      if (first?.id) {
+      if (first?.id && first.id !== params.threadId) {
         throw redirect({
           to: '/workspace/$workspaceId/thread/$threadId',
           params: { workspaceId: params.workspaceId, threadId: first.id },
@@ -56,11 +61,7 @@ export const Route = createFileRoute(
         });
       }
 
-      throw redirect({
-        to: '/workspace/$workspaceId',
-        params: { workspaceId: params.workspaceId },
-        replace: true,
-      });
+      return null;
     }
   },
   component: ThreadRouteComponent,
