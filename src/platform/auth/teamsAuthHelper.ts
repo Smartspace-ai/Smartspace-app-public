@@ -6,7 +6,10 @@
  * `authentication.authenticate()` API, which bypasses WebView2
  * popup blocking in Teams Desktop.
  */
-import type { PublicClientApplication } from '@azure/msal-browser';
+import type {
+  PopupRequest,
+  PublicClientApplication,
+} from '@azure/msal-browser';
 import { authentication, app as teamsApp } from '@microsoft/teams-js';
 
 import { ssInfo, ssWarn } from '@/platform/log';
@@ -145,5 +148,48 @@ export function setActiveAccountFromTeamsAuth(
     if (allAccounts.length > 0) {
       msalInstance.setActiveAccount(allAccounts[0]);
     }
+  }
+}
+
+/**
+ * Interactive Teams token acquisition that picks the popup mechanism the current
+ * client supports:
+ *  - Teams web: MSAL's native `acquireTokenPopup` works and is simplest.
+ *  - Teams desktop (WebView2): native popups are blocked, so fall back to the
+ *    Teams SDK authentication popup (the teams-auth-*.html round-trip).
+ * Native is tried first with a Teams-SDK fallback, so it's robust without relying
+ * on host-client-type detection (which is null in new Teams web). Returns the
+ * same shape as `authenticateViaTeamsSdk`, so callers are unchanged.
+ */
+export async function interactiveTeamsAuth(
+  msalInstance: PublicClientApplication,
+  request: PopupRequest,
+  loginHint?: string
+): Promise<TeamsAuthResult> {
+  try {
+    ssInfo(
+      'auth:teams-helper',
+      'interactiveTeamsAuth -> native acquireTokenPopup'
+    );
+    const r = await msalInstance.acquireTokenPopup({
+      ...request,
+      ...(loginHint ? { loginHint } : {}),
+    });
+    if (r.account) msalInstance.setActiveAccount(r.account);
+    ssInfo('auth:teams-helper', 'native acquireTokenPopup succeeded');
+    return {
+      homeAccountId: r.account?.homeAccountId ?? '',
+      accessToken: r.accessToken,
+      expiresOn: r.expiresOn?.toISOString(),
+    };
+  } catch (nativeErr) {
+    ssWarn(
+      'auth:teams-helper',
+      'native popup failed; falling back to Teams SDK popup',
+      nativeErr
+    );
+    const result = await authenticateViaTeamsSdk(loginHint);
+    setActiveAccountFromTeamsAuth(msalInstance, result.homeAccountId);
+    return result;
   }
 }
