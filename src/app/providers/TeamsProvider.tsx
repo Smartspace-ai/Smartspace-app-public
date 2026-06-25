@@ -116,21 +116,52 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
       root.setAttribute('data-teams-theme', 'default');
 
       // Teams web can re-apply classes/styles after load; keep light pinned.
-      const obs = new MutationObserver(() => applyLight());
-      obs.observe(root, {
-        attributes: true,
-        attributeFilter: ['class', 'style'],
+      //
+      // CRITICAL: applyLight() mutates root/body `style` + `class` — the very
+      // attributes this observer watches. A naive `new MutationObserver(() =>
+      // applyLight())` therefore re-triggers itself (and fights Teams' own theme
+      // observer) in an UNBOUNDED microtask loop that pegs the Teams-iframe main
+      // thread — timers and network callbacks never run, so the app freezes on
+      // the boot splash (and can lock the whole tab/machine). This only runs in
+      // Teams, which is why the app works fine in a plain browser.
+      //
+      // Guard it two ways: (1) disconnect while we mutate so our own changes
+      // can't re-fire the observer, and (2) throttle re-application via a macro-
+      // task timer so even a tug-of-war with Teams stays bounded (≤ a few/sec)
+      // and always yields the event loop.
+      let reapplyScheduled = false;
+      let lastApplyAt = Date.now();
+      let obs: MutationObserver | null = null;
+      const observe = () => {
+        if (!obs) return;
+        obs.observe(root, {
+          attributes: true,
+          attributeFilter: ['class', 'style'],
+        });
+        try {
+          if (document.body)
+            obs.observe(document.body, {
+              attributes: true,
+              attributeFilter: ['class', 'style'],
+            });
+        } catch {
+          /* ignore */
+        }
+      };
+      obs = new MutationObserver(() => {
+        if (reapplyScheduled) return;
+        reapplyScheduled = true;
+        const wait = Math.max(0, 250 - (Date.now() - lastApplyAt));
+        window.setTimeout(() => {
+          reapplyScheduled = false;
+          lastApplyAt = Date.now();
+          obs?.disconnect();
+          applyLight();
+          observe();
+        }, wait);
       });
-      try {
-        if (document.body)
-          obs.observe(document.body, {
-            attributes: true,
-            attributeFilter: ['class', 'style'],
-          });
-      } catch {
-        /* ignore */
-      }
-      return () => obs.disconnect();
+      observe();
+      return () => obs?.disconnect();
     } catch {
       // ignore DOM failures
     }
