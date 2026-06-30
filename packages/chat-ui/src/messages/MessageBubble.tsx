@@ -2,7 +2,7 @@
 import { JsonSchema } from '@jsonforms/core';
 import { JsonForms } from '@jsonforms/react';
 import Button from '@mui/material/Button';
-import { FC, useEffect, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 
 import { FileInfo } from '@/domains/files';
 import { getFileIcon } from '@/domains/files/utils';
@@ -64,6 +64,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
   } = props;
   const [responseFormData, setResponseFormData] = useState<unknown>(userInput);
   const [responseFormValid, setResponseFormValid] = useState<boolean>(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   const isBotResponse = type === MessageValueType.OUTPUT;
   const showForm = userOutput;
 
@@ -116,25 +117,27 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
             </span>
           </div>
         </div>
-        <ChatMessageCopyButton content={content} />
+        <ChatMessageCopyButton content={content} contentRef={contentRef} />
       </div>
 
       <div className={cn(isBotResponse ? 'p-4' : 'px-4 py-2')}>
-        {contentIsList &&
-          content?.map((item, i) =>
-            item.text ? (
-              <div
-                key={`content-${i}`}
-                className="prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed mb-3 last:mb-0"
-              >
-                <MessageMarkdown value={item.text} />
-              </div>
-            ) : item.image ? (
-              <div key={`image-${i}`} className="mb-3 last:mb-0">
-                <ChatMessageImage image={item.image} />
-              </div>
-            ) : null
-          )}
+        <div ref={contentRef}>
+          {contentIsList &&
+            content?.map((item, i) =>
+              item.text ? (
+                <div
+                  key={`content-${i}`}
+                  className="prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed mb-3 last:mb-0"
+                >
+                  <MessageMarkdown value={item.text} />
+                </div>
+              ) : item.image ? (
+                <div key={`image-${i}`} className="mb-3 last:mb-0">
+                  <ChatMessageImage image={item.image} />
+                </div>
+              ) : null
+            )}
+        </div>
 
         {files.length > 0 && (
           <div className="ss-chat-message__attachments mt-4 space-y-2">
