@@ -3,6 +3,7 @@ import {
   Editor,
   editorViewCtx,
   editorViewOptionsCtx,
+  parserCtx,
   rootCtx,
   serializerCtx,
 } from '@milkdown/core';
@@ -34,6 +35,10 @@ import { fileTag } from './extensions/fileTag';
 import { htmlPreviewView } from './extensions/htmlPreview';
 import { mention } from './extensions/mention';
 import { ssImageNode, ssImageView } from './extensions/ssImage';
+import {
+  extractMarkdownMarker,
+  SS_MARKDOWN_CLIPBOARD_TYPE,
+} from './htmlPreviewShared';
 import './styles.css';
 
 const initial = [
@@ -180,6 +185,7 @@ function EditorInner({
   const [_isDragging, setIsDragging] = useState(false);
   const viewRef = useRef<EditorView | null>(null);
   const serializerRef = useRef<((doc: PMNode) => string) | null>(null);
+  const parserRef = useRef<((markdown: string) => PMNode | null) | null>(null);
 
   function guessImageExt(mime: string) {
     const t = (mime || '').toLowerCase();
@@ -342,6 +348,13 @@ function EditorInner({
               } catch {
                 /* serializer not ready yet */
               }
+              try {
+                parserRef.current = anyCtx.get(parserCtx) as (
+                  markdown: string
+                ) => PMNode | null;
+              } catch {
+                /* parser not ready yet */
+              }
               const handle = () => {
                 try {
                   if (enableMentions) updateMentionFromView();
@@ -465,6 +478,23 @@ function EditorInner({
     const { from, to } = view.state.selection;
     const tr = view.state.tr.replaceWith(from, to, node);
     view.dispatch(tr.scrollIntoView());
+  }
+
+  // Parse a markdown string and replace the current selection with it. Used
+  // when pasting SmartSpace's own custom clipboard format so charts paste as
+  // live `html` source rather than the rasterized-image `text/html`.
+  function insertMarkdownAtSelection(view: EditorView, markdown: string) {
+    const parser = parserRef.current;
+    if (!parser) return false;
+    try {
+      const doc = parser(markdown);
+      if (!doc) return false;
+      const slice = new Slice(doc.content, 0, 0);
+      view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView());
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async function insertUploadedFilesIntoEditor(files: File[]) {
@@ -791,6 +821,25 @@ function EditorInner({
       }}
       onPasteCapture={(e) => {
         try {
+          // SmartSpace's own "smart copy" embeds the live markdown in the
+          // copied content so a chart pastes back as live `html` source instead
+          // of the rasterized image we hand to Word. Recover it from the hidden
+          // HTML marker (works in every browser), falling back to the custom
+          // web format. When neither is present this is a normal external paste
+          // and we let the default handler run.
+          const view = viewRef.current;
+          if (isEditable && view) {
+            const ssMarkdown =
+              extractMarkdownMarker(
+                e.clipboardData?.getData('text/html') ?? ''
+              ) ?? e.clipboardData?.getData(SS_MARKDOWN_CLIPBOARD_TYPE);
+            if (ssMarkdown && insertMarkdownAtSelection(view, ssMarkdown)) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+          }
+
           const items = e.clipboardData?.items;
           if (!items) return;
           const imageFiles: File[] = [];

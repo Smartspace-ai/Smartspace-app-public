@@ -423,6 +423,75 @@
   /* Kill the baseline gap under replaced elements (iframe is inline by
      default), which otherwise adds ~4px of empty space below the preview. */
   vertical-align: top;
+  /* Fade in once the rendered preview replaces the loading shimmer. */
+  transition: opacity 0.2s ease;
+}
+
+/* Loading state shown while the previewed HTML is still streaming in or the
+   iframe hasn't reported its measured height yet. Sits on a white backdrop so
+   there's no dark flash before a (white) chart appears, and is covered by an
+   absolutely-positioned shimmer so the box keeps a stable size. */
+.ss-markdown .ss-code-block__preview {
+  position: relative;
+}
+
+.ss-markdown .ss-code-block__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  z-index: 1;
+  color: #6b7280;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  background-color: #ffffff;
+  background-image: linear-gradient(
+    100deg,
+    rgba(0, 0, 0, 0) 30%,
+    rgba(0, 0, 0, 0.05) 50%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  background-size: 200% 100%;
+  animation: ss-code-block-shimmer 1.4s ease-in-out infinite;
+}
+
+.ss-markdown .ss-code-block__spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(0, 0, 0, 0.12);
+  border-top-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  animation: ss-code-block-spin 0.8s linear infinite;
+}
+
+@keyframes ss-code-block-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ss-code-block-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-markdown .ss-code-block__loading {
+    animation: none;
+  }
+  .ss-markdown .ss-code-block__spinner {
+    animation-duration: 1.6s;
+  }
+  .ss-markdown .ss-code-block__iframe {
+    transition: none;
+  }
 }
 
 /* Inline code in read-only messages — matches the Milkdown editor's

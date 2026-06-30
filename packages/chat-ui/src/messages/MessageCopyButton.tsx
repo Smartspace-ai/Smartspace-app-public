@@ -1,9 +1,12 @@
 import { Check, Copy } from 'lucide-react';
-import { useState } from 'react';
+import { RefObject, useState } from 'react';
 
 import { MessageContentItem } from '@/domains/messages';
 
+import { copyText } from '@/shared/markdown/htmlPreviewShared';
 import { Button } from '@/shared/mui-compat/button';
+
+import { copyMessageRich } from './smartCopy';
 
 enum CopyState {
   IDLE = 'idle',
@@ -14,8 +17,12 @@ const RESET_DELAY = 1000;
 
 export function ChatMessageCopyButton({
   content,
+  contentRef,
 }: {
   content: MessageContentItem[];
+  /** Live rendered message element — its chart iframes are rasterized so the
+   *  copy pastes into Word as images. Falls back to plain text when absent. */
+  contentRef?: RefObject<HTMLElement | null>;
 }) {
   const [state, setState] = useState<CopyState>(CopyState.IDLE);
 
@@ -29,14 +36,18 @@ export function ChatMessageCopyButton({
 
     if (!textToCopy) return;
 
-    try {
-      await navigator.clipboard.writeText(textToCopy);
+    const container = contentRef?.current;
+    const ok = container
+      ? await copyMessageRich(container, textToCopy)
+      : await copyText(textToCopy);
+
+    if (ok) {
       setState(CopyState.SUCCESS);
       setTimeout(() => {
         setState(CopyState.IDLE);
       }, RESET_DELAY);
-    } catch (err) {
-      console.error('Failed to copy text:', err);
+    } else {
+      console.error('Failed to copy message content');
     }
   };
 
