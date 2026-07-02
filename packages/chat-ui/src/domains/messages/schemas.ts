@@ -31,6 +31,11 @@ export const MessageResponseSchema = z.object({
 
 export const MessageErrorMessageSchema = z.object({
   code: z.number(),
+  // Stable machine-readable category (e.g. "llm.rate_limit"). Accept both
+  // spellings: app-api serialises camelCase, the ai-api origin field is
+  // snake_case — the mapper coalesces them.
+  errorCode: z.string().nullish(),
+  error_code: z.string().nullish(),
   message: z.string().nullish(),
   data: z.string().nullish(),
   blockId: z.string().nullish(),

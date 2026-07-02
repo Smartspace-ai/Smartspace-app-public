@@ -58,6 +58,17 @@ export {
   mapMessagesDtoToModels,
   type MessageError,
 } from './domains/messages/mapper';
+// Error/status text helpers — exported so forks can override copy and tests
+// can pin the error-code contract with the backend.
+export {
+  getMessageErrorText,
+  type MessageErrorLike,
+} from './domains/messages/errors';
+export {
+  getRetryStatusText,
+  parseRetryStatus,
+  type RetryStatus,
+} from './domains/messages/statuses';
 export { mapFileInfoDtoToModel } from './domains/files/mapper';
 export {
   mapSignalRThreadSummaryToModel,
