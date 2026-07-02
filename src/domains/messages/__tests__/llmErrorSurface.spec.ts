@@ -33,6 +33,7 @@ describe('getMessageErrorText', () => {
     ['llm.invalid_request', 'rejected'],
     ['llm.content_policy', 'content filter'],
     ['llm.schema_validation', 'invalid response'],
+    ['llm.unsupported_modality', "can't read images"],
   ])('has a specific message for %s', (errorCode, fragment) => {
     expect(getMessageErrorText({ code: 500, errorCode })).toContain(fragment);
   });
