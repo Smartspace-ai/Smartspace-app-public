@@ -19,7 +19,7 @@ const ERROR_CODE_TEXT: Record<string, string> = {
     '⚠️ **The model took too long to respond**\n\nPlease try again. If this keeps happening, try a shorter question.',
   'llm.transient_connection':
     '⚠️ **The connection to the model was interrupted**\n\nThis is usually temporary. Please try again.',
-  'llm.server_error':
+  'llm.upstream_error':
     '⚠️ **The model provider had a problem**\n\nPlease try again in a moment.',
   'llm.auth':
     "⚠️ **The model connection isn't authorised**\n\nAn administrator needs to check the model configuration.",
@@ -42,8 +42,8 @@ const STATUS_CODE_TEXT: Record<number, string> = {
   401: ERROR_CODE_TEXT['llm.auth'],
   403: ERROR_CODE_TEXT['llm.auth'],
   404: ERROR_CODE_TEXT['llm.not_found'],
-  500: ERROR_CODE_TEXT['llm.server_error'],
-  502: ERROR_CODE_TEXT['llm.server_error'],
+  500: ERROR_CODE_TEXT['llm.upstream_error'],
+  502: ERROR_CODE_TEXT['llm.upstream_error'],
   503: ERROR_CODE_TEXT['llm.transient_connection'],
   504: ERROR_CODE_TEXT['llm.timeout'],
 };
