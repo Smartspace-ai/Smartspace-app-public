@@ -27,7 +27,7 @@ describe('getMessageErrorText', () => {
     ['llm.rate_limit', 'too many requests'],
     ['llm.timeout', 'took too long'],
     ['llm.transient_connection', 'interrupted'],
-    ['llm.server_error', 'provider had a problem'],
+    ['llm.upstream_error', 'provider had a problem'],
     ['llm.auth', "isn't authorised"],
     ['llm.not_found', 'could not be found'],
     ['llm.invalid_request', 'rejected'],
