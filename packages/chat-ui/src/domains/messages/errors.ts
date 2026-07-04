@@ -33,6 +33,8 @@ const ERROR_CODE_TEXT: Record<string, string> = {
     '⚠️ **The response was blocked by a content filter**\n\nPlease rephrase your request.',
   'llm.schema_validation':
     '⚠️ **The model returned an invalid response**\n\nPlease try again.',
+  'llm.unsupported_modality':
+    "⚠️ **This model can't read images**\n\nSwitch to a vision-capable model, or remove the attachment and describe it instead.",
   'llm.unknown': GENERIC_ERROR_TEXT,
 };
 
