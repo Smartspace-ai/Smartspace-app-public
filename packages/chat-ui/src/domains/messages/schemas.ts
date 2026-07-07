@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  MessageAttribution,
   MessageResponseSourceType,
   MessageValueType,
 } from '@/domains/messages/enums';
@@ -18,6 +19,10 @@ export const MessageResponseSourceSchema = z.object({
   file: FileInfoSchema.nullish(),
   url: z.string().nullish(),
   sourceType: z.nativeEnum(MessageResponseSourceType),
+  // WS3c citation grounding (additive; absent on older responses).
+  uri: z.string().nullish(),
+  citedText: z.string().nullish(),
+  attribution: z.nativeEnum(MessageAttribution).nullish(),
 });
 
 // MessageResponse schema
