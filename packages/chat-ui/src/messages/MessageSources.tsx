@@ -9,13 +9,17 @@ import {
   FileText,
   FileVideo,
   Presentation,
+  ShieldAlert,
 } from 'lucide-react';
 import { useState } from 'react';
 
 import { useChatContext } from '@/platform/chat';
 
 import { useFileMutations } from '@/domains/files/mutations';
-import { MessageResponseSourceType } from '@/domains/messages/enums';
+import {
+  MessageAttribution,
+  MessageResponseSourceType,
+} from '@/domains/messages/enums';
 // Keeping this component generic; adjust type if needed in the future
 
 import { cn } from '@/shared/utils/utils';
@@ -28,6 +32,9 @@ export type MessageResponseSource = {
   file?: { id: string; name: string } | null;
   url?: string | null;
   sourceType: MessageResponseSourceType;
+  uri?: string | null;
+  citedText?: string | null;
+  attribution?: MessageAttribution | null;
 };
 
 // Utility function to get file type icon (mirrors Spencers-Ui behavior)
@@ -136,6 +143,33 @@ function isLinkSource(s: MessageResponseSource): boolean {
   );
 }
 
+// The source text couldn't be found to back the model's claim — surface it so
+// the reader knows to double-check. Only the clear signal is flagged;
+// `supported`/`partial` (and older responses with no attribution) stay quiet.
+function UnverifiedBadge({
+  attribution,
+}: {
+  attribution?: MessageAttribution | null;
+}) {
+  if (attribution !== MessageAttribution.Unsupported) return null;
+  return (
+    <span
+      title="This citation couldn't be verified against the source text — double-check it."
+      className="inline-flex items-center gap-0.5 rounded px-1 py-px text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 flex-shrink-0"
+    >
+      <ShieldAlert className="h-3 w-3" />
+      Unverified
+    </span>
+  );
+}
+
+// Hover reveals the exact span the model cited from the source (when verified).
+function nameTitle(source: MessageResponseSource, displayName: string): string {
+  return source.citedText
+    ? `${displayName} — “${source.citedText}”`
+    : displayName;
+}
+
 export function ChatMessageSources({
   sources,
 }: {
@@ -197,13 +231,14 @@ export function ChatMessageSources({
                     )}
                     <button
                       type="button"
-                      title={displayName}
+                      title={nameTitle(source, displayName)}
                       onClick={() => downloadFileMutation.mutate(source.file)}
                       className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={downloadFileMutation.isPending}
                     >
                       {displayName}
                     </button>
+                    <UnverifiedBadge attribution={source.attribution} />
                   </li>
                 );
               }
@@ -220,7 +255,7 @@ export function ChatMessageSources({
                   <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   {safeHref ? (
                     <a
-                      title={source.url ?? displayName}
+                      title={nameTitle(source, source.url ?? displayName)}
                       href={safeHref}
                       target="_blank"
                       rel="noreferrer"
@@ -233,6 +268,7 @@ export function ChatMessageSources({
                       {displayName}
                     </span>
                   )}
+                  <UnverifiedBadge attribution={source.attribution} />
                 </li>
               );
             })}
