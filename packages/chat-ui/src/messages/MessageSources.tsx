@@ -163,11 +163,19 @@ function UnverifiedBadge({
   );
 }
 
-// Hover reveals the exact span the model cited from the source (when verified).
-function nameTitle(source: MessageResponseSource, displayName: string): string {
-  return source.citedText
-    ? `${displayName} — “${source.citedText}”`
-    : displayName;
+// The verified span the model cited, shown as a visible quote line under
+// the source (the API extracts it from the source's own text, so this is
+// what the source actually says — not the model's paraphrase).
+function CitedQuote({ source }: { source: MessageResponseSource }) {
+  if (!source.citedText) return null;
+  return (
+    <p
+      title={source.citedText}
+      className="m-0 pl-6 pr-2 pb-0.5 text-xs italic text-muted-foreground line-clamp-2 border-l-2 border-border ml-1"
+    >
+      “{source.citedText}”
+    </p>
+  );
 }
 
 export function ChatMessageSources({
@@ -222,23 +230,26 @@ export function ChatMessageSources({
                 return (
                   <li
                     key={`${source.file.id}-${source.index}`}
-                    className="list-none text-sm text-foreground m-0 p-0 flex items-center gap-1.5"
+                    className="list-none text-sm text-foreground m-0 p-0"
                     style={{ paddingLeft: 0, marginLeft: 0 }}
                   >
-                    <span>{`(${source.index})`} : </span>
-                    {Icon && (
-                      <Icon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                    )}
-                    <button
-                      type="button"
-                      title={nameTitle(source, displayName)}
-                      onClick={() => downloadFileMutation.mutate(source.file)}
-                      className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={downloadFileMutation.isPending}
-                    >
-                      {displayName}
-                    </button>
-                    <UnverifiedBadge attribution={source.attribution} />
+                    <div className="flex items-center gap-1.5">
+                      <span>{`(${source.index})`} : </span>
+                      {Icon && (
+                        <Icon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                      )}
+                      <button
+                        type="button"
+                        title={displayName}
+                        onClick={() => downloadFileMutation.mutate(source.file)}
+                        className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed truncate"
+                        disabled={downloadFileMutation.isPending}
+                      >
+                        {displayName}
+                      </button>
+                      <UnverifiedBadge attribution={source.attribution} />
+                    </div>
+                    <CitedQuote source={source} />
                   </li>
                 );
               }
@@ -248,27 +259,30 @@ export function ChatMessageSources({
               return (
                 <li
                   key={`url-${source.index}`}
-                  className="list-none text-sm text-foreground m-0 p-0 flex items-center gap-1.5"
+                  className="list-none text-sm text-foreground m-0 p-0"
                   style={{ paddingLeft: 0, marginLeft: 0 }}
                 >
-                  <span>{`(${source.index})`} : </span>
-                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                  {safeHref ? (
-                    <a
-                      title={nameTitle(source, source.url ?? displayName)}
-                      href={safeHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 underline underline-offset-2"
-                    >
-                      {displayName}
-                    </a>
-                  ) : (
-                    <span className="text-foreground rounded px-1 py-0.5">
-                      {displayName}
-                    </span>
-                  )}
-                  <UnverifiedBadge attribution={source.attribution} />
+                  <div className="flex items-center gap-1.5">
+                    <span>{`(${source.index})`} : </span>
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    {safeHref ? (
+                      <a
+                        title={source.url ?? displayName}
+                        href={safeHref}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 underline underline-offset-2 truncate"
+                      >
+                        {displayName}
+                      </a>
+                    ) : (
+                      <span className="text-foreground rounded px-1 py-0.5 truncate">
+                        {displayName}
+                      </span>
+                    )}
+                    <UnverifiedBadge attribution={source.attribution} />
+                  </div>
+                  <CitedQuote source={source} />
                 </li>
               );
             })}
