@@ -117,7 +117,7 @@ function getSafeUrl(url: string): string | null {
   }
 }
 
-// The hostname is the source's identity; the full URL stays in the tooltip.
+// The hostname is the source's identity; the full URL shows when expanded.
 function getHost(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
@@ -143,19 +143,25 @@ function isLinkSource(s: MessageResponseSource): boolean {
 // The source text couldn't be found to back the model's claim — surface it so
 // the reader knows to double-check. Only the clear signal is flagged;
 // `supported`/`partial` (and older responses with no attribution) stay quiet.
+// `compact` collapses it to just the icon for the pill state.
 function UnverifiedBadge({
   attribution,
+  compact = false,
 }: {
   attribution?: MessageAttribution | null;
+  compact?: boolean;
 }) {
   if (attribution !== MessageAttribution.Unsupported) return null;
   return (
     <span
       title="This citation couldn't be verified against the source text — double-check it."
-      className="inline-flex items-center gap-0.5 rounded px-1 py-px text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 flex-shrink-0"
+      className={cn(
+        'inline-flex items-center gap-0.5 rounded text-[10px] font-medium text-amber-600 dark:text-amber-400 flex-shrink-0',
+        !compact && 'px-1 py-px bg-amber-500/10'
+      )}
     >
       <ShieldAlert className="h-3 w-3" />
-      Unverified
+      {!compact && 'Unverified'}
     </span>
   );
 }
@@ -174,65 +180,47 @@ function IndexChip({ index }: { index: number }) {
 // for unknown domains, and any load failure drops to the Globe icon.
 function SourceFavicon({ host }: { host: string }) {
   const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <Globe className="h-4 w-4 flex-shrink-0 text-muted-foreground" />;
+  }
   return (
-    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-muted">
-      {failed ? (
-        <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-      ) : (
-        <img
-          src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(
-            host
-          )}&sz=64`}
-          alt=""
-          width={16}
-          height={16}
-          loading="lazy"
-          onError={() => setFailed(true)}
-          className="h-4 w-4 rounded-sm"
-        />
-      )}
-    </span>
+    <img
+      src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(
+        host
+      )}&sz=64`}
+      alt=""
+      width={16}
+      height={16}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-4 w-4 flex-shrink-0 rounded-sm"
+    />
   );
 }
 
-// The verified span the model cited, shown as a visible quote line under
-// the source (the API extracts it from the source's own text, so this is
-// what the source actually says — not the model's paraphrase).
+// The verified span the model cited (the API extracts it from the source's
+// own text, so this is what the source actually says — not the model's
+// paraphrase). Shown only in the expanded state.
 function CitedQuote({ text }: { text?: string | null }) {
   if (!text) return null;
   return (
-    <p
-      title={text}
-      className="m-0 text-xs leading-snug text-muted-foreground line-clamp-2"
-    >
-      “{text}”
+    <p className="m-0 text-xs leading-snug text-muted-foreground">“{text}”</p>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="m-0 px-0.5 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+      {children}
     </p>
   );
 }
 
-function CardHeader({
-  icon,
-  label,
-  source,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  source: MessageResponseSource;
-}) {
-  return (
-    <span className="flex w-full min-w-0 items-center gap-2">
-      {icon}
-      <span className="min-w-0 flex-1 truncate text-left text-sm font-medium text-foreground group-hover:underline underline-offset-2">
-        {label}
-      </span>
-      <UnverifiedBadge attribution={source.attribution} />
-      <IndexChip index={source.index} />
-    </span>
-  );
-}
+const pillClasses =
+  'inline-flex max-w-full items-center gap-1.5 rounded-md border border-border/60 bg-background px-2 py-1 text-xs font-medium text-foreground transition-colors hover:border-border hover:bg-muted/40';
 
-const cardClasses =
-  'group flex w-full flex-col items-start gap-1 rounded-lg border border-border/60 bg-background p-2.5 text-left no-underline transition-colors hover:border-border hover:bg-muted/40';
+const expandedCardClasses =
+  'w-full rounded-lg border border-border/60 bg-background p-2.5 flex flex-col gap-1.5';
 
 export function ChatMessageSources({
   sources,
@@ -242,10 +230,23 @@ export function ChatMessageSources({
   const { workspaceId, threadId } = useChatContext();
   const { downloadFileMutation } = useFileMutations({ workspaceId, threadId });
   const [isExpanded, setIsExpanded] = useState(true);
+  const [openIndexes, setOpenIndexes] = useState<ReadonlySet<number>>(
+    new Set()
+  );
+
+  const toggleOpen = (index: number) =>
+    setOpenIndexes((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
 
   const displaySources = (sources ?? []).filter(
     (s) => isFileSource(s) || isLinkSource(s)
   );
+  const urlSources = displaySources.filter((s) => !isFileSource(s));
+  const fileSources = displaySources.filter(isFileSource);
 
   if (displaySources.length === 0) return null;
 
@@ -271,84 +272,153 @@ export function ChatMessageSources({
         />
       </button>
 
-      {/* Source cards */}
+      {/* Compact pills, grouped by kind; each expands in place for detail */}
       {isExpanded && (
-        <ul className="list-none m-0 grid gap-1.5 p-2 sm:grid-cols-2">
-          {displaySources.map((source) => {
-            if (isFileSource(source)) {
-              return (
-                <li
-                  key={`${source.file.id}-${source.index}`}
-                  className="m-0 p-0 list-none"
-                >
-                  <button
-                    type="button"
-                    title={`Download ${source.file.name}`}
-                    onClick={() => downloadFileMutation.mutate(source.file)}
-                    disabled={downloadFileMutation.isPending}
-                    className={cn(
-                      cardClasses,
-                      'h-full disabled:cursor-not-allowed disabled:opacity-50'
-                    )}
-                  >
-                    <CardHeader
-                      icon={
-                        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-muted">
-                          <Download className="hidden h-3.5 w-3.5 text-muted-foreground group-hover:block" />
-                          {(() => {
-                            const Icon = getFileIcon(source.file.name);
-                            return (
-                              <Icon className="h-3.5 w-3.5 text-muted-foreground group-hover:hidden" />
-                            );
-                          })()}
+        <div className="flex flex-col gap-2.5 p-2.5">
+          {urlSources.length > 0 && (
+            <div>
+              <SectionLabel>URLs</SectionLabel>
+              <div className="flex flex-wrap gap-1.5">
+                {urlSources.map((source) => {
+                  const host = getHost(source.url ?? '');
+                  const safeHref = source.url ? getSafeUrl(source.url) : null;
+
+                  if (!openIndexes.has(source.index)) {
+                    return (
+                      <button
+                        key={`url-${source.index}`}
+                        type="button"
+                        aria-expanded={false}
+                        title={source.url ?? host}
+                        onClick={() => toggleOpen(source.index)}
+                        className={pillClasses}
+                      >
+                        <SourceFavicon host={host} />
+                        <span className="min-w-0 truncate">{host}</span>
+                        <UnverifiedBadge
+                          attribution={source.attribution}
+                          compact
+                        />
+                        <IndexChip index={source.index} />
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={`url-${source.index}`}
+                      className={expandedCardClasses}
+                    >
+                      <div className="flex w-full items-center gap-2">
+                        <SourceFavicon host={host} />
+                        {safeHref ? (
+                          <a
+                            href={safeHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="min-w-0 truncate text-sm font-medium text-foreground no-underline hover:underline underline-offset-2"
+                          >
+                            {host}
+                          </a>
+                        ) : (
+                          <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                            {host}
+                          </span>
+                        )}
+                        <UnverifiedBadge attribution={source.attribution} />
+                        <IndexChip index={source.index} />
+                        <button
+                          type="button"
+                          aria-expanded
+                          aria-label="Collapse source"
+                          onClick={() => toggleOpen(source.index)}
+                          className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                        >
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {source.url && (
+                        <p className="m-0 truncate text-xs text-muted-foreground/80">
+                          {source.url}
+                        </p>
+                      )}
+                      <CitedQuote text={source.citedText} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {fileSources.length > 0 && (
+            <div>
+              <SectionLabel>Files</SectionLabel>
+              <div className="flex flex-wrap gap-1.5">
+                {fileSources.map((source) => {
+                  const Icon = getFileIcon(source.file.name);
+
+                  if (!openIndexes.has(source.index)) {
+                    return (
+                      <button
+                        key={`${source.file.id}-${source.index}`}
+                        type="button"
+                        aria-expanded={false}
+                        title={source.file.name}
+                        onClick={() => toggleOpen(source.index)}
+                        className={pillClasses}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 truncate">
+                          {source.file.name}
                         </span>
-                      }
-                      label={source.file.name}
-                      source={source}
-                    />
-                    <CitedQuote text={source.citedText} />
-                  </button>
-                </li>
-              );
-            }
+                        <UnverifiedBadge
+                          attribution={source.attribution}
+                          compact
+                        />
+                        <IndexChip index={source.index} />
+                      </button>
+                    );
+                  }
 
-            const safeHref = source.url ? getSafeUrl(source.url) : null;
-            const host = getHost(source.url ?? '');
-
-            const body = (
-              <>
-                <CardHeader
-                  icon={<SourceFavicon host={host} />}
-                  label={host}
-                  source={source}
-                />
-                <CitedQuote text={source.citedText} />
-              </>
-            );
-
-            return (
-              <li key={`url-${source.index}`} className="m-0 p-0 list-none">
-                {safeHref ? (
-                  <a
-                    title={source.url ?? host}
-                    href={safeHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={cn(cardClasses, 'h-full')}
-                  >
-                    {body}
-                  </a>
-                ) : (
-                  <div
-                    className={cn(cardClasses, 'h-full hover:bg-background')}
-                  >
-                    {body}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  return (
+                    <div
+                      key={`${source.file.id}-${source.index}`}
+                      className={expandedCardClasses}
+                    >
+                      <div className="flex w-full items-center gap-2">
+                        <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                          {source.file.name}
+                        </span>
+                        <UnverifiedBadge attribution={source.attribution} />
+                        <IndexChip index={source.index} />
+                        <button
+                          type="button"
+                          aria-expanded
+                          aria-label="Collapse source"
+                          onClick={() => toggleOpen(source.index)}
+                          className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                        >
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <CitedQuote text={source.citedText} />
+                      <button
+                        type="button"
+                        onClick={() => downloadFileMutation.mutate(source.file)}
+                        disabled={downloadFileMutation.isPending}
+                        className="inline-flex w-fit items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Download className="h-3 w-3" />
+                        Download
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
