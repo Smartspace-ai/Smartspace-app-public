@@ -1,7 +1,6 @@
 import {
   ChevronUp,
   Download,
-  ExternalLink,
   FileArchive,
   FileAudio,
   FileCode,
@@ -9,6 +8,7 @@ import {
   FileSpreadsheet,
   FileText,
   FileVideo,
+  Globe,
   Presentation,
   ShieldAlert,
 } from 'lucide-react';
@@ -117,18 +117,12 @@ function getSafeUrl(url: string): string | null {
   }
 }
 
-// "www.metservice.com/towns-cities/.../7-days" reads as noise in a list; the
-// hostname is the identity, the path is detail. Split so they can be styled apart.
-function getUrlParts(url: string): { host: string; path: string | null } {
+// The hostname is the source's identity; the full URL stays in the tooltip.
+function getHost(url: string): string {
   try {
-    const parsed = new URL(url);
-    const host = parsed.hostname.replace(/^www\./, '');
-    const tail = `${parsed.pathname === '/' ? '' : parsed.pathname}${
-      parsed.search
-    }`;
-    return { host, path: tail || null };
+    return new URL(url).hostname.replace(/^www\./, '');
   } catch {
-    return { host: url, path: null };
+    return url;
   }
 }
 
@@ -170,8 +164,33 @@ function UnverifiedBadge({
 // from a claim to its source.
 function IndexChip({ index }: { index: number }) {
   return (
-    <span className="mt-0.5 flex h-5 min-w-[20px] flex-shrink-0 items-center justify-center rounded-full bg-muted px-1 text-[10px] font-medium tabular-nums text-muted-foreground">
+    <span className="flex h-4 min-w-[16px] flex-shrink-0 items-center justify-center rounded-full bg-muted px-1 text-[10px] font-medium tabular-nums text-muted-foreground">
       {index}
+    </span>
+  );
+}
+
+// Site favicon with a graceful fallback — the service returns a default globe
+// for unknown domains, and any load failure drops to the Globe icon.
+function SourceFavicon({ host }: { host: string }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-muted">
+      {failed ? (
+        <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+      ) : (
+        <img
+          src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(
+            host
+          )}&sz=64`}
+          alt=""
+          width={16}
+          height={16}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="h-4 w-4 rounded-sm"
+        />
+      )}
     </span>
   );
 }
@@ -184,12 +203,36 @@ function CitedQuote({ text }: { text?: string | null }) {
   return (
     <p
       title={text}
-      className="m-0 mt-0.5 text-xs leading-snug text-muted-foreground line-clamp-2"
+      className="m-0 text-xs leading-snug text-muted-foreground line-clamp-2"
     >
       “{text}”
     </p>
   );
 }
+
+function CardHeader({
+  icon,
+  label,
+  source,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  source: MessageResponseSource;
+}) {
+  return (
+    <span className="flex w-full min-w-0 items-center gap-2">
+      {icon}
+      <span className="min-w-0 flex-1 truncate text-left text-sm font-medium text-foreground group-hover:underline underline-offset-2">
+        {label}
+      </span>
+      <UnverifiedBadge attribution={source.attribution} />
+      <IndexChip index={source.index} />
+    </span>
+  );
+}
+
+const cardClasses =
+  'group flex w-full flex-col items-start gap-1 rounded-lg border border-border/60 bg-background p-2.5 text-left no-underline transition-colors hover:border-border hover:bg-muted/40';
 
 export function ChatMessageSources({
   sources,
@@ -228,12 +271,11 @@ export function ChatMessageSources({
         />
       </button>
 
-      {/* Content area */}
+      {/* Source cards */}
       {isExpanded && (
-        <ul className="list-none m-0 bg-background p-1.5 divide-y divide-border/50">
+        <ul className="list-none m-0 grid gap-1.5 p-2 sm:grid-cols-2">
           {displaySources.map((source) => {
             if (isFileSource(source)) {
-              const Icon = getFileIcon(source.file.name);
               return (
                 <li
                   key={`${source.file.id}-${source.index}`}
@@ -241,46 +283,47 @@ export function ChatMessageSources({
                 >
                   <button
                     type="button"
-                    title={source.file.name}
+                    title={`Download ${source.file.name}`}
                     onClick={() => downloadFileMutation.mutate(source.file)}
                     disabled={downloadFileMutation.isPending}
-                    className="group flex w-full items-start gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className={cn(
+                      cardClasses,
+                      'h-full disabled:cursor-not-allowed disabled:opacity-50'
+                    )}
                   >
-                    <IndexChip index={source.index} />
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
-                        <Icon className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-                        <span className="min-w-0 truncate text-sm font-medium text-foreground group-hover:underline underline-offset-2">
-                          {source.file.name}
+                    <CardHeader
+                      icon={
+                        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-muted">
+                          <Download className="hidden h-3.5 w-3.5 text-muted-foreground group-hover:block" />
+                          {(() => {
+                            const Icon = getFileIcon(source.file.name);
+                            return (
+                              <Icon className="h-3.5 w-3.5 text-muted-foreground group-hover:hidden" />
+                            );
+                          })()}
                         </span>
-                        <UnverifiedBadge attribution={source.attribution} />
-                      </span>
-                      <CitedQuote text={source.citedText} />
-                    </span>
-                    <Download className="ml-auto mt-1 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+                      }
+                      label={source.file.name}
+                      source={source}
+                    />
+                    <CitedQuote text={source.citedText} />
                   </button>
                 </li>
               );
             }
 
             const safeHref = source.url ? getSafeUrl(source.url) : null;
-            const { host, path } = getUrlParts(source.url ?? '');
+            const host = getHost(source.url ?? '');
 
-            const nameLine = (
-              <span className="min-w-0 flex-1">
-                <span className="flex min-w-0 items-baseline gap-1.5">
-                  <span className="flex-shrink-0 text-sm font-medium text-foreground group-hover:underline underline-offset-2">
-                    {host}
-                  </span>
-                  {path && (
-                    <span className="min-w-0 truncate text-xs text-muted-foreground">
-                      {path}
-                    </span>
-                  )}
-                  <UnverifiedBadge attribution={source.attribution} />
-                </span>
+            const body = (
+              <>
+                <CardHeader
+                  icon={<SourceFavicon host={host} />}
+                  label={host}
+                  source={source}
+                />
                 <CitedQuote text={source.citedText} />
-              </span>
+              </>
             );
 
             return (
@@ -291,16 +334,15 @@ export function ChatMessageSources({
                     href={safeHref}
                     target="_blank"
                     rel="noreferrer"
-                    className="group flex items-start gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-muted/50"
+                    className={cn(cardClasses, 'h-full')}
                   >
-                    <IndexChip index={source.index} />
-                    {nameLine}
-                    <ExternalLink className="ml-auto mt-1 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+                    {body}
                   </a>
                 ) : (
-                  <div className="group flex items-start gap-2 rounded-md px-1.5 py-1.5">
-                    <IndexChip index={source.index} />
-                    {nameLine}
+                  <div
+                    className={cn(cardClasses, 'h-full hover:bg-background')}
+                  >
+                    {body}
                   </div>
                 )}
               </li>
