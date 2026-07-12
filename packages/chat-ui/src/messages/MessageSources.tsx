@@ -1,5 +1,6 @@
 import {
   ChevronUp,
+  Download,
   ExternalLink,
   FileArchive,
   FileAudio,
@@ -116,17 +117,19 @@ function getSafeUrl(url: string): string | null {
   }
 }
 
-function getDisplayName(source: MessageResponseSource): string {
-  if (source.file?.name) return source.file.name;
-  if (source.url) {
-    try {
-      const parsed = new URL(source.url);
-      return parsed.hostname + (parsed.pathname !== '/' ? parsed.pathname : '');
-    } catch {
-      return source.url;
-    }
+// "www.metservice.com/towns-cities/.../7-days" reads as noise in a list; the
+// hostname is the identity, the path is detail. Split so they can be styled apart.
+function getUrlParts(url: string): { host: string; path: string | null } {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '');
+    const tail = `${parsed.pathname === '/' ? '' : parsed.pathname}${
+      parsed.search
+    }`;
+    return { host, path: tail || null };
+  } catch {
+    return { host: url, path: null };
   }
-  return `Source ${source.index}`;
 }
 
 function isFileSource(
@@ -163,17 +166,27 @@ function UnverifiedBadge({
   );
 }
 
+// Matches the (N) markers in the message body so the reader can jump
+// from a claim to its source.
+function IndexChip({ index }: { index: number }) {
+  return (
+    <span className="mt-0.5 flex h-5 min-w-[20px] flex-shrink-0 items-center justify-center rounded-full bg-muted px-1 text-[10px] font-medium tabular-nums text-muted-foreground">
+      {index}
+    </span>
+  );
+}
+
 // The verified span the model cited, shown as a visible quote line under
 // the source (the API extracts it from the source's own text, so this is
 // what the source actually says — not the model's paraphrase).
-function CitedQuote({ source }: { source: MessageResponseSource }) {
-  if (!source.citedText) return null;
+function CitedQuote({ text }: { text?: string | null }) {
+  if (!text) return null;
   return (
     <p
-      title={source.citedText}
-      className="m-0 pl-6 pr-2 pb-0.5 text-xs italic text-muted-foreground line-clamp-2 border-l-2 border-border ml-1"
+      title={text}
+      className="m-0 mt-0.5 text-xs leading-snug text-muted-foreground line-clamp-2"
     >
-      “{source.citedText}”
+      “{text}”
     </p>
   );
 }
@@ -217,77 +230,83 @@ export function ChatMessageSources({
 
       {/* Content area */}
       {isExpanded && (
-        <div className="bg-background px-3 py-0.5">
-          <ul
-            className="list-none space-y-1 m-0 p-0"
-            style={{ paddingLeft: 0, marginLeft: 0 }}
-          >
-            {displaySources.map((source) => {
-              const displayName = getDisplayName(source);
-
-              if (isFileSource(source)) {
-                const Icon = getFileIcon(source.file.name);
-                return (
-                  <li
-                    key={`${source.file.id}-${source.index}`}
-                    className="list-none text-sm text-foreground m-0 p-0"
-                    style={{ paddingLeft: 0, marginLeft: 0 }}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>{`(${source.index})`} : </span>
-                      {Icon && (
-                        <Icon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                      )}
-                      <button
-                        type="button"
-                        title={displayName}
-                        onClick={() => downloadFileMutation.mutate(source.file)}
-                        className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed truncate"
-                        disabled={downloadFileMutation.isPending}
-                      >
-                        {displayName}
-                      </button>
-                      <UnverifiedBadge attribution={source.attribution} />
-                    </div>
-                    <CitedQuote source={source} />
-                  </li>
-                );
-              }
-
-              const safeHref = source.url ? getSafeUrl(source.url) : null;
-
+        <ul className="list-none m-0 bg-background p-1.5 divide-y divide-border/50">
+          {displaySources.map((source) => {
+            if (isFileSource(source)) {
+              const Icon = getFileIcon(source.file.name);
               return (
                 <li
-                  key={`url-${source.index}`}
-                  className="list-none text-sm text-foreground m-0 p-0"
-                  style={{ paddingLeft: 0, marginLeft: 0 }}
+                  key={`${source.file.id}-${source.index}`}
+                  className="m-0 p-0 list-none"
                 >
-                  <div className="flex items-center gap-1.5">
-                    <span>{`(${source.index})`} : </span>
-                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                    {safeHref ? (
-                      <a
-                        title={source.url ?? displayName}
-                        href={safeHref}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-foreground hover:bg-muted/50 rounded px-1 py-0.5 underline underline-offset-2 truncate"
-                      >
-                        {displayName}
-                      </a>
-                    ) : (
-                      <span className="text-foreground rounded px-1 py-0.5 truncate">
-                        {displayName}
+                  <button
+                    type="button"
+                    title={source.file.name}
+                    onClick={() => downloadFileMutation.mutate(source.file)}
+                    disabled={downloadFileMutation.isPending}
+                    className="group flex w-full items-start gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <IndexChip index={source.index} />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <Icon className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 truncate text-sm font-medium text-foreground group-hover:underline underline-offset-2">
+                          {source.file.name}
+                        </span>
+                        <UnverifiedBadge attribution={source.attribution} />
                       </span>
-                    )}
-                    <UnverifiedBadge attribution={source.attribution} />
-                  </div>
-                  <CitedQuote source={source} />
+                      <CitedQuote text={source.citedText} />
+                    </span>
+                    <Download className="ml-auto mt-1 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+                  </button>
                 </li>
               );
-            })}
-          </ul>
-        </div>
+            }
+
+            const safeHref = source.url ? getSafeUrl(source.url) : null;
+            const { host, path } = getUrlParts(source.url ?? '');
+
+            const nameLine = (
+              <span className="min-w-0 flex-1">
+                <span className="flex min-w-0 items-baseline gap-1.5">
+                  <span className="flex-shrink-0 text-sm font-medium text-foreground group-hover:underline underline-offset-2">
+                    {host}
+                  </span>
+                  {path && (
+                    <span className="min-w-0 truncate text-xs text-muted-foreground">
+                      {path}
+                    </span>
+                  )}
+                  <UnverifiedBadge attribution={source.attribution} />
+                </span>
+                <CitedQuote text={source.citedText} />
+              </span>
+            );
+
+            return (
+              <li key={`url-${source.index}`} className="m-0 p-0 list-none">
+                {safeHref ? (
+                  <a
+                    title={source.url ?? host}
+                    href={safeHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group flex items-start gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-muted/50"
+                  >
+                    <IndexChip index={source.index} />
+                    {nameLine}
+                    <ExternalLink className="ml-auto mt-1 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+                  </a>
+                ) : (
+                  <div className="group flex items-start gap-2 rounded-md px-1.5 py-1.5">
+                    <IndexChip index={source.index} />
+                    {nameLine}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
