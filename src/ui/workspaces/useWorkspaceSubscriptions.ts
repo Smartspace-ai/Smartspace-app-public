@@ -64,11 +64,11 @@ export function useWorkspaceSubscriptions() {
   useThreadMessageStream(threadId || undefined, !!thread?.isFlowRunning);
 
   useWorkspaceRealtime(workspaceId || undefined, {
-    // The server pushes a user-targeted message for every persisted
+    // The server pushes a user-targeted notification for every persisted
     // notification (added to thread, comment reply, ...). The payload
     // duplicates what GET /notification returns, so refetch rather than
     // trusting a second write path into the cache.
-    onMessage: () => {
+    onNotification: () => {
       qc.invalidateQueries({ queryKey: notificationsKeys.all });
     },
     onThreadUpdate: (summary) => {

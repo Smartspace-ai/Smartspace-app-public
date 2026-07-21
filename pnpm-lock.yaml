@@ -91,7 +91,7 @@ importers:
         version: 1.2.4(@types/react@18.3.1)(react@18.3.1)
       '@smartspace/api-client':
         specifier: dev
-        version: 0.1.0-dev.4e8dc6b(@faker-js/faker@10.4.0)(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(msw@2.14.6(@types/node@25.6.0)(typescript@5.5.4))(zod@4.3.6)
+        version: 0.1.0-dev.4f08aee(@faker-js/faker@10.4.0)(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(msw@2.14.6(@types/node@25.6.0)(typescript@5.5.4))(zod@4.3.6)
       '@smartspace/chat-ui':
         specifier: workspace:*
         version: link:packages/chat-ui
@@ -465,7 +465,7 @@ importers:
     devDependencies:
       '@smartspace/api-client':
         specifier: dev
-        version: 0.1.0-dev.4e8dc6b(@faker-js/faker@10.4.0)(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(msw@2.14.6(@types/node@25.6.0)(typescript@5.5.4))(zod@4.3.6)
+        version: 0.1.0-dev.4f08aee(@faker-js/faker@10.4.0)(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(msw@2.14.6(@types/node@25.6.0)(typescript@5.5.4))(zod@4.3.6)
       tailwindcss:
         specifier: ^3.4.10
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
@@ -2894,8 +2894,8 @@ packages:
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
     engines: {node: '>=10'}
 
-  '@smartspace/api-client@0.1.0-dev.4e8dc6b':
-    resolution: {integrity: sha512-kEKmMSIOQFX/KpvLr6wMtC6MAxb1y+BJkCeQCytRKix2c5lNxtdNANl3DIm6+toTBMWW52srKC+cKfJMW1VaOA==}
+  '@smartspace/api-client@0.1.0-dev.4f08aee':
+    resolution: {integrity: sha512-gsMOvtSBVlH0Fm4BohjL3HpBuiNlNc6lVGH6g1FUiOs2sZpZaq4CTmHFjCgdIiZeRJTWHDIBFjdonTcRBnMDBQ==}
     peerDependencies:
       '@faker-js/faker': '>=9.0.0'
       '@microsoft/signalr': '>=8.0.0'
@@ -10924,7 +10924,7 @@ snapshots:
 
   '@sindresorhus/is@4.6.0': {}
 
-  '@smartspace/api-client@0.1.0-dev.4e8dc6b(@faker-js/faker@10.4.0)(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(msw@2.14.6(@types/node@25.6.0)(typescript@5.5.4))(zod@4.3.6)':
+  '@smartspace/api-client@0.1.0-dev.4f08aee(@faker-js/faker@10.4.0)(@microsoft/signalr@8.0.17(encoding@0.1.13))(axios@1.15.1)(msw@2.14.6(@types/node@25.6.0)(typescript@5.5.4))(zod@4.3.6)':
     dependencies:
       '@microsoft/signalr': 8.0.17(encoding@0.1.13)
       axios: 1.15.1
