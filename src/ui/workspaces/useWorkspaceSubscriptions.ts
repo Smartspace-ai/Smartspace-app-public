@@ -7,6 +7,7 @@ import { useWorkspaceRealtime } from '@/platform/realtime/useWorkspaceRealtime';
 
 import { applyCommentToCache, commentsKeys } from '@/domains/comments';
 import { useThreadMessageStream } from '@/domains/messages/threadStream';
+import { notificationsKeys } from '@/domains/notifications';
 
 import {
   applyThreadToCache,
@@ -63,6 +64,13 @@ export function useWorkspaceSubscriptions() {
   useThreadMessageStream(threadId || undefined, !!thread?.isFlowRunning);
 
   useWorkspaceRealtime(workspaceId || undefined, {
+    // The server pushes a user-targeted message for every persisted
+    // notification (added to thread, comment reply, ...). The payload
+    // duplicates what GET /notification returns, so refetch rather than
+    // trusting a second write path into the cache.
+    onMessage: () => {
+      qc.invalidateQueries({ queryKey: notificationsKeys.all });
+    },
     onThreadUpdate: (summary) => {
       if (!workspaceId) return;
 

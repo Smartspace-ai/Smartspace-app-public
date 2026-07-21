@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useOptionalRealtime } from './RealtimeProvider';
 
 type Handlers = {
+  onMessage?: (name: string, message: string) => void;
   onThreadUpdate?: (thread: SignalR.MessageThreadSummary) => void;
   onThreadDeleted?: (thread: SignalR.MessageThreadSummary) => void;
   onCommentsUpdate?: (comment: SignalR.CommentSummary) => void;
@@ -34,8 +35,8 @@ export function useWorkspaceRealtime(
     const subscription = SignalR.getReceiverRegister('IChatReceiver').register(
       connection,
       {
-        receiveMessage: async () => {
-          /* no-op: toast/notification handling lives elsewhere */
+        receiveMessage: async (name, message) => {
+          handlers.onMessage?.(name, message);
         },
         receiveThreadUpdate: async (thread) => {
           handlers.onThreadUpdate?.(thread);
