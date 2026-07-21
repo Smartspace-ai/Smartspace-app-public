@@ -1,6 +1,6 @@
 import { useMatch, useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, MessageCircle, MessageSquare } from 'lucide-react';
+import { Bell, MessageCircle, MessageSquare, UserPlus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import type { Notification } from '@/domains/notifications';
@@ -108,6 +108,8 @@ export function NotificationPanel() {
         return <MessageSquare className="h-3.5 w-3.5 text-blue-500" />;
       case NotificationType.CommentUpdated:
         return <MessageCircle className="h-3.5 w-3.5 text-purple-500" />;
+      case NotificationType.AddedToThread:
+        return <UserPlus className="h-3.5 w-3.5 text-green-500" />;
       default:
         return <Bell className="h-3.5 w-3.5 text-gray-500" />;
     }
