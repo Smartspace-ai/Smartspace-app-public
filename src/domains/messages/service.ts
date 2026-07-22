@@ -41,6 +41,46 @@ export function coerceMessageDto(raw: Record<string, unknown>): void {
   }
 }
 
+/**
+ * The generated api-client schema doesn't know the machine-readable error
+ * category (`errorCode`, e.g. "llm.rate_limit") yet, so zod strips it at
+ * parse time. Pull it off the raw payload (either spelling — the field
+ * originates in the Python ai-api) so the UI can map codes to friendly text
+ * without waiting on an api-client regeneration.
+ */
+export function rawErrorCode(raw: unknown): string | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const record = raw as Record<string, unknown>;
+  const value = record['errorCode'] ?? record['error_code'];
+  return typeof value === 'string' ? value : undefined;
+}
+
+/**
+ * Copy machine-readable error codes from a raw message payload back onto the
+ * zod-parsed message DTO (index-aligned — zod preserves array order).
+ */
+export function preserveErrorCodes<
+  T extends { errors?: unknown[] | null | undefined }
+>(raw: unknown, parsed: T): T {
+  const rawErrors =
+    raw && typeof raw === 'object'
+      ? (raw as Record<string, unknown>)['errors']
+      : undefined;
+  if (!Array.isArray(rawErrors) || !parsed.errors?.length) return parsed;
+  parsed.errors.forEach((err, i) => {
+    const code = rawErrorCode(rawErrors[i]);
+    if (
+      code &&
+      err &&
+      typeof err === 'object' &&
+      (err as { errorCode?: unknown }).errorCode == null
+    ) {
+      (err as { errorCode?: string }).errorCode = code;
+    }
+  });
+  return parsed;
+}
+
 // Fetch all messages in a given message thread
 export async function fetchMessages(
   threadId: string,
@@ -55,6 +95,8 @@ export async function fetchMessages(
     response.data,
     `GET /messageThreads/${threadId}/messages`
   );
+  const rawData = (response.data as { data?: unknown[] } | null)?.data;
+  parsed.data.forEach((m, i) => preserveErrorCodes(rawData?.[i], m));
   return mapMessagesDtoToModels(parsed.data);
 }
 
@@ -99,7 +141,9 @@ export async function addInputToMessage({
     try {
       const parsed = JSON.parse(frame.data) as Record<string, unknown>;
       coerceMessageDto(parsed);
-      last = mapMessageDtoToModel(messageDtoSchema.parse(parsed));
+      last = mapMessageDtoToModel(
+        preserveErrorCodes(parsed, messageDtoSchema.parse(parsed))
+      );
     } catch {
       // Ignore malformed/partial frames; the next frame will bring fresh state.
     }
@@ -192,7 +236,10 @@ export async function postMessage({
   if (!raw) throw new Error('POST /Messages/start returned no body');
   coerceMessageDto(raw);
   return mapMessageDtoToModel(
-    messagesResponseSchema.shape.data.element.parse(raw)
+    preserveErrorCodes(
+      raw,
+      messagesResponseSchema.shape.data.element.parse(raw)
+    )
   );
 }
 
@@ -306,7 +353,9 @@ export async function streamThreadMessages({
         const messages = envelope.snapshot.map((raw) => {
           const obj = raw as Record<string, unknown>;
           coerceMessageDto(obj);
-          return mapMessageDtoToModel(messageDtoSchema.parse(obj));
+          return mapMessageDtoToModel(
+            preserveErrorCodes(obj, messageDtoSchema.parse(obj))
+          );
         });
         onSnapshot(messages);
         continue;
@@ -316,7 +365,9 @@ export async function streamThreadMessages({
       if (envelope.messageId && envelope.message) {
         const raw = envelope.message as Record<string, unknown>;
         coerceMessageDto(raw);
-        const message = mapMessageDtoToModel(messageDtoSchema.parse(raw));
+        const message = mapMessageDtoToModel(
+          preserveErrorCodes(raw, messageDtoSchema.parse(raw))
+        );
         onMessage(envelope.messageId, message, terminal);
         continue;
       }
@@ -331,7 +382,10 @@ export async function streamThreadMessages({
           return mapMessageValueDtoToModel(valueDtoSchema.parse(obj));
         });
         const errors = (envelope.delta.errors ?? []).map((raw) =>
-          mapMessageErrorDtoToModel(errorDtoSchema.parse(raw))
+          mapMessageErrorDtoToModel({
+            ...errorDtoSchema.parse(raw),
+            errorCode: rawErrorCode(raw),
+          })
         );
         onDelta(targetId, { outputs, errors }, terminal);
       }

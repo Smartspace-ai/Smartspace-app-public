@@ -28,6 +28,12 @@ export type Message = {
   errors?:
     | {
         code: number;
+        /**
+         * Stable machine-readable category from the backend (e.g.
+         * "llm.rate_limit", "llm.context_window") — preferred over the
+         * numeric HTTP code for user-facing/localised error text.
+         */
+        errorCode?: string | null;
         message?: string | null;
         data?: string | null;
         blockId?: string | null;
