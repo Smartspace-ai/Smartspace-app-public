@@ -1,12 +1,16 @@
 // src/ui/workspaces/useWorkspaceSubscriptions.ts
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMatch, useNavigate } from '@tanstack/react-router';
+import { useEffect } from 'react';
 
+import { useUserId } from '@/platform/auth/session';
 import { defaultChatService } from '@/platform/chat/defaultChatService';
+import { useOptionalRealtime } from '@/platform/realtime/RealtimeProvider';
 import { useWorkspaceRealtime } from '@/platform/realtime/useWorkspaceRealtime';
 
 import { applyCommentToCache, commentsKeys } from '@/domains/comments';
 import { useThreadMessageStream } from '@/domains/messages/threadStream';
+import { notificationsKeys } from '@/domains/notifications';
 
 import {
   applyThreadToCache,
@@ -62,7 +66,32 @@ export function useWorkspaceSubscriptions() {
   });
   useThreadMessageStream(threadId || undefined, !!thread?.isFlowRunning);
 
+  // User-targeted pushes (ReceiveNotification / legacy ReceiveMessage) go to
+  // a SignalR group named after the user's id, and the hub has no automatic
+  // membership — clients must join explicitly (the admin app does the same
+  // right after connecting). Without this join, notification pushes never
+  // reach this client at all. subscribeToGroup records the group as desired,
+  // so the provider re-joins it after reconnects.
+  const userId = useUserId();
+  const realtime = useOptionalRealtime();
+  const subscribeToGroup = realtime?.subscribeToGroup;
+  const unsubscribeFromGroup = realtime?.unsubscribeFromGroup;
+  useEffect(() => {
+    if (!userId || !subscribeToGroup || !unsubscribeFromGroup) return;
+    subscribeToGroup(userId);
+    return () => {
+      unsubscribeFromGroup(userId);
+    };
+  }, [userId, subscribeToGroup, unsubscribeFromGroup]);
+
   useWorkspaceRealtime(workspaceId || undefined, {
+    // The server pushes a user-targeted notification for every persisted
+    // notification (added to thread, comment reply, ...). The payload
+    // duplicates what GET /notification returns, so refetch rather than
+    // trusting a second write path into the cache.
+    onNotification: () => {
+      qc.invalidateQueries({ queryKey: notificationsKeys.all });
+    },
     onThreadUpdate: (summary) => {
       if (!workspaceId) return;
 

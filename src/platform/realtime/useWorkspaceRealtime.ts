@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useOptionalRealtime } from './RealtimeProvider';
 
 type Handlers = {
+  onNotification?: (notification: SignalR.Notification) => void;
   onThreadUpdate?: (thread: SignalR.MessageThreadSummary) => void;
   onThreadDeleted?: (thread: SignalR.MessageThreadSummary) => void;
   onCommentsUpdate?: (comment: SignalR.CommentSummary) => void;
@@ -35,7 +36,11 @@ export function useWorkspaceRealtime(
       connection,
       {
         receiveMessage: async () => {
-          /* no-op: toast/notification handling lives elsewhere */
+          /* legacy JSON-string channel — superseded by receiveNotification,
+             still pushed by the server for clients that haven't migrated */
+        },
+        receiveNotification: async (notification) => {
+          handlers.onNotification?.(notification);
         },
         receiveThreadUpdate: async (thread) => {
           handlers.onThreadUpdate?.(thread);
