@@ -216,6 +216,12 @@ export const MessageItem: FC<MessageItemProps> = ({
       case 'prompt':
       case 'response':
       case 'content': {
+        if (v.value === '') {
+          // A retraction: the block streamed narration onto the response
+          // and then cleared it when the round turned out to be a tool
+          // round. Render nothing (the narration re-arrives as status).
+          continue;
+        }
         lastStatusNode = null;
         // These start a “fresh” content section
         if (groupContent.length > 0) flush(v.type);
