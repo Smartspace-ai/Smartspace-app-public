@@ -174,22 +174,30 @@ export const MessageItem: FC<MessageItemProps> = ({
   // transient status: only the last status is kept, cleared when content follows
   let lastStatusNode: ReactNode | null = null;
 
+  const groupHasAnything = () =>
+    groupContent.length > 0 || groupFiles.length > 0 || groupSources.length > 0;
+
   const flush = (nextType: MessageValueType) => {
-    bubbles.push(
-      <MessageBubble
-        key={`bubble-${message.id ?? 'msg'}-${keyCounter++}`}
-        createdBy={lastCreatedBy}
-        createdByUserId={lastCreatedByUserId}
-        createdAt={lastCreatedAt}
-        type={groupType}
-        content={groupContent}
-        files={groupFiles}
-        sources={groupSources}
-        chatbotName={chatbotName}
-        userOutput={null}
-        userInput={null}
-      />
-    );
+    // A group can be "open" yet hold nothing renderable (e.g. an empty
+    // `sources` output followed by a status flush) — pushing it would
+    // paint an empty bubble.
+    if (groupHasAnything()) {
+      bubbles.push(
+        <MessageBubble
+          key={`bubble-${message.id ?? 'msg'}-${keyCounter++}`}
+          createdBy={lastCreatedBy}
+          createdByUserId={lastCreatedByUserId}
+          createdAt={lastCreatedAt}
+          type={groupType}
+          content={groupContent}
+          files={groupFiles}
+          sources={groupSources}
+          chatbotName={chatbotName}
+          userOutput={null}
+          userInput={null}
+        />
+      );
+    }
     groupContent = [];
     groupFiles = [];
     groupSources = [];
@@ -225,6 +233,12 @@ export const MessageItem: FC<MessageItemProps> = ({
       case 'prompt':
       case 'response':
       case 'content': {
+        if (v.value === '') {
+          // A retraction: the block streamed narration onto the response
+          // and then cleared it when the round turned out to be a tool
+          // round. Render nothing (the narration re-arrives as status).
+          continue;
+        }
         lastStatusNode = null;
         // These start a “fresh” content section
         if (groupContent.length > 0) flush(v.type);
@@ -304,7 +318,9 @@ export const MessageItem: FC<MessageItemProps> = ({
 
       case 'sources': {
         groupSources = coerceSources(v.value);
-        groupOpen = true;
+        // an empty sources output (common when a flow wires the pin but
+        // the round produced no citations) must not open a bubble group
+        if (groupSources.length > 0) groupOpen = true;
         break;
       }
 
@@ -324,7 +340,7 @@ export const MessageItem: FC<MessageItemProps> = ({
   }
 
   // Final pending group
-  if (groupOpen) {
+  if (groupOpen && groupHasAnything()) {
     bubbles.push(
       <MessageBubble
         key={`bubble-final-${message.id ?? 'msg'}-${keyCounter++}`}
