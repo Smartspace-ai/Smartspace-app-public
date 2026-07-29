@@ -16,6 +16,8 @@ const normalizeType = (value: unknown): NotificationType => {
       ? NotificationType.MessageThreadUpdated
       : value === 2
       ? NotificationType.CommentUpdated
+      : value === 3
+      ? NotificationType.AddedToThread
       : NotificationType.WorkSpaceUpdated;
   }
   if (typeof value === 'string') {
@@ -26,6 +28,8 @@ const normalizeType = (value: unknown): NotificationType => {
       return NotificationType.MessageThreadUpdated;
     if (lowered === '2' || lowered === 'commentupdated')
       return NotificationType.CommentUpdated;
+    if (lowered === '3' || lowered === 'addedtothread')
+      return NotificationType.AddedToThread;
     const numeric = Number(value);
     if (Number.isFinite(numeric)) return normalizeType(numeric);
   }

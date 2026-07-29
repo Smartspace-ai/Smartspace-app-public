@@ -2,6 +2,7 @@ export enum NotificationType {
   WorkSpaceUpdated = 0,
   MessageThreadUpdated = 1,
   CommentUpdated = 2,
+  AddedToThread = 3,
 }
 
 export type Notification = {

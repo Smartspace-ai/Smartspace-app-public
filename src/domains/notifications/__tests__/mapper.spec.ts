@@ -41,6 +41,22 @@ describe('notifications mapper', () => {
     expect(n.notificationType).toBe(NotificationType.CommentUpdated);
   });
 
+  it('maps AddedToThread string enum from SDK', () => {
+    const n = mapNotificationDtoToModel({
+      ...baseDto,
+      notificationType: 'AddedToThread',
+    } as never);
+    expect(n.notificationType).toBe(NotificationType.AddedToThread);
+  });
+
+  it('maps AddedToThread numeric enum', () => {
+    const n = mapNotificationDtoToModel({
+      ...baseDto,
+      notificationType: 3,
+    } as never);
+    expect(n.notificationType).toBe(NotificationType.AddedToThread);
+  });
+
   it('falls back to WorkSpaceUpdated for unknown values', () => {
     const n = mapNotificationDtoToModel({
       ...baseDto,
