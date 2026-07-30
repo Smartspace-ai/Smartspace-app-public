@@ -171,11 +171,29 @@ export default function MessageComposer({
   // legacy disabled/dots state stays). The thread id IS the flow-run id;
   // the engine stops within seconds and the thread SSE clears isSending.
   const chatService = useChatService();
-  const cancelFlowRunMutation = useCancelFlowRun();
+  const {
+    mutate: cancelMutate,
+    isPending: cancelPending,
+    isSuccess: cancelAccepted,
+    isError: cancelErrored,
+    reset: cancelReset,
+  } = useCancelFlowRun();
   const canStop = isSending && !!chatService.cancelFlowRun;
+  // Cancellation is cooperative, so there is a gap between the accepted
+  // request and isSending actually flipping — hold a disabled "Stopping…"
+  // state across it instead of allowing repeat clicks.
+  const stopping = cancelPending || cancelAccepted;
   const handleStopRun = () => {
-    cancelFlowRunMutation.mutate(threadId);
+    if (stopping) return;
+    cancelMutate(threadId);
   };
+  // Re-arm for the next run: without the reset, a later message's Stop
+  // button would be born stuck in the "Stopping…" state.
+  useEffect(() => {
+    if (!isSending && (cancelAccepted || cancelErrored)) {
+      cancelReset();
+    }
+  }, [isSending, cancelAccepted, cancelErrored, cancelReset]);
   // Provide a global downloader for ssImage node views (non-React context).
   // Milkdown's image node view reads `window.__ssDownloadFile` by name on
   // first render, so an effect-based assignment runs early enough.
@@ -515,9 +533,14 @@ export default function MessageComposer({
                   <IconButton
                     onClick={handleStopRun}
                     className="h-10 w-10 rounded-full self-end"
-                    aria-label="Stop"
+                    disabled={stopping}
+                    aria-label={stopping ? 'Stopping' : 'Stop'}
                   >
-                    <Square className="h-4 w-4 fill-current" />
+                    <Square
+                      className={`h-4 w-4 fill-current ${
+                        stopping ? 'animate-pulse' : ''
+                      }`}
+                    />
                   </IconButton>
                 ) : (
                   <IconButton
@@ -621,9 +644,14 @@ export default function MessageComposer({
                       <IconButton
                         onClick={handleStopRun}
                         className="h-10 w-10 rounded-full"
-                        aria-label="Stop"
+                        disabled={stopping}
+                        aria-label={stopping ? 'Stopping' : 'Stop'}
                       >
-                        <Square className="h-4 w-4 fill-current" />
+                        <Square
+                          className={`h-4 w-4 fill-current ${
+                            stopping ? 'animate-pulse' : ''
+                          }`}
+                        />
                       </IconButton>
                     ) : (
                       <IconButton
@@ -664,12 +692,19 @@ export default function MessageComposer({
             {canStop ? (
               <UIButton
                 onClick={handleStopRun}
-                className="text-xs h-7 px-4 py-1"
-                aria-label="Stop"
+                className={`text-xs h-7 px-4 py-1 ${
+                  stopping ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                disabled={stopping}
+                aria-label={stopping ? 'Stopping' : 'Stop'}
               >
                 <span className="flex items-center gap-1.5">
-                  <Square className="h-3 w-3 fill-current" />
-                  Stop
+                  <Square
+                    className={`h-3 w-3 fill-current ${
+                      stopping ? 'animate-pulse' : ''
+                    }`}
+                  />
+                  {stopping ? 'Stopping…' : 'Stop'}
                 </span>
               </UIButton>
             ) : (
