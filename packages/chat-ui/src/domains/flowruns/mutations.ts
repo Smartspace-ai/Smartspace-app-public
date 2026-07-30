@@ -12,6 +12,27 @@ import { flowRunsKeys } from './queryKeys';
  * variables form. Skips writes for draft threads (no flow-run yet)
  * and invalidates the matching variables cache on success.
  */
+/**
+ * Request cancellation of a thread's running flow (thread id == flow-run id).
+ * No-op for draft threads and for services that don't implement
+ * `cancelFlowRun`. The running state clears via the thread SSE when the
+ * engine actually stops — no cache invalidation needed here.
+ */
+export function useCancelFlowRun() {
+  const service = useChatService();
+  return useMutation({
+    mutationKey: flowRunsKeys.cancel(),
+    mutationFn: async (flowRunId: string) => {
+      if (isDraftThreadId(flowRunId)) return;
+      await service.cancelFlowRun?.(flowRunId);
+    },
+    onError: (error) => {
+      console.error('Failed to cancel flow run:', error);
+      toast.error('Failed to stop the run');
+    },
+  });
+}
+
 export function useUpdateFlowRunVariable() {
   const qc = useQueryClient();
   const service = useChatService();
