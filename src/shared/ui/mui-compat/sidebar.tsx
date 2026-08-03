@@ -14,7 +14,7 @@ import {
   useState,
 } from 'react';
 
-import { useIsMobile } from '@/shared/hooks/useIsMobile';
+import { MOBILE_BREAKPOINT, useIsMobile } from '@/shared/hooks/useIsMobile';
 import { Button } from '@/shared/ui/mui-compat/button';
 import {
   Sheet,
@@ -31,9 +31,13 @@ const SIDEBAR_KEYBOARD_SHORTCUT = 'k';
 const SIDEBAR_WIDTH = '300px';
 /** The comments rail is slightly wider than the threads rail by design. */
 const SIDEBAR_WIDTH_RIGHT = '320px';
-const SIDEBAR_WIDTH_MOBILE = '90vw'; // Use viewport width for mobile
+/**
+ * Overlay rail width. 90vw suits a phone, but the same value on a tablet gave a
+ * ~690px drawer at 768px and ~920px at 1024px (both are still below
+ * `MOBILE_BREAKPOINT`), so cap it.
+ */
+const SIDEBAR_WIDTH_MOBILE = 'min(90vw, 360px)';
 const SIDEBAR_WIDTH_ICON = '48px';
-const MOBILE_BREAKPOINT = 1100; // md breakpoint
 
 // Context types and implementation
 type SidebarContext = {
