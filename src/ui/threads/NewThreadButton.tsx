@@ -50,10 +50,10 @@ export default function NewThreadButton() {
   return (
     <Button
       onClick={handleNewThread}
-      className="w-full gap-2 text-xs h-9"
+      className="h-auto w-full gap-2 rounded-lg py-3 text-sm font-medium"
       disabled={!workspaceId || isCreating}
     >
-      <Plus className="h-3.5 w-3.5" />
+      <Plus className="h-4 w-4" />
       New Thread
     </Button>
   );
