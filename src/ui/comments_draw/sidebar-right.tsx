@@ -1,6 +1,6 @@
 import Skeleton from '@mui/material/Skeleton';
 import { MessageSquare, Send, X } from 'lucide-react';
-import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
@@ -148,12 +148,10 @@ export function SidebarRight() {
   const postDisabled =
     threadComment.plain.trim().length === 0 || isAddingComment || isDraft;
 
+  // No `--sidebar-width-mobile` override here: `Sidebar`'s overlay branch reads
+  // its own constant, so that variable was dead code.
   return (
-    <Sidebar
-      side="right"
-      className="ss-sidebar__right border-l bg-background"
-      style={{ '--sidebar-width-mobile': '60vw' } as CSSProperties}
-    >
+    <Sidebar side="right" className="ss-sidebar__right border-l bg-background">
       <div className="flex h-full min-h-0 flex-col bg-background">
         <div className="flex shrink-0 items-center justify-between px-5 pt-5 pb-4">
           <h2 className="text-xl font-bold text-primary">Comments</h2>
