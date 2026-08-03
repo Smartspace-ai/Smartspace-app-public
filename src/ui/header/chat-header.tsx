@@ -1,5 +1,3 @@
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
 import Skeleton from '@mui/material/Skeleton';
 import Tooltip from '@mui/material/Tooltip';
 import { MessageSquare, PanelLeft, UserPlus } from 'lucide-react';
@@ -7,113 +5,113 @@ import { useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import { SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
+import { useThreadUsers } from '@/domains/thread-users';
 
-import { getTagChipClasses } from '@/theme/tag-styles';
+import { SidebarTrigger, useSidebar } from '@/shared/ui/mui-compat/sidebar';
+import { getInitials } from '@/shared/utils/initials';
 
 import { useThread, useWorkspace } from '@smartspace/chat-ui';
 
 import { AddUsersToThreadDialog } from './add-users-dialog';
 import { NotificationPanel } from './notifications-panel';
 
+/** Shared shape for the round icon buttons in the header's action row. */
+const iconButtonClass =
+  'h-auto w-auto p-2.5 rounded-full transition-colors hover:bg-secondary text-muted-foreground hover:text-muted-foreground';
+
+/** Same shape, filled while the toggled panel is open. */
+const iconButtonActiveClass =
+  'h-auto w-auto p-2.5 rounded-full transition-colors bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground';
+
 export function ChatHeader() {
   const { workspaceId, threadId } = useRouteIds();
-  const {
-    data: activeWorkspace,
-    isPending: workspaceLoading,
-    isError: workspaceError,
-  } = useWorkspace(workspaceId);
+  const { isPending: workspaceLoading, isError: workspaceError } =
+    useWorkspace(workspaceId);
   const { data: activeThread } = useThread({ workspaceId, threadId });
+  const { data: threadUsers } = useThreadUsers(threadId);
+  const { rightOpen } = useSidebar();
   const [addUsersOpen, setAddUsersOpen] = useState(false);
   const canAddUsers = !!workspaceId && !!threadId;
 
-  // Render all tags as chips; color-code safe/unsafe (and other known tags)
-  const tagChips = (() => {
-    const tags = activeWorkspace?.tags || [];
-    if (!tags.length) return null;
-    return (
-      <span className="ml-2 flex items-center gap-1 flex-wrap">
-        {tags.map((t: string, i: number) => {
-          const v = (t || '').toString();
-          const cls = getTagChipClasses(v);
-          return (
-            <span
-              key={`${v}-${i}`}
-              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}
-            >
-              {v}
-            </span>
-          );
-        })}
-      </span>
-    );
-  })();
+  const participants = threadUsers ?? [];
+  const messageCount = activeThread?.totalMessages ?? 0;
+
+  const title = workspaceError
+    ? 'Workspace failed to load'
+    : activeThread?.name ?? '';
 
   return (
-    <header className="ss-chat__header flex h-[54px] shrink-0 items-center gap-2 bg-background border-b ">
-      <div className="flex flex-1 items-center gap-2 px-4">
-        <SidebarTrigger
-          side="left"
-          icon={<PanelLeft className="h-4 w-4" />}
-          className="text-muted-foreground hover:text-foreground h-8 w-8"
-        />
-        <Divider orientation="vertical" className="mr-2 h-4" />
-        {/* Workspace and thread display */}
-        <div className="flex items-center">
-          {workspaceError ? (
-            <span
-              className="font-medium text-xs text-destructive"
-              role="status"
-              aria-live="polite"
-              title="Active workspace failed to load"
-            >
-              Workspace failed to load
-            </span>
-          ) : workspaceLoading ? (
-            <Skeleton className="h-4 w-28" />
-          ) : activeWorkspace ? (
-            <span className="font-medium text-xs flex items-center">
-              {activeWorkspace?.name}
-              {tagChips}
-            </span>
-          ) : (
-            <span className="font-medium text-xs text-gray-500">—</span>
+    <header className="ss-chat__header flex shrink-0 items-start justify-between gap-4 border-b border-border/50 px-8 pt-3 pb-2.5">
+      <div className="min-w-0 flex-1">
+        {workspaceLoading && !activeThread ? (
+          <Skeleton className="h-5 w-56" />
+        ) : (
+          <h2
+            className={`truncate text-[15px] font-semibold leading-snug tracking-tight ${
+              workspaceError ? 'text-destructive' : 'text-primary'
+            }`}
+            title={title}
+            key={`thread-title-${activeThread?.id ?? 'none'}`} // Force re-render when thread changes
+          >
+            {title || '—'}
+          </h2>
+        )}
+
+        <div className="mt-1 flex items-center gap-1.5">
+          {participants.length > 0 && (
+            <div className="flex -space-x-1">
+              {participants.slice(0, 3).map((user) => (
+                <div
+                  key={user.id}
+                  title={user.displayName}
+                  className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[7px] font-semibold leading-none text-primary-foreground ring-2 ring-background"
+                >
+                  {getInitials(user.displayName)}
+                </div>
+              ))}
+            </div>
           )}
-          {activeThread?.name && (
+          {participants.length > 0 && (
             <>
-              <span className="mx-2 text-gray-400">/</span>
-              <span
-                className="text-xs font-medium text-neutral-500 truncate max-w-[240px]"
-                title={activeThread.name}
-                key={`thread-title-${activeThread.id}`} // Force re-render when thread changes
-              >
-                {activeThread.name}
+              <span className="text-[11px] text-muted-foreground">
+                {participants.length}{' '}
+                {participants.length === 1 ? 'participant' : 'participants'}
               </span>
+              <span className="text-[11px] text-muted-foreground">·</span>
             </>
           )}
+          <span className="text-[11px] text-muted-foreground">
+            {messageCount} {messageCount === 1 ? 'message' : 'messages'}
+          </span>
         </div>
       </div>
-      <div className="flex items-center gap-2 px-4">
+
+      <div className="mt-1 flex items-center gap-1">
+        <SidebarTrigger
+          side="left"
+          icon={<PanelLeft className="h-5 w-5" />}
+          className={iconButtonClass}
+        />
         <NotificationPanel />
         {canAddUsers && (
           <Tooltip title="Add users to thread">
-            <IconButton
-              size="small"
+            <button
+              type="button"
               onClick={() => setAddUsersOpen(true)}
-              className="text-muted-foreground hover:text-foreground h-8 w-8"
+              className={iconButtonClass}
               aria-label="Add users to thread"
             >
-              <UserPlus className="h-4 w-4" />
-            </IconButton>
+              <UserPlus className="h-5 w-5" />
+            </button>
           </Tooltip>
         )}
-        <Divider orientation="vertical" className="h-4" />
         <SidebarTrigger
           side="right"
-          icon={<MessageSquare className="h-4 w-4" />}
-          className="text-muted-foreground hover:text-foreground h-8 w-8"
+          icon={<MessageSquare className="h-5 w-5" />}
+          className={rightOpen ? iconButtonActiveClass : iconButtonClass}
         />
       </div>
+
       {canAddUsers && (
         <AddUsersToThreadDialog
           open={addUsersOpen}
