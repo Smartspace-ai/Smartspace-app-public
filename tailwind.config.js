@@ -52,6 +52,22 @@ module.exports = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        chat: {
+          area: 'hsl(var(--chat-area-bg))',
+          user: 'hsl(var(--chat-bubble-user))',
+          'user-foreground': 'hsl(var(--chat-bubble-user-foreground))',
+          bot: 'hsl(var(--chat-bubble-bot))',
+          'bot-foreground': 'hsl(var(--chat-bubble-bot-foreground))',
+          'bot-border': 'hsl(var(--chat-bubble-bot-border))',
+        },
+        star: 'hsl(var(--star))',
+        notification: 'hsl(var(--notification))',
+        switcher: {
+          DEFAULT: 'hsl(var(--switcher-popover))',
+          foreground: 'hsl(var(--switcher-popover-foreground))',
+          border: 'hsl(var(--switcher-popover-border))',
+          accent: 'hsl(var(--switcher-popover-accent))',
+        },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',
