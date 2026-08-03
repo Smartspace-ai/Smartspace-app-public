@@ -14,7 +14,13 @@ import {
 
 // Polled while this page stays mounted, so a user granted workspace access
 // (e.g. via admin's access control tab) gets redirected automatically
-// instead of being stuck here until they reload the tab.
+// instead of being stuck here until they reload the tab. Background/focus
+// overrides matter here specifically because the realistic flow is
+// granting access from an *other* tab (Admin UI) then switching back —
+// the app's QueryClient default disables refetchOnWindowFocus globally, and
+// React Query pauses refetchInterval in the background by default too, so
+// without these overrides that switch-back would sit stale until the next
+// 15s tick instead of checking immediately.
 const ACCESS_POLL_INTERVAL_MS = 15_000;
 
 export default function NoWorkspacesAvailable() {
@@ -22,6 +28,8 @@ export default function NoWorkspacesAvailable() {
   const { data: workspaces } = useQuery({
     ...workspacesListOptions(),
     refetchInterval: ACCESS_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
