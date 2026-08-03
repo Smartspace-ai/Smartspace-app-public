@@ -1,5 +1,5 @@
 // src/ui/threads/ThreadItem.tsx
-import { Edit, Loader2, MoreHorizontal, Pin, Trash2 } from 'lucide-react';
+import { Bookmark, Edit, Loader2, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
@@ -46,98 +46,105 @@ export default function ThreadItem({ thread }: Props) {
   return (
     <div
       id={`thread-${thread.id}`}
-      className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-accent cursor-pointer transition-all rounded-lg ${
-        isActive ? 'bg-accent' : ''
+      className={`group relative mb-0.5 flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-3.5 text-left transition-all duration-150 ${
+        isActive ? 'bg-secondary shadow-sm' : 'hover:bg-secondary/50'
       }`}
       onPointerDown={onPointerDown}
     >
       <CircleInitials
-        className={
-          isActive
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-gray-300 text-gray-700'
-        }
+        className="h-10 w-10 min-w-[40px] text-xs font-semibold shadow-none"
         text={thread.name}
-        colored={false}
+        colored
       />
 
-      <div className="flex-1 min-w-0">
-        <h3 className="text-xs font-medium truncate">{thread.name}</h3>
-        <div className="text-[11px] gap-x-2 mt-0.5 flex flex-row items-center">
-          <div>
-            {thread.totalMessages}{' '}
-            {thread.totalMessages === 1 ? 'message' : 'messages'}
-          </div>
-          {isRunning ? (
-            <div className="text-amber-500 font-medium flex items-center gap-1">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <p className="text-xs">Running…</p>
-            </div>
-          ) : (
-            <div>{parseDateTimeHuman(thread.lastUpdatedAt)}</div>
-          )}
-          <div className="flex-grow" />
-          {isSetPinPending && !isRunning ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : thread.pinned ? (
-            <Pin className="h-4 w-4 text-amber-500" />
-          ) : null}
-        </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-foreground">
+          {thread.name}
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {thread.totalMessages}{' '}
+          {thread.totalMessages === 1 ? 'message' : 'messages'}
+        </p>
       </div>
 
-      {!isDraft && (
-        <DropdownMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 absolute right-1.5 top-1.5 p-0 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">More options</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-48 rounded-lg p-1 shadow-lg border-gray-100"
-          >
-            <DropdownMenuItem
-              className="text-xs py-1.5 px-2 rounded-md"
-              onClick={(e) => {
-                e.preventDefault();
-                togglePin();
-                setMenuOpen(false);
-              }}
-            >
-              <Pin className="mr-2 h-3.5 w-3.5 text-amber-400" />
-              <span>{thread.pinned ? 'Unpin thread' : 'Pin thread'}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-xs py-1.5 px-2 rounded-md"
-              onClick={(e) => {
-                e.preventDefault();
-                setMenuOpen(false);
-                setIsRenameOpen(true);
-              }}
-            >
-              <Edit className="mr-2 h-3.5 w-3.5 text-gray-500" />
-              <span>Rename</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="my-1 bg-gray-100" />
-            <DropdownMenuItem
-              className="text-xs py-1.5 px-2 rounded-md text-red-500"
-              onClick={(e) => {
-                e.preventDefault();
-                setMenuOpen(false);
-                remove();
-              }}
-            >
-              <Trash2 className="mr-2 h-3.5 w-3.5" />
-              <span>Delete</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        {isRunning ? (
+          <span className="flex items-center gap-1 whitespace-nowrap text-xs font-medium text-star">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Running…
+          </span>
+        ) : (
+          <span className="whitespace-nowrap text-xs text-muted-foreground">
+            {parseDateTimeHuman(thread.lastUpdatedAt)}
+          </span>
+        )}
+
+        <div className="flex h-5 items-center gap-0.5">
+          {isSetPinPending && !isRunning ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : thread.pinned ? (
+            <Bookmark className="h-4 w-4 fill-primary text-primary" />
+          ) : null}
+
+          {!isDraft && (
+            <DropdownMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-5 w-5 rounded p-0 text-muted-foreground transition-opacity hover:bg-transparent hover:text-foreground ${
+                    isMenuOpen
+                      ? 'opacity-100'
+                      : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+                  }`}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">More options</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-48 rounded-lg border p-1 shadow-lg"
+              >
+                <DropdownMenuItem
+                  className="rounded-md px-2 py-1.5 text-xs"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    togglePin();
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Bookmark className="mr-2 h-3.5 w-3.5 text-primary" />
+                  <span>{thread.pinned ? 'Unpin thread' : 'Pin thread'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="rounded-md px-2 py-1.5 text-xs"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMenuOpen(false);
+                    setIsRenameOpen(true);
+                  }}
+                >
+                  <Edit className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                  <span>Rename</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuItem
+                  className="rounded-md px-2 py-1.5 text-xs text-destructive"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMenuOpen(false);
+                    remove();
+                  }}
+                >
+                  <Trash2 className="mr-2 h-3.5 w-3.5" />
+                  <span>Delete</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </div>
 
       <ThreadRenameModal
         isOpen={isRenameOpen}
