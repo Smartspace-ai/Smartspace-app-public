@@ -41,7 +41,11 @@ export function ChatHeader() {
     : activeThread?.name ?? '';
 
   return (
-    <header className="ss-chat__header flex shrink-0 items-start justify-between gap-4 border-b border-border/50 px-8 pt-3 pb-2.5">
+    // `max-sm:` rather than a mobile-first `sm:` pair throughout this branch:
+    // the app and the chat-ui package each ship a full Tailwind build, and a
+    // base utility from one can out-order an `sm:` utility from the other.
+    // Overriding downwards from the desktop base keeps a single winner.
+    <header className="ss-chat__header flex shrink-0 items-start justify-between gap-4 border-b border-border/50 px-8 pt-3 pb-2.5 max-sm:gap-2 max-sm:px-4">
       <div className="min-w-0 flex-1">
         {workspaceLoading && !activeThread ? (
           <Skeleton className="h-5 w-56" />
@@ -57,9 +61,11 @@ export function ChatHeader() {
           </h2>
         )}
 
-        <div className="mt-1 flex items-center gap-1.5">
+        {/* `flex-nowrap` + `overflow-hidden`: on a phone this line used to wrap
+            onto a second row and push the header ~14px taller. */}
+        <div className="mt-1 flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
           {participants.length > 0 && (
-            <div className="flex -space-x-1">
+            <div className="flex shrink-0 -space-x-1">
               {participants.slice(0, 3).map((user) => (
                 <div
                   key={user.id}
@@ -71,16 +77,20 @@ export function ChatHeader() {
               ))}
             </div>
           )}
+          {/* The avatars already convey this on a phone, where the label only
+              had room to truncate mid-word ("1 particip…"). */}
           {participants.length > 0 && (
             <>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="whitespace-nowrap text-[11px] text-muted-foreground max-sm:hidden">
                 {participants.length}{' '}
                 {participants.length === 1 ? 'participant' : 'participants'}
               </span>
-              <span className="text-[11px] text-muted-foreground">·</span>
+              <span className="shrink-0 text-[11px] text-muted-foreground max-sm:hidden">
+                ·
+              </span>
             </>
           )}
-          <span className="text-[11px] text-muted-foreground">
+          <span className="shrink-0 whitespace-nowrap text-[11px] text-muted-foreground">
             {messageCount} {messageCount === 1 ? 'message' : 'messages'}
           </span>
         </div>
