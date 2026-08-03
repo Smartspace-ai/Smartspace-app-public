@@ -1,6 +1,6 @@
 // routes/_protected/workspace/$workspaceId/_layout.tsx
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { Suspense, useEffect, useMemo, type ReactNode } from 'react';
+import { Suspense, useEffect, type ReactNode } from 'react';
 
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 import { defaultChatService } from '@/platform/chat/defaultChatService';
@@ -15,13 +15,7 @@ import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
 
 import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
 
-import { getBackgroundGradientClasses } from '@/theme/tag-styles';
-
-import {
-  useWorkspace,
-  ChatProvider,
-  workspaceDetailOptions,
-} from '@smartspace/chat-ui';
+import { ChatProvider, workspaceDetailOptions } from '@smartspace/chat-ui';
 
 /**
  * Exported for the integration test in `__tests__/ChatProviderBridge.spec.tsx`.
@@ -49,33 +43,15 @@ function DrainPendingThreadUsers() {
 }
 
 function WorkspaceBodyBackground() {
-  const { workspaceId } = useRouteIds();
-  const { data: workspace } = useWorkspace(workspaceId);
-
-  const gradientClasses = useMemo(() => {
-    return getBackgroundGradientClasses({
-      tags: workspace?.tags,
-      name: workspace?.name,
-    });
-  }, [workspace?.tags, workspace?.name]);
-
+  // Flat surface, no tag-driven gradient: the chat column paints its own
+  // `bg-chat-area` and the rail is opaque, so the body just needs a base.
   useEffect(() => {
-    const base = [
-      'bg-background',
-      'bg-gradient-to-b',
-      'from-background',
-      'from-10%',
-      'via-40%',
-      'to-100%',
-    ];
-    const grad = (gradientClasses || '').split(/\s+/).filter(Boolean);
-    const cls = [...base, ...grad];
-
+    const cls = ['bg-background'];
     document.body.classList.add(...cls);
     return () => {
       document.body.classList.remove(...cls);
     };
-  }, [gradientClasses]);
+  }, []);
 
   return null;
 }
