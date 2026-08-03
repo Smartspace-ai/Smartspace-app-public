@@ -1,7 +1,6 @@
 import MuiButton from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import {
-  ArrowBigUp,
   Check,
   FileArchive,
   FileAudio,
@@ -13,6 +12,8 @@ import {
   Minimize2,
   Paperclip,
   Presentation,
+  Send,
+  User,
   X,
 } from 'lucide-react';
 import type * as React from 'react';
@@ -24,7 +25,6 @@ import { useFileMutations } from '@/domains/files/mutations';
 
 import type { MarkdownEditorHandle } from '@/shared/markdown/MarkdownEditor';
 import { MarkdownEditor } from '@/shared/markdown/MarkdownEditor';
-import { Button as UIButton } from '@/shared/mui-compat/button';
 
 import { ChatVariablesForm } from '@/chat-variables/VariablesForm';
 
@@ -45,6 +45,12 @@ const imageExtensions = new Set([
   'bmp',
   'svg',
 ]);
+
+/** Round action buttons flanking the prompt field. */
+const secondaryActionClass =
+  'h-10 w-10 min-w-[40px] shrink-0 rounded-full bg-secondary text-muted-foreground hover:bg-secondary/80';
+const primaryActionClass =
+  'h-10 w-10 min-w-[40px] shrink-0 rounded-full bg-primary text-primary-foreground hover:bg-primary hover:opacity-90';
 
 function getExtension(fileName: string) {
   const parts = (fileName || '').split('.');
@@ -91,13 +97,15 @@ function getFileIcon(fileName: string) {
 }
 
 export type MessageComposerProps = {
-  /** Mirrors `MessageList`'s `expandedLayout`. See its docs. */
+  /**
+   * @deprecated No-op. The composer now spans the full width of the chat
+   * column at every breakpoint, so there's no sidebar-dependent max-width to
+   * toggle. Still accepted so existing callers keep compiling.
+   */
   expandedLayout?: boolean;
 };
 
-export default function MessageComposer({
-  expandedLayout = false,
-}: MessageComposerProps = {}) {
+export default function MessageComposer(_props: MessageComposerProps = {}) {
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // Milkdown isn't fully controlled by `value`, so we force-remount the editor after sending to guarantee a visual clear.
@@ -319,8 +327,20 @@ export default function MessageComposer({
     }
   };
 
+  const sendingDots = (
+    <span className="flex items-center gap-1">
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.3s]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.15s]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-bounce" />
+    </span>
+  );
+
   return (
-    <div className="ss-chat__composer max-h-[60%] flex-shrink-0 w-full mt-auto bg-sidebar border-t px-4 py-4">
+    <div
+      className={`ss-chat__composer max-h-[60%] flex-shrink-0 w-full mt-auto py-4 ${
+        isMobile ? 'px-4' : 'px-6'
+      }`}
+    >
       {/* Hidden file input shared by all upload buttons */}
       {supportsFiles && (
         <input
@@ -331,137 +351,193 @@ export default function MessageComposer({
           onChange={handleFileSelected}
         />
       )}
+
       {workspace && threadId && (
-        <div
-          className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
-            !isMobile
-              ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
-              : ''
-          } transition-[max-width] duration-300 ease-in-out`}
-        >
-          <ChatVariablesForm
-            key={`${workspaceId}-${threadId}`}
-            workspace={workspace}
-            threadId={threadId}
-            setVariables={setVariables}
-          />
-        </div>
+        <ChatVariablesForm
+          key={`${workspaceId}-${threadId}`}
+          workspace={workspace}
+          threadId={threadId}
+          setVariables={setVariables}
+        />
       )}
       {Object.keys(workspace?.variables ?? {}).length > 0 && (
         <hr className="my-2" />
       )}
 
-      <div
-        className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
-          !isMobile
-            ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
-            : ''
-        } bg-background ${
-          isMobile
-            ? ''
-            : 'rounded-md border shadow-sm overflow-hidden focus-within:ring-1 focus-within:ring-ring/50 focus-within:ring-offset-0'
-        } transition-[max-width] duration-300 ease-in-out`}
-      >
-        {attachments.length > 0 && (
-          <div className="border-b bg-muted/5 px-3 py-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-xs font-medium text-foreground/80">
-                {attachments.length}{' '}
-                {attachments.length === 1 ? 'file' : 'files'} selected
-                {isUploadingAttachments ? ' (uploading...)' : ''}
-              </div>
-              <MuiButton
-                type="button"
-                size="small"
-                variant="text"
-                onClick={handleClearAttachments}
-                disabled={isUploadingAttachments}
-                className="text-xs normal-case min-w-0 px-2 h-7 text-muted-foreground hover:text-destructive"
-              >
-                Remove all
-              </MuiButton>
+      {attachments.length > 0 && (
+        <div className="mb-3 rounded-lg border bg-background px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-xs font-medium text-foreground/80">
+              {attachments.length} {attachments.length === 1 ? 'file' : 'files'}{' '}
+              selected
+              {isUploadingAttachments ? ' (uploading...)' : ''}
             </div>
+            <MuiButton
+              type="button"
+              size="small"
+              variant="text"
+              onClick={handleClearAttachments}
+              disabled={isUploadingAttachments}
+              className="text-xs normal-case min-w-0 px-2 h-7 text-muted-foreground hover:text-destructive"
+            >
+              Remove all
+            </MuiButton>
+          </div>
 
-            <div className="mt-2 overflow-x-auto">
-              <div className="flex gap-2 pb-1">
-                {attachments.map((f) => {
-                  const isImage = f.isImage || isLikelyImageFile(f.name);
-                  const previewUrl = f.previewUrl;
-                  const Icon = getFileIcon(f.name);
-                  const ext = getExtension(f.name).toUpperCase() || 'FILE';
-                  const isDone = f.status === 'done';
-                  const isUploading = f.status === 'uploading';
+          <div className="mt-2 overflow-x-auto">
+            <div className="flex gap-2 pb-1">
+              {attachments.map((f) => {
+                const isImage = f.isImage || isLikelyImageFile(f.name);
+                const previewUrl = f.previewUrl;
+                const Icon = getFileIcon(f.name);
+                const ext = getExtension(f.name).toUpperCase() || 'FILE';
+                const isDone = f.status === 'done';
+                const isUploading = f.status === 'uploading';
 
-                  return (
-                    <div
-                      key={f.key}
-                      className="relative group w-[180px] min-w-[180px] rounded-md border bg-background overflow-hidden"
-                      title={f.name}
-                    >
-                      <div className="h-[58px] w-full bg-muted/10 flex items-center justify-center overflow-hidden">
-                        {isImage ? (
-                          previewUrl ? (
-                            <img
-                              src={previewUrl}
-                              alt={f.name}
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <span className="h-5 w-5 rounded-full border-2 border-muted-foreground/30 border-t-foreground/60 animate-spin" />
-                          )
+                return (
+                  <div
+                    key={f.key}
+                    className="relative group w-[180px] min-w-[180px] rounded-md border bg-background overflow-hidden"
+                    title={f.name}
+                  >
+                    <div className="h-[58px] w-full bg-muted/10 flex items-center justify-center overflow-hidden">
+                      {isImage ? (
+                        previewUrl ? (
+                          <img
+                            src={previewUrl}
+                            alt={f.name}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
                         ) : (
-                          <div className="w-9 h-9 rounded bg-muted/20 flex items-center justify-center">
-                            <Icon className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="px-2 py-1.5">
-                        <div
-                          className="text-xs font-medium text-foreground truncate"
-                          title={f.name}
-                        >
-                          {f.name}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground truncate">
-                          {ext}
-                        </div>
-                      </div>
-
-                      {/* Status: uploaded check / uploading spinner */}
-                      {isDone && (
-                        <div className="absolute bottom-1 right-1 bg-green-500 rounded-full p-0.5">
-                          <Check className="h-3 w-3 text-white" />
+                          <span className="h-5 w-5 rounded-full border-2 border-muted-foreground/30 border-t-foreground/60 animate-spin" />
+                        )
+                      ) : (
+                        <div className="w-9 h-9 rounded bg-muted/20 flex items-center justify-center">
+                          <Icon className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
-                      {isUploading && (
-                        <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground/60 animate-spin" />
-                      )}
-
-                      {/* Remove single file */}
-                      <button
-                        type="button"
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/90 border opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                        onClick={() => handleRemoveAttachment(f.key)}
-                        aria-label={`Remove ${f.name}`}
-                        disabled={isUploadingAttachments}
-                      >
-                        <X className="h-3.5 w-3.5 text-muted-foreground" />
-                      </button>
                     </div>
-                  );
-                })}
-              </div>
+
+                    <div className="px-2 py-1.5">
+                      <div
+                        className="text-xs font-medium text-foreground truncate"
+                        title={f.name}
+                      >
+                        {f.name}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {ext}
+                      </div>
+                    </div>
+
+                    {/* Status: uploaded check / uploading spinner */}
+                    {isDone && (
+                      <div className="absolute bottom-1 right-1 bg-green-500 rounded-full p-0.5">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                    {isUploading && (
+                      <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-muted-foreground/30 border-t-foreground/60 animate-spin" />
+                    )}
+
+                    {/* Remove single file */}
+                    <button
+                      type="button"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/90 border opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                      onClick={() => handleRemoveAttachment(f.key)}
+                      aria-label={`Remove ${f.name}`}
+                      disabled={isUploadingAttachments}
+                    >
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        <div className="flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-full bg-secondary">
+          <User className="h-4 w-4 text-muted-foreground" />
+        </div>
+
+        <div className="min-w-0 flex-1 max-h-[400px] overflow-y-auto rounded-lg border border-border bg-background px-4 py-2.5 transition-colors focus-within:ring-1 focus-within:ring-ring">
+          <MarkdownEditor
+            key={`composer-md-${editorKey}`}
+            ref={editorRef}
+            value={newMessage}
+            onChange={(md) => setNewMessage(md)}
+            onKeyDown={handleComposerKeyDown}
+            onFilesAdded={(files) => {
+              void addAttachments(files);
+            }}
+            onUploadFiles={onUploadFiles}
+            fileHandlingMode="attachments"
+            workspaceId={workspaceId}
+            disabled={disabled}
+            placeholder="Enter prompt"
+            className="md-editor--bare text-sm"
+          />
+        </div>
+
+        {supportsFiles && (
+          <IconButton
+            type="button"
+            className={secondaryActionClass}
+            onClick={handlePickFilesClick}
+            disabled={disabled}
+            aria-label="Upload files"
+          >
+            <Paperclip className="h-5 w-5" strokeWidth={2} />
+          </IconButton>
         )}
 
-        <div className="w-full max-h-[400px] overflow-y-auto">
-          <div>
-            {isMobile ? (
-              <div className="flex items-center gap-2 px-3 py-2">
-                <div className="relative flex-1 px-2 py-2">
+        <IconButton
+          onClick={handleSendMessageAndClear}
+          className={`${primaryActionClass} ${
+            sendDisabled ? 'opacity-40 cursor-not-allowed' : ''
+          }`}
+          disabled={sendDisabled}
+          aria-label="Send"
+        >
+          {isSending ? sendingDots : <Send className="h-5 w-5" />}
+        </IconButton>
+      </div>
+
+      {/* Mobile fullscreen composer */}
+      {isMobile &&
+        isFullscreen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-x-0"
+            style={{
+              top: '5vh',
+              height: '95vh',
+              left: 0,
+              right: 0,
+              zIndex: 1300,
+            }}
+          >
+            <div className="relative h-full w-full bg-background border shadow-lg">
+              <IconButton
+                type="button"
+                size="small"
+                className="h-8 w-8 absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsFullscreen(false);
+                }}
+                aria-label="Collapse"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </IconButton>
+              <div className="flex flex-col h-full">
+                <div className="flex-1 p-4">
                   <MarkdownEditor
                     key={`composer-md-${editorKey}`}
                     ref={editorRef}
@@ -475,177 +551,38 @@ export default function MessageComposer({
                     fileHandlingMode="attachments"
                     workspaceId={workspaceId}
                     disabled={disabled}
-                    placeholder="Type a message..."
-                    className="md-editor--bare text-sm"
+                    className="md-editor--bare text-sm h-full"
                   />
                 </div>
-
-                {supportsFiles && (
-                  <IconButton
-                    type="button"
-                    size="small"
-                    className="h-10 w-10 rounded-full self-end"
-                    onClick={handlePickFilesClick}
-                    disabled={disabled}
-                    aria-label="Upload files"
-                  >
-                    <Paperclip
-                      className="h-5 w-5 text-muted-foreground/70"
-                      strokeWidth={2}
-                    />
-                  </IconButton>
-                )}
-
-                <IconButton
-                  onClick={handleSendMessageAndClear}
-                  className={`h-10 w-10 rounded-full self-end ${
-                    sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  disabled={sendDisabled}
-                  aria-label="Send"
-                >
-                  <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
-                </IconButton>
-              </div>
-            ) : (
-              <div className="relative px-5 py-2">
-                <MarkdownEditor
-                  key={`composer-md-${editorKey}`}
-                  ref={editorRef}
-                  value={newMessage}
-                  onChange={(md) => setNewMessage(md)}
-                  onKeyDown={handleComposerKeyDown}
-                  onFilesAdded={(files) => {
-                    void addAttachments(files);
-                  }}
-                  onUploadFiles={onUploadFiles}
-                  fileHandlingMode="attachments"
-                  workspaceId={workspaceId}
-                  disabled={disabled}
-                  placeholder="Type a message..."
-                  className="md-editor--bare text-sm"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile fullscreen composer */}
-        {isMobile &&
-          isFullscreen &&
-          typeof document !== 'undefined' &&
-          createPortal(
-            <div
-              className="fixed inset-x-0"
-              style={{
-                top: '5vh',
-                height: '95vh',
-                left: 0,
-                right: 0,
-                zIndex: 1300,
-              }}
-            >
-              <div className="relative h-full w-full bg-background border shadow-lg">
-                <IconButton
-                  type="button"
-                  size="small"
-                  className="h-8 w-8 absolute top-2 right-2 text-muted-foreground hover:text-foreground"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsFullscreen(false);
-                  }}
-                  aria-label="Collapse"
-                >
-                  <Minimize2 className="h-4 w-4" />
-                </IconButton>
-                <div className="flex flex-col h-full">
-                  <div className="flex-1 p-4">
-                    <MarkdownEditor
-                      key={`composer-md-${editorKey}`}
-                      ref={editorRef}
-                      value={newMessage}
-                      onChange={(md) => setNewMessage(md)}
-                      onKeyDown={handleComposerKeyDown}
-                      onFilesAdded={(files) => {
-                        void addAttachments(files);
-                      }}
-                      onUploadFiles={onUploadFiles}
-                      fileHandlingMode="attachments"
-                      workspaceId={workspaceId}
-                      disabled={disabled}
-                      className="md-editor--bare text-sm h-full"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 px-3 py-2 border-t bg-background">
-                    <div className="flex-1" />
-                    {supportsFiles && (
-                      <IconButton
-                        type="button"
-                        onClick={handlePickFilesClick}
-                        disabled={disabled}
-                        aria-label="Upload files"
-                      >
-                        <Paperclip
-                          className="h-5 w-5 text-muted-foreground/70"
-                          strokeWidth={2}
-                        />
-                      </IconButton>
-                    )}
+                <div className="flex items-center gap-3 px-4 py-3 border-t bg-background">
+                  <div className="flex-1" />
+                  {supportsFiles && (
                     <IconButton
-                      onClick={handleSendMessageAndClear}
-                      className={`h-10 w-10 rounded-full ${
-                        sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                      disabled={sendDisabled}
-                      aria-label="Send"
+                      type="button"
+                      className={secondaryActionClass}
+                      onClick={handlePickFilesClick}
+                      disabled={disabled}
+                      aria-label="Upload files"
                     >
-                      <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
+                      <Paperclip className="h-5 w-5" strokeWidth={2} />
                     </IconButton>
-                  </div>
+                  )}
+                  <IconButton
+                    onClick={handleSendMessageAndClear}
+                    className={`${primaryActionClass} ${
+                      sendDisabled ? 'opacity-40 cursor-not-allowed' : ''
+                    }`}
+                    disabled={sendDisabled}
+                    aria-label="Send"
+                  >
+                    {isSending ? sendingDots : <Send className="h-5 w-5" />}
+                  </IconButton>
                 </div>
               </div>
-            </div>,
-            document.body
-          )}
-
-        {/* Desktop footer actions */}
-        {!isMobile && (
-          <div className="flex items-center justify-between px-4 py-2 bg-background">
-            <div className="flex items-center gap-3">
-              {supportsFiles && (
-                <IconButton
-                  type="button"
-                  onClick={handlePickFilesClick}
-                  disabled={disabled}
-                  aria-label="Upload files"
-                  className="text-muted-foreground/70 hover:text-muted-foreground"
-                >
-                  <Paperclip className="h-5 w-5" strokeWidth={2} />
-                </IconButton>
-              )}
             </div>
-
-            <UIButton
-              onClick={handleSendMessageAndClear}
-              className={`text-xs h-7 px-4 py-1 ${
-                sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              disabled={sendDisabled}
-            >
-              {isSending ? (
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce" />
-                </span>
-              ) : (
-                'Send'
-              )}
-            </UIButton>
-          </div>
+          </div>,
+          document.body
         )}
-      </div>
     </div>
   );
 }
