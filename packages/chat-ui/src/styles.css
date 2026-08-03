@@ -26,76 +26,107 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Keep these in sync with the host app's `src/_theme.scss` — a consumer that
+ * imports this stylesheet gets these values, and whichever sheet lands last
+ * in the cascade wins for the shared tokens.
+ */
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 250.59 54.84% 6.08%;
+    --foreground: 220 20% 20%;
 
-    --primary: 252.13 88.59% 57.45%;
-    --primary-foreground: 254.27 90% 96.08%;
+    --primary: 244.9655172414 58.2329317269% 51.1764705882%;
+    --primary-foreground: 0 0% 100%;
 
-    --card: 247.5 80% 98.04%;
-    --card-foreground: 250.59 54.84% 6.08%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 250.59 54.84% 6.08%;
+    --popover-foreground: 220 20% 20%;
 
-    --secondary: 252.48 86.67% 94.12%;
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 240 20% 96%;
+    --secondary-foreground: 220 20% 20%;
 
-    --muted: 254.27 90% 96.08%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 240 10% 96%;
+    --muted-foreground: 220 10% 50%;
 
-    --accent: 254.27 90% 96.08%;
-    --accent-foreground: 252.05 57.45% 9.22%;
+    --accent: 240 20% 96%;
+    --accent-foreground: 220 20% 20%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 252.61 90% 92.16%;
-    --input: 251.85 25% 82.75%;
-    --ring: 252.13 88.59% 57.45%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 244.9655172414 58.2329317269% 51.1764705882%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 252.13 100% 99.22%;
-    --sidebar-foreground: 250.59 54.84% 6.08%;
-    --sidebar-primary: 252.13 88.59% 57.45%;
-    --sidebar-primary-foreground: 254.27 90% 96.08%;
-    --sidebar-accent: 252.13 88.59% 57.45%;
-    --sidebar-accent-foreground: 254.27 90% 96.08%;
-    --sidebar-border: 252.61 90% 92.16%;
-    --sidebar-ring: 252.13 88.59% 57.45%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 20%;
+    --sidebar-primary: 244.9655172414 58.2329317269% 51.1764705882%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 93%;
+    --sidebar-accent-foreground: 220 20% 20%;
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 244.9655172414 58.2329317269% 51.1764705882%;
+
+    --chat-area-bg: 220 6% 93%;
+    --chat-bubble-user: 245 58% 58%;
+    --chat-bubble-user-foreground: 0 0% 100%;
+    --chat-bubble-bot: 0 0% 100%;
+    --chat-bubble-bot-foreground: 220 20% 20%;
+    --chat-bubble-bot-border: 220 15% 90%;
+
+    --star: 40 90% 55%;
+    --notification: 0 80% 55%;
   }
 
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 252.48 86.67% 94.12%;
+    --background: 220 20% 10%;
+    --foreground: 210 40% 98%;
 
-    --primary: 252.13 88.59% 57.45%;
-    --primary-foreground: 254.27 90% 96.08%;
+    --primary: 244.9655172414 58.2329317269% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --card: 257.14 22.58% 6.08%;
-    --card-foreground: 252.48 86.67% 94.12%;
+    --card: 220 20% 12%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 0%;
-    --popover-foreground: 252.48 86.67% 94.12%;
+    --popover: 220 20% 12%;
+    --popover-foreground: 210 40% 98%;
 
-    --secondary: 252.55 57.41% 21.18%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 20% 18%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 0 0% 9.8%;
-    --muted-foreground: 0 0% 50.2%;
+    --muted: 220 20% 18%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 252.55 57.41% 21.18%;
-    --accent-foreground: 252.48 86.67% 94.12%;
+    --accent: 220 20% 18%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 252.61 58.06% 12.16%;
-    --input: 250 16.67% 21.18%;
-    --ring: 252.13 88.59% 57.45%;
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: 244.9655172414 58.2329317269% 60%;
+
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 244.9655172414 58.2329317269% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 20% 18%;
+    --sidebar-ring: 244.9655172414 58.2329317269% 60%;
+
+    --chat-area-bg: 220 20% 8%;
+    --chat-bubble-user: 245 58% 55%;
+    --chat-bubble-user-foreground: 0 0% 100%;
+    --chat-bubble-bot: 220 20% 15%;
+    --chat-bubble-bot-foreground: 210 40% 98%;
+    --chat-bubble-bot-border: 220 20% 22%;
   }
 }
 
@@ -144,6 +175,18 @@
 /* Base editor container */
 .md-editor {
   position: relative;
+  /* Declared here, not on `.ProseMirror`: `.md-editor__ghost` is a *sibling*
+     of `.ProseMirror`, so it can't inherit variables scoped to it. Without
+     these the ghost's `left`/`right` offsets resolve to nothing and it grows
+     past the editor instead of ellipsising. */
+  --md-pad-v: 12px;
+  --md-pad-h: 14px;
+}
+
+.md-editor.md-editor--bare,
+.md-editor.md-editor--readonly {
+  --md-pad-v: 0px;
+  --md-pad-h: 0px;
 }
 
 .ss-attach {
@@ -238,9 +281,8 @@
   min-height: var(--md-min-height, 1.6em);
   max-height: var(--md-max-height, none);
   overflow: auto; /* will only scroll when max-height is exceeded */
-  /* Expose padding as variables for consistent placeholder alignment */
-  --md-pad-v: 12px;
-  --md-pad-h: 14px;
+  /* Padding comes from the variables declared on `.md-editor` so the ghost
+     placeholder stays aligned with the real content. */
   padding: var(--md-pad-v) var(--md-pad-h);
   border: 1px solid #e3e3e3;
   border-radius: 10px;
@@ -266,9 +308,6 @@
   border: none;
   padding: 0;
   box-shadow: none;
-  /* Ensure placeholder aligns to the start of content when bare */
-  --md-pad-v: 0px;
-  --md-pad-h: 0px;
 }
 
 /* Links (autolinked bare URLs and markdown-syntax links) */
@@ -309,6 +348,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Belt to the `left`/`right` offsets above: never outgrow the editor, so a
+     long placeholder always ellipsises instead of spilling out. */
+  max-width: 100%;
   font: inherit;
   line-height: inherit;
 }
