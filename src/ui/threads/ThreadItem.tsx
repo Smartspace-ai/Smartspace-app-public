@@ -79,7 +79,7 @@ export default function ThreadItem({ thread }: Props) {
           </span>
         )}
 
-        <div className="flex h-5 items-center gap-0.5">
+        <div className="flex h-9 items-center gap-0.5">
           {isSetPinPending && !isRunning ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           ) : thread.pinned ? (
@@ -92,10 +92,13 @@ export default function ThreadItem({ thread }: Props) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`h-5 w-5 rounded p-0 text-muted-foreground transition-opacity hover:bg-transparent hover:text-foreground ${
+                  // Reveal-on-hover only where a real hover pointer exists.
+                  // Touch devices never fire hover, so gating on it alone made
+                  // pin / rename / delete unreachable on phones.
+                  className={`h-9 w-9 rounded-md p-0 text-muted-foreground transition-opacity hover:bg-transparent hover:text-foreground ${
                     isMenuOpen
                       ? 'opacity-100'
-                      : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+                      : 'opacity-100 focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100'
                   }`}
                 >
                   <MoreHorizontal className="h-4 w-4" />
