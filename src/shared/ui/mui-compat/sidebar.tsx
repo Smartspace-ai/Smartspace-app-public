@@ -29,6 +29,8 @@ const SIDEBAR_COOKIE_NAME = 'sidebar';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 const SIDEBAR_KEYBOARD_SHORTCUT = 'k';
 const SIDEBAR_WIDTH = '300px';
+/** The comments rail is slightly wider than the threads rail by design. */
+const SIDEBAR_WIDTH_RIGHT = '320px';
 const SIDEBAR_WIDTH_MOBILE = '90vw'; // Use viewport width for mobile
 const SIDEBAR_WIDTH_ICON = '48px';
 const MOBILE_BREAKPOINT = 1100; // md breakpoint
@@ -363,7 +365,8 @@ const Sidebar = forwardRef<
     // group-data selector trick that previously didn't reflect state
     // changes when the chat-ui package CSS was loaded alongside the
     // consumer's Tailwind output.
-    const desktopWidth = isOpen ? SIDEBAR_WIDTH : '0px';
+    const panelWidth = side === 'right' ? SIDEBAR_WIDTH_RIGHT : SIDEBAR_WIDTH;
+    const desktopWidth = isOpen ? panelWidth : '0px';
     return (
       <div
         ref={ref}
@@ -382,7 +385,7 @@ const Sidebar = forwardRef<
             side === 'left' ? 'border-r' : 'border-l',
             className
           )}
-          style={{ width: SIDEBAR_WIDTH }}
+          style={{ width: panelWidth }}
           {...props}
         >
           {children}
