@@ -442,9 +442,11 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                     )}
 
                     {/* Remove single file */}
+                    {/* Always visible on touch: `group-hover` alone made this
+                        unreachable on phones. */}
                     <button
                       type="button"
-                      className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/90 border opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                      className="absolute top-1 right-1 flex h-8 w-8 items-center justify-center rounded-full border bg-background/90 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
                       onClick={() => handleRemoveAttachment(f.key)}
                       aria-label={`Remove ${f.name}`}
                       disabled={isUploadingAttachments}
@@ -459,12 +461,14 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
         </div>
       )}
 
-      <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-full bg-secondary">
+      <div className="flex items-center gap-3 max-sm:gap-2">
+        {/* Decorative only — hidden on phones, where it and the gaps were
+            eating ~40px of the prompt field's width. */}
+        <div className="flex h-8 w-8 min-w-[32px] shrink-0 items-center justify-center rounded-full bg-secondary max-sm:hidden">
           <User className="h-4 w-4 text-muted-foreground" />
         </div>
 
-        <div className="min-w-0 flex-1 max-h-[400px] overflow-y-auto rounded-lg border border-border bg-background px-4 py-2.5 transition-colors focus-within:ring-1 focus-within:ring-ring">
+        <div className="min-w-0 flex-1 max-h-[400px] overflow-y-auto rounded-lg border border-border bg-background px-4 py-2.5 transition-colors focus-within:ring-1 focus-within:ring-ring max-sm:px-3">
           <MarkdownEditor
             key={`composer-md-${editorKey}`}
             ref={editorRef}
