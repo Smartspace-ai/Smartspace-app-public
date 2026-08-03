@@ -161,10 +161,18 @@
   max-width: 100%;
 }
 
-/* On very small screens, let it shrink gracefully */
+/* On very small screens let fields share a row instead of each taking a full
+   one. `width: 100%` forced one field per row, so three variables stacked into
+   ~80px of vertical space above the composer on a phone. */
 @media (max-width: 480px) {
+  .jsonforms-compact .ss-jsonforms-grid {
+    gap: 8px;
+  }
+
   .jsonforms-compact .compact-field {
-    width: 100%;
+    width: auto;
+    flex: 1 1 140px;
+    min-width: 140px;
   }
 }
 
