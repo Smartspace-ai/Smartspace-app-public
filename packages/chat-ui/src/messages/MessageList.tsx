@@ -1,6 +1,6 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { AlertTriangle } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useChatContext } from '@/platform/chat';
 
@@ -11,8 +11,6 @@ import { useWorkspace } from '@/domains/workspaces/queries';
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { MessageMarkdown } from '@/shared/markdown/MessageMarkdown';
 import { Skeleton } from '@/shared/mui-compat/skeleton';
-
-import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 import { MessageItem } from './MessageItem';
 
@@ -25,11 +23,10 @@ export type MessageListProps = {
    */
   applyHostBackgroundOverride?: boolean;
   /**
-   * Use the wider desktop max-width (90% instead of 70%). Set this when the
-   * chat is rendered in a layout where horizontal room is constrained by
-   * other panels (e.g. a sidebar is open beside it). Standalone fork passes
-   * `leftOpen || rightOpen` from `useSidebar()`; the sandbox doesn't have
-   * sidebars, so it omits the prop and gets the natural 70% width.
+   * @deprecated No-op. The message list now fills the chat column at every
+   * width — individual bubbles cap their own width — so there's no
+   * sidebar-dependent max-width to toggle. Still accepted so existing
+   * callers keep compiling.
    */
   expandedLayout?: boolean;
   /**
@@ -48,7 +45,6 @@ export type MessageListProps = {
 
 export function MessageList({
   applyHostBackgroundOverride = false,
-  expandedLayout = false,
   isChoosingThread = false,
 }: MessageListProps = {}) {
   const { workspaceId, threadId } = useChatContext();
@@ -93,22 +89,10 @@ export function MessageList({
   } = useMessages(threadId);
 
   // When the host page can bleed a dark background through (e.g. Teams web),
-  // render our own solid base + tag-driven gradient on the message body so
-  // the perceived chat color matches the standalone web UI. Driven by the
-  // `applyHostBackgroundOverride` prop — the chat tree itself stays
-  // host-agnostic.
-  const hostBg = useMemo(() => {
-    if (!applyHostBackgroundOverride) return '';
-    const grad = getBackgroundGradientClasses({
-      tags: activeWorkspace?.tags,
-      name: activeWorkspace?.name,
-    });
-    return `bg-white bg-gradient-to-b from-white from-10% ${grad} via-40% to-100%`;
-  }, [
-    applyHostBackgroundOverride,
-    activeWorkspace?.tags,
-    activeWorkspace?.name,
-  ]);
+  // paint the chat surface ourselves so the perceived chat color matches the
+  // standalone web UI. Driven by the `applyHostBackgroundOverride` prop — the
+  // chat tree itself stays host-agnostic.
+  const hostBg = applyHostBackgroundOverride ? 'bg-chat-area' : '';
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const viewport = viewportRef.current;
@@ -286,24 +270,25 @@ export function MessageList({
         >
           <div
             ref={contentRef}
-            className={`flex flex-col w-full ${
-              !isMobile
-                ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
-                : ''
-            } px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
+            className={`flex w-full flex-col space-y-4 py-6 ${
+              isMobile ? 'px-4' : 'px-8'
+            }`}
           >
             {safeMessages.map((message, index) => {
               const isLastMessage = index === safeMessages.length - 1;
               const isLive = isLastMessage && isRunning;
               return (
+                // `space-y-4` here as well as on the container: one Message can
+                // expand into several bubbles (streamed values, files, sources),
+                // and those need the same 16px rhythm as separate messages.
                 <div
-                  className="ss-chat__message w-full"
+                  className="ss-chat__message w-full space-y-4"
                   key={message.id || index}
                 >
                   <MessageItem message={message} isLive={isLive} />
 
                   {isLastMessage && isRunning && (
-                    <div className="p-3 min-h-3">
+                    <div className="min-h-3">
                       <div className="flex space-x-2 p-1">
                         {[0, 300, 600].map((delay) => (
                           <div
@@ -316,7 +301,8 @@ export function MessageList({
                     </div>
                   )}
 
-                  <div ref={messagesEndRef} className="h-1" />
+                  {/* `!mt-0` keeps the scroll anchor out of the 16px rhythm. */}
+                  <div ref={messagesEndRef} className="h-1 !mt-0" />
                 </div>
               );
             })}
