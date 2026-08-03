@@ -5,14 +5,9 @@ import NewThreadButton from '@/ui/threads/NewThreadButton';
 import ThreadsList from '@/ui/threads/ThreadsList';
 import { WorkspaceSwitcher } from '@/ui/workspaces/WorkspaceSwitcher';
 
-import { Separator } from '@/shared/ui/mui-compat/separator';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-} from '@/shared/ui/mui-compat/sidebar';
+import { Sidebar } from '@/shared/ui/mui-compat/sidebar';
 
-import SidebarUserHeader from './SidebarUserHeader';
+import SidebarUserHeader, { SidebarUserMenu } from './SidebarUserHeader';
 
 export default function SidebarLeft(props: ComponentProps<typeof Sidebar>) {
   return (
@@ -20,21 +15,18 @@ export default function SidebarLeft(props: ComponentProps<typeof Sidebar>) {
       <SidebarUserHeader />
       <WorkspaceSwitcher />
 
-      <Separator className="opacity-40" />
-      <div className="px-3 py-3">
-        <div className="text-xs font-semibold tracking-wide text-gray-500 px-1">
-          Threads
-        </div>
-      </div>
-      <Separator className="opacity-40" />
-
-      <SidebarContent className="px-0 py-0 overflow-auto h-full">
+      {/* Plain div rather than `SidebarContent`: its default `p-2` is emitted
+          by both stylesheets in play and beats the padding overrides here. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ThreadsList />
-      </SidebarContent>
+      </div>
 
-      <SidebarFooter className="border-t p-4 mt-auto sticky bottom-0">
+      {/* Plain div for the same reason as above — `SidebarFooter`'s `gap-2`
+          would creep in on top of the account row's own spacing. */}
+      <div className="mt-auto sticky bottom-0 shrink-0 p-4">
         <NewThreadButton />
-      </SidebarFooter>
+        <SidebarUserMenu />
+      </div>
     </Sidebar>
   );
 }
