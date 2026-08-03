@@ -38,8 +38,10 @@ export default function SidebarUserHeader() {
     <div className="px-5 pt-5">
       {/* Scale by width, not height: the wordmark is wide enough that a fixed
           height overflows the 300px rail, and an over-constrained <svg> crops
-          instead of shrinking. */}
-      <Logo className="h-auto max-h-10 w-full" />
+          instead of shrinking. `max-w` pins it to the size it settles at in the
+          desktop rail — without it the logo grew with the container and was
+          several times too large inside the wider overlay rail on mobile. */}
+      <Logo className="h-auto max-h-10 w-full max-w-[210px]" />
     </div>
   );
 }
