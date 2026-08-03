@@ -988,9 +988,11 @@ function EditorInner({
                     </div>
                   ) : null}
                 </div>
+                {/* Always visible on touch: `group-hover` alone made this
+                    unreachable on phones. */}
                 <button
                   type="button"
-                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-background border opacity-0 group-hover:opacity-100"
+                  className="absolute -top-2 -right-2 h-7 w-7 rounded-full border bg-background opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
                   onClick={() =>
                     setAttachments((prev) => prev.filter((_, i) => i !== index))
                   }
