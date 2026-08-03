@@ -8,12 +8,12 @@
 @use 'sass:color';
 
 // Primary input color
-$primary-hex: #6443f4;
+$primary-hex: #463acb;
 
 // Extract HSL from HEX
-$hue: color.channel($primary-hex, "hue", $space: hsl);
-$saturation: color.channel($primary-hex, "saturation", $space: hsl);
-$lightness: color.channel($primary-hex, "lightness", $space: hsl);
+$hue: color.channel($primary-hex, 'hue', $space: hsl);
+$saturation: color.channel($primary-hex, 'saturation', $space: hsl);
+$lightness: color.channel($primary-hex, 'lightness', $space: hsl);
 
 // Helper to produce "H S% L%" string
 @function hsl-token($h, $s, $l) {
@@ -23,31 +23,35 @@ $lightness: color.channel($primary-hex, "lightness", $space: hsl);
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: #{hsl-token(250.59, 54.84%, 6.08%)};
+    --foreground: 220 20% 20%;
 
     --primary: #{hsl-token($hue, $saturation, $lightness)};
-    --primary-foreground: #{hsl-token($hue + 2.14, 90%, 96.08%)};
+    --primary-foreground: 0 0% 100%;
 
-    --card: #{hsl-token(247.5, 80%, 98.04%)};
-    --card-foreground: #{hsl-token(250.59, 54.84%, 6.08%)};
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: #{hsl-token(250.59, 54.84%, 6.08%)};
+    --popover-foreground: 220 20% 20%;
 
-    --secondary: #{hsl-token($hue + 0.35, 86.67%, 94.12%)};
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 240 20% 96%;
+    --secondary-foreground: 220 20% 20%;
 
-    --muted: #{hsl-token($hue + 2.14, 90%, 96.08%)};
-    --muted-foreground: 0 0% 40%;
+    --muted: 240 10% 96%;
+    --muted-foreground: 220 10% 50%;
 
-    --accent: #{hsl-token($hue + 2.14, 90%, 96.08%)};
-    --accent-foreground: #{hsl-token($hue - 0.08, 57.45%, 9.22%)};
+    // Kept neutral on purpose: shadcn primitives (dropdown items, command
+    // rows, ghost buttons) hover on `bg-accent`. The reference design hovers
+    // those surfaces with its neutral `secondary`, so mirroring `secondary`
+    // here reproduces it without repainting every primitive indigo.
+    --accent: 240 20% 96%;
+    --accent-foreground: 220 20% 20%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: #{hsl-token($hue + 0.48, 90%, 92.16%)};
-    --input: #{hsl-token($hue - 0.28, 25%, 82.75%)};
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
     --ring: #{hsl-token($hue, $saturation, $lightness)};
 
     --chart-1: #{hsl-token($hue, $saturation, $lightness)};
@@ -58,44 +62,61 @@ $lightness: color.channel($primary-hex, "lightness", $space: hsl);
 
     --radius: 0.5rem;
 
-    --sidebar-background: #{hsl-token($hue, 100%, 99.22%)};
-    --sidebar-foreground: #{hsl-token(250.59, 54.84%, 6.08%)};
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 20%;
     --sidebar-primary: #{hsl-token($hue, $saturation, $lightness)};
-    --sidebar-primary-foreground: #{hsl-token($hue + 2.14, 90%, 96.08%)};
-    --sidebar-accent: #{hsl-token($hue, $saturation, $lightness)};
-    --sidebar-accent-foreground: #{hsl-token($hue + 2.14, 90%, 96.08%)};
-    --sidebar-border: #{hsl-token($hue + 0.48, 90%, 92.16%)};
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 93%;
+    --sidebar-accent-foreground: 220 20% 20%;
+    --sidebar-border: 220 15% 90%;
     --sidebar-ring: #{hsl-token($hue, $saturation, $lightness)};
+
+    // Chat surfaces
+    --chat-area-bg: 220 6% 93%;
+    --chat-bubble-user: 245 58% 58%;
+    --chat-bubble-user-foreground: 0 0% 100%;
+    --chat-bubble-bot: 0 0% 100%;
+    --chat-bubble-bot-foreground: 220 20% 20%;
+    --chat-bubble-bot-border: 220 15% 90%;
+
+    --star: 40 90% 55%;
+    --notification: 0 80% 55%;
+
+    // Workspace switcher popover (dark surface in the reference design)
+    --switcher-popover: 234 17% 14%;
+    --switcher-popover-foreground: 0 0% 96%;
+    --switcher-popover-border: 231 17% 22%;
+    --switcher-popover-accent: 232 17% 18%;
   }
 
   .dark {
-    --background: 0 0% 0%;
-    --foreground: #{hsl-token($hue + 0.35, 86.67%, 94.12%)};
+    --background: 220 20% 10%;
+    --foreground: 210 40% 98%;
 
-    --primary: #{hsl-token($hue, $saturation, $lightness)};
-    --primary-foreground: #{hsl-token($hue + 2.14, 90%, 96.08%)};
+    --primary: #{hsl-token($hue, $saturation, 60%)};
+    --primary-foreground: 0 0% 100%;
 
-    --card: #{hsl-token(257.14, 22.58%, 6.08%)};
-    --card-foreground: #{hsl-token($hue + 0.35, 86.67%, 94.12%)};
+    --card: 220 20% 12%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 0%;
-    --popover-foreground: #{hsl-token($hue + 0.35, 86.67%, 94.12%)};
+    --popover: 220 20% 12%;
+    --popover-foreground: 210 40% 98%;
 
-    --secondary: #{hsl-token($hue + 0.42, 57.41%, 21.18%)};
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 20% 18%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 0 0% 9.8%;
-    --muted-foreground: 0 0% 50.2%;
+    --muted: 220 20% 18%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: #{hsl-token($hue + 0.42, 57.41%, 21.18%)};
-    --accent-foreground: #{hsl-token($hue + 0.35, 86.67%, 94.12%)};
+    --accent: 220 20% 18%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: #{hsl-token($hue + 0.48, 58.06%, 12.16%)};
-    --input: #{hsl-token(250, 16.67%, 21.18%)};
-    --ring: #{hsl-token($hue, $saturation, $lightness)};
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: #{hsl-token($hue, $saturation, 60%)};
 
     --chart-1: #{hsl-token($hue, $saturation, $lightness)};
     --chart-2: #{hsl-token($hue + 0.01, 60.98%, 51.76%)};
@@ -104,5 +125,26 @@ $lightness: color.channel($primary-hex, "lightness", $space: hsl);
     --chart-5: #{hsl-token($hue + 0.06, 57.14%, 27.45%)};
 
     --radius: 0.5rem;
+
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: #{hsl-token($hue, $saturation, 60%)};
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 20% 18%;
+    --sidebar-ring: #{hsl-token($hue, $saturation, 60%)};
+
+    --chat-area-bg: 220 20% 8%;
+    --chat-bubble-user: 245 58% 55%;
+    --chat-bubble-user-foreground: 0 0% 100%;
+    --chat-bubble-bot: 220 20% 15%;
+    --chat-bubble-bot-foreground: 210 40% 98%;
+    --chat-bubble-bot-border: 220 20% 22%;
+
+    --switcher-popover: 234 17% 14%;
+    --switcher-popover-foreground: 0 0% 96%;
+    --switcher-popover-border: 231 17% 22%;
+    --switcher-popover-accent: 232 17% 18%;
   }
 }
