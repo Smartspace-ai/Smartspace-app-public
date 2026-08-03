@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 
-const MOBILE_BREAKPOINT = 1100;
+/**
+ * Single source of truth for the "mobile layout" cutoff. Exported so the host
+ * app's sidebar doesn't keep its own copy — the two drifting apart would put
+ * the rails and the chat body on different notions of mobile.
+ *
+ * Note this is deliberately wider than Tailwind's `lg` (1024px): everything
+ * below it currently gets overlay rails, including iPad landscape. Whether
+ * that's the right cutoff is a product decision, not a layout bug.
+ */
+export const MOBILE_BREAKPOINT = 1100;
 
 export function useIsMobile() {
   const getIsMobile = () =>
