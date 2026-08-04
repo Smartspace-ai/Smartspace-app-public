@@ -63,14 +63,14 @@ function pushContent(items: MessageContentItem[], value: unknown) {
     // back to a JSON code block, mirroring the object branch below.
     const looksLikeContent = value.every(
       (it) =>
-        it != null &&
-        typeof it === 'object' &&
-        ('text' in it || 'image' in it)
+        it != null && typeof it === 'object' && ('text' in it || 'image' in it)
     );
     if (looksLikeContent) {
       items.push(...(value as MessageContentItem[]));
     } else {
-      items.push({ text: '```json\n' + JSON.stringify(value, null, 2) + '\n```' });
+      items.push({
+        text: '```json\n' + JSON.stringify(value, null, 2) + '\n```',
+      });
     }
     return;
   }
@@ -344,6 +344,7 @@ export const MessageItem: FC<MessageItemProps> = ({
     bubbles.push(
       <MessageBubble
         key={`bubble-final-${message.id ?? 'msg'}-${keyCounter++}`}
+        isStreaming={isLive}
         createdBy={lastCreatedBy}
         createdByUserId={lastCreatedByUserId}
         createdAt={lastCreatedAt}
