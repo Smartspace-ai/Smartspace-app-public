@@ -11,14 +11,7 @@ import { MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 
 import { MessageMarkdown } from '@/shared/markdown/MessageMarkdown';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/shared/mui-compat/avatar';
-import { getInitials } from '@/shared/utils/initials';
 import { parseDateTime } from '@/shared/utils/parseDateTime';
-import { getUserPhotoUrl } from '@/shared/utils/userPhoto';
 import { cn } from '@/shared/utils/utils';
 
 import { cells, renderers } from '@/chat-variables/renders';
@@ -56,7 +49,6 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
     content,
     sources,
     files,
-    createdByUserId,
     chatbotName = 'Chatbot',
     userOutput,
     userInput,
@@ -76,128 +68,129 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
   const contentIsList =
     Array.isArray(content) && content.every((it) => it?.text || it?.image);
 
-  return (
-    <div
-      className={cn(
-        isBotResponse ? 'border bg-background shadow-md' : '',
-        'rounded-lg mb-4 group'
-      )}
-    >
-      <div
-        className={cn(
-          isBotResponse ? 'border-b' : '',
-          'flex items-center justify-between p-3'
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <Avatar className="h-7 w-7 mt-0.5">
-            {!isBotResponse && createdByUserId ? (
-              <AvatarImage
-                src={getUserPhotoUrl(createdByUserId)}
-                alt={createdBy}
+  // Extras shared by both roles: attachments, an interactive form, sources.
+  const extras = (
+    <>
+      {files.length > 0 && (
+        <div className="ss-chat-message__attachments mt-4 space-y-2">
+          <h4 className="mb-1 text-xs font-semibold text-muted-foreground">
+            Attachments
+          </h4>
+          {files.map((file, idx) => {
+            const Icon = getFileIcon(file.name || '');
+            return (
+              <div
+                key={file.id || idx}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary/60 p-1"
               >
-                <AvatarFallback className="text-xs">
-                  {getInitials(createdBy)}
-                </AvatarFallback>
-              </AvatarImage>
-            ) : (
-              <AvatarFallback className="text-xs">
-                {getInitials(isBotResponse ? chatbotName : createdBy)}
-              </AvatarFallback>
-            )}
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="text-xs font-medium">
-              {isBotResponse ? chatbotName : createdBy}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {createdAt
-                ? parseDateTime(createdAt, 'Do MMMM YYYY, h:mm a')
-                : ''}
-            </span>
-          </div>
-        </div>
-        <ChatMessageCopyButton content={content} contentRef={contentRef} />
-      </div>
-
-      <div className={cn(isBotResponse ? 'p-4' : 'px-4 py-2')}>
-        <div ref={contentRef}>
-          {contentIsList &&
-            content?.map((item, i) =>
-              item.text ? (
-                <div
-                  key={`content-${i}`}
-                  className="prose prose-sm max-w-none dark:prose-invert text-sm leading-relaxed mb-3 last:mb-0"
-                >
-                  <MessageMarkdown value={item.text} />
-                </div>
-              ) : item.image ? (
-                <div key={`image-${i}`} className="mb-3 last:mb-0">
-                  <ChatMessageImage image={item.image} />
-                </div>
-              ) : null
-            )}
-        </div>
-
-        {files.length > 0 && (
-          <div className="ss-chat-message__attachments mt-4 space-y-2">
-            <h4 className="text-xs font-semibold text-muted-foreground mb-1">
-              Attachments
-            </h4>
-            {files.map((file, idx) => {
-              const Icon = getFileIcon(file.name || '');
-              return (
-                <div
-                  key={file.id || idx}
-                  className="flex items-center justify-between gap-3 p-1 bg-muted/60 border border-muted rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="bg-muted rounded-md p-1.5">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground truncate max-w-[220px] sm:max-w-xs">
-                        {file.name || 'Untitled'}
-                      </span>
-                    </div>
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="rounded-md bg-secondary p-1.5">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <ChatMessageFileDownload file={file} />
+                  <span
+                    className="max-w-xs truncate text-sm font-medium text-foreground max-sm:max-w-[180px]"
+                    title={file.name || 'Untitled'}
+                  >
+                    {file.name || 'Untitled'}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <ChatMessageFileDownload file={file} />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-        {showForm && (
-          <div className="mt-4 pt-4 border-t border-border">
-            <JsonForms
-              schema={userOutput.schema as JsonSchema}
-              data={responseFormData}
-              renderers={renderers}
-              cells={cells}
-              readonly={userInput !== undefined}
-              onChange={({ data, errors }) => {
-                setResponseFormData(data);
-                setResponseFormValid(!errors?.length);
-              }}
-            />
-            <div className="flex justify-end mt-2">
-              <Button
-                variant="outlined"
-                size="small"
-                disabled={userInput !== undefined || !responseFormValid}
-                className={cn(
-                  userInput !== undefined && 'opacity-60 cursor-not-allowed'
-                )}
-                onClick={() => onSubmitUserForm?.('_user', responseFormData)}
-              >
-                Send
-              </Button>
+      {showForm && (
+        <div className="mt-4 border-t border-border pt-4">
+          <JsonForms
+            schema={userOutput.schema as JsonSchema}
+            data={responseFormData}
+            renderers={renderers}
+            cells={cells}
+            readonly={userInput !== undefined}
+            onChange={({ data, errors }) => {
+              setResponseFormData(data);
+              setResponseFormValid(!errors?.length);
+            }}
+          />
+          <div className="mt-2 flex justify-end">
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={userInput !== undefined || !responseFormValid}
+              className={cn(
+                userInput !== undefined && 'opacity-60 cursor-not-allowed'
+              )}
+              onClick={() => onSubmitUserForm?.('_user', responseFormData)}
+            >
+              Send
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {sources.length > 0 && <ChatMessageSources sources={sources} />}
+    </>
+  );
+
+  const messageBody = (
+    <div ref={contentRef}>
+      {contentIsList &&
+        content?.map((item, i) =>
+          item.text ? (
+            <MessageMarkdown key={`content-${i}`} value={item.text} />
+          ) : item.image ? (
+            <div key={`image-${i}`} className="mt-3 first:mt-0">
+              <ChatMessageImage image={item.image} />
             </div>
-          </div>
+          ) : null
         )}
+    </div>
+  );
 
-        {sources.length > 0 && <ChatMessageSources sources={sources} />}
+  // Assistant replies read as plain prose on the canvas — the reference gives
+  // them no card or avatar, only the shared `.chat-prose` typography.
+  if (isBotResponse) {
+    return (
+      <div className="group chat-prose">
+        <div className="mb-1.5 flex items-start justify-between gap-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            {chatbotName}
+            {createdAt ? (
+              <span className="ml-2 font-normal opacity-70">
+                {parseDateTime(createdAt, 'D MMM, h:mm a')}
+              </span>
+            ) : null}
+          </span>
+          <ChatMessageCopyButton content={content} contentRef={contentRef} />
+        </div>
+        {messageBody}
+        {extras}
+      </div>
+    );
+  }
+
+  // The user's own turn: a right-aligned raised bubble.
+  return (
+    <div className="group flex justify-end">
+      <div className="chat-bubble-user chat-prose min-w-0 max-w-xl">
+        <div className="mb-1.5 flex items-start justify-between gap-2">
+          <span
+            className="min-w-0 truncate text-xs font-medium opacity-70"
+            title={createdBy}
+          >
+            {createdBy}
+            {createdAt ? (
+              <span className="ml-2 font-normal">
+                {parseDateTime(createdAt, 'D MMM, h:mm a')}
+              </span>
+            ) : null}
+          </span>
+          <ChatMessageCopyButton content={content} contentRef={contentRef} />
+        </div>
+        {messageBody}
+        {extras}
       </div>
     </div>
   );
