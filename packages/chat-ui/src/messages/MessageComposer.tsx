@@ -1,7 +1,6 @@
 import MuiButton from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import {
-  ArrowBigUp,
   Check,
   FileArchive,
   FileAudio,
@@ -13,6 +12,7 @@ import {
   Minimize2,
   Paperclip,
   Presentation,
+  Send,
   X,
 } from 'lucide-react';
 import type * as React from 'react';
@@ -24,7 +24,6 @@ import { useFileMutations } from '@/domains/files/mutations';
 
 import type { MarkdownEditorHandle } from '@/shared/markdown/MarkdownEditor';
 import { MarkdownEditor } from '@/shared/markdown/MarkdownEditor';
-import { Button as UIButton } from '@/shared/mui-compat/button';
 
 import { ChatVariablesForm } from '@/chat-variables/VariablesForm';
 
@@ -91,13 +90,15 @@ function getFileIcon(fileName: string) {
 }
 
 export type MessageComposerProps = {
-  /** Mirrors `MessageList`'s `expandedLayout`. See its docs. */
+  /**
+   * @deprecated No-op. The composer sits in the same centred reading column as
+   * the messages (`.chat-column`) at every size. Still accepted so existing
+   * callers keep compiling.
+   */
   expandedLayout?: boolean;
 };
 
-export default function MessageComposer({
-  expandedLayout = false,
-}: MessageComposerProps = {}) {
+export default function MessageComposer(_props: MessageComposerProps = {}) {
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // Milkdown isn't fully controlled by `value`, so we force-remount the editor after sending to guarantee a visual clear.
@@ -320,7 +321,7 @@ export default function MessageComposer({
   };
 
   return (
-    <div className="ss-chat__composer max-h-[60%] flex-shrink-0 w-full mt-auto bg-sidebar border-t px-4 py-4">
+    <div className="ss-chat__composer chat-column mt-auto max-h-[60%] w-full shrink-0 px-4 pb-4 pt-2">
       {/* Hidden file input shared by all upload buttons */}
       {supportsFiles && (
         <input
@@ -332,13 +333,7 @@ export default function MessageComposer({
         />
       )}
       {workspace && threadId && (
-        <div
-          className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
-            !isMobile
-              ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
-              : ''
-          } transition-[max-width] duration-300 ease-in-out`}
-        >
+        <div className="w-full">
           <ChatVariablesForm
             key={`${workspaceId}-${threadId}`}
             workspace={workspace}
@@ -351,17 +346,7 @@ export default function MessageComposer({
         <hr className="my-2" />
       )}
 
-      <div
-        className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
-          !isMobile
-            ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
-            : ''
-        } bg-background ${
-          isMobile
-            ? ''
-            : 'rounded-md border shadow-sm overflow-hidden focus-within:ring-1 focus-within:ring-ring/50 focus-within:ring-offset-0'
-        } transition-[max-width] duration-300 ease-in-out`}
-      >
+      <div className="chat-composer w-full overflow-hidden">
         {attachments.length > 0 && (
           <div className="border-b bg-muted/5 px-3 py-2">
             <div className="flex items-center justify-between gap-2">
@@ -457,77 +442,61 @@ export default function MessageComposer({
           </div>
         )}
 
-        <div className="w-full max-h-[400px] overflow-y-auto">
-          <div>
-            {isMobile ? (
-              <div className="flex items-center gap-2 px-3 py-2">
-                <div className="relative flex-1 px-2 py-2">
-                  <MarkdownEditor
-                    key={`composer-md-${editorKey}`}
-                    ref={editorRef}
-                    value={newMessage}
-                    onChange={(md) => setNewMessage(md)}
-                    onKeyDown={handleComposerKeyDown}
-                    onFilesAdded={(files) => {
-                      void addAttachments(files);
-                    }}
-                    onUploadFiles={onUploadFiles}
-                    fileHandlingMode="attachments"
-                    workspaceId={workspaceId}
-                    disabled={disabled}
-                    placeholder="Type a message..."
-                    className="md-editor--bare text-sm"
-                  />
-                </div>
+        {/* Prompt field */}
+        <div className="max-h-[400px] w-full overflow-y-auto">
+          <MarkdownEditor
+            key={`composer-md-${editorKey}`}
+            ref={editorRef}
+            value={newMessage}
+            onChange={(md) => setNewMessage(md)}
+            onKeyDown={handleComposerKeyDown}
+            onFilesAdded={(files) => {
+              void addAttachments(files);
+            }}
+            onUploadFiles={onUploadFiles}
+            fileHandlingMode="attachments"
+            workspaceId={workspaceId}
+            disabled={disabled}
+            placeholder="What would you like to do?"
+            className="md-editor--bare px-5 pb-3 pt-4 text-sm"
+            minHeight={76}
+          />
+        </div>
 
-                {supportsFiles && (
-                  <IconButton
-                    type="button"
-                    size="small"
-                    className="h-10 w-10 rounded-full self-end"
-                    onClick={handlePickFilesClick}
-                    disabled={disabled}
-                    aria-label="Upload files"
-                  >
-                    <Paperclip
-                      className="h-5 w-5 text-muted-foreground/70"
-                      strokeWidth={2}
-                    />
-                  </IconButton>
-                )}
-
-                <IconButton
-                  onClick={handleSendMessageAndClear}
-                  className={`h-10 w-10 rounded-full self-end ${
-                    sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  disabled={sendDisabled}
-                  aria-label="Send"
-                >
-                  <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
-                </IconButton>
-              </div>
-            ) : (
-              <div className="relative px-5 py-2">
-                <MarkdownEditor
-                  key={`composer-md-${editorKey}`}
-                  ref={editorRef}
-                  value={newMessage}
-                  onChange={(md) => setNewMessage(md)}
-                  onKeyDown={handleComposerKeyDown}
-                  onFilesAdded={(files) => {
-                    void addAttachments(files);
-                  }}
-                  onUploadFiles={onUploadFiles}
-                  fileHandlingMode="attachments"
-                  workspaceId={workspaceId}
-                  disabled={disabled}
-                  placeholder="Type a message..."
-                  className="md-editor--bare text-sm"
-                />
-              </div>
+        {/* Action bar */}
+        <div className="flex items-center justify-between gap-2 px-3 pb-3">
+          <div className="flex items-center gap-1">
+            {supportsFiles && (
+              <IconButton
+                type="button"
+                onClick={handlePickFilesClick}
+                disabled={disabled}
+                aria-label="Upload files"
+                className="h-8 w-8 rounded-full text-muted-foreground hover:bg-secondary"
+              >
+                <Paperclip className="h-4 w-4" strokeWidth={2} />
+              </IconButton>
             )}
           </div>
+
+          <IconButton
+            onClick={handleSendMessageAndClear}
+            className={`chat-send h-8 w-8 rounded-full ${
+              sendDisabled ? 'cursor-not-allowed' : ''
+            }`}
+            disabled={sendDisabled}
+            aria-label="Send"
+          >
+            {isSending ? (
+              <span className="chat-thinking-dots">
+                <span />
+                <span />
+                <span />
+              </span>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </IconButton>
         </div>
 
         {/* Mobile fullscreen composer */}
@@ -594,13 +563,13 @@ export default function MessageComposer({
                     )}
                     <IconButton
                       onClick={handleSendMessageAndClear}
-                      className={`h-10 w-10 rounded-full ${
-                        sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                      className={`chat-send h-9 w-9 rounded-full ${
+                        sendDisabled ? 'cursor-not-allowed' : ''
                       }`}
                       disabled={sendDisabled}
                       aria-label="Send"
                     >
-                      <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
+                      <Send className="h-4 w-4" />
                     </IconButton>
                   </div>
                 </div>
@@ -608,43 +577,6 @@ export default function MessageComposer({
             </div>,
             document.body
           )}
-
-        {/* Desktop footer actions */}
-        {!isMobile && (
-          <div className="flex items-center justify-between px-4 py-2 bg-background">
-            <div className="flex items-center gap-3">
-              {supportsFiles && (
-                <IconButton
-                  type="button"
-                  onClick={handlePickFilesClick}
-                  disabled={disabled}
-                  aria-label="Upload files"
-                  className="text-muted-foreground/70 hover:text-muted-foreground"
-                >
-                  <Paperclip className="h-5 w-5" strokeWidth={2} />
-                </IconButton>
-              )}
-            </div>
-
-            <UIButton
-              onClick={handleSendMessageAndClear}
-              className={`text-xs h-7 px-4 py-1 ${
-                sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              disabled={sendDisabled}
-            >
-              {isSending ? (
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce" />
-                </span>
-              ) : (
-                'Send'
-              )}
-            </UIButton>
-          </div>
-        )}
       </div>
     </div>
   );
