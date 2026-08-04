@@ -281,16 +281,13 @@ export function MessageList({
                   <MessageItem message={message} isLive={isLive} />
 
                   {isLastMessage && isRunning && (
-                    <div className="p-3 min-h-3">
-                      <div className="flex space-x-2 p-1">
-                        {[0, 300, 600].map((delay) => (
-                          <div
-                            key={delay}
-                            className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
-                            style={{ animationDelay: `${delay}ms` }}
-                          />
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-2 text-[13px]">
+                      <span className="chat-thinking-dots" aria-hidden>
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                      <span className="chat-thinking-shimmer">Thinking…</span>
                     </div>
                   )}
 
