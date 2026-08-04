@@ -27,6 +27,13 @@ type UserOutputPayload = {
   schema: unknown;
 };
 
+/**
+ * Hidden until the turn is hovered, but only on devices that can hover — on a
+ * touch screen there is no hover state to recover it with, so it stays put.
+ */
+const REVEAL_ON_HOVER =
+  'opacity-100 focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100';
+
 export interface MessageBubbleProps {
   createdBy: string;
   createdAt: Date;
@@ -155,6 +162,31 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
     </div>
   );
 
+  // Who said it and when, plus the copy action. The reference design opens a
+  // turn with its content, never with a byline, and closes it with a small
+  // governance strip — so this sits *below* the message at that strip's weight.
+  const metaRow = (
+    <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/80">
+      <span className="min-w-0 truncate" title={createdBy}>
+        {isBotResponse ? chatbotName : createdBy}
+      </span>
+      {createdAt ? (
+        <>
+          <span className="opacity-40">·</span>
+          <span className="whitespace-nowrap">
+            {parseDateTime(createdAt, 'D MMM, h:mm a')}
+          </span>
+        </>
+      ) : null}
+      {/* Revealed on hover only where hovering exists, so touch keeps it. */}
+      <span
+        className={`-my-1 [&>button]:h-6 [&>button]:w-6 ${REVEAL_ON_HOVER}`}
+      >
+        <ChatMessageCopyButton content={content} contentRef={contentRef} />
+      </span>
+    </div>
+  );
+
   // Assistant replies read as plain prose on the canvas — the reference gives
   // them no card or avatar, only the shared `.chat-prose` typography.
   if (isBotResponse) {
@@ -162,44 +194,22 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
       <div
         className={`group chat-prose ${isStreaming ? 'chat-streaming' : ''}`}
       >
-        <div className="mb-1.5 flex items-start justify-between gap-2">
-          <span className="text-xs font-medium text-muted-foreground">
-            {chatbotName}
-            {createdAt ? (
-              <span className="ml-2 font-normal opacity-70">
-                {parseDateTime(createdAt, 'D MMM, h:mm a')}
-              </span>
-            ) : null}
-          </span>
-          <ChatMessageCopyButton content={content} contentRef={contentRef} />
-        </div>
         {messageBody}
         {extras}
+        <div className="mt-2">{metaRow}</div>
       </div>
     );
   }
 
-  // The user's own turn: a right-aligned raised bubble.
+  // The user's own turn: a right-aligned raised bubble holding just the message,
+  // with the byline tucked underneath it.
   return (
-    <div className="group flex justify-end">
+    <div className="group flex flex-col items-end">
       <div className="chat-bubble-user chat-prose min-w-0 max-w-xl">
-        <div className="mb-1.5 flex items-start justify-between gap-2">
-          <span
-            className="min-w-0 truncate text-xs font-medium opacity-70"
-            title={createdBy}
-          >
-            {createdBy}
-            {createdAt ? (
-              <span className="ml-2 font-normal">
-                {parseDateTime(createdAt, 'D MMM, h:mm a')}
-              </span>
-            ) : null}
-          </span>
-          <ChatMessageCopyButton content={content} contentRef={contentRef} />
-        </div>
         {messageBody}
         {extras}
       </div>
+      <div className="mt-1.5">{metaRow}</div>
     </div>
   );
 };
