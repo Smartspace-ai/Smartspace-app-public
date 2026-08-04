@@ -18,6 +18,13 @@ module.exports = {
       },
     },
     extend: {
+      // Keep this build's preflight default in step with the package's, so which
+      // stylesheet happens to load last stops mattering for border colours. The
+      // base layer's `* { @apply border-border }` says the same thing; this makes
+      // the generated preflight say it too.
+      borderColor: {
+        DEFAULT: 'hsl(var(--border))',
+      },
       fontFamily: {
         sans: [
           'Inter',
