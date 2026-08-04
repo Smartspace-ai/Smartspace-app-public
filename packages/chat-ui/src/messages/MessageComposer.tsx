@@ -446,7 +446,10 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
             disabled={disabled}
             placeholder="What would you like to do?"
             className="md-editor--bare px-5 pb-3 pt-4 text-sm"
-            minHeight={76}
+            /* The reference's textarea is a 76px border-box — its 16/12 padding
+               counts towards that. Ours pads a wrapper around the editor, so the
+               editor itself gets the remainder to land on the same 76px block. */
+            minHeight={48}
           />
         </div>
 
@@ -495,17 +498,6 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
               <Send className="h-4 w-4" />
             )}
           </IconButton>
-        </div>
-
-        {/* Context strip — keyboard hints only; the design also shows a token
-          budget there, but the app has no token accounting to report. */}
-        <div className="flex items-center justify-end px-2 pt-2 text-[10px] font-medium tracking-wide text-muted-foreground max-sm:hidden">
-          <span className="flex items-center gap-1.5">
-            <kbd className="font-sans">⏎</kbd> to send
-            <span className="opacity-40">·</span>
-            <kbd className="font-sans">Shift</kbd>+
-            <kbd className="font-sans">⏎</kbd> for newline
-          </span>
         </div>
 
         {/* Mobile fullscreen composer */}
@@ -586,6 +578,18 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
             </div>,
             document.body
           )}
+      </div>
+
+      {/* Context strip — below the card rather than inside it, as in the
+        reference. Keyboard hints only; the design also shows a token budget
+        there, but the app has no token accounting to report. */}
+      <div className="flex items-center justify-end px-2 pt-2 text-[10px] font-medium tracking-wide text-muted-foreground max-sm:hidden">
+        <span className="flex items-center gap-1.5">
+          <kbd className="font-sans">⏎</kbd> to send
+          <span className="opacity-40">·</span>
+          <kbd className="font-sans">Shift</kbd>+
+          <kbd className="font-sans">⏎</kbd> for newline
+        </span>
       </div>
     </div>
   );
