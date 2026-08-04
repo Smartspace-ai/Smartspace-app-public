@@ -2,7 +2,7 @@
 import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 
 import { AuthProvider, useAuth } from '@/platform/auth/session';
 import { sessionQueryOptions } from '@/platform/auth/sessionQuery';
@@ -11,10 +11,23 @@ import { RealtimeProvider } from '@/platform/realtime/RealtimeProvider';
 
 import { SessionExpiryPrompt } from '@/app/ui/SessionExpiryPrompt';
 
-import { muiTheme } from '@/shared/ui/mui-bridge/theme';
+import { createMuiTheme } from '@/shared/ui/mui-bridge/theme';
 import { SidebarProvider } from '@/shared/ui/mui-compat/sidebar';
 
+import { useColorScheme } from '@/theme/colorScheme';
+
 import { TeamsProvider } from './providers';
+
+/** Keeps MUI's palette mode in step with the `dark` class on `<html>`. */
+function MuiThemeBridge({ children }: { children: ReactNode }) {
+  const { scheme } = useColorScheme();
+  const theme = useMemo(() => createMuiTheme(scheme), [scheme]);
+  return (
+    <StyledEngineProvider injectFirst>
+      <ThemeProvider theme={theme}>{children}</ThemeProvider>
+    </StyledEngineProvider>
+  );
+}
 
 function RealtimeBridge({ children }: { children: ReactNode }) {
   const adapter = useAuth();
@@ -37,11 +50,9 @@ export default function AppProviders({ children }: { children: ReactNode }) {
         <AuthProvider>
           <SessionExpiryPrompt />
           <RealtimeBridge>
-            <StyledEngineProvider injectFirst>
-              <ThemeProvider theme={muiTheme}>
-                <SidebarProvider defaultRightOpen>{children}</SidebarProvider>
-              </ThemeProvider>
-            </StyledEngineProvider>
+            <MuiThemeBridge>
+              <SidebarProvider defaultRightOpen>{children}</SidebarProvider>
+            </MuiThemeBridge>
           </RealtimeBridge>
         </AuthProvider>
         {import.meta.env.DEV ? (
