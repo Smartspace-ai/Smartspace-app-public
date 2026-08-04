@@ -38,6 +38,11 @@ export interface MessageBubbleProps {
   files: FileInfo[];
   createdByUserId?: string | null;
   chatbotName?: string;
+  /**
+   * True while this bubble is the tail of a running flow. Drives the design's
+   * reveal animation and the blinking caret on the last line.
+   */
+  isStreaming?: boolean;
   onSubmitUserForm?: (name: string, value: unknown) => void;
 }
 
@@ -52,6 +57,7 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
     chatbotName = 'Chatbot',
     userOutput,
     userInput,
+    isStreaming,
     onSubmitUserForm,
   } = props;
   const [responseFormData, setResponseFormData] = useState<unknown>(userInput);
@@ -153,7 +159,9 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
   // them no card or avatar, only the shared `.chat-prose` typography.
   if (isBotResponse) {
     return (
-      <div className="group chat-prose">
+      <div
+        className={`group chat-prose ${isStreaming ? 'chat-streaming' : ''}`}
+      >
         <div className="mb-1.5 flex items-start justify-between gap-2">
           <span className="text-xs font-medium text-muted-foreground">
             {chatbotName}
