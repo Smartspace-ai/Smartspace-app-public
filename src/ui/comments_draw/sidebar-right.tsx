@@ -1,8 +1,9 @@
 import Skeleton from '@mui/material/Skeleton';
-import { ArrowBigUp, MessageSquare } from 'lucide-react';
-import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { MessageSquare, Send, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useUserId } from '@/platform/auth/session';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import type { Comment } from '@/domains/comments';
@@ -10,38 +11,12 @@ import { useAddComment } from '@/domains/comments/mutations';
 import { useComments } from '@/domains/comments/queries';
 import { fetchTaggableUsers } from '@/domains/workspaces';
 
-import { useIsMobile } from '@/shared/hooks/useIsMobile';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/shared/ui/mui-compat/avatar';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from '@/shared/ui/mui-compat/breadcrumb';
-import { Button as UIButton } from '@/shared/ui/mui-compat/button';
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-} from '@/shared/ui/mui-compat/sidebar';
-import { Tooltip } from '@/shared/ui/mui-compat/tooltip';
+import { Sidebar, SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
 import type { MarkdownEditorHandle } from '@smartspace/chat-ui';
-import {
-  MarkdownEditor,
-  getUserPhotoUrl,
-  parseDateTime,
-  parseDateTimeHuman,
-} from '@smartspace/chat-ui';
-
-import { getInitials } from '../../shared/utils/initials';
+import { MarkdownEditor, parseDateTime } from '@smartspace/chat-ui';
 
 const MAX_COMMENT_LENGTH = 350;
 
@@ -65,7 +40,7 @@ function renderContentWithMentions(
         nodes.push(<span key={key++}>{text.slice(lastIndex, start)}</span>);
       }
       nodes.push(
-        <span key={key++} className="text-primary">
+        <span key={key++} className="font-semibold opacity-90">
           {match[0]}
         </span>
       );
@@ -84,17 +59,33 @@ function renderContentWithMentions(
 
   if (names.length > 0) {
     const union = names.map((n) => `@${escapeRegExp(n)}`).join('|');
-    const pattern = new RegExp(`(?:${union})`, 'g');
-    return renderWithPattern(pattern);
+    return renderWithPattern(new RegExp(`(?:${union})`, 'g'));
   }
 
-  // Fallback: highlight @ followed by one or two words (supports First or First Last)
-  const fallback = /@[A-Za-z0-9._-]+(?:\s+[A-Za-z0-9._-]+)?/g;
-  return renderWithPattern(fallback);
+  // Fallback: highlight @ followed by one or two words (First or First Last)
+  return renderWithPattern(/@[A-Za-z0-9._-]+(?:\s+[A-Za-z0-9._-]+)?/g);
+}
+
+function CommentSkeleton({ mine }: { mine?: boolean }) {
+  return (
+    <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+      <div
+        className={`w-[88%] rounded-2xl px-4 py-2.5 ${
+          mine ? 'bg-primary/20' : 'border border-border bg-secondary'
+        }`}
+      >
+        <Skeleton className="h-3.5 w-24" />
+        <Skeleton className="mt-1.5 h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-2/3" />
+      </div>
+      <Skeleton className="mt-1 h-3 w-28" />
+    </div>
+  );
 }
 
 export function SidebarRight() {
   const { threadId, workspaceId } = useRouteIds();
+  const currentUserId = useUserId();
   const isDraft = isDraftThreadId(threadId);
   const {
     data: rawComments,
@@ -115,11 +106,9 @@ export function SidebarRight() {
     plain: '',
     withMentions: '',
   });
-  const isMobile = useIsMobile();
 
   const submitComment = async () => {
-    if (isAddingComment) return;
-    if (isDraft) return;
+    if (isAddingComment || isDraft) return;
     const content = editorRef.current?.getPlainText?.() ?? threadComment.plain;
     const mentionedUsers = editorRef.current?.getMentionedUsers?.() ?? [];
     if (!content.trim()) return;
@@ -145,8 +134,8 @@ export function SidebarRight() {
 
   const handleEditorKeyDown = (e: React.KeyboardEvent) => {
     // Ctrl/Cmd + Enter posts. Plain Enter inserts a newline (or selects a
-    // mention candidate when the mention popup is open — the editor
-    // intercepts that case before this handler runs).
+    // mention candidate when the mention popup is open — the editor intercepts
+    // that case before this handler runs).
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       void submitComment();
@@ -154,126 +143,97 @@ export function SidebarRight() {
   };
 
   useEffect(() => {
-    if (commentsEndRef.current) {
-      commentsEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [comments]);
 
-  return (
-    <Sidebar
-      side="right"
-      className="ss-sidebar__right border-l bg-background shadow-md"
-      style={{ '--sidebar-width-mobile': '60vw' } as CSSProperties}
-    >
-      <div className="bg-background flex flex-col h-full min-h-0">
-        <SidebarHeader className="h-[54px] shrink-0 flex items-center justify-between border-b px-3 bg-background">
-          <div className="flex flex-1 items-center gap-2">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="line-clamp-1 flex items-center gap-2">
-                    Comments
-                    <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-xs font-medium">
-                      {comments?.length ?? 0}
-                    </div>
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </SidebarHeader>
+  const postDisabled =
+    threadComment.plain.trim().length === 0 || isAddingComment || isDraft;
 
-        <SidebarContent className="p-0 min-h-0">
-          <ScrollArea className="flex-1 min-h-0">
-            <div className="space-y-3 p-4">
-              {commentsError ? (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                  <div className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive px-3 py-2 text-sm">
+  return (
+    <Sidebar side="right" className="ss-sidebar__right border-l bg-background">
+      <div className="flex h-full min-h-0 flex-col bg-background">
+        <div className="flex shrink-0 items-center justify-between gap-2 px-5 pt-5 pb-4">
+          <h2 className="truncate text-xl font-bold text-primary">Comments</h2>
+          <SidebarTrigger
+            side="right"
+            icon={<X className="h-4 w-4 text-muted-foreground" />}
+            className="h-auto w-auto rounded-full p-1.5 transition-colors hover:bg-secondary"
+          />
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
+          <div className="flex h-full flex-col rounded-2xl border-2 border-primary p-4">
+            <h3 className="mb-4 shrink-0 text-sm font-semibold text-foreground">
+              Thread comments
+            </h3>
+
+            <ScrollArea className="mb-4 min-h-0 flex-1">
+              <div className="space-y-3">
+                {commentsError ? (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                     Failed to load comments
                   </div>
-                </div>
-              ) : isLoading ? (
-                <div className="flex flex-col space-y-4 p-4">
-                  {Array(3)
-                    .fill(0)
-                    .map((_, index) => (
-                      <div
-                        key={index}
-                        className="rounded-lg border p-3 animate-pulse"
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <Skeleton className="h-8 w-8 rounded-full" />
-                          <div className="flex-1 space-y-1">
-                            <Skeleton className="h-4 w-24" />
-                            <Skeleton className="h-3 w-16" />
-                          </div>
-                        </div>
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-3/4 mt-1" />
-                      </div>
-                    ))}
-                </div>
-              ) : comments?.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                  <div className="rounded-full bg-primary/10 p-4 mb-4">
-                    <MessageSquare className="h-8 w-8 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-medium mb-2">
-                    Add comments here
-                  </h3>
-                </div>
-              ) : (
-                comments?.map((comment: Comment) => (
-                  <div
-                    key={comment.id}
-                    className="rounded-lg border bg-card p-3 transition-all shadow-md hover:shadow-lg"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <Avatar className="h-7 w-7">
-                        <AvatarImage
-                          src={getUserPhotoUrl(comment.createdByUserId)}
-                          alt={comment.createdBy}
-                        >
-                          <AvatarFallback className="text-xs">
-                            {getInitials(comment.createdBy)}
-                          </AvatarFallback>
-                        </AvatarImage>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">
-                          {comment.createdBy}
-                        </p>
-                        <Tooltip
-                          title={parseDateTime(comment.createdAt)}
-                          enterDelay={300}
-                        >
-                          <p className="text-xs text-muted-foreground w-fit cursor-default">
-                            {parseDateTimeHuman(comment.createdAt)}
-                          </p>
-                        </Tooltip>
-                      </div>
+                ) : isLoading ? (
+                  <>
+                    <CommentSkeleton />
+                    <CommentSkeleton mine />
+                    <CommentSkeleton />
+                  </>
+                ) : comments?.length === 0 ? (
+                  <div className="flex flex-col items-center py-8 text-center">
+                    <div className="mb-3 rounded-full bg-secondary p-3">
+                      <MessageSquare className="h-6 w-6 text-muted-foreground" />
                     </div>
-                    <p className="text-sm leading-relaxed flex flex-wrap gap-1">
-                      {renderContentWithMentions(
-                        comment.content,
-                        comment.mentionedUsers
-                      )}
+                    <p className="text-sm text-muted-foreground">
+                      No comments yet
                     </p>
                   </div>
-                ))
-              )}
-              {/* Spacer so scroll-to-bottom keeps some padding below the last comment */}
-              <div ref={commentsEndRef} className="h-4" />
-            </div>
-          </ScrollArea>
-        </SidebarContent>
+                ) : (
+                  comments?.map((comment: Comment) => {
+                    const isMine = comment.createdByUserId === currentUserId;
+                    return (
+                      <div
+                        key={comment.id}
+                        className={`flex flex-col ${
+                          isMine ? 'items-end' : 'items-start'
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[88%] break-words rounded-2xl px-4 py-2.5 ${
+                            isMine
+                              ? 'rounded-br-md bg-primary text-primary-foreground'
+                              : 'rounded-bl-md border border-border bg-secondary text-foreground'
+                          }`}
+                        >
+                          <p
+                            className={`truncate text-[13px] font-semibold ${
+                              isMine ? '' : 'text-primary'
+                            }`}
+                            title={comment.createdBy}
+                          >
+                            {comment.createdBy}
+                          </p>
+                          <p className="mt-0.5 whitespace-pre-wrap break-words text-[13px]">
+                            {renderContentWithMentions(
+                              comment.content,
+                              comment.mentionedUsers
+                            )}
+                          </p>
+                        </div>
+                        <p className="mt-1 px-1 text-[11px] text-muted-foreground">
+                          {parseDateTime(comment.createdAt, 'D MMM, h:mm a')}
+                        </p>
+                      </div>
+                    );
+                  })
+                )}
+                {/* Spacer so scroll-to-bottom keeps padding below the last comment */}
+                <div ref={commentsEndRef} className="h-1" />
+              </div>
+            </ScrollArea>
 
-        {/* Allow the pinned dropdown to overflow past the footer if needed */}
-        <SidebarFooter className="border-t p-4 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.05)] shrink-0 overflow-visible">
-          <form onSubmit={handleAddComment}>
-            {isMobile ? (
-              // Wrapper to allow absolutely positioned controls inside the editor
-              <div className="relative overflow-hidden rounded-lg border bg-card p-2 focus-within:ring-1 focus-within:ring-ring/50 focus-within:ring-offset-0">
+            <form onSubmit={handleAddComment} className="shrink-0">
+              <div className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm transition-colors focus-within:ring-1 focus-within:ring-ring">
                 <MarkdownEditor
                   ref={editorRef}
                   value={threadComment.plain}
@@ -292,86 +252,31 @@ export function SidebarRight() {
                   disabled={isAddingComment || isDraft}
                   workspaceId={workspaceId}
                   threadId={threadId}
-                  className="md-editor--bare text-sm pr-12 pb-10"
-                  minHeight={90}
-                  placeholder="Type a comment..."
+                  className="md-editor--bare text-sm"
+                  minHeight={55}
+                  placeholder="Write a comment…"
                   onKeyDown={handleEditorKeyDown}
                 />
-
-                <UIButton
-                  type="submit"
-                  variant="default"
-                  size="icon"
-                  className={`h-9 w-9 rounded-full absolute bottom-1.5 right-1.5 
-                    bg-primary hover:bg-primary/90 text-primary-foreground 
-                    ${
-                      threadComment.plain.trim().length === 0
-                        ? 'opacity-50 cursor-not-allowed'
-                        : ''
-                    }`}
-                  disabled={
-                    threadComment.plain.trim().length === 0 ||
-                    isAddingComment ||
-                    isDraft
-                  }
-                  aria-label="Post comment"
-                >
-                  <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
-                </UIButton>
               </div>
-            ) : (
-              <div className="relative overflow-hidden rounded-lg border bg-card p-2 focus-within:ring-1 focus-within:ring-ring/50 focus-within:ring-offset-0">
-                <MarkdownEditor
-                  ref={editorRef}
-                  value={threadComment.plain}
-                  onChange={(md) => {
-                    const plain = editorRef.current?.getPlainText?.() ?? md;
-                    setThreadComment({ plain, withMentions: md });
-                  }}
-                  enableMentions
-                  fetchMentionUsers={async (wsId) => {
-                    const users = await fetchTaggableUsers(wsId);
-                    return users.map((u) => ({
-                      id: u.id,
-                      displayName: u.displayName,
-                    }));
-                  }}
-                  disabled={isAddingComment || isDraft}
-                  workspaceId={workspaceId}
-                  threadId={threadId}
-                  className="md-editor--bare text-sm pr-28 pb-12"
-                  minHeight={120}
-                  placeholder="Type a comment..."
-                  onKeyDown={handleEditorKeyDown}
-                />
+              <p className="mt-1 text-right text-[11px] text-muted-foreground">
+                {threadComment.plain.length}/{MAX_COMMENT_LENGTH}
+              </p>
 
-                <UIButton
-                  type="submit"
-                  variant="default"
-                  className={`absolute bottom-2 right-2 ${
-                    threadComment.plain.trim().length === 0
-                      ? 'opacity-50 cursor-not-allowed'
-                      : ''
-                  }`}
-                  disabled={
-                    threadComment.plain.trim().length === 0 ||
-                    isAddingComment ||
-                    isDraft
-                  }
-                >
-                  {isAddingComment ? (
-                    <div className="flex items-center gap-2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Posting...
-                    </div>
-                  ) : (
-                    'Post'
-                  )}
-                </UIButton>
-              </div>
-            )}
-          </form>
-        </SidebarFooter>
+              <button
+                type="submit"
+                disabled={postDisabled}
+                className="chat-send mt-2 flex w-fit items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all disabled:opacity-40"
+              >
+                {isAddingComment ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                {isAddingComment ? 'Posting…' : 'Post'}
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     </Sidebar>
   );
