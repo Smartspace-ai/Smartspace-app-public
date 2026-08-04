@@ -1,119 +1,184 @@
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
+import { useMsal } from '@azure/msal-react';
 import Skeleton from '@mui/material/Skeleton';
 import Tooltip from '@mui/material/Tooltip';
-import { MessageSquare, PanelLeft, UserPlus } from 'lucide-react';
+import {
+  LogOut,
+  MessageSquare,
+  Moon,
+  PanelLeft,
+  Sun,
+  User,
+  UserPlus,
+} from 'lucide-react';
 import { useState } from 'react';
 
+import { handleTrailingSlash } from '@/platform/auth/msalConfig';
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import { SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
+import { useThreadUsers } from '@/domains/thread-users';
+import { useActiveUser } from '@/domains/users';
 
-import { getTagChipClasses } from '@/theme/tag-styles';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/shared/ui/mui-compat/dropdown-menu';
+import { SidebarTrigger, useSidebar } from '@/shared/ui/mui-compat/sidebar';
+import { getInitials } from '@/shared/utils/initials';
+
+import { useColorScheme } from '@/theme/colorScheme';
 
 import { useThread, useWorkspace } from '@smartspace/chat-ui';
 
 import { AddUsersToThreadDialog } from './add-users-dialog';
 import { NotificationPanel } from './notifications-panel';
 
+/** 32px round icon buttons, matching the reference header's action row. */
+const iconButton =
+  'h-8 w-8 rounded-full inline-flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors';
+const iconButtonActive =
+  'h-8 w-8 rounded-full inline-flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground transition-colors';
+
 export function ChatHeader() {
   const { workspaceId, threadId } = useRouteIds();
-  const {
-    data: activeWorkspace,
-    isPending: workspaceLoading,
-    isError: workspaceError,
-  } = useWorkspace(workspaceId);
+  const { isPending: workspaceLoading, isError: workspaceError } =
+    useWorkspace(workspaceId);
   const { data: activeThread } = useThread({ workspaceId, threadId });
+  const { data: threadUsers } = useThreadUsers(threadId);
+  const { rightOpen } = useSidebar();
+  const { isDark, toggle: toggleTheme } = useColorScheme();
+  const activeUser = useActiveUser();
+  const { instance } = useMsal();
   const [addUsersOpen, setAddUsersOpen] = useState(false);
   const canAddUsers = !!workspaceId && !!threadId;
 
-  // Render all tags as chips; color-code safe/unsafe (and other known tags)
-  const tagChips = (() => {
-    const tags = activeWorkspace?.tags || [];
-    if (!tags.length) return null;
-    return (
-      <span className="ml-2 flex items-center gap-1 flex-wrap">
-        {tags.map((t: string, i: number) => {
-          const v = (t || '').toString();
-          const cls = getTagChipClasses(v);
-          return (
-            <span
-              key={`${v}-${i}`}
-              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${cls}`}
-            >
-              {v}
-            </span>
-          );
-        })}
-      </span>
-    );
-  })();
+  const participants = threadUsers ?? [];
+  const title = workspaceError
+    ? 'Workspace failed to load'
+    : activeThread?.name ?? '';
+
+  const handleLogout = () => {
+    const account = instance.getActiveAccount();
+    if (!account) return;
+    instance.logoutRedirect({
+      account,
+      postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
+    });
+  };
 
   return (
-    <header className="ss-chat__header flex h-[54px] shrink-0 items-center gap-2 bg-background border-b ">
-      <div className="flex flex-1 items-center gap-2 px-4">
+    <header className="ss-chat__header flex h-14 shrink-0 items-center gap-4 border-b border-border/60 px-6 max-sm:gap-2 max-sm:px-4">
+      {/* Title + participants */}
+      <div className="min-w-0 flex-1">
+        {workspaceLoading && !activeThread ? (
+          <Skeleton className="h-5 w-56" />
+        ) : (
+          <div className="flex min-w-0 items-center gap-2">
+            <h1
+              className={`truncate text-[15px] font-semibold tracking-tight ${
+                workspaceError ? 'text-destructive' : 'text-primary'
+              }`}
+              title={title}
+              key={`thread-title-${activeThread?.id ?? 'none'}`} // Force re-render when thread changes
+            >
+              {title || '—'}
+            </h1>
+            {participants.length > 0 && (
+              <span className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap text-[11px] text-muted-foreground lg:flex">
+                <span className="flex -space-x-1">
+                  {participants.slice(0, 4).map((user) => (
+                    <span
+                      key={user.id}
+                      title={user.displayName}
+                      className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[7px] font-semibold leading-none text-primary-foreground ring-2 ring-background"
+                    >
+                      {getInitials(user.displayName)}
+                    </span>
+                  ))}
+                </span>
+                {participants.length}{' '}
+                {participants.length === 1 ? 'participant' : 'participants'}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex shrink-0 items-center gap-0.5">
         <SidebarTrigger
           side="left"
           icon={<PanelLeft className="h-4 w-4" />}
-          className="text-muted-foreground hover:text-foreground h-8 w-8"
+          className={`${iconButton} h-8 w-8 p-0`}
         />
-        <Divider orientation="vertical" className="mr-2 h-4" />
-        {/* Workspace and thread display */}
-        <div className="flex items-center">
-          {workspaceError ? (
-            <span
-              className="font-medium text-xs text-destructive"
-              role="status"
-              aria-live="polite"
-              title="Active workspace failed to load"
-            >
-              Workspace failed to load
-            </span>
-          ) : workspaceLoading ? (
-            <Skeleton className="h-4 w-28" />
-          ) : activeWorkspace ? (
-            <span className="font-medium text-xs flex items-center">
-              {activeWorkspace?.name}
-              {tagChips}
-            </span>
-          ) : (
-            <span className="font-medium text-xs text-gray-500">—</span>
-          )}
-          {activeThread?.name && (
-            <>
-              <span className="mx-2 text-gray-400">/</span>
-              <span
-                className="text-xs font-medium text-neutral-500 truncate max-w-[240px]"
-                title={activeThread.name}
-                key={`thread-title-${activeThread.id}`} // Force re-render when thread changes
-              >
-                {activeThread.name}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 px-4">
-        <NotificationPanel />
-        {canAddUsers && (
-          <Tooltip title="Add users to thread">
-            <IconButton
-              size="small"
-              onClick={() => setAddUsersOpen(true)}
-              className="text-muted-foreground hover:text-foreground h-8 w-8"
-              aria-label="Add users to thread"
-            >
-              <UserPlus className="h-4 w-4" />
-            </IconButton>
-          </Tooltip>
-        )}
-        <Divider orientation="vertical" className="h-4" />
+
         <SidebarTrigger
           side="right"
           icon={<MessageSquare className="h-4 w-4" />}
-          className="text-muted-foreground hover:text-foreground h-8 w-8"
+          className={`${rightOpen ? iconButtonActive : iconButton} h-8 w-8 p-0`}
         />
+
+        <NotificationPanel />
+
+        {canAddUsers && (
+          <Tooltip title="Add users to thread">
+            <button
+              type="button"
+              onClick={() => setAddUsersOpen(true)}
+              className={iconButton}
+              aria-label="Add users to thread"
+            >
+              <UserPlus className="h-4 w-4" />
+            </button>
+          </Tooltip>
+        )}
+
+        {/* Account — holds the appearance toggle and log out, as in the design */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className={iconButton} aria-label="Account">
+              <User className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[240px] p-4">
+            <p
+              className="truncate text-sm text-foreground"
+              title={activeUser.email}
+            >
+              {activeUser.email}
+            </p>
+            <p className="truncate text-sm text-muted-foreground">
+              {activeUser.name}
+            </p>
+            <hr className="my-3 border-border" />
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <span className="text-sm text-foreground">Appearance</span>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                aria-label="Toggle theme"
+              >
+                {isDark ? (
+                  <Sun className="h-3.5 w-3.5" />
+                ) : (
+                  <Moon className="h-3.5 w-3.5" />
+                )}
+                {isDark ? 'Light' : 'Dark'}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Logout
+            </button>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
       {canAddUsers && (
         <AddUsersToThreadDialog
           open={addUsersOpen}
