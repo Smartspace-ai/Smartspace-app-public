@@ -14,13 +14,14 @@ import {
 
 // Polled while this page stays mounted, so a user granted workspace access
 // (e.g. via admin's access control tab) gets redirected automatically
-// instead of being stuck here until they reload the tab. Background/focus
-// overrides matter here specifically because the realistic flow is
-// granting access from an *other* tab (Admin UI) then switching back —
-// the app's QueryClient default disables refetchOnWindowFocus globally, and
-// React Query pauses refetchInterval in the background by default too, so
-// without these overrides that switch-back would sit stale until the next
-// 15s tick instead of checking immediately.
+// instead of being stuck here until they reload the tab. refetchOnWindowFocus
+// overrides the app's QueryClient default (disabled globally) because the
+// realistic flow is granting access from an *other* tab (Admin UI) then
+// switching back — that switch-back should check immediately, not wait for
+// the next 15s tick. Deliberately NOT refetchIntervalInBackground: a user
+// with no workspace access is exactly who leaves this tab open and walks
+// away, and background polling would mean indefinite request traffic per
+// abandoned tab for no UX benefit (focus already covers the return trip).
 const ACCESS_POLL_INTERVAL_MS = 15_000;
 
 export default function NoWorkspacesAvailable() {
@@ -28,15 +29,19 @@ export default function NoWorkspacesAvailable() {
   const { data: workspaces } = useQuery({
     ...workspacesListOptions(),
     refetchInterval: ACCESS_POLL_INTERVAL_MS,
-    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
     if (workspaces?.length) {
+      // replace: true — this fires after the user already has a history
+      // entry for /workspace/no-workspaces from before access was granted.
+      // A plain push leaves Back trapped: no-workspaces' loader sees access
+      // now exists and redirects forward again.
       navigate({
         to: '/workspace/$workspaceId',
         params: { workspaceId: workspaces[0].id },
+        replace: true,
       });
     }
   }, [workspaces, navigate]);
