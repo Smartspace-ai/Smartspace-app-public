@@ -150,7 +150,12 @@ export function SidebarRight() {
     threadComment.plain.trim().length === 0 || isAddingComment || isDraft;
 
   return (
-    <Sidebar side="right" className="ss-sidebar__right border-l bg-background">
+    // `border-border` rather than a bare `border-l`, which would fall back to
+    // Tailwind's default grey and show as a light hairline in dark mode.
+    <Sidebar
+      side="right"
+      className="ss-sidebar__right border-l border-border bg-background"
+    >
       <div className="flex h-full min-h-0 flex-col bg-background">
         <div className="flex shrink-0 items-center justify-between gap-2 px-5 pt-5 pb-4">
           <h2 className="truncate text-xl font-bold text-primary">Comments</h2>
