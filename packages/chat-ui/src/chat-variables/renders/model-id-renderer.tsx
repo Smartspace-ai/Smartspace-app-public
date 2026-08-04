@@ -5,11 +5,7 @@ import type {
 } from '@jsonforms/core';
 import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
-import { Autocomplete, TextField } from '@mui/material';
-import MuiDialog from '@mui/material/Dialog';
-import MuiDialogContent from '@mui/material/DialogContent';
-import type { AutocompleteInputChangeReason } from '@mui/material/useAutocomplete';
-import { Loader2 } from 'lucide-react';
+import { Check, ChevronDown, Cpu, Loader2 } from 'lucide-react';
 import React, {
   useCallback,
   useEffect,
@@ -22,6 +18,16 @@ import { getModelIcon, type Model, useModels } from '@/domains/models';
 
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
+/**
+ * The model selector, shaped as the reference design's composer pill: a
+ * bordered capsule showing the provider glyph and the model name, which opens a
+ * popover above the composer.
+ *
+ * It replaces an MUI `Autocomplete` whose colours were hard-coded, so it kept a
+ * near-white background in dark mode and squeezed the name down to a couple of
+ * characters inside the action bar. The list keeps our server-side search —
+ * the reference only ever had a short mock array to show.
+ */
 const ModelIdRenderer: React.FC<ControlProps> = ({
   data,
   handleChange,
@@ -30,12 +36,14 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
   label,
   description,
   errors,
-  required,
   uischema,
+  visible,
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
   );
@@ -45,11 +53,9 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedSearchValue(searchValue);
     }, 300);
-
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -57,30 +63,23 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
     };
   }, [searchValue]);
 
-  // Use debounced search value directly, only search when there's actual input
-  const searchTerm = useMemo(() => {
-    return debouncedSearchValue && debouncedSearchValue.length > 0
-      ? debouncedSearchValue
-      : undefined;
-  }, [debouncedSearchValue]);
+  const searchTerm = debouncedSearchValue || undefined;
 
-  // Fetch models with search functionality
   const { data: modelsData, isLoading } = useModels({
     search: searchTerm,
     take: 1000,
   });
-  const [listModels, setListModels] = useState<Model[]>([]);
-  useEffect(() => {
-    if (modelsData?.data) {
-      const sorted = [...modelsData.data].sort((a, b) => {
-        const aName = (a.displayName || a.name || '').toLowerCase();
-        const bName = (b.displayName || b.name || '').toLowerCase();
-        if (aName < bName) return -1;
-        if (aName > bName) return 1;
-        return 0;
-      });
-      setListModels(sorted);
-    }
+
+  const listModels = useMemo<Model[]>(() => {
+    const rows = modelsData?.data;
+    if (!rows) return [];
+    return [...rows].sort((a, b) => {
+      const aName = (a.displayName || a.name || '').toLowerCase();
+      const bName = (b.displayName || b.name || '').toLowerCase();
+      if (aName < bName) return -1;
+      if (aName > bName) return 1;
+      return 0;
+    });
   }, [modelsData?.data]);
 
   const selectedModel =
@@ -88,395 +87,176 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
       ? listModels.find((model) => model.id === data)
       : null;
 
-  // Compute the input value to show either the search term or the selected model's name
-  const displayInputValue = useMemo(() => {
-    // If user is actively searching, show their search input
-    if (searchValue) {
-      return searchValue;
-    }
-    // If there's a selected model and no search input, show the model's display name
-    if (selectedModel && !searchValue) {
-      return selectedModel.displayName || selectedModel.name || '';
-    }
-    // Otherwise, empty
-    return '';
-  }, [searchValue, selectedModel]);
-
-  const handleModelChange = useCallback(
-    (_event: React.SyntheticEvent | null, newValue: Model | null) => {
-      if (newValue) {
-        handleChange(path, newValue.id);
-      } else {
-        handleChange(path, undefined);
-      }
-      // Clear search when selection is made
+  const handleSelect = useCallback(
+    (model: Model) => {
+      handleChange(path, model.id);
       setSearchValue('');
       setDebouncedSearchValue('');
       setIsOpen(false);
     },
-    [handleChange, path, setIsOpen]
+    [handleChange, path]
   );
 
-  const handleInputChange = useCallback(
-    (
-      _event: React.SyntheticEvent,
-      newInputValue: string,
-      reason: AutocompleteInputChangeReason
-    ) => {
-      // Only update search value when user is typing, not when selecting
-      if (reason === 'input') {
-        setSearchValue(newInputValue);
-      }
-    },
-    []
-  );
-
-  const handleOpen = useCallback(() => {
-    setIsOpen(true);
-  }, []);
-
-  const handleClose = useCallback(() => {
+  const close = useCallback(() => {
     setIsOpen(false);
-    // Clear search value when closing dropdown
     setSearchValue('');
   }, []);
 
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth <= 640
-  );
-
+  // Dismissal: an outside pointer press, the affordance the reference uses, plus
+  // Escape. Both live on the document so no wrapper element has to carry a
+  // keyboard handler it has no interactive role for.
   useEffect(() => {
-    const updateIsMobile = () =>
-      setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 640);
-    window.addEventListener('resize', updateIsMobile);
-    return () => window.removeEventListener('resize', updateIsMobile);
-  }, []);
+    if (!isOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        close();
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close();
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isOpen, close]);
 
-  // Get readOnly from uischema (set when access === 'Read')
+  // Send focus into the filter as soon as the list appears.
+  useEffect(() => {
+    if (isOpen) searchRef.current?.focus();
+  }, [isOpen]);
+
+  if (!visible) return null;
+
   const readOnly =
     (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
+  const hasError = !!errors && errors.length > 0;
 
-  if (isMobile) {
-    const iconSrc = getModelIcon(selectedModel);
-    return (
-      <div className="w-full flex justify-center">
-        <button
-          type="button"
-          disabled={isDisabled}
-          onClick={() => setIsOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 bg-accent text-foreground/90 hover:bg-accent/80 transition-colors"
-          style={{ width: 'fit-content', maxWidth: '100%' }}
-        >
-          {iconSrc && <img src={iconSrc} alt="Provider" className="h-4 w-4" />}
-          <span className="text-sm truncate">
-            {selectedModel
-              ? selectedModel.displayName || selectedModel.name
-              : label || 'Select model'}
-          </span>
-        </button>
+  const selectedName = selectedModel
+    ? selectedModel.displayName || selectedModel.name || ''
+    : '';
+  const triggerText = selectedName || label || 'Select model';
+  const iconSrc = getModelIcon(selectedModel);
 
-        <MuiDialog
-          open={isOpen}
-          onClose={() => setIsOpen(false)}
-          maxWidth={false}
-          slotProps={{
-            backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.5)' } },
-          }}
-          PaperProps={{
-            sx: {
-              width: '90vw',
-              maxWidth: '384px',
-              height: '70vh',
-              m: 0,
-              p: 0,
-              borderRadius: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-            },
-          }}
-        >
-          <MuiDialogContent
-            sx={{
-              p: 0,
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            <div className="flex flex-col h-full w-full">
-              <div className="flex-1 overflow-y-auto w-full max-w-[360px] mx-auto">
-                {isLoading && listModels.length === 0 && (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  </div>
-                )}
-                <ul className="divide-y w-full">
-                  {listModels.map((option) => (
-                    <li key={option.id} className="p-0">
-                      <button
-                        type="button"
-                        className="w-full text-left px-3 py-2 hover:bg-accent cursor-pointer"
-                        onClick={() => handleModelChange(null, option)}
-                      >
-                        <div className="flex items-center gap-2">
-                          {(() => {
-                            const icon = getModelIcon(option);
-                            return icon ? (
-                              <img
-                                src={icon}
-                                alt="Provider"
-                                className="h-4 w-4"
-                              />
-                            ) : null;
-                          })()}
-                          <span className="text-sm">
-                            {option.displayName || option.name}
-                          </span>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="px-2 py-1 border-t bg-background flex justify-center">
-                <TextField
-                  value={searchValue}
-                  onChange={(e) =>
-                    setSearchValue((e.target as HTMLInputElement).value)
-                  }
-                  placeholder="Search models..."
-                  size="small"
-                  className="w-full max-w-[360px] m-0"
-                  sx={{ m: 0, p: 0 }}
-                />
-              </div>
-            </div>
-          </MuiDialogContent>
-        </MuiDialog>
-      </div>
-    );
-  }
+  const tooltip = [selectedName || label, description, hasError ? errors : null]
+    .filter(Boolean)
+    .join(' — ');
 
   return (
-    <Autocomplete<Model>
-      value={selectedModel}
-      onChange={handleModelChange}
-      inputValue={displayInputValue}
-      onInputChange={handleInputChange}
-      onOpen={handleOpen}
-      onClose={handleClose}
-      options={listModels}
-      getOptionLabel={(option) => {
-        return option.displayName || option.name || '';
-      }}
-      isOptionEqualToValue={(option, value) => {
-        return option.id === value?.id;
-      }}
-      loading={isLoading}
-      disabled={isDisabled}
-      clearOnBlur={false}
-      selectOnFocus={false}
-      handleHomeEndKeys={false}
-      blurOnSelect
-      filterOptions={(x) => x} // Disable client-side filtering since we handle it server-side
-      noOptionsText={
-        <div className="flex flex-col items-center py-4 text-gray-500">
-          <div className="text-sm">
-            {isLoading
-              ? 'Loading models...'
-              : searchValue
-              ? 'No models found'
-              : 'Start typing to search models...'}
-          </div>
-          {searchValue && !isLoading && (
-            <div className="text-xs mt-1 opacity-75">
-              Try adjusting your search terms
-            </div>
-          )}
-        </div>
-      }
-      renderInput={(params) => {
-        const iconSrc = getModelIcon(selectedModel);
-
-        return (
-          <TextField
-            {...params}
-            label={label}
-            helperText={description || errors}
-            error={!!errors}
-            required={required}
-            variant="outlined"
-            size="small"
-            className="compact-field"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: '#fafafa',
-                borderRadius: '8px',
-                transition: 'all 0.2s ease-in-out',
-                '& fieldset': {
-                  borderColor: '#e5e7eb',
-                  borderWidth: '1px',
-                },
-                '&:hover': {
-                  backgroundColor: '#ffffff',
-                  '& fieldset': {
-                    borderColor: '#9ca3af',
-                  },
-                },
-                '&.Mui-focused': {
-                  backgroundColor: '#ffffff',
-                  '& fieldset': {
-                    borderColor: '#6366f1',
-                    borderWidth: '2px',
-                  },
-                },
-                '&.Mui-error': {
-                  '& fieldset': {
-                    borderColor: '#ef4444',
-                  },
-                },
-              },
-              '& .MuiInputLabel-root': {
-                color: '#6b7280',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                '&.Mui-focused': {
-                  color: '#6366f1',
-                },
-                '&.Mui-error': {
-                  color: '#ef4444',
-                },
-              },
-              '& .MuiFormHelperText-root': {
-                fontSize: '0.75rem',
-                marginTop: '4px',
-                '&.Mui-error': {
-                  color: '#ef4444',
-                },
-              },
-            }}
-            InputProps={{
-              ...params.InputProps,
-              startAdornment: iconSrc ? (
-                <img
-                  src={iconSrc}
-                  alt="Provider logo"
-                  style={{
-                    width: 20,
-                    height: 20,
-                    objectFit: 'contain',
-                    marginRight: 8,
-                    flexShrink: 0,
-                  }}
-                />
-              ) : null,
-              endAdornment: (
-                <>
-                  {isLoading ? (
-                    <div className="flex items-center mr-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    </div>
-                  ) : null}
-                  {params.InputProps.endAdornment}
-                </>
-              ),
-            }}
+    <div className="relative shrink-0" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((v) => !v)}
+        disabled={isDisabled}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        aria-label={label || 'Select model'}
+        title={tooltip || undefined}
+        className={`flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+          isOpen
+            ? 'border-primary/30 bg-primary/10 text-primary'
+            : 'border-border/70 bg-transparent text-muted-foreground hover:bg-secondary'
+        } ${hasError ? 'border-destructive text-destructive' : ''} ${
+          isDisabled ? 'cursor-not-allowed opacity-60' : ''
+        }`}
+      >
+        {iconSrc ? (
+          <img
+            src={iconSrc}
+            alt=""
+            className="h-3.5 w-3.5 shrink-0 object-contain"
           />
-        );
-      }}
-      renderOption={(props, option) => {
-        const iconSrc = getModelIcon(option);
+        ) : (
+          <Cpu className="h-3.5 w-3.5 shrink-0" />
+        )}
+        {/* Desktop-first: a base `hidden` can lose to `sm:inline` because the
+            app and the package each ship a full Tailwind build. */}
+        <span className="inline max-w-[9rem] truncate max-sm:hidden">
+          {triggerText}
+        </span>
+        <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+      </button>
 
-        return (
-          <li
-            {...props}
-            key={option.id}
-            className="!px-4 !py-3 hover:!bg-gray-50 cursor-pointer transition-colors duration-150 border-b border-gray-50 last:border-b-0"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
-                {iconSrc ? (
-                  <img
-                    src={iconSrc}
-                    alt="Provider logo"
-                    className="h-5 w-5 object-contain"
+      {isOpen && (
+        <div
+          role="listbox"
+          aria-label={label || 'Models'}
+          className="absolute bottom-full left-0 z-50 mb-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
+        >
+          <div className="border-b border-border p-2">
+            <input
+              ref={searchRef}
+              type="search"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              placeholder="Search models…"
+              aria-label="Search models"
+              className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40"
+            />
+          </div>
+
+          <div className="max-h-72 overflow-y-auto">
+            {isLoading && listModels.length === 0 && (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              </div>
+            )}
+
+            {!isLoading && listModels.length === 0 && (
+              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                {searchValue ? 'No models found' : 'No models available'}
+              </p>
+            )}
+
+            {listModels.map((model) => {
+              const active = model.id === selectedModel?.id;
+              const optionIcon = getModelIcon(model);
+              return (
+                <button
+                  key={model.id}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => handleSelect(model)}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-secondary/60"
+                >
+                  <Check
+                    className={`h-3.5 w-3.5 shrink-0 ${
+                      active ? 'text-primary' : 'opacity-0'
+                    }`}
                   />
-                ) : (
-                  <span
-                    role="img"
-                    aria-label="Provider"
-                    className="text-muted-foreground text-xs"
-                  >
-                    ⚡
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-col space-y-1 flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900 text-sm leading-tight">
-                    {option.displayName || option.name}
-                  </span>
-                  {selectedModel?.id === option.id && (
-                    <div className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0"></div>
+                  {optionIcon ? (
+                    <img
+                      src={optionIcon}
+                      alt=""
+                      className="h-4 w-4 shrink-0 object-contain"
+                    />
+                  ) : (
+                    <Cpu className="h-4 w-4 shrink-0 text-muted-foreground" />
                   )}
-                </div>
-                {option.displayName && option.name !== option.displayName && (
-                  <span className="text-xs text-gray-500 leading-tight">
-                    {option.name}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm leading-none text-foreground">
+                      {model.displayName || model.name}
+                    </span>
+                    {model.displayName && model.name !== model.displayName && (
+                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                        {model.name}
+                      </span>
+                    )}
                   </span>
-                )}
-              </div>
-            </div>
-          </li>
-        );
-      }}
-      sx={{
-        '& .MuiAutocomplete-paper': {
-          borderRadius: '8px',
-          boxShadow:
-            '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-          border: '1px solid #e5e7eb',
-          marginTop: '4px',
-          '& .MuiAutocomplete-listbox': {
-            padding: 0,
-            maxHeight: '280px',
-            '& .MuiAutocomplete-option': {
-              padding: 0,
-              minHeight: 'auto',
-              '&.Mui-focused': {
-                backgroundColor: '#f8fafc !important',
-              },
-              '&[aria-selected="true"]': {
-                backgroundColor: '#eff6ff !important',
-                '&.Mui-focused': {
-                  backgroundColor: '#dbeafe !important',
-                },
-              },
-            },
-          },
-        },
-        '& .MuiAutocomplete-popper': {
-          zIndex: 1300,
-        },
-        '& .MuiAutocomplete-clearIndicator': {
-          color: '#9ca3af',
-          '&:hover': {
-            color: '#6b7280',
-            backgroundColor: '#f3f4f6',
-          },
-        },
-        '& .MuiAutocomplete-popupIndicator': {
-          color: '#9ca3af',
-          '&:hover': {
-            color: '#6b7280',
-            backgroundColor: '#f3f4f6',
-          },
-        },
-      }}
-    />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
