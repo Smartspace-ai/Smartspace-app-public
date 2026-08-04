@@ -53,6 +53,15 @@ const components: Components = {
     }
     return <CodeBlock language={language} source={source} />;
   },
+  // Wide markdown tables would otherwise push the message column sideways on a
+  // phone; give each one its own horizontal scroll container.
+  table({ children }) {
+    return (
+      <div className="chat-prose-table-wrap">
+        <table>{children}</table>
+      </div>
+    );
+  },
   // Override the default `pre` wrapper so our `code` component can emit its
   // own wrapper. Without this, react-markdown wraps our CodeBlock/HtmlPreview
   // in an extra `<pre>` element from its default renderer.
