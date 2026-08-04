@@ -1,9 +1,10 @@
 // routes/_protected/workspace/$workspaceId/_layout.tsx
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { Suspense, useEffect, useMemo, type ReactNode } from 'react';
 
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 import { defaultChatService } from '@/platform/chat/defaultChatService';
+import { isNotFoundError } from '@/platform/envelopes';
 import {
   RouteIdsProvider,
   useRouteIds,
@@ -83,13 +84,25 @@ function WorkspaceBodyBackground() {
 export const Route = createFileRoute(
   '/_protected/workspace/$workspaceId/_layout'
 )({
-  loader: ({ params, context }) =>
-    context.queryClient.ensureQueryData(
-      workspaceDetailOptions({
-        service: defaultChatService,
-        workspaceId: params.workspaceId,
-      })
-    ),
+  loader: async ({ params, context }) => {
+    try {
+      return await context.queryClient.ensureQueryData(
+        workspaceDetailOptions({
+          service: defaultChatService,
+          workspaceId: params.workspaceId,
+        })
+      );
+    } catch (e: unknown) {
+      // Access can be revoked (or the workspace deleted) while a user is
+      // already viewing it, or they can navigate back to a stale URL for a
+      // workspace they've since lost access to. Without this, the 404
+      // bubbles into ProtectedErrorBoundary as a generic "Oops" screen
+      // instead of sending them back to /workspace, whose own loader picks
+      // another accessible workspace or lands on /workspace/no-workspaces.
+      if (!isNotFoundError(e)) throw e;
+      throw redirect({ to: '/workspace', replace: true });
+    }
+  },
   component: () => (
     <RouteIdsProvider>
       <ChatProviderBridge>
