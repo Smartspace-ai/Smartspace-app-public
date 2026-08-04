@@ -18,6 +18,19 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: [
+          'Inter',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica',
+          'Arial',
+          'sans-serif',
+        ],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -52,6 +65,22 @@ module.exports = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        brand: {
+          accent: 'hsl(var(--brand-accent))',
+        },
+        chat: {
+          area: 'hsl(var(--chat-area-bg))',
+        },
+        surface: {
+          raised: 'hsl(var(--surface-raised))',
+          hairline: 'hsl(var(--surface-hairline))',
+        },
+        bubble: {
+          user: 'hsl(var(--bubble-user-bg))',
+          'user-foreground': 'hsl(var(--bubble-user-fg))',
+        },
+        star: 'hsl(var(--star))',
+        notification: 'hsl(var(--notification))',
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',
