@@ -9,6 +9,21 @@ updates:
       timezone: Pacific/Auckland
     target-branch: develop
     open-pull-requests-limit: 3
+    # React 19 is a deliberate migration, not a routine bump — it needs
+    # cloneElement typing fixes in src/shared/ui/mui-compat/, @testing-library/react
+    # on 16.x, and widened peer ranges in packages/chat-ui. Left ungated, the react
+    # group re-proposes it every week and the PR fails CI every time (#324, #348,
+    # #402 all closed or red). Gate the majors so the group's minors keep flowing;
+    # drop these entries when the migration is actually scheduled.
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
     groups:
       react:
         patterns:
@@ -59,6 +74,17 @@ updates:
       timezone: Pacific/Auckland
     target-branch: develop
     open-pull-requests-limit: 3
+    # Mirrors the root entry above — chat-ui declares react/react-dom as peer
+    # dependencies, so its React major has to move in lockstep with the app's.
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
     groups:
       react:
         patterns:
