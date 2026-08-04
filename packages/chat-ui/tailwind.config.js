@@ -14,6 +14,16 @@ module.exports = {
       },
     },
     extend: {
+      // Tailwind's preflight emits `*, ::before, ::after { border: 0 solid <this> }`,
+      // and its stock value is a cool grey. Because the app and this package each
+      // ship a full Tailwind build, that universal rule loaded after the app's own
+      // `* { @apply border-border }` — same specificity, later wins — so every
+      // bare `border` / `border-b` utility in the app drew a light hairline that
+      // never followed the colour scheme. Pointing the default at the token makes
+      // the two builds agree.
+      borderColor: {
+        DEFAULT: 'hsl(var(--border))',
+      },
       fontFamily: {
         sans: [
           'Inter',
