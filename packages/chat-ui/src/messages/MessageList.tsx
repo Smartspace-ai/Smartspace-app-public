@@ -218,15 +218,22 @@ export function MessageList({
 
   if (safeMessages.length === 0 && !hadMessagesBefore) {
     return (
-      <div className="flex overflow-auto flex-shrink-10 flex-col p-8 text-center">
-        <h3 className="text-lg font-medium mb-2">
-          {activeWorkspace?.name ?? 'No messages yet'}
-        </h3>
-        {activeWorkspace?.firstPrompt && (
-          <div className="max-w-3xl mx-auto p-4">
-            <MessageMarkdown value={activeWorkspace.firstPrompt} />
-          </div>
-        )}
+      // A new thread centres its greeting over the composer below, the way the
+      // design opens an empty conversation, rather than pinning it to the top.
+      <div
+        className={`ss-chat__body flex flex-1 flex-col items-center justify-end overflow-auto px-4 pb-2 ${hostBg}`}
+        data-ss-layer="message-list"
+      >
+        <div className="chat-column w-full text-center">
+          <h2 className="text-2xl font-semibold text-foreground">
+            {activeWorkspace?.name ?? 'No messages yet'}
+          </h2>
+          {activeWorkspace?.firstPrompt && (
+            <div className="chat-prose mx-auto mt-3 max-w-2xl text-center">
+              <MessageMarkdown value={activeWorkspace.firstPrompt} />
+            </div>
+          )}
+        </div>
       </div>
     );
   }
