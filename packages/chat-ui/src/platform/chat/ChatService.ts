@@ -98,4 +98,13 @@ export interface ChatService {
     take?: number;
     skip?: number;
   }): Promise<{ data: Model[]; total: number }>;
+
+  /**
+   * Request cancellation of the thread's running flow (the thread id IS the
+   * flow-run id). Cancellation is cooperative: the engine stops between block
+   * executions, typically within seconds, and the terminal SSE frame clears
+   * `isFlowRunning`. Optional so existing service implementations keep
+   * compiling — the composer only shows a Stop button when it is provided.
+   */
+  cancelFlowRun?(flowRunId: string): Promise<void>;
 }

@@ -5,6 +5,7 @@ import {
   uploadFiles as filesUploadFiles,
 } from '@/domains/files/service';
 import {
+  cancelFlowRun as flowrunsCancelFlowRun,
   fetchFlowRunVariables as flowrunsFetchFlowRunVariables,
   updateFlowRunVariable as flowrunsUpdateFlowRunVariable,
 } from '@/domains/flowruns/service';
@@ -75,6 +76,8 @@ export function createDefaultChatService(): ChatService {
     },
 
     fetchModels: (opts) => modelsFetchModels(opts),
+
+    cancelFlowRun: (flowRunId) => flowrunsCancelFlowRun(flowRunId),
   };
 }
 

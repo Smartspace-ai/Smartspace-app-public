@@ -13,14 +13,18 @@ import {
   Minimize2,
   Paperclip,
   Presentation,
+  Square,
   X,
 } from 'lucide-react';
 import type * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { useChatService } from '@/platform/chat';
+
 import type { FileInfo } from '@/domains/files/model';
 import { useFileMutations } from '@/domains/files/mutations';
+import { useCancelFlowRun } from '@/domains/flowruns/mutations';
 
 import type { MarkdownEditorHandle } from '@/shared/markdown/MarkdownEditor';
 import { MarkdownEditor } from '@/shared/markdown/MarkdownEditor';
@@ -161,6 +165,35 @@ export default function MessageComposer({
     workspaceId,
     threadId: isDraftThread ? undefined : threadId,
   });
+
+  // While the flow is generating a response, Send's slot becomes a Stop
+  // button (only when the service supports cancellation — otherwise the
+  // legacy disabled/dots state stays). The thread id IS the flow-run id;
+  // the engine stops within seconds and the thread SSE clears isSending.
+  const chatService = useChatService();
+  const {
+    mutate: cancelMutate,
+    isPending: cancelPending,
+    isSuccess: cancelAccepted,
+    isError: cancelErrored,
+    reset: cancelReset,
+  } = useCancelFlowRun();
+  const canStop = isSending && !!chatService.cancelFlowRun;
+  // Cancellation is cooperative, so there is a gap between the accepted
+  // request and isSending actually flipping — hold a disabled "Stopping…"
+  // state across it instead of allowing repeat clicks.
+  const stopping = cancelPending || cancelAccepted;
+  const handleStopRun = () => {
+    if (stopping) return;
+    cancelMutate(threadId);
+  };
+  // Re-arm for the next run: without the reset, a later message's Stop
+  // button would be born stuck in the "Stopping…" state.
+  useEffect(() => {
+    if (!isSending && (cancelAccepted || cancelErrored)) {
+      cancelReset();
+    }
+  }, [isSending, cancelAccepted, cancelErrored, cancelReset]);
   // Provide a global downloader for ssImage node views (non-React context).
   // Milkdown's image node view reads `window.__ssDownloadFile` by name on
   // first render, so an effect-based assignment runs early enough.
@@ -496,16 +529,31 @@ export default function MessageComposer({
                   </IconButton>
                 )}
 
-                <IconButton
-                  onClick={handleSendMessageAndClear}
-                  className={`h-10 w-10 rounded-full self-end ${
-                    sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  disabled={sendDisabled}
-                  aria-label="Send"
-                >
-                  <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
-                </IconButton>
+                {canStop ? (
+                  <IconButton
+                    onClick={handleStopRun}
+                    className="h-10 w-10 rounded-full self-end"
+                    disabled={stopping}
+                    aria-label={stopping ? 'Stopping' : 'Stop'}
+                  >
+                    <Square
+                      className={`h-4 w-4 fill-current ${
+                        stopping ? 'animate-pulse' : ''
+                      }`}
+                    />
+                  </IconButton>
+                ) : (
+                  <IconButton
+                    onClick={handleSendMessageAndClear}
+                    className={`h-10 w-10 rounded-full self-end ${
+                      sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    disabled={sendDisabled}
+                    aria-label="Send"
+                  >
+                    <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
+                  </IconButton>
+                )}
               </div>
             ) : (
               <div className="relative px-5 py-2">
@@ -592,16 +640,31 @@ export default function MessageComposer({
                         />
                       </IconButton>
                     )}
-                    <IconButton
-                      onClick={handleSendMessageAndClear}
-                      className={`h-10 w-10 rounded-full ${
-                        sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                      disabled={sendDisabled}
-                      aria-label="Send"
-                    >
-                      <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
-                    </IconButton>
+                    {canStop ? (
+                      <IconButton
+                        onClick={handleStopRun}
+                        className="h-10 w-10 rounded-full"
+                        disabled={stopping}
+                        aria-label={stopping ? 'Stopping' : 'Stop'}
+                      >
+                        <Square
+                          className={`h-4 w-4 fill-current ${
+                            stopping ? 'animate-pulse' : ''
+                          }`}
+                        />
+                      </IconButton>
+                    ) : (
+                      <IconButton
+                        onClick={handleSendMessageAndClear}
+                        className={`h-10 w-10 rounded-full ${
+                          sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        disabled={sendDisabled}
+                        aria-label="Send"
+                      >
+                        <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
+                      </IconButton>
+                    )}
                   </div>
                 </div>
               </div>
@@ -626,23 +689,43 @@ export default function MessageComposer({
               )}
             </div>
 
-            <UIButton
-              onClick={handleSendMessageAndClear}
-              className={`text-xs h-7 px-4 py-1 ${
-                sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              disabled={sendDisabled}
-            >
-              {isSending ? (
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce" />
+            {canStop ? (
+              <UIButton
+                onClick={handleStopRun}
+                className={`text-xs h-7 px-4 py-1 ${
+                  stopping ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                disabled={stopping}
+                aria-label={stopping ? 'Stopping' : 'Stop'}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Square
+                    className={`h-3 w-3 fill-current ${
+                      stopping ? 'animate-pulse' : ''
+                    }`}
+                  />
+                  {stopping ? 'Stopping…' : 'Stop'}
                 </span>
-              ) : (
-                'Send'
-              )}
-            </UIButton>
+              </UIButton>
+            ) : (
+              <UIButton
+                onClick={handleSendMessageAndClear}
+                className={`text-xs h-7 px-4 py-1 ${
+                  sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                disabled={sendDisabled}
+              >
+                {isSending ? (
+                  <span className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.3s]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.15s]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce" />
+                  </span>
+                ) : (
+                  'Send'
+                )}
+              </UIButton>
+            )}
           </div>
         )}
       </div>
