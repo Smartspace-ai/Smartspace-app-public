@@ -14,9 +14,13 @@ export default function SidebarLeft(props: ComponentProps<typeof Sidebar>) {
     // `chat-sidebar` owns the rail's whole look: it is always the dark navy
     // surface with the ambient glow and grid texture, independent of the active
     // light/dark theme, and it re-points the shadcn tokens for its subtree.
+    //
+    // `border-border` is load-bearing. A bare `border-r` falls back to
+    // Tailwind's default grey, which drew a light hairline down the dark rail in
+    // both themes; naming the token picks up the rail's own dark `--border`.
     <Sidebar
       side="left"
-      className="ss-sidebar__left chat-sidebar border-r"
+      className="ss-sidebar__left chat-sidebar border-r border-border"
       {...props}
     >
       <SidebarUserHeader />
