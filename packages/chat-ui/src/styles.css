@@ -216,6 +216,26 @@
   box-shadow: none;
 }
 
+/* Workspace variables inside the composer's action bar: the JsonForms grid is
+   built for a full-width row above the composer, so inside the bar the fields
+   shrink to their content and lay out as inline chips. */
+.ss-composer__actions .jsonforms-compact .ss-jsonforms-grid {
+  gap: 4px;
+  align-items: center;
+}
+.ss-composer__actions .jsonforms-compact .compact-field,
+.ss-composer__actions .jsonforms-compact .ss-jsonforms-textarea {
+  width: auto;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.ss-composer__actions .jsonforms-compact .w-full {
+  width: auto;
+}
+.ss-composer__actions .jsonforms-compact .justify-center {
+  justify-content: flex-start;
+}
+
 /* ============================================================
    PROSE — markdown rendering for AI responses
    ============================================================ */
@@ -417,6 +437,65 @@
 }
 
 /* ============================================================
+   STREAMING MOTION
+   ============================================================ */
+
+@keyframes chat-stream-clip {
+  0% {
+    clip-path: inset(0 0 100% 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.chat-streaming {
+  animation: chat-stream-clip 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black calc(100% - 28px),
+    rgb(0 0 0 / 0.4) calc(100% - 8px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black calc(100% - 28px),
+    rgb(0 0 0 / 0.4) calc(100% - 8px),
+    transparent 100%
+  );
+}
+
+@keyframes chat-caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.15;
+  }
+}
+
+.chat-streaming > *:last-child::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 4px;
+  vertical-align: -2px;
+  background: hsl(var(--brand-accent));
+  border-radius: 1px;
+  animation: chat-caret-blink 0.85s steps(2, start) infinite;
+  box-shadow: 0 0 6px hsl(var(--brand-accent) / 0.55);
+}
+.chat-streaming > .chat-prose-table-wrap:last-child::after {
+  display: block;
+  margin: 0.5rem 0 0 2px;
+}
+
+/* ============================================================
    THINKING INDICATOR
    ============================================================ */
 
@@ -478,9 +557,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .chat-streaming,
   .chat-thinking-shimmer,
   .chat-thinking-dots > span {
     animation: none !important;
+  }
+  .chat-streaming {
+    clip-path: none;
+    mask-image: none;
+    -webkit-mask-image: none;
   }
 }
 
