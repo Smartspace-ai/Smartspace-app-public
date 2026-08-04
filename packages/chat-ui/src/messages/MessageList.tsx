@@ -218,18 +218,24 @@ export function MessageList({
 
   if (safeMessages.length === 0 && !hadMessagesBefore) {
     return (
-      // A new thread centres its greeting over the composer below, the way the
-      // design opens an empty conversation, rather than pinning it to the top.
+      // A new thread opens the way the design does: the greeting and the
+      // composer travel together as one narrower block centred in the canvas.
+      // `mt-auto` here and `mb-auto` on the composer split the free space above
+      // and below the pair; neither element claims `flex-1`.
       <div
-        className={`ss-chat__body flex flex-1 flex-col items-center justify-end overflow-auto px-4 pb-2 ${hostBg}`}
+        // `min-h-0` rather than `shrink-0`: a long `firstPrompt` should scroll
+        // inside this block instead of pushing the composer off the canvas.
+        className={`ss-chat__body mt-auto flex min-h-0 flex-col items-center overflow-auto px-4 ${hostBg}`}
         data-ss-layer="message-list"
       >
-        <div className="chat-column w-full text-center">
+        {/* 24px below this block plus the composer's own 8px of top padding is
+            the 32px the design leaves between the greeting and the card. */}
+        <div className="mx-auto mb-6 w-full max-w-2xl px-4 text-center">
           <h2 className="text-2xl font-semibold text-foreground">
-            {activeWorkspace?.name ?? 'No messages yet'}
+            What&rsquo;s on the agenda today?
           </h2>
           {activeWorkspace?.firstPrompt && (
-            <div className="chat-prose mx-auto mt-3 max-w-2xl text-center">
+            <div className="chat-prose mt-3 text-center">
               <MessageMarkdown value={activeWorkspace.firstPrompt} />
             </div>
           )}
