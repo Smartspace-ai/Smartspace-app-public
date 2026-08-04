@@ -1,6 +1,6 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { AlertTriangle } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useChatContext } from '@/platform/chat';
 
@@ -8,11 +8,8 @@ import { useMessages } from '@/domains/messages';
 import { useThread, useThreadIsRunning } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
-import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { MessageMarkdown } from '@/shared/markdown/MessageMarkdown';
 import { Skeleton } from '@/shared/mui-compat/skeleton';
-
-import { getBackgroundGradientClasses } from '@/theme/tag-styles';
 
 import { MessageItem } from './MessageItem';
 
@@ -25,11 +22,9 @@ export type MessageListProps = {
    */
   applyHostBackgroundOverride?: boolean;
   /**
-   * Use the wider desktop max-width (90% instead of 70%). Set this when the
-   * chat is rendered in a layout where horizontal room is constrained by
-   * other panels (e.g. a sidebar is open beside it). Standalone fork passes
-   * `leftOpen || rightOpen` from `useSidebar()`; the sandbox doesn't have
-   * sidebars, so it omits the prop and gets the natural 70% width.
+   * @deprecated No-op. The message column is centred at a fixed reading width
+   * (`.chat-column`) at every size, so there is no sidebar-dependent max-width
+   * to toggle. Still accepted so existing callers keep compiling.
    */
   expandedLayout?: boolean;
   /**
@@ -48,7 +43,6 @@ export type MessageListProps = {
 
 export function MessageList({
   applyHostBackgroundOverride = false,
-  expandedLayout = false,
   isChoosingThread = false,
 }: MessageListProps = {}) {
   const { workspaceId, threadId } = useChatContext();
@@ -72,7 +66,6 @@ export function MessageList({
     threadId: '',
     had: false,
   });
-  const isMobile = useIsMobile();
 
   const { data: activeWorkspace } = useWorkspace(workspaceId);
 
@@ -97,18 +90,7 @@ export function MessageList({
   // the perceived chat color matches the standalone web UI. Driven by the
   // `applyHostBackgroundOverride` prop — the chat tree itself stays
   // host-agnostic.
-  const hostBg = useMemo(() => {
-    if (!applyHostBackgroundOverride) return '';
-    const grad = getBackgroundGradientClasses({
-      tags: activeWorkspace?.tags,
-      name: activeWorkspace?.name,
-    });
-    return `bg-white bg-gradient-to-b from-white from-10% ${grad} via-40% to-100%`;
-  }, [
-    applyHostBackgroundOverride,
-    activeWorkspace?.tags,
-    activeWorkspace?.name,
-  ]);
+  const hostBg = applyHostBackgroundOverride ? 'chat-main' : '';
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const viewport = viewportRef.current;
@@ -251,7 +233,7 @@ export function MessageList({
 
   return (
     <div
-      className={`ss-chat__body ${hostBg}`}
+      className={`ss-chat__body chat-scroll ${hostBg}`}
       data-ss-layer="message-list"
       style={{
         flex: 1,
@@ -286,11 +268,7 @@ export function MessageList({
         >
           <div
             ref={contentRef}
-            className={`flex flex-col w-full ${
-              !isMobile
-                ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
-                : ''
-            } px-2 sm:px-3 md:px-4 transition-[max-width] duration-300 ease-in-out`}
+            className="chat-column chat-turns flex w-full flex-col px-4 py-6"
           >
             {safeMessages.map((message, index) => {
               const isLastMessage = index === safeMessages.length - 1;
