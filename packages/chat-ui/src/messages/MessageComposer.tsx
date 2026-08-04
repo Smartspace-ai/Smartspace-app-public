@@ -9,6 +9,7 @@ import {
   FileSpreadsheet,
   FileText,
   FileVideo,
+  Mic,
   Minimize2,
   Paperclip,
   Presentation,
@@ -21,6 +22,7 @@ import { createPortal } from 'react-dom';
 
 import type { FileInfo } from '@/domains/files/model';
 import { useFileMutations } from '@/domains/files/mutations';
+import { useMessages } from '@/domains/messages';
 
 import type { MarkdownEditorHandle } from '@/shared/markdown/MarkdownEditor';
 import { MarkdownEditor } from '@/shared/markdown/MarkdownEditor';
@@ -156,6 +158,13 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
     isDraftThread,
     setVariables,
   } = vm;
+
+  // An untouched thread gets the design's opening layout: the greeting, this card
+  // and nothing else, as one narrower block centred in the canvas rather than a
+  // composer pinned to the bottom. `MessageList` already reads this query, so
+  // this is a cache hit, not a second request.
+  const { data: threadMessages } = useMessages(threadId);
+  const isEmptyThread = (threadMessages ?? []).length === 0;
 
   // Draft threads use a placeholder thread id; omit it for uploads so files still work in draft mode.
   const { uploadFilesMutation, getFileBlobUrl } = useFileMutations({
@@ -321,7 +330,15 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
   };
 
   return (
-    <div className="ss-chat__composer chat-column mt-auto max-h-[60%] w-full shrink-0 px-4 pb-4 pt-2">
+    <div
+      className={`ss-chat__composer max-h-[60%] w-full shrink-0 px-4 pt-2 ${
+        isEmptyThread
+          ? // Opening layout: narrower than a conversation and floated up with
+            // the greeting, which carries the matching `mt-auto`.
+            'mx-auto mb-auto max-w-2xl'
+          : 'chat-column mt-auto pb-4'
+      }`}
+    >
       {/* Hidden file input shared by all upload buttons */}
       {supportsFiles && (
         <input
@@ -480,24 +497,39 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
             )}
           </div>
 
-          <IconButton
-            onClick={handleSendMessageAndClear}
-            className={`chat-send h-8 w-8 rounded-full ${
-              sendDisabled ? 'cursor-not-allowed' : ''
-            }`}
-            disabled={sendDisabled}
-            aria-label="Send"
-          >
-            {isSending ? (
-              <span className="chat-thinking-dots">
-                <span />
-                <span />
-                <span />
-              </span>
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </IconButton>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {/* The design pairs a dictation button with Send. There is no
+                speech-to-text in the app yet, so this carries the shape only and
+                says as much rather than looking live and doing nothing. */}
+            <IconButton
+              type="button"
+              disabled
+              aria-label="Dictate a message"
+              title="Dictation is not available yet"
+              className="h-8 w-8 cursor-not-allowed rounded-full text-muted-foreground"
+            >
+              <Mic className="h-4 w-4" />
+            </IconButton>
+
+            <IconButton
+              onClick={handleSendMessageAndClear}
+              className={`chat-send h-8 w-8 rounded-full ${
+                sendDisabled ? 'cursor-not-allowed' : ''
+              }`}
+              disabled={sendDisabled}
+              aria-label="Send"
+            >
+              {isSending ? (
+                <span className="chat-thinking-dots">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </IconButton>
+          </div>
         </div>
 
         {/* Mobile fullscreen composer */}
