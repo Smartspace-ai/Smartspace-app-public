@@ -499,6 +499,17 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
           </IconButton>
         </div>
 
+        {/* Context strip — keyboard hints only; the design also shows a token
+          budget there, but the app has no token accounting to report. */}
+        <div className="flex items-center justify-end px-2 pt-2 text-[10px] font-medium tracking-wide text-muted-foreground max-sm:hidden">
+          <span className="flex items-center gap-1.5">
+            <kbd className="font-sans">⏎</kbd> to send
+            <span className="opacity-40">·</span>
+            <kbd className="font-sans">Shift</kbd>+
+            <kbd className="font-sans">⏎</kbd> for newline
+          </span>
+        </div>
+
         {/* Mobile fullscreen composer */}
         {isMobile &&
           isFullscreen &&
