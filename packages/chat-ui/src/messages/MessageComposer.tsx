@@ -332,19 +332,6 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
           onChange={handleFileSelected}
         />
       )}
-      {workspace && threadId && (
-        <div className="w-full">
-          <ChatVariablesForm
-            key={`${workspaceId}-${threadId}`}
-            workspace={workspace}
-            threadId={threadId}
-            setVariables={setVariables}
-          />
-        </div>
-      )}
-      {Object.keys(workspace?.variables ?? {}).length > 0 && (
-        <hr className="my-2" />
-      )}
 
       <div className="chat-composer w-full overflow-hidden">
         {attachments.length > 0 && (
@@ -465,7 +452,7 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
 
         {/* Action bar */}
         <div className="flex items-center justify-between gap-2 px-3 pb-3">
-          <div className="flex items-center gap-1">
+          <div className="ss-composer__actions flex min-w-0 flex-1 items-center gap-1">
             {supportsFiles && (
               <IconButton
                 type="button"
@@ -476,6 +463,17 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
               >
                 <Paperclip className="h-4 w-4" strokeWidth={2} />
               </IconButton>
+            )}
+
+            {/* Workspace variables (model, web search, streaming, …) sit in the
+                action bar rather than above the card, as in the design. */}
+            {workspace && threadId && (
+              <ChatVariablesForm
+                key={`${workspaceId}-${threadId}`}
+                workspace={workspace}
+                threadId={threadId}
+                setVariables={setVariables}
+              />
             )}
           </div>
 
