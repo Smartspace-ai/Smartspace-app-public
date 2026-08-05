@@ -51,7 +51,9 @@ export default function AppProviders({ children }: { children: ReactNode }) {
           <SessionExpiryPrompt />
           <RealtimeBridge>
             <MuiThemeBridge>
-              <SidebarProvider defaultRightOpen>{children}</SidebarProvider>
+              {/* The comments rail starts closed and opens from the header's
+                  comments button, the way the design presents it. */}
+              <SidebarProvider>{children}</SidebarProvider>
             </MuiThemeBridge>
           </RealtimeBridge>
         </AuthProvider>
