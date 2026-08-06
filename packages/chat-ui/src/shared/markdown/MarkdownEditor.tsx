@@ -130,6 +130,43 @@ function getSchemaNodeType(
   return t as PMNodeTypeLike;
 }
 
+/**
+ * Finds the doc position of the last unclosed "@" before `from`, scanning
+ * text nodes directly rather than via `doc.textBetween` + string-index math.
+ *
+ * `textBetween(windowStart, from, blockSep, leafText)` flattens the doc into
+ * a string where a paragraph-open boundary consumes a position but emits no
+ * character, while an atomic node (e.g. a mention) emits exactly one
+ * `leafText` character for the one position it occupies. Both silently break
+ * the "string index i == doc position windowStart + i" assumption that
+ * `windowStart + text.lastIndexOf('@')` relies on -- most visibly when a
+ * mention sits immediately before the "@", where the recovered position
+ * lands on the mention itself instead of the "@", and replacing from there
+ * deletes the previous mention along with the new query.
+ *
+ * Any non-text (atomic) node encountered resets the search: an "@" can't
+ * still be an open query once something else has been inserted after it.
+ */
+function findMentionTriggerPos(
+  doc: PMNode,
+  windowStart: number,
+  from: number
+): number | null {
+  let triggerPos: number | null = null;
+  doc.nodesBetween(windowStart, from, (node, pos) => {
+    if (!node.isText || !node.text) {
+      triggerPos = null;
+      return;
+    }
+    for (let i = 0; i < node.text.length; i++) {
+      const charPos = pos + i;
+      if (charPos < windowStart || charPos >= from) continue;
+      if (node.text[i] === '@') triggerPos = charPos;
+    }
+  });
+  return triggerPos;
+}
+
 function EditorInner({
   value,
   onChange: _onChange,
@@ -374,7 +411,13 @@ function EditorInner({
                       bottom: coords.bottom,
                     });
                     setMentionPlacement(getMentionPlacement(coords.top));
-                    setMentionFromPos(Math.max(0, pos - 1));
+                    // `pos` is captured on keydown, before the browser inserts
+                    // "@" -- it's already the position "@" is about to land
+                    // at, not one past it. (updateMentionFromView, called on
+                    // the following keyup, immediately recomputes this from
+                    // the live doc anyway; this is just the value used in the
+                    // brief window between keydown and keyup.)
+                    setMentionFromPos(pos);
                     setMentionQuery('');
                     setMentionIndex(0);
                     setMentionOpen(true);
@@ -1038,13 +1081,23 @@ function EditorInner({
     if (!isEditable || !view) return;
     const { from } = view.state.selection;
     const windowStart = Math.max(0, from - 200);
-    const text = view.state.doc.textBetween(windowStart, from, '\n', '\n');
-    const at = text.lastIndexOf('@');
-    if (at === -1) {
+    const absoluteFrom = findMentionTriggerPos(
+      view.state.doc,
+      windowStart,
+      from
+    );
+    if (absoluteFrom === null) {
       if (mentionOpen) setMentionOpen(false);
       return;
     }
-    const after = text.slice(at + 1);
+    // Safe to slice as plain text: findMentionTriggerPos guarantees nothing
+    // but text nodes sit between the "@" and the cursor.
+    const after = view.state.doc.textBetween(
+      absoluteFrom + 1,
+      from,
+      '\n',
+      '\n'
+    );
     // Allow a single space so users can type "First Last" in the mention query.
     // Close the dropdown once they type a second space (or any newline/tab).
     if (/[\t\r\n]/.test(after)) {
@@ -1058,7 +1111,6 @@ function EditorInner({
       if (mentionOpen) setMentionOpen(false);
       return;
     }
-    const absoluteFrom = windowStart + at;
 
     // If the user dismissed this mention session with Escape, don't reopen
     // until the `@` position changes (i.e. a new mention is started).
