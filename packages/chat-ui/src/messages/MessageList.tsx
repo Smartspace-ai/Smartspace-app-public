@@ -291,18 +291,11 @@ export function MessageList({
                   className="ss-chat__message w-full"
                   key={message.id || index}
                 >
+                  {/* The thinking indicator lives inside MessageItem — it is
+                      the same section tool statuses render into, and only that
+                      component knows whether the answer has started printing.
+                      `isLive` is the gate. */}
                   <MessageItem message={message} isLive={isLive} />
-
-                  {isLastMessage && isRunning && (
-                    <div className="flex items-center gap-2 text-[13px]">
-                      <span className="chat-thinking-dots" aria-hidden>
-                        <span />
-                        <span />
-                        <span />
-                      </span>
-                      <span className="chat-thinking-shimmer">Thinking…</span>
-                    </div>
-                  )}
 
                   <div ref={messagesEndRef} className="h-1" />
                 </div>
