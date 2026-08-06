@@ -118,12 +118,20 @@ const HEIGHT_REPORTER_SCRIPT = `
     } catch (e) {}
   });
   var lastSent = -1;
-  function send(){
+  // \`force\` bypasses the dedupe. The parent may not have had its handler
+  // registered when an earlier send went out, and a dropped message still
+  // recorded its height here — so without a forced path every retry below
+  // short-circuits and the preview never measures. The retries are the
+  // recovery mechanism, so they force; the ResizeObserver, which can fire
+  // constantly, keeps deduping.
+  // Note the wrappers at each call site: passing \`send\` directly as a
+  // listener would hand it an event or an entries array as \`force\`.
+  function send(force){
     try {
       var body = document.body;
       if (!body) return;
       var h = Math.ceil(body.getBoundingClientRect().height);
-      if (h === lastSent) return;
+      if (h === lastSent && !force) return;
       lastSent = h;
       parent.postMessage({ type: ${JSON.stringify(
         HEIGHT_MESSAGE
@@ -131,20 +139,20 @@ const HEIGHT_REPORTER_SCRIPT = `
     } catch (e) {}
   }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', send);
+    document.addEventListener('DOMContentLoaded', function(){ send(); });
   } else {
     send();
   }
-  window.addEventListener('load', send);
+  window.addEventListener('load', function(){ send(true); });
   try {
     if (typeof ResizeObserver !== 'undefined') {
-      var ro = new ResizeObserver(send);
+      var ro = new ResizeObserver(function(){ send(); });
       if (document.body) ro.observe(document.body);
     }
   } catch (e) {}
-  setTimeout(send, 100);
-  setTimeout(send, 500);
-  setTimeout(send, 1500);
+  setTimeout(function(){ send(true); }, 100);
+  setTimeout(function(){ send(true); }, 500);
+  setTimeout(function(){ send(true); }, 1500);
 })();</script>
 `;
 
