@@ -16,17 +16,17 @@ import { getChatbotName } from '@/theme/public-config';
 // local UI
 import { MessageBubble } from './MessageBubble';
 import type { MessageResponseSource } from './MessageSources';
-import { MessageStatus } from './MessageStatus';
+import { ThinkingSection } from './ThinkingSection';
 
 interface MessageItemProps {
   message: Message;
   /**
    * True when this is the most recent message in the thread AND the flow
-   * is still running. Gates the trailing transient status node — without
-   * this, a stuck `status` value in `message.values` (e.g. one tool's
-   * "running" status that arrived after another tool's content during a
+   * is still running. Gates the trailing thinking section — without this, a
+   * stuck `status` value in `message.values` (e.g. one tool's "running"
+   * status that arrived after another tool's content during a
    * parallel-tool-call run, with no clearing frame from the backend)
-   * would render as a permanent bubble below the response.
+   * would render as a permanent row below the response.
    */
   isLive?: boolean;
 }
@@ -93,7 +93,12 @@ function pushContent(items: MessageContentItem[], value: unknown) {
       });
       return;
     }
-    items.push({ text: JSON.stringify(value) });
+    // Structured output from a block that isn't a content part. Fence it the
+    // way the array branch above does — a bare stringify drops an unreadable
+    // wall of JSON straight into the prose.
+    items.push({
+      text: '```json\n' + JSON.stringify(value, null, 2) + '\n```',
+    });
     return;
   }
   items.push({ text: String(value) });
@@ -172,7 +177,14 @@ export const MessageItem: FC<MessageItemProps> = ({
   let keyCounter = 0;
 
   // transient status: only the last status is kept, cleared when content follows
-  let lastStatusNode: ReactNode | null = null;
+  let lastStatusText: string | null = null;
+
+  // Whether this message has painted any assistant output yet. Drives the
+  // thinking gate below: once the answer starts printing there's nothing left
+  // to wait on, so the indicator goes away. Deliberately tracks OUTPUT only —
+  // a user's own prompt bubble must not count, or the indicator would vanish
+  // in the gap between sending and the first token.
+  let hasOutputContent = false;
 
   const groupHasAnything = () =>
     groupContent.length > 0 || groupFiles.length > 0 || groupSources.length > 0;
@@ -182,6 +194,7 @@ export const MessageItem: FC<MessageItemProps> = ({
     // `sources` output followed by a status flush) — pushing it would
     // paint an empty bubble.
     if (groupHasAnything()) {
+      if (groupType === MessageValueType.OUTPUT) hasOutputContent = true;
       bubbles.push(
         <MessageBubble
           key={`bubble-${message.id ?? 'msg'}-${keyCounter++}`}
@@ -222,12 +235,7 @@ export const MessageItem: FC<MessageItemProps> = ({
       }
       case 'status': {
         if (groupOpen) flush(v.type);
-        lastStatusNode = (
-          <MessageStatus
-            key={`status-${message.id ?? 'msg'}-${keyCounter++}`}
-            text={String(v.value ?? '')}
-          />
-        );
+        lastStatusText = String(v.value ?? '');
         continue;
       }
       case 'prompt':
@@ -239,7 +247,7 @@ export const MessageItem: FC<MessageItemProps> = ({
           // round. Render nothing (the narration re-arrives as status).
           continue;
         }
-        lastStatusNode = null;
+        lastStatusText = null;
         // These start a “fresh” content section
         if (groupContent.length > 0) flush(v.type);
 
@@ -251,10 +259,19 @@ export const MessageItem: FC<MessageItemProps> = ({
           name === 'response' &&
           typeof v.value === 'object' &&
           v.value !== null &&
-          'content' in (v.value as Record<string, unknown>)
+          !Array.isArray(v.value)
         ) {
+          // A `response` object is an envelope: `{ content, sources }`. With
+          // streaming on, a tool round can deliver an early frame that has
+          // neither key filled in yet — matching only on `'content' in value`
+          // sent those frames down the generic path below, which stringifies
+          // an unrecognized object and painted raw JSON into the transcript.
+          // Read the envelope's keys instead and render nothing until content
+          // arrives. A value carrying `text`/`image` directly is a content
+          // part rather than an envelope, so it still goes through as-is.
           const resp = v.value as Record<string, unknown>;
-          pushContent(groupContent, resp.content);
+          const isContentPart = 'text' in resp || 'image' in resp;
+          pushContent(groupContent, isContentPart ? resp : resp.content);
           groupSources = coerceSources(resp.sources);
         } else {
           pushContent(groupContent, v.value);
@@ -303,6 +320,9 @@ export const MessageItem: FC<MessageItemProps> = ({
               onSubmitUserForm={onSubmitUserForm(message.id ?? '')}
             />
           );
+          // A user-interaction form is rendered output: the flow is waiting on
+          // the person now, not thinking, so this counts toward the gate below.
+          hasOutputContent = true;
         }
         // do not mark groupOpen; this stands alone
         break;
@@ -325,7 +345,7 @@ export const MessageItem: FC<MessageItemProps> = ({
       }
 
       default: {
-        lastStatusNode = null;
+        lastStatusText = null;
         // any other named value: append to current content,
         // but if we already have content from previous, keep grouping by type
         pushContent(groupContent, v.value);
@@ -341,6 +361,7 @@ export const MessageItem: FC<MessageItemProps> = ({
 
   // Final pending group
   if (groupOpen && groupHasAnything()) {
+    if (groupType === MessageValueType.OUTPUT) hasOutputContent = true;
     bubbles.push(
       <MessageBubble
         key={`bubble-final-${message.id ?? 'msg'}-${keyCounter++}`}
@@ -359,21 +380,39 @@ export const MessageItem: FC<MessageItemProps> = ({
     );
   }
 
-  // Show the trailing transient status only while this message is live
-  // (last in the thread + flow still running). Once the flow ends, any
-  // status value left over in `message.values` is stale — typically from
-  // parallel tool calls where one tool's status arrived after another's
-  // content and there was no clearing frame to overwrite it. Without this
-  // gate that stale status would render as a permanent bubble.
-  if (lastStatusNode && isLive) {
-    bubbles.push(lastStatusNode);
+  // The one thinking affordance for this message, and the only place tool
+  // statuses surface — they share this row instead of printing their own line
+  // under the answer.
+  //
+  // Only while the message is live (last in the thread + flow still running).
+  // Once the flow ends, any status left over in `message.values` is stale —
+  // typically from parallel tool calls where one tool's status arrived after
+  // another's content with no clearing frame to overwrite it — and without
+  // this gate it would sit there permanently.
+  //
+  // While live, it shows when either the flow has something to narrate, or
+  // nothing has printed yet. Once the answer starts streaming and no status is
+  // outstanding there is nothing left to wait on, so it goes away rather than
+  // sitting under the output for the rest of the run. A later tool round
+  // brings it back with that round's status.
+  const showThinking = isLive && (lastStatusText !== null || !hasOutputContent);
+  if (showThinking) {
+    bubbles.push(
+      <ThinkingSection
+        key={`thinking-${message.id ?? 'msg'}`}
+        status={lastStatusText}
+      />
+    );
   }
 
-  // Domain errors → system bubbles at the end
-  for (const error of message.errors ?? []) {
+  // Domain errors → system bubbles at the end.
+  // Keyed by index as well as code: a message can carry the same code twice
+  // (a run that failed the same way on two rounds), and keying on the code
+  // alone made React drop one of the pair as a duplicate.
+  (message.errors ?? []).forEach((error, errorIndex) => {
     bubbles.push(
       <MessageBubble
-        key={`error-${message.id ?? 'msg'}-${error.code}`}
+        key={`error-${message.id ?? 'msg'}-${errorIndex}-${error.code}`}
         createdBy={chatbotName}
         createdAt={message.createdAt}
         type={MessageValueType.OUTPUT}
@@ -385,7 +424,7 @@ export const MessageItem: FC<MessageItemProps> = ({
         userInput={null}
       />
     );
-  }
+  });
 
   return bubbles;
 };
