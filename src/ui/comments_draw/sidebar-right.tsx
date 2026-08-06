@@ -31,7 +31,7 @@ import {
   SidebarHeader,
 } from '@/shared/ui/mui-compat/sidebar';
 import { Tooltip } from '@/shared/ui/mui-compat/tooltip';
-import { isDraftThreadId } from '@/shared/utils/threadId';
+import { useIsDraftThreadId } from '@/shared/utils/threadId';
 
 import type { MarkdownEditorHandle } from '@smartspace/chat-ui';
 import {
@@ -95,7 +95,7 @@ function renderContentWithMentions(
 
 export function SidebarRight() {
   const { threadId, workspaceId } = useRouteIds();
-  const isDraft = isDraftThreadId(threadId);
+  const isDraft = useIsDraftThreadId(threadId);
   const {
     data: rawComments,
     isLoading,
