@@ -10,6 +10,15 @@ import React, { useCallback } from 'react';
 
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
+/**
+ * A numeric workspace variable, shaped to sit in the composer's action bar
+ * beside the toggle pills: one bordered capsule holding the label and a bare
+ * input. Everything is a semantic token, so it follows the colour scheme
+ * instead of staying a white box in dark mode.
+ *
+ * Unlike the toggles, the label stays visible at every width — a lone number
+ * box with no name tells the reader nothing.
+ */
 const NumberRenderer: React.FC<ControlProps> = ({
   data,
   handleChange,
@@ -54,32 +63,28 @@ const NumberRenderer: React.FC<ControlProps> = ({
   const max = fieldSchema?.maximum;
   const step = isInteger ? 1 : fieldSchema?.multipleOf ?? 'any';
 
+  // The description and any validation message ride along as the native
+  // tooltip; an extra block of text would break the single-row action bar.
+  const tooltip = [label, description, hasError ? errors : null]
+    .filter(Boolean)
+    .join(' — ');
+
   return (
     <div
-      className="ss-jsonforms-field ss-jsonforms-number"
-      style={{
-        display: 'inline-flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        minHeight: '40px',
-      }}
+      className={`ss-jsonforms-field ss-jsonforms-number flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors focus-within:border-primary/40 ${
+        hasError ? 'border-destructive' : 'border-border/70'
+      } ${isDisabled ? 'opacity-60' : ''}`}
+      title={tooltip || undefined}
     >
       {label && (
         <label
           htmlFor={`number-${path}`}
-          style={{
-            color: hasError ? '#ef4444' : '#475569',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-            lineHeight: '24px',
-          }}
+          className={`whitespace-nowrap ${
+            hasError ? 'text-destructive' : 'text-muted-foreground'
+          }`}
         >
           {label}
-          {required && (
-            <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>
-          )}
+          {required && <span className="ml-1 text-destructive">*</span>}
         </label>
       )}
 
@@ -92,32 +97,8 @@ const NumberRenderer: React.FC<ControlProps> = ({
         min={min}
         max={max}
         step={step}
-        style={{
-          width: '80px',
-          height: '24px',
-          padding: '0 0.5rem',
-          border: hasError ? '2px solid #ef4444' : '1px solid #d1d5db',
-          borderRadius: '6px',
-          fontSize: '0.875rem',
-          lineHeight: '24px',
-          fontFamily: 'inherit',
-          backgroundColor: isDisabled ? '#f9fafb' : '#ffffff',
-          color: isDisabled ? '#9ca3af' : '#111827',
-          outline: 'none',
-          boxSizing: 'border-box',
-        }}
+        className="w-14 border-0 bg-transparent p-0 text-xs font-medium tabular-nums text-foreground outline-none disabled:cursor-not-allowed"
       />
-
-      {hasError && (
-        <div
-          style={{
-            color: '#ef4444',
-            fontSize: '0.75rem',
-          }}
-        >
-          {errors}
-        </div>
-      )}
     </div>
   );
 };

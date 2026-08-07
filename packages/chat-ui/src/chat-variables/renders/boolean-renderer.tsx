@@ -1,10 +1,30 @@
 import type { ControlElement, JsonSchema7 } from '@jsonforms/core';
 import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Globe, SlidersHorizontal, Zap } from 'lucide-react';
+import React, { useCallback } from 'react';
 
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
+/**
+ * Pick the icon the way the reference design does — it gives web search a globe
+ * and streaming a bolt. Workspace variables are author-defined, so anything we
+ * don't recognise falls back to a neutral "option" glyph, which keeps every
+ * pill the same shape rather than leaving some of them narrower.
+ */
+function iconFor(label: string | undefined) {
+  const name = (label ?? '').toLowerCase();
+  if (/search|web|browse|internet/.test(name)) return Globe;
+  if (/stream/.test(name)) return Zap;
+  return SlidersHorizontal;
+}
+
+/**
+ * A boolean workspace variable, rendered as the composer action bar's toggle
+ * pill: a bordered capsule that fills with a tint of the accent when it is on.
+ * The label collapses away below `sm` so a row of these still fits a 320px
+ * phone — the icon plus `aria-label` carry the meaning there.
+ */
 const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
   data,
   handleChange,
@@ -15,40 +35,10 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
   uischema,
   visible,
   enabled,
-  required,
 }) => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const updateIsMobile = () =>
-      setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 640);
-    updateIsMobile();
-    window.addEventListener('resize', updateIsMobile);
-    return () => window.removeEventListener('resize', updateIsMobile);
-  }, []);
-
   const onToggle = useCallback(() => {
     handleChange(path, !data);
   }, [handleChange, path, data]);
-
-  // Build styles that differ by mobile/non-mobile
-  const dims = useMemo(
-    () =>
-      isMobile
-        ? {
-            w: undefined as string | undefined,
-            h: '28px',
-            pad: '2px 10px',
-            knobSize: 0,
-          }
-        : {
-            w: '44px',
-            h: '24px',
-            pad: undefined as string | undefined,
-            knobSize: 20,
-          },
-    [isMobile]
-  );
 
   if (!visible) return null;
 
@@ -59,147 +49,52 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
 
   const hasError = !!errors && errors.length > 0;
   const isChecked = Boolean(data);
+  const Icon = iconFor(label);
+
+  // The description and any validation message ride along as the native
+  // tooltip; an extra block of text would break the single-row action bar.
+  const tooltip = [label, description, hasError ? errors : null]
+    .filter(Boolean)
+    .join(' — ');
 
   return (
-    <div
-      style={{
-        paddingTop: 0,
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        minHeight: isMobile ? '36px' : '40px',
-        gap: isMobile ? 6 : 8,
+    <button
+      id={`toggle-${path}`}
+      type="button"
+      aria-pressed={isChecked}
+      aria-label={label}
+      title={tooltip || undefined}
+      onClick={onToggle}
+      disabled={isDisabled}
+      // Blur after *pointer* interaction so the focus ring doesn't linger;
+      // keyboard focus stays visible.
+      onPointerUp={(e: React.PointerEvent<HTMLButtonElement>) => {
+        if (
+          e.pointerType === 'mouse' ||
+          e.pointerType === 'touch' ||
+          e.pointerType === 'pen'
+        ) {
+          e.currentTarget.blur();
+        }
       }}
+      className={`boolean-switch flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+        isChecked
+          ? 'border-primary/30 bg-primary/10 text-primary'
+          : 'border-transparent bg-transparent text-muted-foreground hover:bg-secondary'
+      } ${hasError ? 'border-destructive text-destructive' : ''} ${
+        isDisabled ? 'cursor-not-allowed opacity-60' : ''
+      }`}
     >
-      {/* Label (hidden on mobile; the button gets aria-label) */}
-      {label && !isMobile && (
-        <label
-          htmlFor={`toggle-${path}`}
-          style={{
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            color: hasError ? '#ef4444' : '#475569',
-            cursor: isDisabled ? 'not-allowed' : 'pointer',
-            userSelect: 'none',
-            marginBottom: 0,
-            lineHeight: '24px',
-          }}
-          onKeyDown={
-            !isDisabled
-              ? (e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onToggle();
-                  }
-                }
-              : undefined
-          }
-          tabIndex={isDisabled ? -1 : 0}
-        >
+      <Icon className="h-3.5 w-3.5 shrink-0" />
+      {label && (
+        // Desktop-first: the app and the package each ship a full Tailwind
+        // build, so a base `hidden` can out-order `sm:inline`. `max-sm:hidden`
+        // is the form that survives both cascades.
+        <span className="inline max-w-[9rem] truncate max-sm:hidden">
           {label}
-          {required && (
-            <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>
-          )}
-        </label>
+        </span>
       )}
-
-      {/* Toggle Switch */}
-      <button
-        id={`toggle-${path}`}
-        type="button"
-        role="switch"
-        aria-checked={isChecked}
-        aria-label={label}
-        onClick={onToggle}
-        disabled={isDisabled}
-        // Blur the element after *pointer* interactions so the ring doesn't linger.
-        onPointerUp={(e: React.PointerEvent<HTMLButtonElement>) => {
-          // Keep keyboard focus visible for accessibility; only blur on pointer
-          if (
-            e.pointerType === 'mouse' ||
-            e.pointerType === 'touch' ||
-            e.pointerType === 'pen'
-          ) {
-            (e.currentTarget as HTMLButtonElement).blur();
-          }
-        }}
-        className="boolean-switch focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        style={{
-          position: 'relative',
-          display: 'inline-flex',
-          alignItems: 'center',
-          width: dims.w,
-          height: dims.h,
-          padding: dims.pad,
-          borderRadius: isMobile ? '9999px' : '12px',
-          border: 'none',
-          cursor: isDisabled ? 'not-allowed' : 'pointer',
-          backgroundColor: isChecked ? 'hsl(var(--primary))' : '#e5e7eb',
-          transition: 'background-color 0.2s ease-in-out',
-          outline: 'none',
-          opacity: isDisabled ? 0.6 : 1,
-          alignSelf: 'center',
-          color: isMobile ? (isChecked ? '#ffffff' : '#374151') : undefined,
-          fontSize: isMobile ? '0.75rem' : undefined,
-          fontWeight: isMobile ? 600 : undefined,
-        }}
-      >
-        {/* Knob for desktop */}
-        {!isMobile && (
-          <span
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              left: isChecked ? '22px' : '2px',
-              top: '2px',
-              width: `${dims.knobSize}px`,
-              height: `${dims.knobSize}px`,
-              borderRadius: '50%',
-              backgroundColor: '#ffffff',
-              transition: 'left 0.2s ease-in-out',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            }}
-          />
-        )}
-        {/* Inline text for mobile (keeps compact width) */}
-        {isMobile && (
-          <span
-            style={{
-              padding: '0 2px',
-              lineHeight: 1,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {label}
-          </span>
-        )}
-      </button>
-
-      {/* Description and Errors */}
-      {description && (
-        <div
-          style={{
-            color: '#6b7280',
-            fontSize: '0.75rem',
-            marginTop: isMobile ? '2px' : '4px',
-          }}
-        >
-          {description}
-        </div>
-      )}
-
-      {hasError && (
-        <div
-          style={{
-            color: '#ef4444',
-            fontSize: '0.75rem',
-            marginTop: isMobile ? '2px' : '4px',
-          }}
-        >
-          {errors}
-        </div>
-      )}
-    </div>
+    </button>
   );
 };
 

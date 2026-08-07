@@ -8,7 +8,6 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
 import { ensureDraftThread, removeDraftThread } from '@/domains/threads';
 
-import { Button } from '@/shared/ui/mui-compat/button';
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 export default function NewThreadButton() {
@@ -48,13 +47,17 @@ export default function NewThreadButton() {
   };
 
   return (
-    <Button
+    // `chat-new-thread` carries the whole look (outlined, teal glyph, hover
+    // tint) from the theme layer, so this is a plain button rather than the
+    // filled `Button` primitive.
+    <button
+      type="button"
       onClick={handleNewThread}
-      className="w-full gap-2 text-xs h-9"
+      className="chat-new-thread disabled:cursor-not-allowed disabled:opacity-50"
       disabled={!workspaceId || isCreating}
     >
-      <Plus className="h-3.5 w-3.5" />
+      <Plus className="h-4 w-4" />
       New Thread
-    </Button>
+    </button>
   );
 }

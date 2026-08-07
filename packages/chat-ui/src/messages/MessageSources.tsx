@@ -1,4 +1,5 @@
 import {
+  ChevronDown,
   ChevronUp,
   Download,
   FileArchive,
@@ -251,30 +252,27 @@ export function ChatMessageSources({
   if (displaySources.length === 0) return null;
 
   return (
-    <div className="mt-4 rounded-lg border border-border bg-muted/30 overflow-hidden">
-      {/* Header bar */}
+    <div className="mt-3">
+      {/* Collapsed trigger is a pill, matching the design's "Sources (N)" chip */}
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-3 py-2 bg-muted/50 hover:bg-muted/70 transition-colors"
+        aria-expanded={isExpanded}
+        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium text-foreground">Sources</span>
-          <span className="flex items-center justify-center min-w-[16px] h-3.5 px-0.5 rounded-full bg-background text-[10px] font-medium text-foreground leading-none">
-            {displaySources.length}
-          </span>
-        </div>
-        <ChevronUp
+        <FileText className="h-3 w-3 shrink-0" />
+        Sources ({displaySources.length})
+        <ChevronDown
           className={cn(
-            'h-4 w-4 text-muted-foreground transition-transform',
-            !isExpanded && 'rotate-180'
+            'h-3 w-3 shrink-0 transition-transform',
+            isExpanded && 'rotate-180'
           )}
         />
       </button>
 
       {/* Compact pills, grouped by kind; each expands in place for detail */}
       {isExpanded && (
-        <div className="flex flex-col gap-2.5 p-2.5">
+        <div className="mt-2 flex flex-col gap-2.5 rounded-lg border border-border bg-muted/30 p-2.5">
           {urlSources.length > 0 && (
             <div>
               <SectionLabel>URLs</SectionLabel>
