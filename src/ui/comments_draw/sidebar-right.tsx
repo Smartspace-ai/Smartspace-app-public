@@ -13,7 +13,7 @@ import { fetchTaggableUsers } from '@/domains/workspaces';
 
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
 import { Sidebar, SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
-import { isDraftThreadId } from '@/shared/utils/threadId';
+import { useIsDraftThreadId } from '@/shared/utils/threadId';
 
 import type { MarkdownEditorHandle } from '@smartspace/chat-ui';
 import { MarkdownEditor, parseDateTime } from '@smartspace/chat-ui';
@@ -86,7 +86,10 @@ function CommentSkeleton({ mine }: { mine?: boolean }) {
 export function SidebarRight() {
   const { threadId, workspaceId } = useRouteIds();
   const currentUserId = useUserId();
-  const isDraft = isDraftThreadId(threadId);
+  // Reactive draft flag — a plain isDraftThreadId() read would never re-render
+  // when the thread list's effect unmarks the draft, leaving the comment box
+  // stuck disabled on a new thread.
+  const isDraft = useIsDraftThreadId(threadId);
   const {
     data: rawComments,
     isLoading,
