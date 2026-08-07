@@ -13,6 +13,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 
 import { getModelIcon, type Model, useModels } from '@/domains/models';
 
@@ -43,6 +44,7 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
@@ -108,9 +110,13 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      // The list is portaled to <body> (see below), so "inside" spans two
+      // subtrees: the trigger capsule and the floating menu.
       if (
         containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
+        !containerRef.current.contains(target) &&
+        !(menuRef.current && menuRef.current.contains(target))
       ) {
         close();
       }
@@ -118,11 +124,16 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close();
     };
+    // The floating menu is anchored to a rect read at render time; a resize
+    // invalidates it, so just dismiss rather than track.
+    const onResize = () => close();
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
+    window.addEventListener('resize', onResize);
     return () => {
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('resize', onResize);
     };
   }, [isOpen, close]);
 
@@ -147,6 +158,13 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
   const tooltip = [selectedName || label, description, hasError ? errors : null]
     .filter(Boolean)
     .join(' — ');
+
+  // Anchor for the floating menu, read per render while open. The trigger can't
+  // move without something re-rendering this component (open/close, typing in
+  // the filter, selecting), and a window resize dismisses the menu outright.
+  const anchorRect = isOpen
+    ? containerRef.current?.getBoundingClientRect()
+    : undefined;
 
   return (
     <div className="relative shrink-0" ref={containerRef}>
@@ -183,79 +201,96 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
         <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
       </button>
 
-      {isOpen && (
-        <div
-          role="listbox"
-          aria-label={label || 'Models'}
-          className="absolute bottom-full left-0 z-50 mb-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
-        >
-          <div className="border-b border-border p-2">
-            <input
-              ref={searchRef}
-              type="search"
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
-              placeholder="Search models…"
-              aria-label="Search models"
-              className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40"
-            />
-          </div>
+      {/* Portaled to <body> with fixed positioning: inside the composer the
+          menu sits under `.chat-composer`'s `overflow-hidden`, which clips a
+          list opening upward at the composer's rounded frame. Floating it
+          keeps the capsule in the action bar but lets the list stack cleanly
+          above the composer. */}
+      {isOpen &&
+        anchorRect &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="listbox"
+            aria-label={label || 'Models'}
+            className="fixed z-50 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
+            style={{
+              left: Math.max(
+                8,
+                Math.min(anchorRect.left, window.innerWidth - 288 - 8)
+              ),
+              bottom: window.innerHeight - anchorRect.top + 8,
+            }}
+          >
+            <div className="border-b border-border p-2">
+              <input
+                ref={searchRef}
+                type="search"
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+                placeholder="Search models…"
+                aria-label="Search models"
+                className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40"
+              />
+            </div>
 
-          <div className="max-h-72 overflow-y-auto">
-            {isLoading && listModels.length === 0 && (
-              <div className="flex items-center justify-center py-6">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              </div>
-            )}
+            <div className="max-h-72 overflow-y-auto">
+              {isLoading && listModels.length === 0 && (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                </div>
+              )}
 
-            {!isLoading && listModels.length === 0 && (
-              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                {searchValue ? 'No models found' : 'No models available'}
-              </p>
-            )}
+              {!isLoading && listModels.length === 0 && (
+                <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  {searchValue ? 'No models found' : 'No models available'}
+                </p>
+              )}
 
-            {listModels.map((model) => {
-              const active = model.id === selectedModel?.id;
-              const optionIcon = getModelIcon(model);
-              return (
-                <button
-                  key={model.id}
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  onClick={() => handleSelect(model)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-secondary/60"
-                >
-                  <Check
-                    className={`h-3.5 w-3.5 shrink-0 ${
-                      active ? 'text-primary' : 'opacity-0'
-                    }`}
-                  />
-                  {optionIcon ? (
-                    <img
-                      src={optionIcon}
-                      alt=""
-                      className="h-4 w-4 shrink-0 object-contain"
+              {listModels.map((model) => {
+                const active = model.id === selectedModel?.id;
+                const optionIcon = getModelIcon(model);
+                return (
+                  <button
+                    key={model.id}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => handleSelect(model)}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-secondary/60"
+                  >
+                    <Check
+                      className={`h-3.5 w-3.5 shrink-0 ${
+                        active ? 'text-primary' : 'opacity-0'
+                      }`}
                     />
-                  ) : (
-                    <Cpu className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm leading-none text-foreground">
-                      {model.displayName || model.name}
-                    </span>
-                    {model.displayName && model.name !== model.displayName && (
-                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                        {model.name}
-                      </span>
+                    {optionIcon ? (
+                      <img
+                        src={optionIcon}
+                        alt=""
+                        className="h-4 w-4 shrink-0 object-contain"
+                      />
+                    ) : (
+                      <Cpu className="h-4 w-4 shrink-0 text-muted-foreground" />
                     )}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm leading-none text-foreground">
+                        {model.displayName || model.name}
+                      </span>
+                      {model.displayName &&
+                        model.name !== model.displayName && (
+                          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                            {model.name}
+                          </span>
+                        )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
