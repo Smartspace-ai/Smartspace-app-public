@@ -15,14 +15,16 @@ const {
 } = ChatZod;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
-// Fetch threads for a given workspace
+// Fetch threads for a given workspace. `search` is matched server-side against
+// thread name (and id), and the response `total` reflects the filtered count.
 export async function fetchThreads(
   workspaceId: string,
-  { take, skip }: { take?: number; skip?: number } = {}
+  { take, skip, search }: { take?: number; skip?: number; search?: string } = {}
 ) {
   const response = await chatApi.workSpacesThread(workspaceId, {
     take,
     skip,
+    search,
   });
   const parsed = parseOrThrow(
     threadsListResponseSchema,

@@ -1,6 +1,6 @@
 // src/ui/threads/ThreadsList.tsx
 import { AlertTriangle, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
@@ -66,6 +66,15 @@ function ThreadsInlineErrorBanner() {
 export default function ThreadsList() {
   const { workspaceId } = useRouteIds();
   const [searchQuery, setSearchQuery] = useState('');
+  // Search runs server-side (the endpoint filters name/id and returns the
+  // filtered total), so results aren't limited to the pages already loaded.
+  // Debounced 300ms to avoid a request per keystroke, same as the model
+  // picker's search.
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
   const { data: activeWorkspace } = useWorkspace(workspaceId);
   const {
     threads,
@@ -76,36 +85,32 @@ export default function ThreadsList() {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useThreadsListVm({ workspaceId, pageSize: 30 });
+  } = useThreadsListVm({
+    workspaceId,
+    pageSize: 30,
+    search: debouncedQuery,
+  });
 
   const hasError = !!(isError || error);
 
-  // Filters the pages already in cache — deliberately client-side only, so no
-  // request behaviour changes. Matches the reference design's search.
-  const visibleThreads = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return threads;
-    return threads.filter((t) => (t.name || '').toLowerCase().includes(q));
-  }, [threads, searchQuery]);
-
   const isSearching = searchQuery.trim().length > 0;
-  const count = isSearching ? visibleThreads.length : total;
+  const count = total;
 
   const body = isInitialLoading ? (
     <ThreadsLoadingSkeleton />
   ) : hasError && !threads.length ? (
     <ThreadsErrorState />
-  ) : !visibleThreads.length ? (
+  ) : !threads.length ? (
     <ThreadsEmptyState
       message={isSearching ? 'No threads found' : 'No threads yet'}
     />
   ) : (
     <Virtuoso
-      data={visibleThreads}
+      data={threads}
       overscan={200}
       endReached={() => {
-        // Pagination only makes sense over the unfiltered list.
-        if (!isSearching && hasNextPage && !isFetchingNextPage) fetchNextPage();
+        // Search is server-side, so results paginate like the full list.
+        if (hasNextPage && !isFetchingNextPage) fetchNextPage();
       }}
       components={{
         Header: () => (hasError ? <ThreadsInlineErrorBanner /> : null),

@@ -2,6 +2,7 @@
 // queries (threadDetailOptions, useThread, useThreadIsRunning,
 // getThreadPlaceholderFromListCache) live in @smartspace/chat-ui.
 import {
+  keepPreviousData,
   queryOptions,
   useInfiniteQuery,
   useQuery,
@@ -31,18 +32,31 @@ export const useInfiniteThreads = (
   options?: {
     pageSize?: number;
     enabled?: boolean;
+    /** Server-side name/id filter; the response `total` reflects it. */
+    search?: string;
   }
 ) => {
   const { pageSize = 20, enabled = true } = options || {};
+  const search = options?.search?.trim() || undefined;
 
   return useInfiniteQuery({
-    queryKey: threadsKeys.list(workspaceId, { take: pageSize }),
+    // The unsearched key keeps its exact historical shape — cache writers
+    // (draft threads, rename/pin mutations, realtime merges) patch by the
+    // `lists()` prefix, and the placeholder lookup reads through it.
+    queryKey: threadsKeys.list(
+      workspaceId,
+      search ? { take: pageSize, search } : { take: pageSize }
+    ),
     queryFn: async ({ pageParam }: { pageParam: number }) => {
       return await fetchThreads(workspaceId, {
         take: pageSize,
         skip: pageParam * pageSize,
+        search,
       });
     },
+    // Keep the previous list rendered while a new search resolves, instead of
+    // flashing the skeleton on every keystroke's key change.
+    placeholderData: keepPreviousData,
     initialPageParam: 0,
     getNextPageParam: (
       lastPage: ThreadsResponse,

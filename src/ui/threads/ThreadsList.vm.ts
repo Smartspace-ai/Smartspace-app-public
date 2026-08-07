@@ -8,9 +8,15 @@ import { isDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
 type Options = {
   workspaceId: string;
   pageSize?: number;
+  /** Server-side thread search (name/id); pagination works within results. */
+  search?: string;
 };
 
-export function useThreadsListVm({ workspaceId, pageSize = 30 }: Options) {
+export function useThreadsListVm({
+  workspaceId,
+  pageSize = 30,
+  search,
+}: Options) {
   const {
     data,
     error,
@@ -21,7 +27,7 @@ export function useThreadsListVm({ workspaceId, pageSize = 30 }: Options) {
     hasNextPage,
     fetchNextPage,
     refetch,
-  } = useInfiniteThreads(workspaceId, { pageSize });
+  } = useInfiniteThreads(workspaceId, { pageSize, search });
   const threads = useMemo(
     () => data?.pages.flatMap((page) => page.data) ?? [],
     [data]
