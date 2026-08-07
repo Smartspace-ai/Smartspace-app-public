@@ -141,17 +141,22 @@ export const MessageItem: FC<MessageItemProps> = ({
     return Number.isFinite(t) ? t : 0;
   };
 
-  // Sort and collapse duplicate (name, type) entries, retaining the LAST
-  // occurrence of each. Streaming responses can produce one OUTPUT value
-  // per chunk under the same (name, type); without this, each chunk
-  // renders as its own bubble (cumulative-text ladder).
+  // Sort and collapse repeats of the SAME value, retaining the last
+  // occurrence. Streaming responses can produce one OUTPUT value per chunk;
+  // without this, each chunk renders as its own bubble (cumulative-text
+  // ladder). Keyed on `id`, which the server holds still across a streaming
+  // output's chunks — NOT on (name, type), which cannot tell those chunks
+  // apart from several blocks wired into one flow output (five render blocks
+  // feeding a single "Files" output, say) and dropped all but the last file.
   const sortedValues = (message.values ?? [])
     .slice()
     .sort((a, b) => safeTime(a.createdAt) - safeTime(b.createdAt));
   const slotByKey = new Map<string, number>();
   const values: typeof sortedValues = [];
   for (const v of sortedValues) {
-    const key = `${v.name}|${v.type}`;
+    // Fall back to (name, type) for values with no id, so a chunk stream from
+    // an older server still collapses rather than laddering.
+    const key = v.id ? `id|${v.id}` : `nametype|${v.name}|${v.type}`;
     const existing = slotByKey.get(key);
     if (existing !== undefined) {
       values[existing] = v;
