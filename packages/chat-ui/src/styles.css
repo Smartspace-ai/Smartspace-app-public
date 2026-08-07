@@ -27,11 +27,16 @@
 @tailwind utilities;
 
 /*
- * Keep these in sync with the host app's `src/_theme.scss` — a consumer that
- * imports this stylesheet gets these values, and whichever sheet lands last in
- * the cascade wins for the shared tokens.
+ * Default theme tokens, mirroring the host app's `src/_theme.scss`.
+ *
+ * They live in a *native* cascade layer so they are fallbacks by contract:
+ * layered declarations lose to unlayered ones regardless of stylesheet order,
+ * so a host that defines its own tokens (every white-label fork does) wins no
+ * matter where this file lands in its import graph. Consumers that define
+ * nothing still get a complete palette. Before this, whichever sheet loaded
+ * last won, and forks had to police import order to keep their brand.
  */
-@layer base {
+@layer chat-ui-defaults {
   :root {
     /* ---------- Warm paper light theme ---------- */
     --background: 30 25% 99%;
