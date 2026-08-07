@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react';
+
 /** Synthetic id for the "New Thread" row in the thread list; links to thread/new route. */
 export const NEW_THREAD_ID = '__new__';
 
@@ -17,6 +19,24 @@ const DRAFT_THREAD_STORAGE_KEY = 'ss:draftThreadIds';
 // Used so useThread/loaders skip fetch for drafts; route params + list cache hold the state.
 const draftThreadIds = new Set<string>();
 let hydratedFromStorage = false;
+
+// isDraftThreadId() is a plain Set lookup, not React state -- components that
+// read it directly can render a stale "still draft" result forever if nothing
+// else happens to re-render them after markDraftThreadId/unmarkDraftThreadId
+// runs elsewhere (e.g. from the thread list's own effect). useIsDraftThreadId
+// below subscribes to this so callers re-render exactly when it changes.
+const draftThreadIdsListeners = new Set<() => void>();
+
+function notifyDraftThreadIdsChanged() {
+  for (const listener of draftThreadIdsListeners) listener();
+}
+
+function subscribeDraftThreadIdsChanged(listener: () => void) {
+  draftThreadIdsListeners.add(listener);
+  return () => {
+    draftThreadIdsListeners.delete(listener);
+  };
+}
 
 function isBrowserStorageAvailable() {
   try {
@@ -61,6 +81,7 @@ export function markDraftThreadId(threadId: string) {
   hydrateFromStorageOnce();
   draftThreadIds.add(threadId);
   persistToStorage();
+  notifyDraftThreadIdsChanged();
 }
 
 export function unmarkDraftThreadId(threadId: string) {
@@ -68,6 +89,7 @@ export function unmarkDraftThreadId(threadId: string) {
   hydrateFromStorageOnce();
   draftThreadIds.delete(threadId);
   persistToStorage();
+  notifyDraftThreadIdsChanged();
 }
 
 export function isDraftThreadId(threadId?: string | null): boolean {
@@ -77,6 +99,20 @@ export function isDraftThreadId(threadId?: string | null): boolean {
 
   hydrateFromStorageOnce();
   return draftThreadIds.has(threadId);
+}
+
+/**
+ * Reactive equivalent of isDraftThreadId() -- re-renders the caller when
+ * markDraftThreadId/unmarkDraftThreadId changes this threadId's status, even
+ * if that happens from an unrelated component (e.g. the thread list noticing
+ * a draft is now server-backed). Use this in any component whose render
+ * output depends on draft status; the plain function is fine for one-off
+ * checks inside event handlers or non-React code.
+ */
+export function useIsDraftThreadId(threadId?: string | null): boolean {
+  return useSyncExternalStore(subscribeDraftThreadIdsChanged, () =>
+    isDraftThreadId(threadId)
+  );
 }
 
 export function createDraftThreadId(): string {

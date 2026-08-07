@@ -99,6 +99,7 @@ export {
   isDraftThreadId,
   markDraftThreadId,
   unmarkDraftThreadId,
+  useIsDraftThreadId,
 } from './shared/utils/threadId';
 
 // Safe crypto.randomUUID() wrapper with environment fallback.
