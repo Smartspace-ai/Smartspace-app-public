@@ -7,15 +7,21 @@
   <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <!-- Inter is the design's type face; preconnect so the boot splash and the
+       app render with it rather than swapping in late. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
   <!-- Boot splash: shows immediately (before React/MSAL/Teams init). -->
   <style>
     /* Keep this inline so it renders even before /src/styles.scss loads.
        Boot-splash accent color — update these RGB values when $primary-hex
-       in src/_theme.scss changes (current: #6443f4 → 100, 67, 244). */
+       in src/_theme.scss changes (current: #0882a8 → 8, 130, 168). */
     :root {
-      --ss-boot-r: 100;
-      --ss-boot-g: 67;
-      --ss-boot-b: 244;
+      --ss-boot-r: 8;
+      --ss-boot-g: 130;
+      --ss-boot-b: 168;
     }
     #ss-boot-splash {
       position: fixed;

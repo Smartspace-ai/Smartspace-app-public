@@ -5,8 +5,10 @@ export const threadsKeys = {
   all: ['threads'] as const,
 
   lists: () => [...threadsKeys.all, 'list'] as const,
-  list: (workspaceId: string, opts?: { take?: number; skip?: number }) =>
-    [...threadsKeys.lists(), { workspaceId, ...opts }] as const,
+  list: (
+    workspaceId: string,
+    opts?: { take?: number; skip?: number; search?: string }
+  ) => [...threadsKeys.lists(), { workspaceId, ...opts }] as const,
 
   details: () => [...threadsKeys.all, 'detail'] as const,
   detail: (workspaceId: string, threadId: string) =>

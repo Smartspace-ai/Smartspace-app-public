@@ -8,4 +8,5 @@ export {
   isDraftThreadId,
   markDraftThreadId,
   unmarkDraftThreadId,
+  useIsDraftThreadId,
 } from '@smartspace/chat-ui';

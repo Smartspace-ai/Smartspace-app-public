@@ -14,6 +14,29 @@ module.exports = {
       },
     },
     extend: {
+      // Tailwind's preflight emits `*, ::before, ::after { border: 0 solid <this> }`,
+      // and its stock value is a cool grey. Because the app and this package each
+      // ship a full Tailwind build, that universal rule loaded after the app's own
+      // `* { @apply border-border }` — same specificity, later wins — so every
+      // bare `border` / `border-b` utility in the app drew a light hairline that
+      // never followed the colour scheme. Pointing the default at the token makes
+      // the two builds agree.
+      borderColor: {
+        DEFAULT: 'hsl(var(--border))',
+      },
+      fontFamily: {
+        sans: [
+          'Inter',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica',
+          'Arial',
+          'sans-serif',
+        ],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -48,6 +71,22 @@ module.exports = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        brand: {
+          accent: 'hsl(var(--brand-accent))',
+        },
+        chat: {
+          area: 'hsl(var(--chat-area-bg))',
+        },
+        surface: {
+          raised: 'hsl(var(--surface-raised))',
+          hairline: 'hsl(var(--surface-hairline))',
+        },
+        bubble: {
+          user: 'hsl(var(--bubble-user-bg))',
+          'user-foreground': 'hsl(var(--bubble-user-fg))',
+        },
+        star: 'hsl(var(--star))',
+        notification: 'hsl(var(--notification))',
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',

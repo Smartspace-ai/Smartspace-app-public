@@ -11,6 +11,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -148,30 +149,39 @@ const SidebarProvider = forwardRef<
       }
     }, [isMobile, setRightOpen]);
 
-    // Handle window resize to update sidebar states
+    // React to *crossing* the mobile breakpoint, not to every resize event.
+    //
+    // This used to re-apply the defaults on each resize, which overwrote what
+    // the reader had chosen: a panel they had just closed sprang back open (or,
+    // with the default the other way round, one they had opened snapped shut) on
+    // any width change — including the one a phone fires when the keyboard
+    // appears. Remembering which side of the breakpoint we were on means the
+    // defaults are only restored on the way back from mobile.
+    const wasMobileRef = useRef<boolean | null>(null);
     useEffect(() => {
-      setTimeout(() => {
-        const handleResize = () => {
-          const width = window.innerWidth;
-          const isNowMobile = width < MOBILE_BREAKPOINT;
+      const handleResize = () => {
+        const isNowMobile = window.innerWidth < MOBILE_BREAKPOINT;
+        if (isNowMobile === wasMobileRef.current) return;
+        wasMobileRef.current = isNowMobile;
 
-          if (isNowMobile) {
-            // Collapse on mobile
-            _setLeftOpen(false);
-            _setRightOpen(false);
-          } else {
-            _setLeftOpen(defaultLeftOpen);
-            _setRightOpen(defaultRightOpen);
-            // setting this only if not mobile, otherwise resize on mobile happens when keyboard is opened
-            setOpenMobileLeft(false);
-            setOpenMobileRight(false);
-          }
-        };
+        if (isNowMobile) {
+          // Collapse on mobile
+          _setLeftOpen(false);
+          _setRightOpen(false);
+        } else {
+          _setLeftOpen(defaultLeftOpen);
+          _setRightOpen(defaultRightOpen);
+          // setting this only if not mobile, otherwise resize on mobile happens when keyboard is opened
+          setOpenMobileLeft(false);
+          setOpenMobileRight(false);
+        }
+      };
 
-        handleResize(); // Call on load
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-      }, 50);
+      handleResize(); // Call on load
+      window.addEventListener('resize', handleResize);
+      // The listener used to be registered inside a `setTimeout`, so this
+      // cleanup belonged to the timeout callback and never ran.
+      return () => window.removeEventListener('resize', handleResize);
     }, [defaultLeftOpen, defaultRightOpen]);
 
     // On mobile, adjust sheet height to the visible viewport to avoid pushing content
@@ -372,7 +382,13 @@ const Sidebar = forwardRef<
         data-variant={variant}
         data-side={side}
         data-sidebar="root"
-        className="block text-sidebar-foreground shrink-0 self-stretch overflow-hidden transition-[width] duration-300 ease-in-out"
+        // `relative` is load-bearing, not decoration. While collapsed this
+        // wrapper is 0px wide and relies on `overflow-hidden` to clip the
+        // fixed-width panel inside it — but on a statically positioned box that
+        // clip doesn't stop the panel counting towards the *document's*
+        // scrollable width, so closing the rail gave the page a 272px horizontal
+        // scrollbar. Positioning the wrapper makes the clip authoritative.
+        className="relative block shrink-0 self-stretch overflow-hidden text-sidebar-foreground transition-[width] duration-300 ease-in-out"
         style={{ width: desktopWidth }}
       >
         <div

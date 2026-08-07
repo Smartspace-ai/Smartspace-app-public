@@ -65,6 +65,11 @@ export function HtmlPreview({ source }: HtmlPreviewProps) {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
+    // Idempotent — the global listener has to exist before the document
+    // inside the iframe posts its first height, and that can happen as early
+    // as this effect's own tick.
+    ensureGlobalListener();
+
     const flushPendingHeight = () => {
       rafIdRef.current = null;
       const h = pendingHeightRef.current;
@@ -89,7 +94,7 @@ export function HtmlPreview({ source }: HtmlPreviewProps) {
       }
     };
 
-    const onLoad = () => {
+    const register = () => {
       if (!iframe.contentWindow) return;
       iframeHandlers.set(iframe.contentWindow, {
         onHeight: scheduleHeight,
@@ -103,10 +108,19 @@ export function HtmlPreview({ source }: HtmlPreviewProps) {
       });
     };
 
-    iframe.addEventListener('load', onLoad);
+    // Register up front rather than waiting for the iframe's `load` event.
+    // The injected reporter posts its first height as early as
+    // DOMContentLoaded, which can beat `load` on the element — that message
+    // then arrives with no handler in the map and is dropped. On a thread
+    // reload there is exactly one document and one shot at it, so losing that
+    // race left the preview stuck behind "Rendering preview…" forever. The
+    // `load` registration stays as a backstop for when the browsing context's
+    // window is replaced.
+    register();
+    iframe.addEventListener('load', register);
 
     return () => {
-      iframe.removeEventListener('load', onLoad);
+      iframe.removeEventListener('load', register);
       if (rafIdRef.current != null) {
         if (typeof cancelAnimationFrame === 'function') {
           cancelAnimationFrame(rafIdRef.current);

@@ -1,9 +1,11 @@
-/* Horizontal wrap layout for variables (no forced stretching) */
+/* Horizontal wrap layout for variables (no forced stretching).
+   The gap matches the reference composer's action bar, where the pills sit 4px
+   apart; the larger row gap only shows once they wrap onto a second line. */
 .jsonforms-compact .ss-jsonforms-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-start;
+  gap: 6px 4px;
+  align-items: center;
 }
 
 /* Each variable is its own flex item */

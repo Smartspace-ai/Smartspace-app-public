@@ -1,7 +1,6 @@
 import MuiButton from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import {
-  ArrowBigUp,
   Check,
   FileArchive,
   FileAudio,
@@ -10,9 +9,11 @@ import {
   FileSpreadsheet,
   FileText,
   FileVideo,
+  Mic,
   Minimize2,
   Paperclip,
   Presentation,
+  Send,
   X,
 } from 'lucide-react';
 import type * as React from 'react';
@@ -21,10 +22,10 @@ import { createPortal } from 'react-dom';
 
 import type { FileInfo } from '@/domains/files/model';
 import { useFileMutations } from '@/domains/files/mutations';
+import { useMessages } from '@/domains/messages';
 
 import type { MarkdownEditorHandle } from '@/shared/markdown/MarkdownEditor';
 import { MarkdownEditor } from '@/shared/markdown/MarkdownEditor';
-import { Button as UIButton } from '@/shared/mui-compat/button';
 
 import { ChatVariablesForm } from '@/chat-variables/VariablesForm';
 
@@ -91,13 +92,15 @@ function getFileIcon(fileName: string) {
 }
 
 export type MessageComposerProps = {
-  /** Mirrors `MessageList`'s `expandedLayout`. See its docs. */
+  /**
+   * @deprecated No-op. The composer sits in the same centred reading column as
+   * the messages (`.chat-column`) at every size. Still accepted so existing
+   * callers keep compiling.
+   */
   expandedLayout?: boolean;
 };
 
-export default function MessageComposer({
-  expandedLayout = false,
-}: MessageComposerProps = {}) {
+export default function MessageComposer(_props: MessageComposerProps = {}) {
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // Milkdown isn't fully controlled by `value`, so we force-remount the editor after sending to guarantee a visual clear.
@@ -155,6 +158,13 @@ export default function MessageComposer({
     isDraftThread,
     setVariables,
   } = vm;
+
+  // An untouched thread gets the design's opening layout: the greeting, this card
+  // and nothing else, as one narrower block centred in the canvas rather than a
+  // composer pinned to the bottom. `MessageList` already reads this query, so
+  // this is a cache hit, not a second request.
+  const { data: threadMessages } = useMessages(threadId);
+  const isEmptyThread = (threadMessages ?? []).length === 0;
 
   // Draft threads use a placeholder thread id; omit it for uploads so files still work in draft mode.
   const { uploadFilesMutation, getFileBlobUrl } = useFileMutations({
@@ -320,7 +330,15 @@ export default function MessageComposer({
   };
 
   return (
-    <div className="ss-chat__composer max-h-[60%] flex-shrink-0 w-full mt-auto bg-sidebar border-t px-4 py-4">
+    <div
+      className={`ss-chat__composer max-h-[60%] w-full shrink-0 px-4 pt-2 ${
+        isEmptyThread
+          ? // Opening layout: narrower than a conversation and floated up with
+            // the greeting, which carries the matching `mt-auto`.
+            'mx-auto mb-auto max-w-2xl'
+          : 'chat-column mt-auto pb-4'
+      }`}
+    >
       {/* Hidden file input shared by all upload buttons */}
       {supportsFiles && (
         <input
@@ -331,37 +349,8 @@ export default function MessageComposer({
           onChange={handleFileSelected}
         />
       )}
-      {workspace && threadId && (
-        <div
-          className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
-            !isMobile
-              ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
-              : ''
-          } transition-[max-width] duration-300 ease-in-out`}
-        >
-          <ChatVariablesForm
-            key={`${workspaceId}-${threadId}`}
-            workspace={workspace}
-            threadId={threadId}
-            setVariables={setVariables}
-          />
-        </div>
-      )}
-      {Object.keys(workspace?.variables ?? {}).length > 0 && (
-        <hr className="my-2" />
-      )}
 
-      <div
-        className={`${isMobile ? 'w-full max-w-full' : 'w-full'} ${
-          !isMobile
-            ? `${expandedLayout ? 'max-w-[90%]' : 'max-w-[70%]'} mx-auto`
-            : ''
-        } bg-background ${
-          isMobile
-            ? ''
-            : 'rounded-md border shadow-sm overflow-hidden focus-within:ring-1 focus-within:ring-ring/50 focus-within:ring-offset-0'
-        } transition-[max-width] duration-300 ease-in-out`}
-      >
+      <div className="chat-composer w-full overflow-hidden">
         {attachments.length > 0 && (
           <div className="border-b bg-muted/5 px-3 py-2">
             <div className="flex items-center justify-between gap-2">
@@ -457,76 +446,89 @@ export default function MessageComposer({
           </div>
         )}
 
-        <div className="w-full max-h-[400px] overflow-y-auto">
-          <div>
-            {isMobile ? (
-              <div className="flex items-center gap-2 px-3 py-2">
-                <div className="relative flex-1 px-2 py-2">
-                  <MarkdownEditor
-                    key={`composer-md-${editorKey}`}
-                    ref={editorRef}
-                    value={newMessage}
-                    onChange={(md) => setNewMessage(md)}
-                    onKeyDown={handleComposerKeyDown}
-                    onFilesAdded={(files) => {
-                      void addAttachments(files);
-                    }}
-                    onUploadFiles={onUploadFiles}
-                    fileHandlingMode="attachments"
-                    workspaceId={workspaceId}
-                    disabled={disabled}
-                    placeholder="Type a message..."
-                    className="md-editor--bare text-sm"
-                  />
-                </div>
+        {/* Prompt field */}
+        <div className="max-h-[400px] w-full overflow-y-auto">
+          <MarkdownEditor
+            key={`composer-md-${editorKey}`}
+            ref={editorRef}
+            value={newMessage}
+            onChange={(md) => setNewMessage(md)}
+            onKeyDown={handleComposerKeyDown}
+            onFilesAdded={(files) => {
+              void addAttachments(files);
+            }}
+            onUploadFiles={onUploadFiles}
+            fileHandlingMode="attachments"
+            workspaceId={workspaceId}
+            disabled={disabled}
+            placeholder="What would you like to do?"
+            className="md-editor--bare px-5 pb-3 pt-4 text-sm"
+            /* The reference's textarea is a 76px border-box — its 16/12 padding
+               counts towards that. Ours pads a wrapper around the editor, so the
+               editor itself gets the remainder to land on the same 76px block. */
+            minHeight={48}
+          />
+        </div>
 
-                {supportsFiles && (
-                  <IconButton
-                    type="button"
-                    size="small"
-                    className="h-10 w-10 rounded-full self-end"
-                    onClick={handlePickFilesClick}
-                    disabled={disabled}
-                    aria-label="Upload files"
-                  >
-                    <Paperclip
-                      className="h-5 w-5 text-muted-foreground/70"
-                      strokeWidth={2}
-                    />
-                  </IconButton>
-                )}
-
-                <IconButton
-                  onClick={handleSendMessageAndClear}
-                  className={`h-10 w-10 rounded-full self-end ${
-                    sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  disabled={sendDisabled}
-                  aria-label="Send"
-                >
-                  <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
-                </IconButton>
-              </div>
-            ) : (
-              <div className="relative px-5 py-2">
-                <MarkdownEditor
-                  key={`composer-md-${editorKey}`}
-                  ref={editorRef}
-                  value={newMessage}
-                  onChange={(md) => setNewMessage(md)}
-                  onKeyDown={handleComposerKeyDown}
-                  onFilesAdded={(files) => {
-                    void addAttachments(files);
-                  }}
-                  onUploadFiles={onUploadFiles}
-                  fileHandlingMode="attachments"
-                  workspaceId={workspaceId}
-                  disabled={disabled}
-                  placeholder="Type a message..."
-                  className="md-editor--bare text-sm"
-                />
-              </div>
+        {/* Action bar */}
+        <div className="flex items-center justify-between gap-2 px-3 pb-3">
+          <div className="ss-composer__actions flex min-w-0 flex-1 items-center gap-1">
+            {supportsFiles && (
+              <IconButton
+                type="button"
+                onClick={handlePickFilesClick}
+                disabled={disabled}
+                aria-label="Upload files"
+                className="h-8 w-8 rounded-full text-muted-foreground hover:bg-secondary"
+              >
+                <Paperclip className="h-4 w-4" strokeWidth={2} />
+              </IconButton>
             )}
+
+            {/* Workspace variables (model, web search, streaming, …) sit in the
+                action bar rather than above the card, as in the design. */}
+            {workspace && threadId && (
+              <ChatVariablesForm
+                key={`${workspaceId}-${threadId}`}
+                workspace={workspace}
+                threadId={threadId}
+                setVariables={setVariables}
+              />
+            )}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1.5">
+            {/* The design pairs a dictation button with Send. There is no
+                speech-to-text in the app yet, so this carries the shape only and
+                says as much rather than looking live and doing nothing. */}
+            <IconButton
+              type="button"
+              disabled
+              aria-label="Dictate a message"
+              title="Dictation is not available yet"
+              className="h-8 w-8 cursor-not-allowed rounded-full text-muted-foreground"
+            >
+              <Mic className="h-4 w-4" />
+            </IconButton>
+
+            <IconButton
+              onClick={handleSendMessageAndClear}
+              className={`chat-send h-8 w-8 rounded-full ${
+                sendDisabled ? 'cursor-not-allowed' : ''
+              }`}
+              disabled={sendDisabled}
+              aria-label="Send"
+            >
+              {isSending ? (
+                <span className="chat-thinking-dots">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </IconButton>
           </div>
         </div>
 
@@ -594,13 +596,13 @@ export default function MessageComposer({
                     )}
                     <IconButton
                       onClick={handleSendMessageAndClear}
-                      className={`h-10 w-10 rounded-full ${
-                        sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                      className={`chat-send h-9 w-9 rounded-full ${
+                        sendDisabled ? 'cursor-not-allowed' : ''
                       }`}
                       disabled={sendDisabled}
                       aria-label="Send"
                     >
-                      <ArrowBigUp className="h-5 w-5" strokeWidth={2.5} />
+                      <Send className="h-4 w-4" />
                     </IconButton>
                   </div>
                 </div>
@@ -608,43 +610,18 @@ export default function MessageComposer({
             </div>,
             document.body
           )}
+      </div>
 
-        {/* Desktop footer actions */}
-        {!isMobile && (
-          <div className="flex items-center justify-between px-4 py-2 bg-background">
-            <div className="flex items-center gap-3">
-              {supportsFiles && (
-                <IconButton
-                  type="button"
-                  onClick={handlePickFilesClick}
-                  disabled={disabled}
-                  aria-label="Upload files"
-                  className="text-muted-foreground/70 hover:text-muted-foreground"
-                >
-                  <Paperclip className="h-5 w-5" strokeWidth={2} />
-                </IconButton>
-              )}
-            </div>
-
-            <UIButton
-              onClick={handleSendMessageAndClear}
-              className={`text-xs h-7 px-4 py-1 ${
-                sendDisabled ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              disabled={sendDisabled}
-            >
-              {isSending ? (
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-background animate-bounce" />
-                </span>
-              ) : (
-                'Send'
-              )}
-            </UIButton>
-          </div>
-        )}
+      {/* Context strip — below the card rather than inside it, as in the
+        reference. Keyboard hints only; the design also shows a token budget
+        there, but the app has no token accounting to report. */}
+      <div className="flex items-center justify-end px-2 pt-2 text-[10px] font-medium tracking-wide text-muted-foreground max-sm:hidden">
+        <span className="flex items-center gap-1.5">
+          <kbd className="font-sans">⏎</kbd> to send
+          <span className="opacity-40">·</span>
+          <kbd className="font-sans">Shift</kbd>+
+          <kbd className="font-sans">⏎</kbd> for newline
+        </span>
       </div>
     </div>
   );

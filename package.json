@@ -16,6 +16,7 @@
     "lint:all": "nx lint smartspace",
     "lint:fix": "nx lint smartspace --fix",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "check:theme": "node scripts/check-theme-drift.mjs",
     "prepare": "husky",
     "start:dev": "env-cmd -f .env.dev pnpm run serve",
     "start:local": "env-cmd -f .env.local pnpm run serve",

@@ -1,101 +1,30 @@
 // src/ui/layout/SidebarUserHeader.tsx
-import { useMsal } from '@azure/msal-react';
-import { LogOut } from 'lucide-react';
-
-import { handleTrailingSlash } from '@/platform/auth/msalConfig';
-
 import { useTeams } from '@/app/providers';
 
-import { useActiveUser } from '@/domains/users';
-
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/shared/ui/mui-compat/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/ui/mui-compat/dropdown-menu';
-import { SidebarHeader } from '@/shared/ui/mui-compat/sidebar';
-import { getInitials } from '@/shared/utils/initials';
-
 import { Logo } from '@/assets/logo';
-import { getUserPhotoUrl } from '@smartspace/chat-ui';
 
+/**
+ * Brand row at the top of the left rail.
+ *
+ * The account menu used to live here beside the logo; the design moves it into
+ * the chat header (see `ui/header/chat-header.tsx`) and gives the wordmark the
+ * rail's full width.
+ */
 export default function SidebarUserHeader() {
   const { isInTeams } = useTeams();
-  const activeUser = useActiveUser();
-  const { instance } = useMsal();
-
-  const handleLogout = () => {
-    const account = instance.getActiveAccount();
-    if (!account) return;
-    instance.logoutRedirect({
-      account,
-      postLogoutRedirectUri: handleTrailingSlash(window.location.origin),
-    });
-  };
 
   if (isInTeams) return null;
 
   return (
-    <SidebarHeader className="h-[54px] flex items-center px-4 border-b bg-background">
-      <div className="flex items-center justify-between w-full gap-8">
-        <Logo className="h-[40px]" />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="cursor-pointer">
-              <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={getUserPhotoUrl(activeUser.id)}
-                  alt={activeUser.name}
-                >
-                  <AvatarFallback className="text-xs">
-                    {getInitials(activeUser.name)}
-                  </AvatarFallback>
-                </AvatarImage>
-              </Avatar>
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage
-                    src={getUserPhotoUrl(activeUser.id)}
-                    alt={activeUser.name}
-                  >
-                    <AvatarFallback className="text-xs">
-                      {getInitials(activeUser.name)}
-                    </AvatarFallback>
-                  </AvatarImage>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium leading-none mb-1">
-                    {activeUser.name}
-                  </p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {activeUser.email}
-                  </p>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="text-xs cursor-pointer"
-            >
-              <LogOut className="mr-2 h-3.5 w-3.5" />
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </SidebarHeader>
+    // Plain div rather than `SidebarHeader`: its default `p-2` is emitted by
+    // both stylesheets in play and beats the padding passed here.
+    <div className="px-5 pt-5 pb-4">
+      {/* Scale by width, not height — the wordmark is wider than the 300px rail
+          at its natural size, and an over-constrained <svg> crops rather than
+          shrinks. `ss-logo` lets the rail's stylesheet knock it back to white.
+          `max-w` pins it so it can't balloon inside the wider overlay rail on
+          mobile. */}
+      <Logo className="ss-logo h-auto max-h-7 w-full max-w-[180px]" />
+    </div>
   );
 }

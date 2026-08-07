@@ -5,14 +5,18 @@ import { useInfiniteThreads } from '@/domains/threads';
 
 import { isDraftThreadId, unmarkDraftThreadId } from '@/shared/utils/threadId';
 
-
 type Options = {
   workspaceId: string;
   pageSize?: number;
+  /** Server-side thread search (name/id); pagination works within results. */
+  search?: string;
 };
 
-export function useThreadsListVm({workspaceId,  pageSize = 30 }: Options) {
-
+export function useThreadsListVm({
+  workspaceId,
+  pageSize = 30,
+  search,
+}: Options) {
   const {
     data,
     error,
@@ -23,8 +27,11 @@ export function useThreadsListVm({workspaceId,  pageSize = 30 }: Options) {
     hasNextPage,
     fetchNextPage,
     refetch,
-  } = useInfiniteThreads(workspaceId, { pageSize });
-  const threads = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
+  } = useInfiniteThreads(workspaceId, { pageSize, search });
+  const threads = useMemo(
+    () => data?.pages.flatMap((page) => page.data) ?? [],
+    [data]
+  );
   const isInitialLoading = !workspaceId || isPending || (isFetching && !data);
   const firstThread = threads[0] ?? null;
 
@@ -49,6 +56,8 @@ export function useThreadsListVm({workspaceId,  pageSize = 30 }: Options) {
     // data
     threads,
     firstThread,
+    /** Server-reported thread count (falls back to what's loaded so far). */
+    total: data?.pages?.[0]?.total ?? threads.length,
 
     // state
     error,
