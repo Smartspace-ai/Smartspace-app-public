@@ -156,7 +156,11 @@ export function SidebarRight() {
       side="right"
       className="ss-sidebar__right border-l border-border bg-background"
     >
-      <div className="flex h-full min-h-0 flex-col bg-background">
+      {/* `text-foreground`: the Sidebar primitive stamps `text-sidebar-foreground`
+          (the always-dark rail's near-white) on both rails; this panel repaints
+          itself `bg-background`, so it must reclaim the matching text colour or
+          light mode renders white-on-white (the comment box inherits it). */}
+      <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
         <div className="flex shrink-0 items-center justify-between gap-2 px-5 pt-5 pb-4">
           <h2 className="truncate text-xl font-bold text-primary">Comments</h2>
           <SidebarTrigger
