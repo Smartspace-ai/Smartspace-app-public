@@ -1054,7 +1054,8 @@ function EditorInner({
       const view = viewRef.current;
       if (!view) return;
       const to = view.state.selection.from;
-      const start = mentionFromPos != null ? mentionFromPos : to - 1;
+      if (mentionFromPos == null) return; // no active mention session to replace
+      const start = mentionFromPos;
       const type = view.state.schema.nodes['mention'];
       if (!type) return;
       const node = type.create({ id: user.id, label: user.displayName });
