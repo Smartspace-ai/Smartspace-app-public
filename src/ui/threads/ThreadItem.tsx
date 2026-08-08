@@ -59,6 +59,12 @@ export default function ThreadItem({ thread }: Props) {
       className="chat-thread-item group mb-0.5"
       onPointerDown={onPointerDown}
       onKeyDown={(e) => {
+        // Only the row itself opens the thread. The rename dialog is a child of
+        // this element in the React tree, and React routes portalled events to
+        // the React parent rather than the DOM one — so without this guard every
+        // keystroke in the dialog arrives here, Space gets preventDefault'd out
+        // of the name field and Enter navigates away mid-rename.
+        if (e.target !== e.currentTarget) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           goToThread();
