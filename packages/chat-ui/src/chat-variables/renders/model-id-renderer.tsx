@@ -19,6 +19,18 @@ import { getModelIcon, type Model, useModels } from '@/domains/models';
 
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
+/** Gap between the trigger capsule and the floating menu. */
+const MENU_GAP = 8;
+/** Breathing room kept between the menu and the edge of the viewport. */
+const VIEWPORT_MARGIN = 8;
+/** Search field + a comfortable run of options; the menu never exceeds this. */
+const MAX_MENU_HEIGHT = 336;
+/**
+ * Below this there isn't room for the filter and a usable number of options, so
+ * the menu flips to whichever side has more space rather than opening above.
+ */
+const MIN_MENU_HEIGHT = 180;
+
 /**
  * The model selector, shaped as the reference design's composer pill: a
  * bordered capsule showing the provider glyph and the model name, which opens a
@@ -166,6 +178,24 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
     ? containerRef.current?.getBoundingClientRect()
     : undefined;
 
+  // The menu opens upward by design, but its height was fixed while the space
+  // above the trigger is not: on a new thread the composer sits centred in the
+  // canvas rather than at the foot of it, leaving too little room, and the top
+  // of the list ran off the screen — unreachable, since the clipped part is
+  // outside the scroll container. Measure the space instead, cap the menu to it,
+  // and flip below when above is too cramped to be useful.
+  const spaceAbove = anchorRect
+    ? anchorRect.top - MENU_GAP - VIEWPORT_MARGIN
+    : 0;
+  const spaceBelow = anchorRect
+    ? window.innerHeight - anchorRect.bottom - MENU_GAP - VIEWPORT_MARGIN
+    : 0;
+  const openAbove = spaceAbove >= MIN_MENU_HEIGHT || spaceAbove >= spaceBelow;
+  const menuMaxHeight = Math.max(
+    0,
+    Math.min(MAX_MENU_HEIGHT, openAbove ? spaceAbove : spaceBelow)
+  );
+
   return (
     <div className="relative shrink-0" ref={containerRef}>
       <button
@@ -213,16 +243,22 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
             ref={menuRef}
             role="listbox"
             aria-label={label || 'Models'}
-            className="fixed z-50 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
+            className="fixed z-50 flex w-72 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
             style={{
               left: Math.max(
-                8,
-                Math.min(anchorRect.left, window.innerWidth - 288 - 8)
+                VIEWPORT_MARGIN,
+                Math.min(
+                  anchorRect.left,
+                  window.innerWidth - 288 - VIEWPORT_MARGIN
+                )
               ),
-              bottom: window.innerHeight - anchorRect.top + 8,
+              ...(openAbove
+                ? { bottom: window.innerHeight - anchorRect.top + MENU_GAP }
+                : { top: anchorRect.bottom + MENU_GAP }),
+              maxHeight: menuMaxHeight,
             }}
           >
-            <div className="border-b border-border p-2">
+            <div className="shrink-0 border-b border-border p-2">
               <input
                 ref={searchRef}
                 type="search"
@@ -234,7 +270,7 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
               />
             </div>
 
-            <div className="max-h-72 overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               {isLoading && listModels.length === 0 && (
                 <div className="flex items-center justify-center py-6">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
