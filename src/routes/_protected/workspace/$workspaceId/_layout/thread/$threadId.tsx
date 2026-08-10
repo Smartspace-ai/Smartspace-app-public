@@ -11,6 +11,7 @@ import { ThreadRenameModal } from '@/ui/threads/ThreadRenameModal';
 
 import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { threadDetailOptions, useThread } from '@smartspace/chat-ui';
 
 const threadRouteSearchSchema = z.object({
@@ -74,6 +75,8 @@ function ThreadRouteComponent() {
   const { setRightOpen, rightOpen } = useSidebar();
   const prevRightOpenRef = useRef(rightOpen);
   const { data: thread } = useThread({ workspaceId, threadId });
+
+  useDocumentTitle(thread?.name);
 
   const isRenameOpen =
     search.modal === 'rename' && search.targetId === threadId && !!thread;
