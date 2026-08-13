@@ -8,6 +8,10 @@ import { FileInfo } from '@/domains/files';
 import { Message, MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 import { getMessageErrorText } from '@/domains/messages/errors';
+import {
+  getRetryStatusText,
+  parseRetryStatus,
+} from '@/domains/messages/statuses';
 import { useAddInputToMessage } from '@/domains/messages/mutations';
 import { useWorkspace } from '@/domains/workspaces';
 
@@ -240,7 +244,12 @@ export const MessageItem: FC<MessageItemProps> = ({
       }
       case 'status': {
         if (groupOpen) flush(v.type);
-        lastStatusText = String(v.value ?? '');
+        // Structured statuses (e.g. the LLM retry loop's backoff notice)
+        // render a human sentence; plain strings render verbatim as before.
+        const retryStatus = parseRetryStatus(v.value);
+        lastStatusText = retryStatus
+          ? getRetryStatusText(retryStatus)
+          : String(v.value ?? '');
         continue;
       }
       case 'prompt':
@@ -417,11 +426,13 @@ export const MessageItem: FC<MessageItemProps> = ({
   (message.errors ?? []).forEach((error, errorIndex) => {
     bubbles.push(
       <MessageBubble
-        key={`error-${message.id ?? 'msg'}-${errorIndex}-${error.code}`}
+        key={`error-${message.id ?? 'msg'}-${errorIndex}-${
+          error.errorCode ?? error.code
+        }`}
         createdBy={chatbotName}
         createdAt={message.createdAt}
         type={MessageValueType.OUTPUT}
-        content={[{ text: getMessageErrorText(error.code) }]}
+        content={[{ text: getMessageErrorText(error) }]}
         files={[]}
         sources={[]}
         chatbotName={chatbotName}
