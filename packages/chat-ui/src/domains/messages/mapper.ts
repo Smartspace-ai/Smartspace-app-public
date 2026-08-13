@@ -80,10 +80,13 @@ export function mapMessagesDtoToModels(dto: MessageDto[]): Message[] {
 
 /**
  * Merge a streaming delta into a message. `outputs` is a cumulative snapshot
- * keyed by `(name, type)` per the SSE protocol — when an output streams from
- * "He" → "Hel" → "Hello" we receive three deltas each carrying the full
- * text-so-far, so we replace by key rather than appending. Errors aren't
- * documented as cumulative, so we append them.
+ * keyed by value `id` — when an output streams from "He" → "Hel" → "Hello" we
+ * receive three deltas each carrying the full text-so-far under one id, so we
+ * replace by id rather than appending. Several blocks can be wired into a
+ * single flow output (five render blocks feeding one "Files" output, say);
+ * those arrive under the same NAME but different ids and must all survive,
+ * which is why the key is not `(name, type)`. Errors aren't documented as
+ * cumulative, so we append them.
  */
 export function applyDeltaToMessage(
   target: Message,
@@ -92,8 +95,12 @@ export function applyDeltaToMessage(
   if (!delta.outputs.length && !delta.errors.length) return target;
   const nextValues = (target.values ?? []).slice();
   for (const incoming of delta.outputs) {
-    const idx = nextValues.findIndex(
-      (v) => v.name === incoming.name && v.type === incoming.type
+    const idx = nextValues.findIndex((v) =>
+      // Values with no id come from a server that predates per-output ids;
+      // fall back to the old key so their chunks still replace in place.
+      incoming.id
+        ? v.id === incoming.id
+        : v.name === incoming.name && v.type === incoming.type
     );
     if (idx === -1) nextValues.push(incoming);
     else nextValues[idx] = incoming;

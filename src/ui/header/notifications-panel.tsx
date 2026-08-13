@@ -121,7 +121,7 @@ export function NotificationPanel() {
         id="notification-trigger"
         variant="ghost"
         size="icon"
-        className="group relative h-8 w-8 rounded-lg :shadow-md transition-colors"
+        className="group relative h-8 w-8 rounded-full p-0 transition-colors hover:bg-secondary"
         ref={buttonRef}
         onClick={() => setIsOpen((prev) => !prev)}
       >
@@ -139,7 +139,7 @@ export function NotificationPanel() {
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }}
-              className="absolute top-0.5 right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-medium text-primary-foreground shadow-sm"
+              className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-notification text-[9px] font-bold text-primary-foreground"
             >
               {totalUnread > 9 ? '9+' : totalUnread}
             </motion.span>

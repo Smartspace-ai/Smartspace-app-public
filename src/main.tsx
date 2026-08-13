@@ -22,6 +22,8 @@ import { queryClient } from '@/platform/reactQueryClient';
 
 import AppProviders from '@/app/AppProviders';
 
+import { initColorScheme } from '@/theme/colorScheme';
+
 import { NotFoundPage } from '@/routes/__root.notFound';
 import { routeTree } from '@/routeTree.gen';
 
@@ -60,6 +62,10 @@ function fallbackRender({ error }: { error: unknown }) {
 
 // Must run before any ChatApi / AXIOS_INSTANCE usage (e.g. router context below).
 configureApiClient();
+
+// Paint the stored/system colour scheme before the first render so the app
+// never flashes the wrong theme.
+initColorScheme();
 
 const router = createRouter({
   routeTree,

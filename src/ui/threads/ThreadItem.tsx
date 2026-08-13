@@ -1,11 +1,9 @@
 // src/ui/threads/ThreadItem.tsx
-import { Edit, Loader2, MoreHorizontal, Pin, Trash2 } from 'lucide-react';
+import { Bookmark, Edit, Loader2, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 
-import { CircleInitials } from '@/shared/components/circle-initials';
-import { Button } from '@/shared/ui/mui-compat/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/mui-compat/dropdown-menu';
+import { getAvatarColour } from '@/shared/utils/avatarColour';
+import { getInitials } from '@/shared/utils/initials';
 import { isDraftThreadId } from '@/shared/utils/threadId';
 
 import { parseDateTimeHuman, type MessageThread } from '@smartspace/chat-ui';
@@ -24,6 +24,10 @@ type Props = {
   thread: MessageThread;
 };
 
+/** Shown on hover for pointer devices, always shown on touch. */
+const revealOnHover =
+  'opacity-100 focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100';
+
 export default function ThreadItem({ thread }: Props) {
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
@@ -33,6 +37,7 @@ export default function ThreadItem({ thread }: Props) {
     useThreadItemVm({ thread });
   const { threadId } = useRouteIds();
   const isActive = thread.id === threadId;
+  const avatar = getAvatarColour(thread.name);
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (
@@ -46,98 +51,114 @@ export default function ThreadItem({ thread }: Props) {
   return (
     <div
       id={`thread-${thread.id}`}
-      className={`group relative flex items-start gap-2.5 p-2.5 hover:bg-accent cursor-pointer transition-all rounded-lg ${
-        isActive ? 'bg-accent' : ''
-      }`}
+      role="option"
+      aria-selected={isActive}
+      tabIndex={0}
+      // `chat-thread-item` carries the row's layout, radius, hover and the
+      // active teal edge marker from the theme layer.
+      className="chat-thread-item group mb-0.5"
       onPointerDown={onPointerDown}
-    >
-      <CircleInitials
-        className={
-          isActive
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-gray-300 text-gray-700'
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          goToThread();
         }
-        text={thread.name}
-        colored={false}
-      />
+      }}
+    >
+      <span
+        className="chat-thread-avatar"
+        style={{ backgroundColor: avatar.backgroundColor }}
+      >
+        {getInitials(thread.name)}
+      </span>
 
-      <div className="flex-1 min-w-0">
-        <h3 className="text-xs font-medium truncate">{thread.name}</h3>
-        <div className="text-[11px] gap-x-2 mt-0.5 flex flex-row items-center">
-          <div>
-            {thread.totalMessages}{' '}
-            {thread.totalMessages === 1 ? 'message' : 'messages'}
-          </div>
+      <span className="block min-w-0 flex-1">
+        <span className="chat-thread-title block truncate">{thread.name}</span>
+        <span className="chat-thread-meta mt-0.5 block truncate">
           {isRunning ? (
-            <div className="text-amber-500 font-medium flex items-center gap-1">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <p className="text-xs">Running…</p>
-            </div>
+            <span className="inline-flex items-center gap-1 text-star">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Running…
+            </span>
           ) : (
-            <div>{parseDateTimeHuman(thread.lastUpdatedAt)}</div>
+            <>
+              {thread.totalMessages}{' '}
+              {thread.totalMessages === 1 ? 'message' : 'messages'} ·{' '}
+              {parseDateTimeHuman(thread.lastUpdatedAt)}
+            </>
           )}
-          <div className="flex-grow" />
-          {isSetPinPending && !isRunning ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : thread.pinned ? (
-            <Pin className="h-4 w-4 text-amber-500" />
-          ) : null}
-        </div>
-      </div>
+        </span>
+      </span>
 
-      {!isDraft && (
-        <DropdownMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 absolute right-1.5 top-1.5 p-0 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">More options</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-48 rounded-lg p-1 shadow-lg border-gray-100"
-          >
-            <DropdownMenuItem
-              className="text-xs py-1.5 px-2 rounded-md"
-              onClick={(e) => {
-                e.preventDefault();
-                togglePin();
-                setMenuOpen(false);
-              }}
-            >
-              <Pin className="mr-2 h-3.5 w-3.5 text-amber-400" />
-              <span>{thread.pinned ? 'Unpin thread' : 'Pin thread'}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-xs py-1.5 px-2 rounded-md"
-              onClick={(e) => {
-                e.preventDefault();
-                setMenuOpen(false);
-                setIsRenameOpen(true);
-              }}
-            >
-              <Edit className="mr-2 h-3.5 w-3.5 text-gray-500" />
-              <span>Rename</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="my-1 bg-gray-100" />
-            <DropdownMenuItem
-              className="text-xs py-1.5 px-2 rounded-md text-red-500"
-              onClick={(e) => {
-                e.preventDefault();
-                setMenuOpen(false);
-                remove();
-              }}
-            >
-              <Trash2 className="mr-2 h-3.5 w-3.5" />
-              <span>Delete</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      <span className="flex shrink-0 items-center gap-0.5">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            togglePin();
+          }}
+          aria-label={thread.pinned ? 'Remove bookmark' : 'Bookmark thread'}
+          aria-pressed={thread.pinned}
+          disabled={isSetPinPending}
+          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded transition-all duration-150 ${
+            thread.pinned
+              ? 'text-primary opacity-100'
+              : `text-muted-foreground hover:text-foreground ${revealOnHover}`
+          }`}
+        >
+          {isSetPinPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Bookmark
+              className={`h-4 w-4 transition-all ${
+                thread.pinned ? 'fill-primary' : 'fill-none'
+              }`}
+              strokeWidth={thread.pinned ? 0 : 1.75}
+            />
+          )}
+        </button>
+
+        {!isDraft && (
+          <DropdownMenu open={isMenuOpen} onOpenChange={setMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="More options"
+                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded text-muted-foreground transition-all duration-150 hover:text-foreground ${
+                  isMenuOpen ? 'opacity-100' : revealOnHover
+                }`}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-lg p-1">
+              <DropdownMenuItem
+                className="rounded-md px-2 py-1.5 text-xs"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMenuOpen(false);
+                  setIsRenameOpen(true);
+                }}
+              >
+                <Edit className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                <span>Rename</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuItem
+                className="rounded-md px-2 py-1.5 text-xs text-destructive"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMenuOpen(false);
+                  remove();
+                }}
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" />
+                <span>Delete</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </span>
 
       <ThreadRenameModal
         isOpen={isRenameOpen}

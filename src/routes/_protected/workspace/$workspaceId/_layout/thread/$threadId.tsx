@@ -75,6 +75,18 @@ function ThreadRouteComponent() {
   const prevRightOpenRef = useRef(rightOpen);
   const { data: thread } = useThread({ workspaceId, threadId });
 
+  // Chained across mounts: thread A's cleanup restores thread B's title, B's
+  // restores the original — stays correct through repeated navigation
+  // without hardcoding a default (whitelabel-safe).
+  useEffect(() => {
+    if (!thread?.name) return;
+    const previous = document.title;
+    document.title = thread.name;
+    return () => {
+      document.title = previous;
+    };
+  }, [thread?.name]);
+
   const isRenameOpen =
     search.modal === 'rename' && search.targetId === threadId && !!thread;
 
