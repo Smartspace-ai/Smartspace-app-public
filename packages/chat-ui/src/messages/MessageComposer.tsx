@@ -14,14 +14,18 @@ import {
   Paperclip,
   Presentation,
   Send,
+  Square,
   X,
 } from 'lucide-react';
 import type * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { useChatService } from '@/platform/chat';
+
 import type { FileInfo } from '@/domains/files/model';
 import { useFileMutations } from '@/domains/files/mutations';
+import { useCancelFlowRun } from '@/domains/flowruns/mutations';
 import { useMessages } from '@/domains/messages';
 
 import type { MarkdownEditorHandle } from '@/shared/markdown/MarkdownEditor';
@@ -171,6 +175,35 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
     workspaceId,
     threadId: isDraftThread ? undefined : threadId,
   });
+
+  // While the flow is generating a response, Send's slot becomes a Stop
+  // button (only when the service supports cancellation — otherwise the
+  // legacy disabled/dots state stays). The thread id IS the flow-run id;
+  // the engine stops within seconds and the thread SSE clears isSending.
+  const chatService = useChatService();
+  const {
+    mutate: cancelMutate,
+    isPending: cancelPending,
+    isSuccess: cancelAccepted,
+    isError: cancelErrored,
+    reset: cancelReset,
+  } = useCancelFlowRun();
+  const canStop = isSending && !!chatService.cancelFlowRun;
+  // Cancellation is cooperative, so there is a gap between the accepted
+  // request and isSending actually flipping — hold a disabled "Stopping…"
+  // state across it instead of allowing repeat clicks.
+  const stopping = cancelPending || cancelAccepted;
+  const handleStopRun = () => {
+    if (stopping) return;
+    cancelMutate(threadId);
+  };
+  // Re-arm for the next run: without the reset, a later message's Stop
+  // button would be born stuck in the "Stopping…" state.
+  useEffect(() => {
+    if (!isSending && (cancelAccepted || cancelErrored)) {
+      cancelReset();
+    }
+  }, [isSending, cancelAccepted, cancelErrored, cancelReset]);
   // Provide a global downloader for ssImage node views (non-React context).
   // Milkdown's image node view reads `window.__ssDownloadFile` by name on
   // first render, so an effect-based assignment runs early enough.
@@ -511,24 +544,39 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
               <Mic className="h-4 w-4" />
             </IconButton>
 
-            <IconButton
-              onClick={handleSendMessageAndClear}
-              className={`chat-send h-8 w-8 rounded-full ${
-                sendDisabled ? 'cursor-not-allowed' : ''
-              }`}
-              disabled={sendDisabled}
-              aria-label="Send"
-            >
-              {isSending ? (
-                <span className="chat-thinking-dots">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </IconButton>
+            {canStop ? (
+              <IconButton
+                onClick={handleStopRun}
+                className="chat-send h-8 w-8 rounded-full"
+                disabled={stopping}
+                aria-label={stopping ? 'Stopping' : 'Stop'}
+              >
+                <Square
+                  className={`h-4 w-4 fill-current ${
+                    stopping ? 'animate-pulse' : ''
+                  }`}
+                />
+              </IconButton>
+            ) : (
+              <IconButton
+                onClick={handleSendMessageAndClear}
+                className={`chat-send h-8 w-8 rounded-full ${
+                  sendDisabled ? 'cursor-not-allowed' : ''
+                }`}
+                disabled={sendDisabled}
+                aria-label="Send"
+              >
+                {isSending ? (
+                  <span className="chat-thinking-dots">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </IconButton>
+            )}
           </div>
         </div>
 
@@ -594,16 +642,31 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                         />
                       </IconButton>
                     )}
-                    <IconButton
-                      onClick={handleSendMessageAndClear}
-                      className={`chat-send h-9 w-9 rounded-full ${
-                        sendDisabled ? 'cursor-not-allowed' : ''
-                      }`}
-                      disabled={sendDisabled}
-                      aria-label="Send"
-                    >
-                      <Send className="h-4 w-4" />
-                    </IconButton>
+                    {canStop ? (
+                      <IconButton
+                        onClick={handleStopRun}
+                        className="chat-send h-9 w-9 rounded-full"
+                        disabled={stopping}
+                        aria-label={stopping ? 'Stopping' : 'Stop'}
+                      >
+                        <Square
+                          className={`h-4 w-4 fill-current ${
+                            stopping ? 'animate-pulse' : ''
+                          }`}
+                        />
+                      </IconButton>
+                    ) : (
+                      <IconButton
+                        onClick={handleSendMessageAndClear}
+                        className={`chat-send h-9 w-9 rounded-full ${
+                          sendDisabled ? 'cursor-not-allowed' : ''
+                        }`}
+                        disabled={sendDisabled}
+                        aria-label="Send"
+                      >
+                        <Send className="h-4 w-4" />
+                      </IconButton>
+                    )}
                   </div>
                 </div>
               </div>

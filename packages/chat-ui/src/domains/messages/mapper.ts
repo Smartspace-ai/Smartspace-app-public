@@ -13,7 +13,13 @@ const {
 type MessagesResponseDto = z.infer<typeof messagesResponseSchema>;
 type MessageDto = MessagesResponseDto['data'][number];
 type MessageValueDto = NonNullable<MessageDto['values']>[number];
-type MessageErrorDto = NonNullable<MessageDto['errors']>[number];
+// The generated api-client schema doesn't carry the machine-readable error
+// category yet — callers re-attach it from the raw payload (either spelling)
+// before mapping, so the field survives api-client regeneration lag.
+type MessageErrorDto = NonNullable<MessageDto['errors']>[number] & {
+  errorCode?: string | null;
+  error_code?: string | null;
+};
 
 export type MessageError = NonNullable<Message['errors']>[number];
 
@@ -47,8 +53,10 @@ export function mapMessageValueDtoToModel(dto: MessageValueDto): MessageValue {
 }
 
 export function mapMessageErrorDtoToModel(dto: MessageErrorDto): MessageError {
+  const { error_code, ...rest } = dto;
   return {
-    ...dto,
+    ...rest,
+    errorCode: dto.errorCode ?? error_code ?? undefined,
     data: dto.data as string | null | undefined,
   };
 }

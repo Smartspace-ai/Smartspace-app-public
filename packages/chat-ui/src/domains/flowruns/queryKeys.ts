@@ -11,4 +11,5 @@ export const flowRunsKeys = {
       'updateVariable',
       { flowRunId, variableName },
     ] as const,
+  cancel: () => [...flowRunsKeys.mutations(), 'cancel'] as const,
 };
