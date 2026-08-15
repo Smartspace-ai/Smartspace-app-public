@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write # for the GitHub OIDC token azure/login exchanges - no stored credential
 
 jobs:
   deploy:
@@ -63,15 +64,35 @@ jobs:
       - name: Copy index.html to 404.html for SPA deep-link refreshes
         run: cp ./dist/smartspace/index.html ./dist/smartspace/404.html
 
+      - name: Azure login
+        # Environments that define AZURE_STORAGE_ACCOUNT deploy with OIDC + RBAC (Storage Blob
+        # Data Contributor on that account). Environments without it keep the connection string:
+        # the demo install's web account sits under a managed-app deny assignment that blocks
+        # RBAC data access for every principal, so Shared Key is the only way to write to it.
+        if: vars.AZURE_STORAGE_ACCOUNT != ''
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
       - name: Deploy to Azure Storage
         uses: azure/CLI@v2
+        env:
+          STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+          STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
         with:
           azcliversion: 2.67.0
           inlineScript: |
+            if [ -n "$STORAGE_ACCOUNT" ]; then
+              auth=(--account-name "$STORAGE_ACCOUNT" --auth-mode login)
+            else
+              auth=(--connection-string "$STORAGE_CONNECTION_STRING")
+            fi
+
             # Upload the whole build with no-cache so returning users always
             # revalidate index.html and pick up the latest asset references.
-            az storage blob upload-batch \
-              --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            az storage blob upload-batch "${auth[@]}" \
               --source ./dist/smartspace \
               --destination '$web' \
               --content-cache-control 'no-cache, max-age=0, must-revalidate' \
@@ -79,8 +100,7 @@ jobs:
 
             # Re-upload hashed bundles with long-lived immutable cache.
             # Vite emits content hashes in these filenames, so cached copies never go stale.
-            az storage blob upload-batch \
-              --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+            az storage blob upload-batch "${auth[@]}" \
               --source ./dist/smartspace/assets \
               --destination '$web/assets' \
               --content-cache-control 'public, max-age=31536000, immutable' \
