@@ -19,6 +19,8 @@ type VarsRecord = Record<
   string,
   { schema?: JsonSchema7; access?: 'Read' | 'Write' }
 >;
+// JsonSchema7 types draft-07 `definitions` only; the platform emits `$defs`.
+type SchemaWithDefs = JsonSchema7 & { $defs?: Record<string, JsonSchema7> };
 type VmParams = { workspace: WorkspaceLike; threadId: string };
 
 // Layout helper types
@@ -62,10 +64,15 @@ function buildSimpleSchemaAndUi(
   const properties: Record<string, JsonSchema7> = {};
   const controls: ControlElement[] = [];
   const initialData: Record<string, unknown> = {};
+  // Each variable schema arrives self-contained (Pydantic-style: its own
+  // `$defs` + `#/$defs/X` refs). Nested under `properties`, those refs would
+  // resolve against the composed root, so hoist every `$defs` up to it.
+  const $defs: Record<string, JsonSchema7> = {};
 
   for (const name of names) {
     const cfg = vars?.[name] || {};
-    const s = (cfg.schema || {}) as JsonSchema7;
+    const { $defs: varDefs, ...s } = (cfg.schema || {}) as SchemaWithDefs;
+    if (varDefs) Object.assign($defs, varDefs);
     properties[name] = s;
 
     const hasServerKey =
@@ -91,7 +98,8 @@ function buildSimpleSchemaAndUi(
     controls.push(control);
   }
 
-  const schema: JsonSchema7 = { type: 'object', properties };
+  const schema: SchemaWithDefs = { type: 'object', properties };
+  if (Object.keys($defs).length > 0) schema.$defs = $defs;
 
   const innerRow: HorizontalLayout = {
     type: 'HorizontalLayout',
