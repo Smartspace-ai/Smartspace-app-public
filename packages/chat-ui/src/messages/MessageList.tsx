@@ -264,7 +264,11 @@ export function MessageList({
         <ScrollAreaPrimitive.Viewport
           ref={viewportRef}
           data-ss-layer="scroll-viewport"
-          className="h-full w-full rounded-[inherit] overflow-y-auto"
+          // Radix wraps the viewport's children in `display:table`, which
+          // sizes to the widest unbreakable content (a long code-block line)
+          // and, with overflow-x hidden, clips every message. Force block so
+          // the column stays at viewport width and `pre` scrolls internally.
+          className="h-full w-full rounded-[inherit] overflow-y-auto [&>div]:!block"
           onScroll={() => {
             if (!viewportRef.current) return;
             const viewport = viewportRef.current;
