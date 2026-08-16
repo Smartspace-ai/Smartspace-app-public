@@ -23,6 +23,10 @@ export const MessageResponseSourceSchema = z.object({
   uri: z.string().nullish(),
   citedText: z.string().nullish(),
   attribution: z.nativeEnum(MessageAttribution).nullish(),
+  // Where the cited item lives at its source (SharePoint web link, HubSpot record page).
+  // Distinct from `url` (the source *is* that URL): this rides File sources so the card
+  // can offer "open at source" beside the download of our copy. Absent when unknown.
+  webUrl: z.string().nullish(),
 });
 
 // MessageResponse schema
