@@ -1,0 +1,14 @@
+# Scans only the commits a pull request introduces. History predates the secret
+# cleanup and still holds leaked values, so a full scan would fail permanently.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Build output, dependency trees and lockfiles"
+targets = ["path"]
+paths = [
+  '''(^|/)(bin|obj|dist|out|build)/''',
+  '''(^|/)(node_modules|\.venv|venv|\.nuget)/''',
+  '''(^|/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|poetry\.lock|packages\.lock\.json)$''',
+]
