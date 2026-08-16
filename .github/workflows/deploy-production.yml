@@ -10,6 +10,9 @@ concurrency:
 
 jobs:
   deploy:
+    permissions:
+      contents: read
+      id-token: write # deploy.yml can only use what the caller grants
     uses: ./.github/workflows/deploy.yml
     with:
       environment: production
