@@ -1,0 +1,307 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import type { SpeechToken } from '@/domains/speech/model';
+
+import { createSpeechTokenCredential } from './speechTokenCredential';
+
+type SpeechSdk = typeof import('microsoft-cognitiveservices-speech-sdk');
+
+export type DictationState = 'idle' | 'starting' | 'listening';
+
+export type DictationError =
+  | 'permission-denied'
+  | 'no-microphone'
+  | 'network'
+  /** Worth another go: the install is fine, this attempt wasn't. */
+  | 'unavailable-temporarily'
+  /** Don't keep asking: this install can't do dictation. */
+  | 'unavailable'
+  | 'unknown';
+
+type Session = {
+  recognizer: InstanceType<SpeechSdk['SpeechRecognizer']>;
+  stream: MediaStream;
+  timers: { idle?: number; max?: number };
+};
+
+export type UseDictationOptions = {
+  /** Speech resource endpoint from `SpeechConfig`; dictation is unavailable without it. */
+  endpoint?: string | null;
+  /** BCP-47 recognition locale (server default unless the user chose one). */
+  locale: string;
+  /** From the ChatService; dictation is unavailable without it. */
+  getToken?: () => Promise<SpeechToken>;
+  /** A final recognised phrase — insert it into the editor. */
+  onPhrase: (text: string) => void;
+  /** Hard stop, so a forgotten mic can't run for an hour. */
+  maxDurationMs?: number;
+  /** Stop after this long without any speech. */
+  idleTimeoutMs?: number;
+};
+
+const isSupported = () =>
+  typeof window !== 'undefined' &&
+  window.isSecureContext &&
+  !!navigator.mediaDevices?.getUserMedia;
+
+/**
+ * The API answers a failed token mint with a code, because 5xx bodies are scrubbed
+ * of everything else: SP503 is transient (usually a role assignment still
+ * propagating after a deploy), SP500 means the install is misconfigured. Anything
+ * else we treat as worth retrying, since the common causes — a dropped request, a
+ * gateway blip — are.
+ */
+function classifyTokenFailure(error: unknown): DictationError {
+  const code = (error as { code?: unknown } | null)?.code;
+  if (code === 'SP500') return 'unavailable';
+  if ((error as { type?: unknown } | null)?.type === 'NotFound') {
+    return 'unavailable';
+  }
+  return 'unavailable-temporarily';
+}
+
+/**
+ * Streams microphone audio to Azure AI Speech and hands back recognised
+ * phrases. Owns the whole session: mic permission + stream, lazy SDK load,
+ * recogniser lifecycle, idle/max timers, and teardown on stop or unmount.
+ * Interim (not yet final) text is exposed for display only; only final phrases
+ * reach `onPhrase`.
+ */
+export function useDictation({
+  endpoint,
+  locale,
+  getToken,
+  onPhrase,
+  maxDurationMs = 180_000,
+  idleTimeoutMs = 20_000,
+}: UseDictationOptions) {
+  const [state, setState] = useState<DictationState>('idle');
+  const [interim, setInterim] = useState('');
+  const [error, setError] = useState<DictationError | null>(null);
+
+  const sessionRef = useRef<Session | null>(null);
+  // Bumped by every start/stop; an in-flight start that sees a different
+  // generation after an await was superseded (stopped or unmounted) and must
+  // clean up after itself instead of publishing a session.
+  const generationRef = useRef(0);
+  const onPhraseRef = useRef(onPhrase);
+  useEffect(() => {
+    onPhraseRef.current = onPhrase;
+  });
+
+  const supported = isSupported();
+  const available = supported && !!endpoint && !!getToken;
+
+  const stop = useCallback(() => {
+    generationRef.current += 1;
+    const session = sessionRef.current;
+    sessionRef.current = null;
+    setInterim('');
+    setState('idle');
+    // Deliberately does NOT clear `error`: a real failure arrives as `canceled`
+    // and then calls straight through to here, so clearing would erase the very
+    // error we need to show. `start` clears it instead, so a message persists
+    // until the user tries again. The spurious `canceled` our own teardown
+    // provokes is handled by the isLive() gate, not by clearing.
+    if (!session) return;
+    window.clearTimeout(session.timers.idle);
+    window.clearTimeout(session.timers.max);
+    // Stopping the tracks first turns the browser's mic indicator off at once
+    // rather than after the service acknowledges the stop. The service reacts to
+    // the closed stream by firing `canceled`, which is why every handler below
+    // checks it is still the live session before touching state.
+    session.stream.getTracks().forEach((t) => t.stop());
+    session.recognizer.stopContinuousRecognitionAsync(
+      () => session.recognizer.close(),
+      () => session.recognizer.close()
+    );
+  }, []);
+
+  const start = useCallback(async () => {
+    if (!available || sessionRef.current) return;
+    const generation = ++generationRef.current;
+    const superseded = () => generationRef.current !== generation;
+
+    setError(null);
+    setState('starting');
+
+    // Ask for the mic ourselves rather than via the SDK so permission failures
+    // are ours to explain and we hold the tracks to stop them promptly.
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+    } catch (e) {
+      if (superseded()) return;
+      const name = (e as DOMException | undefined)?.name;
+      setError(
+        name === 'NotAllowedError' || name === 'SecurityError'
+          ? 'permission-denied'
+          : name === 'NotFoundError' || name === 'OverconstrainedError'
+          ? 'no-microphone'
+          : 'unknown'
+      );
+      setState('idle');
+      return;
+    }
+    if (superseded()) {
+      stream.getTracks().forEach((t) => t.stop());
+      return;
+    }
+
+    // Fetch the token up front rather than letting the SDK pull it mid-connect:
+    // a failure here keeps its own error code, where inside the SDK it would only
+    // ever reach us as an opaque cancellation.
+    let token: SpeechToken;
+    try {
+      token = await (getToken as () => Promise<SpeechToken>)();
+    } catch (e) {
+      stream.getTracks().forEach((t) => t.stop());
+      if (superseded()) return;
+      setError(classifyTokenFailure(e));
+      setState('idle');
+      return;
+    }
+    if (superseded()) {
+      stream.getTracks().forEach((t) => t.stop());
+      return;
+    }
+
+    let recognizer: Session['recognizer'] | null = null;
+    try {
+      // The SDK is large; only users who press the mic pay for it.
+      const sdk: SpeechSdk = await import(
+        'microsoft-cognitiveservices-speech-sdk'
+      );
+      if (superseded()) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+
+      const speechConfig = sdk.SpeechConfig.fromEndpoint(
+        new URL(endpoint as string),
+        createSpeechTokenCredential(
+          getToken as () => Promise<SpeechToken>,
+          token
+        )
+      );
+      speechConfig.speechRecognitionLanguage = locale;
+      // It's the user's own words; don't asterisk them.
+      speechConfig.setProfanity(sdk.ProfanityOption.Raw);
+      // Finalise phrases at natural pauses so text lands while they're still
+      // talking, rather than one long result at the end.
+      speechConfig.setProperty(
+        sdk.PropertyId.Speech_SegmentationSilenceTimeoutMs,
+        '700'
+      );
+
+      recognizer = new sdk.SpeechRecognizer(
+        speechConfig,
+        sdk.AudioConfig.fromStreamInput(stream)
+      );
+
+      const session: Session = { recognizer, stream, timers: {} };
+      const armIdle = () => {
+        window.clearTimeout(session.timers.idle);
+        session.timers.idle = window.setTimeout(stop, idleTimeoutMs);
+      };
+      // The service keeps delivering for a moment after a stop (a final phrase
+      // for buffered audio, then sessionStopped). Once this session is no longer
+      // the live one those events must not touch state — in particular a late
+      // phrase must not land in the editor after Send has cleared it, a late
+      // sessionStopped must not tear down a newer session, and the `canceled`
+      // that our own teardown provokes must not paint an error.
+      const isLive = () => sessionRef.current === session;
+      // A cancel can also arrive while start-up is still awaiting, before the
+      // session is live — e.g. the service rejects the token.
+      let cancelledBeforeLive = false;
+
+      recognizer.recognizing = (_sender, event) => {
+        if (!isLive()) return;
+        setInterim(event.result.text ?? '');
+        armIdle();
+      };
+      recognizer.recognized = (_sender, event) => {
+        if (!isLive()) return;
+        const text = event.result.text?.trim();
+        if (event.result.reason === sdk.ResultReason.RecognizedSpeech && text) {
+          onPhraseRef.current(text);
+        }
+        setInterim('');
+        armIdle();
+      };
+      recognizer.canceled = (_sender, event) => {
+        if (!isLive()) {
+          if (event.reason === sdk.CancellationReason.Error) {
+            cancelledBeforeLive = true;
+          }
+          return;
+        }
+        if (event.reason === sdk.CancellationReason.Error) {
+          // errorCode only: errorDetails is free text from the service and is the
+          // one sink near the credential whose contents we don't control.
+          console.warn('[dictation] cancelled, errorCode:', event.errorCode);
+          setError(
+            event.errorCode === sdk.CancellationErrorCode.ConnectionFailure
+              ? 'network'
+              : event.errorCode ===
+                sdk.CancellationErrorCode.AuthenticationFailure
+              ? 'unavailable-temporarily'
+              : 'unknown'
+          );
+        }
+        stop();
+      };
+      recognizer.sessionStopped = () => {
+        if (isLive()) stop();
+      };
+
+      await new Promise<void>((resolve, reject) =>
+        session.recognizer.startContinuousRecognitionAsync(resolve, reject)
+      );
+      if (superseded() || cancelledBeforeLive) {
+        stream.getTracks().forEach((t) => t.stop());
+        recognizer.close();
+        if (!superseded()) setState('idle');
+        return;
+      }
+
+      sessionRef.current = session;
+      session.timers.max = window.setTimeout(stop, maxDurationMs);
+      armIdle();
+      setState('listening');
+    } catch (e) {
+      stream.getTracks().forEach((t) => t.stop());
+      recognizer?.close();
+      if (superseded()) return;
+      console.warn('[dictation] failed to start:', e);
+      // A `canceled` event during start-up already named the cause; keep it.
+      setError((prev) => prev ?? 'unavailable-temporarily');
+      setState('idle');
+    }
+  }, [
+    available,
+    endpoint,
+    getToken,
+    idleTimeoutMs,
+    locale,
+    maxDurationMs,
+    stop,
+  ]);
+
+  // Unmount → release the mic and the service connection. `stop` is stable, so
+  // this runs on unmount only; keep it that way if you ever give `stop` deps.
+  useEffect(() => stop, [stop]);
+
+  const toggle = useCallback(() => {
+    if (state === 'listening') stop();
+    else if (state === 'idle') void start();
+  }, [start, state, stop]);
+
+  return { supported, available, state, interim, error, start, stop, toggle };
+}

@@ -22,7 +22,7 @@ const specText = readFileSync(join(here, 'spec-conformance.spec.ts'), 'utf8');
 
 // Domains whose pipeline the suite imports directly from `@/domains/<name>/`.
 const importedDomains = new Set(
-  [...specText.matchAll(/@\/domains\/([a-z0-9-]+)\//gi)].map((m) => m[1]),
+  [...specText.matchAll(/@\/domains\/([a-z0-9-]+)\//gi)].map((m) => m[1])
 );
 
 // Domains whose mappers come from `@smartspace/chat-ui` rather than a
@@ -37,10 +37,12 @@ const viaChatUi: Record<string, string> = {
 const excluded: Record<string, string> = {
   users:
     'only consumes the binary profile-photo endpoint (z.instanceof(File)) — nothing to parse/map',
+  speech:
+    'GET /speech/config + /speech/token are newer than the generated client, so the domain parses with its own zod schemas (domains/speech/schemas.ts) and has no mapper; add a pipeline once ChatZod ships speechGetConfig/speechGetToken',
 };
 
 const onDisk = readdirSync(domainsDir).filter((name) =>
-  statSync(join(domainsDir, name)).isDirectory(),
+  statSync(join(domainsDir, name)).isDirectory()
 );
 
 describe('conformance domain coverage', () => {
@@ -58,12 +60,15 @@ describe('conformance domain coverage', () => {
       gated,
       `Domain "${domain}" is neither covered by the spec-conformance suite nor ` +
         `excluded. Add a conformance pipeline for it in spec-conformance.spec.ts, ` +
-        `or document why it is exempt in this meta-check's "excluded" map.`,
+        `or document why it is exempt in this meta-check's "excluded" map.`
     ).toBe(true);
   });
 
   it('every excluded / chat-ui domain still exists on disk (no rot)', () => {
     for (const name of [...Object.keys(excluded), ...Object.keys(viaChatUi)])
-      expect(onDisk, `"${name}" is listed but is no longer a domain dir`).toContain(name);
+      expect(
+        onDisk,
+        `"${name}" is listed but is no longer a domain dir`
+      ).toContain(name);
   });
 });

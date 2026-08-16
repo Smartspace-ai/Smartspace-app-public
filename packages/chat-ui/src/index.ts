@@ -9,6 +9,19 @@ export type { MessageComposerProps } from './messages/MessageComposer';
 // consumers can render it standalone if needed).
 export { ChatVariablesForm } from './chat-variables/VariablesForm';
 
+// Composer dictation — exported so forks can place the mic elsewhere or reuse
+// the session logic with their own button.
+export { DictationButton } from './messages/DictationButton';
+export type { DictationButtonProps } from './messages/DictationButton';
+export { useDictation } from './shared/speech/useDictation';
+export { createSpeechTokenCredential } from './shared/speech/speechTokenCredential';
+export type { SpeechTokenCredential } from './shared/speech/speechTokenCredential';
+export type {
+  DictationError,
+  DictationState,
+  UseDictationOptions,
+} from './shared/speech/useDictation';
+
 // Markdown editor + renderer — also used by the comments-draw in the standalone
 // fork, so exported as part of the public surface.
 export { MarkdownEditor } from './shared/markdown/MarkdownEditor';
@@ -44,6 +57,7 @@ export type {
   Workspace,
 } from './domains/workspaces/model';
 export type { FlowRunVariables } from './domains/flowruns/model';
+export type { SpeechConfig, SpeechToken } from './domains/speech/model';
 export type { Model, ModelProperty } from './domains/models/model';
 export { getModelIcon } from './domains/models/model-icon';
 
@@ -126,6 +140,7 @@ export {
 export { workspaceKeys } from './domains/workspaces/queryKeys';
 export { flowRunsKeys } from './domains/flowruns/queryKeys';
 export { modelsKeys } from './domains/models/queryKeys';
+export { speechKeys } from './domains/speech/queryKeys';
 
 // Domain hook surface (chat-side queries/mutations).
 export { useMessages, messagesListOptions } from './domains/messages/queries';
@@ -153,3 +168,4 @@ export {
 export { useFlowRunVariables } from './domains/flowruns/queries';
 export { useUpdateFlowRunVariable } from './domains/flowruns/mutations';
 export { useModels } from './domains/models/queries';
+export { useSpeechConfig } from './domains/speech/queries';

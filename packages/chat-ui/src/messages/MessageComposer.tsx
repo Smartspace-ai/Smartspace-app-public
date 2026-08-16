@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import type * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useChatService } from '@/platform/chat';
@@ -27,12 +27,15 @@ import type { FileInfo } from '@/domains/files/model';
 import { useFileMutations } from '@/domains/files/mutations';
 import { useCancelFlowRun } from '@/domains/flowruns/mutations';
 import { useMessages } from '@/domains/messages';
+import { useSpeechConfig } from '@/domains/speech/queries';
 
 import type { MarkdownEditorHandle } from '@/shared/markdown/MarkdownEditor';
 import { MarkdownEditor } from '@/shared/markdown/MarkdownEditor';
+import { useDictation } from '@/shared/speech/useDictation';
 
 import { ChatVariablesForm } from '@/chat-variables/VariablesForm';
 
+import { DictationButton, dictationErrorMessages } from './DictationButton';
 import { useMessageComposerVm } from './MessageComposer.vm';
 
 declare global {
@@ -204,6 +207,45 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
       cancelReset();
     }
   }, [isSending, cancelAccepted, cancelErrored, cancelReset]);
+
+  // Two MarkdownEditors (inline + the mobile-fullscreen portal) can be mounted at
+  // once and share `editorRef`; the portal commits later, so it wins. React nulls
+  // a ref on unmount, which on collapse would leave the surviving inline editor
+  // detached — and dictation would then insert into nothing, silently. This
+  // callback's identity deliberately changes with `isFullscreen` so React
+  // re-invokes it on the editor that is still mounted.
+  const attachEditor = useCallback(
+    (handle: MarkdownEditorHandle | null) => {
+      if (handle) editorRef.current = handle;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isFullscreen]
+  );
+
+  // Dictation: only when the service implements it AND the install has speech
+  // configured; otherwise the design's mic stays as a disabled placeholder.
+  // Final phrases go straight into the editor at the caret; interim text is
+  // shown in a strip below the prompt rather than written into the doc.
+  const { data: speechConfig } = useSpeechConfig();
+  const getSpeechToken = useMemo(
+    () => chatService.getSpeechToken?.bind(chatService),
+    [chatService]
+  );
+  const dictation = useDictation({
+    endpoint: speechConfig?.enabled ? speechConfig.endpoint : null,
+    locale: speechConfig?.defaultLocale ?? 'en-US',
+    getToken: getSpeechToken,
+    onPhrase: (text) => editorRef.current?.insertText(`${text} `),
+  });
+  const { stop: stopDictation } = dictation;
+  const handleDictationToggle = () => {
+    // Put the caret where the words will land before the first phrase arrives.
+    if (dictation.state === 'idle') editorRef.current?.focus();
+    dictation.toggle();
+  };
+  useEffect(() => {
+    if (disabled) stopDictation();
+  }, [disabled, stopDictation]);
   // Provide a global downloader for ssImage node views (non-React context).
   // Milkdown's image node view reads `window.__ssDownloadFile` by name on
   // first render, so an effect-based assignment runs early enough.
@@ -350,7 +392,13 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
     // editor remount to wipe characters the user had just typed.
     const latestText = editorRef.current?.getMarkdown() ?? newMessage;
     const sent = handleSendMessage(latestText, uploadedAttachments);
+    // A refused send (empty, still uploading, flow running) must leave dictation
+    // alone — stopping here would silently bin what the user just said.
     if (!sent) return;
+    // Only once the message is away: the editor remounts below, and a phrase
+    // arriving after that would land in the next message unannounced. A phrase
+    // still in flight at this instant belongs to neither message and is dropped.
+    stopDictation();
     handleClearAttachments();
     setEditorKey((k) => k + 1);
   };
@@ -483,7 +531,7 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
         <div className="max-h-[400px] w-full overflow-y-auto">
           <MarkdownEditor
             key={`composer-md-${editorKey}`}
-            ref={editorRef}
+            ref={attachEditor}
             value={newMessage}
             onChange={(md) => setNewMessage(md)}
             onKeyDown={handleComposerKeyDown}
@@ -504,6 +552,34 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                there as it is typed into, up to the wrapper's 400px. */
             minHeight={24}
           />
+        </div>
+
+        {/* Dictation status. The live region is mounted permanently — content
+            arriving in the same tick a region appears usually isn't announced —
+            and carries only the state change. The interim transcript updates
+            several times a second, so it sits outside the region and is muted
+            for assistive tech; the mobile-fullscreen copy is visual only, so
+            nothing is announced twice. */}
+        <div
+          role="status"
+          className={
+            dictation.state !== 'idle' || dictation.error
+              ? `px-5 pb-1 text-xs ${
+                  dictation.error ? 'text-destructive' : 'text-muted-foreground'
+                }`
+              : 'sr-only'
+          }
+        >
+          {dictation.error
+            ? dictationErrorMessages[dictation.error]
+            : dictation.state === 'listening'
+            ? 'Listening…'
+            : dictation.state === 'starting'
+            ? 'Starting…'
+            : ''}
+          {!dictation.error && dictation.interim && (
+            <span aria-hidden="true"> {dictation.interim}</span>
+          )}
         </div>
 
         {/* Action bar */}
@@ -534,18 +610,27 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            {/* The design pairs a dictation button with Send. There is no
-                speech-to-text in the app yet, so this carries the shape only and
-                says as much rather than looking live and doing nothing. */}
-            <IconButton
-              type="button"
-              disabled
-              aria-label="Dictate a message"
-              title="Dictation is not available yet"
-              className="h-8 w-8 cursor-not-allowed rounded-full text-muted-foreground"
-            >
-              <Mic className="h-4 w-4" />
-            </IconButton>
+            {/* The design pairs a dictation button with Send. On installs
+                without speech configured (or a service that doesn't offer it)
+                it keeps the shape as a disabled placeholder that says so. */}
+            {dictation.available ? (
+              <DictationButton
+                state={dictation.state}
+                error={dictation.error}
+                disabled={disabled}
+                onToggle={handleDictationToggle}
+              />
+            ) : (
+              <IconButton
+                type="button"
+                disabled
+                aria-label="Dictate a message"
+                title="Dictation is not available"
+                className="h-8 w-8 cursor-not-allowed rounded-full text-muted-foreground"
+              >
+                <Mic className="h-4 w-4" />
+              </IconButton>
+            )}
 
             {canStop ? (
               <IconButton
@@ -616,7 +701,7 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                   <div className="flex-1 p-4">
                     <MarkdownEditor
                       key={`composer-md-${editorKey}`}
-                      ref={editorRef}
+                      ref={attachEditor}
                       value={newMessage}
                       onChange={(md) => setNewMessage(md)}
                       onKeyDown={handleComposerKeyDown}
@@ -630,6 +715,25 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                       className="md-editor--bare text-sm h-full"
                     />
                   </div>
+                  {/* Visual only — the announcing live region is the one in the
+                      card behind this portal, which stays mounted. */}
+                  {(dictation.state !== 'idle' || dictation.error) && (
+                    <div
+                      aria-hidden="true"
+                      className={`px-4 pb-1 text-xs ${
+                        dictation.error
+                          ? 'text-destructive'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {dictation.error
+                        ? dictationErrorMessages[dictation.error]
+                        : dictation.interim ||
+                          (dictation.state === 'listening'
+                            ? 'Listening…'
+                            : 'Starting…')}
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 px-3 py-2 border-t bg-background">
                     <div className="flex-1" />
                     {supportsFiles && (
@@ -644,6 +748,15 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                           strokeWidth={2}
                         />
                       </IconButton>
+                    )}
+                    {dictation.available && (
+                      <DictationButton
+                        size="md"
+                        state={dictation.state}
+                        error={dictation.error}
+                        disabled={disabled}
+                        onToggle={handleDictationToggle}
+                      />
                     )}
                     {canStop ? (
                       <IconButton

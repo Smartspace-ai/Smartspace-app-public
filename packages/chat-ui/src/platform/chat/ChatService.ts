@@ -2,6 +2,7 @@ import type { FileInfo, FileScope } from '@/domains/files/model';
 import type { FlowRunVariables } from '@/domains/flowruns/model';
 import type { Message, MessageContentItem } from '@/domains/messages/model';
 import type { Model } from '@/domains/models/model';
+import type { SpeechConfig, SpeechToken } from '@/domains/speech/model';
 import type { MessageThread } from '@/domains/threads/model';
 import type { MentionUser, Workspace } from '@/domains/workspaces/model';
 
@@ -107,4 +108,15 @@ export interface ChatService {
    * compiling — the composer only shows a Stop button when it is provided.
    */
   cancelFlowRun?(flowRunId: string): Promise<void>;
+
+  /**
+   * Speech-to-text (composer dictation). Both are optional so existing
+   * service implementations keep compiling — the composer renders a
+   * microphone only when both are provided AND the config says enabled.
+   * `getSpeechConfig` is read once per session; `getSpeechToken` is called
+   * lazily by the Speech SDK when it connects and again as the token nears
+   * expiry, so implementations needn't cache.
+   */
+  getSpeechConfig?(): Promise<SpeechConfig>;
+  getSpeechToken?(): Promise<SpeechToken>;
 }

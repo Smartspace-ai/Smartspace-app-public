@@ -70,6 +70,13 @@ export type MarkdownEditorHandle = {
    */
   getMarkdown: () => string;
   /**
+   * Inserts plain text at the caret (dictation, snippets), replacing any
+   * selection. Prepends a space when the caret directly follows a
+   * non-whitespace character so successive inserts read as prose. No-op when
+   * the editor isn't editable.
+   */
+  insertText: (text: string) => void;
+  /**
    * Returns mention users currently present in the editor document.
    * Useful for building API payloads (e.g. comments.mentionedUsers).
    */
@@ -712,6 +719,19 @@ function EditorInner({
           return serializer(view.state.doc);
         } catch {
           return (value ?? '') as string;
+        }
+      },
+      insertText: (text: string) => {
+        const view = viewRef.current;
+        if (!view || !isEditable || !text) return;
+        try {
+          const { from } = view.state.selection;
+          const before =
+            from > 0 ? view.state.doc.textBetween(from - 1, from, ' ') : '';
+          const needsSpace = before !== '' && !/\s/.test(before);
+          insertTextAtSelection(view, (needsSpace ? ' ' : '') + text);
+        } catch {
+          /* ignore insert errors */
         }
       },
       clear: () => {

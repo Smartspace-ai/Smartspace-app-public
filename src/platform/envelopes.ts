@@ -10,6 +10,12 @@ export type UnknownError = {
   type: 'UnknownError';
   status?: number;
   message?: string;
+  /**
+   * The API's problem-details `code` extension. 5xx responses deliberately scrub
+   * the message, so this is the only machine-readable detail that survives, and
+   * it is what lets a caller tell a retryable failure from a permanent one.
+   */
+  code?: string;
 };
 
 export type AppError =
@@ -59,6 +65,7 @@ export function toAppError(status?: number, body?: unknown): AppError {
         type: 'UnknownError',
         status,
         message: typeof b?.message === 'string' ? b.message : undefined,
+        code: typeof b?.code === 'string' ? b.code : undefined,
       };
   }
 }
