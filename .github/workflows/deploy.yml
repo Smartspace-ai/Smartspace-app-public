@@ -85,6 +85,9 @@ jobs:
           azcliversion: 2.67.0
           inlineScript: |
             if [ -n "$STORAGE_ACCOUNT" ]; then
+              # azure/login ran on the runner's newer az, whose msal leaves a pickled HTTP cache
+              # this pinned image's older msal can't load. The token cache is JSON, so only this goes.
+              rm -f ~/.azure/msal_http_cache.bin ~/.azure/msal_http_cache.json
               auth=(--account-name "$STORAGE_ACCOUNT" --auth-mode login)
             else
               auth=(--connection-string "$STORAGE_CONNECTION_STRING")
