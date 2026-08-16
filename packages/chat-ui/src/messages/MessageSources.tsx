@@ -2,6 +2,7 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
+  ExternalLink,
   FileArchive,
   FileAudio,
   FileCode,
@@ -37,6 +38,7 @@ export type MessageResponseSource = {
   uri?: string | null;
   citedText?: string | null;
   attribution?: MessageAttribution | null;
+  webUrl?: string | null;
 };
 
 // Utility function to get file type icon (mirrors Spencers-Ui behavior)
@@ -354,6 +356,10 @@ export function ChatMessageSources({
               <div className="flex flex-wrap gap-1.5">
                 {fileSources.map((source) => {
                   const Icon = getFileIcon(source.file.name);
+                  // Same scheme guard as URL sources: this came from the data source, not from us.
+                  const sourceHref = source.webUrl
+                    ? getSafeUrl(source.webUrl)
+                    : null;
 
                   if (!openIndexes.has(source.index)) {
                     return (
@@ -401,15 +407,31 @@ export function ChatMessageSources({
                         </button>
                       </div>
                       <CitedQuote text={source.citedText} />
-                      <button
-                        type="button"
-                        onClick={() => downloadFileMutation.mutate(source.file)}
-                        disabled={downloadFileMutation.isPending}
-                        className="inline-flex w-fit items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Download className="h-3 w-3" />
-                        Download
-                      </button>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {sourceHref && (
+                          <a
+                            href={sourceHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={source.webUrl ?? undefined}
+                            className="inline-flex w-fit items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-xs font-medium text-foreground no-underline transition-colors hover:bg-muted/40"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Open in {getHost(sourceHref)}
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            downloadFileMutation.mutate(source.file)
+                          }
+                          disabled={downloadFileMutation.isPending}
+                          className="inline-flex w-fit items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Download className="h-3 w-3" />
+                          Download
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
