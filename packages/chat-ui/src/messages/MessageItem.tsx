@@ -8,11 +8,12 @@ import { FileInfo } from '@/domains/files';
 import { Message, MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
 import { getMessageErrorText } from '@/domains/messages/errors';
+import { useAddInputToMessage } from '@/domains/messages/mutations';
+import { MessageResponseSchema } from '@/domains/messages/schemas';
 import {
   getRetryStatusText,
   parseRetryStatus,
 } from '@/domains/messages/statuses';
-import { useAddInputToMessage } from '@/domains/messages/mutations';
 import { useWorkspace } from '@/domains/workspaces';
 
 import { getChatbotName } from '@/theme/public-config';
@@ -117,6 +118,27 @@ function isMessageResponseSource(x: unknown): x is MessageResponseSource {
 function coerceSources(x: unknown): MessageResponseSource[] {
   if (!Array.isArray(x)) return [];
   return x.filter(isMessageResponseSource);
+}
+
+/** Derived, not hand-listed: a field added to the envelope must not make every
+ *  chat reply fail the test below and render as raw JSON. */
+const ENVELOPE_KEYS = Object.keys(MessageResponseSchema.shape);
+
+/**
+ * True when a `response` object is the chat envelope rather than a block's
+ * structured output. Matched on the key set as a whole — "carries a content
+ * key" is not enough, because a research payload with its own `sources` array
+ * would be unwrapped to an undefined `.content` and render no bubble at all.
+ *
+ * Deliberately no content/sources requirement: a streaming tool round can
+ * deliver an early frame with neither filled in yet, and that must stay an
+ * envelope rather than getting fenced into the transcript as JSON.
+ *
+ * A block emitting exactly `{ content: … }` as data is indistinguishable from
+ * an envelope here, and is read as one.
+ */
+function isResponseEnvelope(keys: string[]): boolean {
+  return keys.length > 0 && keys.every((key) => ENVELOPE_KEYS.includes(key));
 }
 
 export const MessageItem: FC<MessageItemProps> = ({
@@ -275,18 +297,30 @@ export const MessageItem: FC<MessageItemProps> = ({
           v.value !== null &&
           !Array.isArray(v.value)
         ) {
-          // A `response` object is an envelope: `{ content, sources }`. With
-          // streaming on, a tool round can deliver an early frame that has
-          // neither key filled in yet — matching only on `'content' in value`
-          // sent those frames down the generic path below, which stringifies
-          // an unrecognized object and painted raw JSON into the transcript.
-          // Read the envelope's keys instead and render nothing until content
-          // arrives. A value carrying `text`/`image` directly is a content
-          // part rather than an envelope, so it still goes through as-is.
           const resp = v.value as Record<string, unknown>;
-          const isContentPart = 'text' in resp || 'image' in resp;
-          pushContent(groupContent, isContentPart ? resp : resp.content);
-          groupSources = coerceSources(resp.sources);
+          const keys = Object.keys(resp);
+          const isEnvelope = isResponseEnvelope(keys);
+
+          // Citations travel with chat content in either shape. On a
+          // structured payload `sources` is just another data field, and
+          // coercing it would drop the group's real citations on the floor.
+          if (
+            'sources' in resp &&
+            (isEnvelope || 'text' in resp || 'image' in resp)
+          ) {
+            groupSources = coerceSources(resp.sources);
+          }
+
+          if (isEnvelope) {
+            pushContent(groupContent, resp.content);
+          } else if (keys.length > 0) {
+            // Structured output — a response pin carrying a schema-shaped
+            // object rather than chat text. Unwrapping it as an envelope found
+            // `.content` undefined and painted nothing at all. Hand the whole
+            // object to pushContent, which renders a content part as-is and
+            // fences anything else as JSON.
+            pushContent(groupContent, resp);
+          }
         } else {
           pushContent(groupContent, v.value);
         }
