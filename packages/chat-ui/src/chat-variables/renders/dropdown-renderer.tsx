@@ -9,6 +9,8 @@ import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import React, { useCallback } from 'react';
 
+import { fieldColor } from './fieldColors';
+
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 type Option = { const: unknown; title?: string };
 
@@ -91,14 +93,14 @@ const DropdownRenderer: React.FC<ControlProps> = ({
       <InputLabel
         id={`${path}-label`}
         sx={{
-          color: '#6b7280',
+          color: fieldColor.mutedText,
           fontSize: '0.875rem',
           fontWeight: 500,
           '&.Mui-focused': {
-            color: '#6366f1',
+            color: fieldColor.accent,
           },
           '&.Mui-error': {
-            color: '#ef4444',
+            color: fieldColor.danger,
           },
         }}
       >
@@ -111,35 +113,35 @@ const DropdownRenderer: React.FC<ControlProps> = ({
         label={label}
         sx={{
           '& .MuiOutlinedInput-root': {
-            backgroundColor: '#fafafa',
+            backgroundColor: fieldColor.surface,
             borderRadius: '8px',
             transition: 'all 0.2s ease-in-out',
             height: '40px', // Same height as model dropdown
             '& fieldset': {
-              borderColor: '#e5e7eb',
+              borderColor: fieldColor.border,
               borderWidth: '1px',
             },
             '&:hover': {
-              backgroundColor: '#ffffff',
+              backgroundColor: fieldColor.surface,
               '& fieldset': {
-                borderColor: '#9ca3af',
+                borderColor: fieldColor.borderHover,
               },
             },
             '&.Mui-focused': {
-              backgroundColor: '#ffffff',
+              backgroundColor: fieldColor.surface,
               '& fieldset': {
-                borderColor: '#6366f1',
+                borderColor: fieldColor.accent,
                 borderWidth: '2px',
               },
             },
             '&.Mui-error': {
               '& fieldset': {
-                borderColor: '#ef4444',
+                borderColor: fieldColor.danger,
               },
             },
           },
           '& .MuiSelect-select': {
-            backgroundColor: '#fafafa',
+            backgroundColor: fieldColor.surface,
             borderRadius: '8px',
             transition: 'all 0.2s ease-in-out',
             height: '40px',
@@ -147,31 +149,31 @@ const DropdownRenderer: React.FC<ControlProps> = ({
             alignItems: 'center',
             paddingRight: '32px !important',
             '&:hover': {
-              backgroundColor: '#ffffff',
+              backgroundColor: fieldColor.surface,
             },
             '&.Mui-focused': {
-              backgroundColor: '#ffffff',
+              backgroundColor: fieldColor.surface,
             },
           },
           '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#e5e7eb',
+            borderColor: fieldColor.border,
             borderWidth: '1px',
             borderRadius: '8px',
           },
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#9ca3af',
+            borderColor: fieldColor.borderHover,
           },
           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#6366f1',
+            borderColor: fieldColor.accent,
             borderWidth: '2px',
           },
           '&.Mui-error .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#ef4444',
+            borderColor: fieldColor.danger,
           },
           '& .MuiSelect-icon': {
-            color: '#9ca3af',
+            color: fieldColor.mutedText,
             '&:hover': {
-              color: '#6b7280',
+              color: fieldColor.mutedText,
             },
           },
         }}
@@ -181,7 +183,9 @@ const DropdownRenderer: React.FC<ControlProps> = ({
               borderRadius: '8px',
               boxShadow:
                 '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-              border: '1px solid #e5e7eb',
+              border: `1px solid ${fieldColor.border}`,
+              backgroundColor: fieldColor.menuSurface,
+              color: fieldColor.text,
               marginTop: '4px',
               maxHeight: '280px',
             },
@@ -211,17 +215,17 @@ const DropdownRenderer: React.FC<ControlProps> = ({
               sx={{
                 padding: '12px 16px',
                 fontSize: '0.875rem',
-                borderBottom: '1px solid #f3f4f6',
+                borderBottom: `1px solid ${fieldColor.hairline}`,
                 '&:last-child': {
                   borderBottom: 'none',
                 },
                 '&:hover': {
-                  backgroundColor: '#f8fafc',
+                  backgroundColor: fieldColor.optionHover,
                 },
                 '&.Mui-selected': {
-                  backgroundColor: '#eff6ff',
+                  backgroundColor: fieldColor.optionSelected,
                   '&:hover': {
-                    backgroundColor: '#dbeafe',
+                    backgroundColor: fieldColor.optionSelectedHover,
                   },
                 },
               }}
@@ -236,7 +240,7 @@ const DropdownRenderer: React.FC<ControlProps> = ({
           style={{
             fontSize: '0.75rem',
             marginTop: '4px',
-            color: errors ? '#ef4444' : '#6b7280',
+            color: errors ? fieldColor.danger : fieldColor.mutedText,
           }}
         >
           {errors || description}

@@ -9,6 +9,8 @@ import debounce from 'lodash.debounce';
 import React, { useEffect, useRef, useState } from 'react';
 import AceEditor from 'react-ace';
 
+import { fieldColor } from './fieldColors';
+
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
 const JsonEditorRenderer: React.FC<ControlProps> = ({
@@ -101,7 +103,7 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
         <label
           style={{
             display: 'block',
-            color: '#475569',
+            color: fieldColor.mutedText,
             fontSize: '0.875rem',
             fontWeight: 500,
             marginBottom: '0.375rem',
@@ -109,7 +111,9 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
         >
           {label}
           {required && (
-            <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>
+            <span style={{ color: fieldColor.danger, marginLeft: '0.25rem' }}>
+              *
+            </span>
           )}
         </label>
       )}
@@ -117,7 +121,7 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
       {description && (
         <div
           style={{
-            color: '#6b7280',
+            color: fieldColor.mutedText,
             fontSize: '0.75rem',
             marginBottom: '0.5rem',
           }}
@@ -130,8 +134,8 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
         style={{
           border:
             errors || displayedParseError
-              ? '1px solid #ef4444'
-              : '1px solid #d1d5db',
+              ? `1px solid ${fieldColor.danger}`
+              : `1px solid ${fieldColor.border}`,
           borderRadius: '6px',
           overflow: 'hidden',
           opacity: isDisabled ? 0.6 : 1,
@@ -169,7 +173,7 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
       {displayedParseError && (
         <div
           style={{
-            color: '#ef4444',
+            color: fieldColor.danger,
             fontSize: '0.75rem',
             marginTop: '0.25rem',
           }}
@@ -181,7 +185,7 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
       {errors && (
         <div
           style={{
-            color: '#ef4444',
+            color: fieldColor.danger,
             fontSize: '0.75rem',
             marginTop: '0.25rem',
           }}

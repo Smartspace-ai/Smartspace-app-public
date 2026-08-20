@@ -8,6 +8,8 @@ import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import React, { useCallback, useEffect, useRef } from 'react';
 
+import { fieldColor } from './fieldColors';
+
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 type TextareaUiOptions = {
   placeholder?: string;
@@ -112,7 +114,7 @@ const TextareaRenderer: React.FC<ControlProps> = ({
         <label
           style={{
             display: 'block',
-            color: hasError ? '#ef4444' : '#475569',
+            color: hasError ? fieldColor.danger : fieldColor.mutedText,
             fontSize: '0.875rem',
             fontWeight: 500,
             marginBottom: '0.375rem',
@@ -120,7 +122,9 @@ const TextareaRenderer: React.FC<ControlProps> = ({
         >
           {label}
           {required && (
-            <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>
+            <span style={{ color: fieldColor.danger, marginLeft: '0.25rem' }}>
+              *
+            </span>
           )}
         </label>
       )}
@@ -128,7 +132,7 @@ const TextareaRenderer: React.FC<ControlProps> = ({
       {description && (
         <div
           style={{
-            color: '#6b7280',
+            color: fieldColor.mutedText,
             fontSize: '0.75rem',
             marginBottom: '0.5rem',
           }}
@@ -150,28 +154,32 @@ const TextareaRenderer: React.FC<ControlProps> = ({
           maxHeight: `${maxHeight}px`,
           resize: 'vertical',
           padding: '0.75rem',
-          border: hasError ? '2px solid #ef4444' : '1px solid #d1d5db',
+          border: hasError
+            ? `2px solid ${fieldColor.danger}`
+            : `1px solid ${fieldColor.border}`,
           borderRadius: '6px',
           fontSize: '16px',
           lineHeight: '1.5',
           fontFamily: 'inherit',
-          backgroundColor: isDisabled ? '#f9fafb' : '#ffffff',
-          color: isDisabled ? '#9ca3af' : '#111827',
+          backgroundColor: isDisabled
+            ? fieldColor.surfaceDisabled
+            : fieldColor.surface,
+          color: isDisabled ? fieldColor.mutedText : fieldColor.text,
           outline: 'none',
           transition:
             'border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-          boxShadow: hasError ? '0 0 0 1px #ef4444' : 'none',
+          boxShadow: hasError ? `0 0 0 1px ${fieldColor.danger}` : 'none',
           WebkitTextSizeAdjust: '100%',
         }}
         onFocus={(e) => {
           if (!hasError) {
-            e.target.style.borderColor = '#6366f1';
-            e.target.style.boxShadow = '0 0 0 1px #6366f1';
+            e.target.style.borderColor = fieldColor.accent;
+            e.target.style.boxShadow = `0 0 0 1px ${fieldColor.accent}`;
           }
         }}
         onBlur={(e) => {
           if (!hasError) {
-            e.target.style.borderColor = '#d1d5db';
+            e.target.style.borderColor = fieldColor.border;
             e.target.style.boxShadow = 'none';
           }
         }}
@@ -180,7 +188,7 @@ const TextareaRenderer: React.FC<ControlProps> = ({
       {hasError && (
         <div
           style={{
-            color: '#ef4444',
+            color: fieldColor.danger,
             fontSize: '0.75rem',
             marginTop: '0.25rem',
           }}
