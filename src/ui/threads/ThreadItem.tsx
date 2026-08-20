@@ -63,6 +63,10 @@ export default function ThreadItem({ thread }: Props) {
       // `chat-thread-item` carries the row's layout, radius, hover and the
       // active teal edge marker from the theme layer.
       className="chat-thread-item group mb-0.5"
+      // The row's actions overlay the end of the name, so the name only has to
+      // give way while they are on screen. A pinned row keeps its bookmark, and
+      // an open menu keeps its trigger, so both hold the room open.
+      data-actions-visible={thread.pinned || isMenuOpen ? 'true' : undefined}
       onPointerDown={onPointerDown}
       onKeyDown={(e) => {
         // Same portal story as `onPointerDown`: without this guard every
@@ -83,8 +87,10 @@ export default function ThreadItem({ thread }: Props) {
         {getInitials(thread.name)}
       </span>
 
-      <span className="block min-w-0 flex-1">
-        <span className="chat-thread-title block truncate">{thread.name}</span>
+      <span className="chat-thread-text block min-w-0 flex-1">
+        <span className="chat-thread-title block" title={thread.name}>
+          {thread.name}
+        </span>
         <span className="chat-thread-meta mt-0.5 block truncate">
           {isRunning ? (
             <span className="inline-flex items-center gap-1 text-star">
@@ -101,7 +107,7 @@ export default function ThreadItem({ thread }: Props) {
         </span>
       </span>
 
-      <span className="flex shrink-0 items-center gap-0.5">
+      <span className="chat-thread-actions">
         <button
           type="button"
           onClick={(e) => {
