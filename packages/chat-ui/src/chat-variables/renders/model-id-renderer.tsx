@@ -151,14 +151,16 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
   const selectedName = selectedModel
     ? selectedModel.displayName || selectedModel.name || ''
     : '';
-  const triggerText = selectedName || label || 'Select model';
+  const triggerText = selectedName || 'Select model';
   const iconSrc = getModelIcon(selectedModel);
 
   const tooltip = [selectedName || label, description, hasError ? errors : null]
     .filter(Boolean)
     .join(' — ');
 
-  const triggerLabel = label || 'Model';
+  // `ModelId` is the schema title this renderer is detected by, not a name to
+  // put in front of anyone.
+  const triggerLabel = !label || label === 'ModelId' ? 'Model' : label;
 
   const trigger = (
     <button
