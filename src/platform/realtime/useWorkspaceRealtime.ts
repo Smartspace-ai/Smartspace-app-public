@@ -4,10 +4,16 @@ import { useEffect } from 'react';
 
 import { useOptionalRealtime } from './RealtimeProvider';
 
+// Thread events are tolerant of both wire shapes permanently: new backends
+// send an id-only ThreadEvent ({ workSpaceId, threadId }); older ones a full
+// MessageThreadSummary ({ id, ... }). The widened handler type keeps this
+// compiling on both sides of the api-client bump.
+type ThreadEventPayload = { threadId?: string; id?: string };
+
 type Handlers = {
   onNotification?: (notification: SignalR.Notification) => void;
-  onThreadUpdate?: (thread: SignalR.MessageThreadSummary) => void;
-  onThreadDeleted?: (thread: SignalR.MessageThreadSummary) => void;
+  onThreadUpdate?: (threadEvent: ThreadEventPayload) => void;
+  onThreadDeleted?: (threadEvent: ThreadEventPayload) => void;
   onCommentsUpdate?: (comment: SignalR.CommentSummary) => void;
 };
 
