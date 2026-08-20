@@ -13,8 +13,13 @@ import {
   fieldHintClass,
   fieldLabelClass,
   fieldTriggerClass,
+  pillClass,
+  pillLabelClass,
+  pillValueClass,
   popoverRowClass,
   POPOVER_MAX_HEIGHT_PX,
+  scaleFor,
+  type FieldSurface,
 } from './fieldStyles';
 import { useAnchoredPopover } from './useAnchoredPopover';
 
@@ -57,9 +62,6 @@ function toOptions(schema: JsonSchema7 | undefined): Option[] {
   return [];
 }
 
-/** Settings-list scale, matching the textarea renderer's `dense` config. */
-type DropdownFormConfig = { dense?: boolean };
-
 /**
  * A variable with a fixed set of values, shaped as the design's select: a
  * bordered control showing the current value on one line, opening a list of
@@ -85,12 +87,9 @@ const DropdownRenderer: React.FC<ControlProps> = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // In the variables panel these stack with the other fields, so they take the
-  // compact scale rather than the design's full-size 40px control.
-  const scale =
-    ((config ?? {}) as DropdownFormConfig).dense === true
-      ? 'dense'
-      : 'comfortable';
+  const surface =
+    ((config ?? {}) as { surface?: FieldSurface }).surface ?? 'form';
+  const scale = scaleFor(surface);
 
   const { isOpen, close, toggle, renderPopover } = useAnchoredPopover({
     trigger: triggerRef,
@@ -128,41 +127,73 @@ const DropdownRenderer: React.FC<ControlProps> = ({
     : '';
   const triggerId = `${path}-trigger`;
 
+  const isBar = surface === 'bar';
+  const placeholder = `Select ${(label || 'value').toLowerCase()}…`;
+
+  const trigger = (
+    <button
+      id={triggerId}
+      ref={triggerRef}
+      type="button"
+      disabled={isDisabled}
+      onClick={toggle}
+      aria-haspopup="listbox"
+      aria-expanded={isOpen}
+      aria-label={label}
+      title={
+        [label, valueText, hasError ? errors : null]
+          .filter(Boolean)
+          .join(' — ') || undefined
+      }
+      className={
+        isBar
+          ? `ss-jsonforms-select-trigger ${pillClass({
+              active: isOpen,
+              hasError,
+              disabled: isDisabled,
+            })}`
+          : `ss-jsonforms-select-trigger ${fieldTriggerClass(scale, hasError)}`
+      }
+    >
+      {/* In the bar the capsule carries the name itself — there is no room for
+          a label above it. */}
+      {isBar && label && (
+        <span className={`inline ${pillLabelClass} max-sm:hidden`}>
+          {label}
+        </span>
+      )}
+      {/* The whole point of the clamp: a long option name ends in an ellipsis
+          instead of being cut mid-word. */}
+      <span
+        className={
+          isBar
+            ? pillValueClass
+            : `min-w-0 flex-1 truncate ${
+                valueText ? '' : 'text-muted-foreground'
+              }`
+        }
+      >
+        {valueText || (isBar ? '—' : placeholder)}
+      </span>
+      <ChevronDown
+        className={`shrink-0 opacity-50 ${isBar ? 'h-3 w-3' : 'h-4 w-4'}`}
+      />
+    </button>
+  );
+
   return (
     <div className="ss-jsonforms-field ss-jsonforms-select compact-field">
-      {label && (
+      {!isBar && label && (
         <label htmlFor={triggerId} className={fieldLabelClass(scale)}>
           {label}
         </label>
       )}
 
-      <button
-        id={triggerId}
-        ref={triggerRef}
-        type="button"
-        disabled={isDisabled}
-        onClick={toggle}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        title={valueText || undefined}
-        className={`ss-jsonforms-select-trigger ${fieldTriggerClass(
-          scale,
-          hasError
-        )}`}
-      >
-        {/* The whole point of the clamp: a long option name ends in an
-            ellipsis instead of being cut mid-word. */}
-        <span
-          className={`min-w-0 flex-1 truncate ${
-            valueText ? '' : 'text-muted-foreground'
-          }`}
-        >
-          {valueText || `Select ${(label || 'value').toLowerCase()}…`}
-        </span>
-        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-      </button>
+      {trigger}
 
-      {(errors || description) && (
+      {/* In the single-row action bar an error or hint would break the line —
+          it rides along on the trigger's tooltip there instead. */}
+      {!isBar && (errors || description) && (
         <div className={errors ? fieldErrorClass : fieldHintClass}>
           {errors || description}
         </div>

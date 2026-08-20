@@ -13,6 +13,8 @@ import {
   fieldErrorClass,
   fieldHintClass,
   fieldLabelClass,
+  scaleFor,
+  type FieldSurface,
 } from './fieldStyles';
 
 type AccessUiSchema = { access?: 'Read' | 'Write' };
@@ -28,6 +30,7 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
   visible,
   enabled,
   required,
+  config,
 }) => {
   const [jsonValue, setJsonValue] = useState<string>('');
   const [displayedParseError, setDisplayedParseError] = useState<string | null>(
@@ -100,11 +103,14 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
   const readOnly =
     (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
+  const scale = scaleFor(
+    ((config ?? {}) as { surface?: FieldSurface }).surface ?? 'form'
+  );
 
   return (
     <div style={{ marginBottom: '1rem' }}>
       {label && (
-        <label className={fieldLabelClass('comfortable')}>
+        <label className={fieldLabelClass(scale)}>
           {label}
           {required && <span className="ml-1 text-destructive">*</span>}
         </label>

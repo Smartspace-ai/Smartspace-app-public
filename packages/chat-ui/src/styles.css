@@ -241,12 +241,6 @@
   justify-content: flex-start;
 }
 
-/* In the action bar the select takes the capsule shape the design gives every
-   control there; in the panel it keeps the design's select box. */
-.ss-composer__actions .jsonforms-compact .ss-jsonforms-select-trigger {
-  border-radius: 9999px;
-}
-
 /* The overflow panel is a settings list, not a row of chips. In the action bar
    the cells size to their content so the pills sit side by side; stacked in the
    panel that same rule leaves ragged half-width text boxes, so here every field
@@ -259,12 +253,6 @@
 .ss-variables-panel .jsonforms-compact .ss-jsonforms-cell,
 .ss-variables-panel .jsonforms-compact .compact-field {
   width: 100%;
-}
-/* The toggles and steppers keep their capsule shape inside that row. */
-.ss-variables-panel .boolean-switch,
-.ss-variables-panel .ss-jsonforms-number {
-  width: max-content;
-  max-width: 100%;
 }
 
 /* ============================================================

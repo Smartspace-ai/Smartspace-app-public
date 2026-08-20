@@ -27,8 +27,11 @@ type UserOutputPayload = {
   schema: unknown;
 };
 
-/** Sizing for the text fields of an in-conversation question form. */
-const USER_FORM_CONFIG = { minRows: 6, maxRows: 20 };
+/**
+ * An answer to a question asked in the conversation is a message, not a setting:
+ * the fields take the design's full scale and a composer-sized box.
+ */
+const USER_FORM_CONFIG = { surface: 'form', minRows: 6, maxRows: 20 };
 
 /**
  * Hidden until the turn is hovered, but only on devices that can hover — on a

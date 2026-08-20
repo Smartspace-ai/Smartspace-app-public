@@ -13,6 +13,8 @@ import {
   fieldErrorClass,
   fieldHintClass,
   fieldLabelClass,
+  scaleFor,
+  type FieldSurface,
 } from './fieldStyles';
 
 type AccessUiSchema = { access?: 'Read' | 'Write' };
@@ -21,12 +23,11 @@ type TextareaUiOptions = {
   minRows?: number;
   maxRows?: number;
 };
-/** Host-supplied sizing, passed as JsonForms `config`. */
+/** Host-supplied sizing and placement, passed as JsonForms `config`. */
 type TextareaFormConfig = {
   minRows?: number;
   maxRows?: number;
-  /** Settings-list scale, for a form that isn't the focus of the screen. */
-  dense?: boolean;
+  surface?: FieldSurface;
 };
 
 /**
@@ -76,8 +77,7 @@ const TextareaRenderer: React.FC<ControlProps> = ({
   // The field's own schema wins, then whatever the host form asked for — the
   // chat's user-question form wants a far taller box than the variables bar.
   const formConfig = (config ?? {}) as TextareaFormConfig;
-  const isDense = formConfig.dense === true;
-  const scaleName = isDense ? 'dense' : 'comfortable';
+  const scaleName = scaleFor(formConfig.surface ?? 'form');
   const scale = SCALE[scaleName];
   const minRows =
     textareaOptions.minRows ?? formConfig.minRows ?? DEFAULT_MIN_ROWS;

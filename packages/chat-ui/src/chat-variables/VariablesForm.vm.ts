@@ -45,6 +45,17 @@ type HorizontalLayout = {
   options?: Record<string, unknown>;
 };
 
+type VariablesFormConfig = {
+  restrict: boolean;
+  trim: boolean;
+  showUnfocusedDescription: boolean;
+  hideRequiredAsterisk: boolean;
+  /** Which surface the fields are on — see `renders/fieldStyles`. */
+  surface: 'bar' | 'panel';
+  minRows: number;
+  maxRows: number;
+};
+
 interface ChatVariablesFormVm {
   schema: JsonSchema7;
   /** The controls that stay in the action bar, or null when none do. */
@@ -58,15 +69,9 @@ interface ChatVariablesFormVm {
   cells: typeof cells;
   ajv: ReturnType<typeof createAjv>;
   onChange: (args: { data: Record<string, unknown> }) => void;
-  config: {
-    restrict: boolean;
-    trim: boolean;
-    showUnfocusedDescription: boolean;
-    hideRequiredAsterisk: boolean;
-    dense: boolean;
-    minRows: number;
-    maxRows: number;
-  };
+  /** JsonForms config for the action bar, and for the overflow panel. */
+  barConfig: VariablesFormConfig;
+  panelConfig: VariablesFormConfig;
   isLoading: boolean;
   isReady: boolean;
   isHydrated: boolean;
@@ -226,20 +231,24 @@ export function useChatVariablesFormVm({
     [workspace.variables, setVariables, updateVariableMutation, threadId]
   );
 
-  const config = React.useMemo(
+  // These are settings, not the message being written: text fields start at one
+  // line and grow, on the smaller of the renderers' two scales, so a panel of
+  // them stays a list rather than a column of blocks.
+  const barConfig = React.useMemo<VariablesFormConfig>(
     () => ({
       restrict: true,
       trim: false,
       showUnfocusedDescription: true,
       hideRequiredAsterisk: true,
-      // These are settings, not the message being written: text fields start at
-      // one line and grow, on the smaller of the renderers' two scales, so a
-      // panel of them stays a list rather than a column of blocks.
-      dense: true,
+      surface: 'bar',
       minRows: 1,
       maxRows: 6,
     }),
     []
+  );
+  const panelConfig = React.useMemo<VariablesFormConfig>(
+    () => ({ ...barConfig, surface: 'panel' }),
+    [barConfig]
   );
 
   const inlineUiSchema = React.useMemo(
@@ -263,7 +272,8 @@ export function useChatVariablesFormVm({
     cells,
     ajv,
     onChange,
-    config,
+    barConfig,
+    panelConfig,
     isLoading,
     isReady: querySettled,
     isHydrated: data !== null,
