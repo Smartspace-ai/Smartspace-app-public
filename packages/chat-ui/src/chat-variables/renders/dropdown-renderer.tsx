@@ -5,11 +5,18 @@ import type {
 } from '@jsonforms/core';
 import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
-import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material/Select';
-import React, { useCallback } from 'react';
+import { Check, ChevronDown } from 'lucide-react';
+import React, { useCallback, useRef } from 'react';
 
-import { fieldColor } from './fieldColors';
+import {
+  fieldErrorClass,
+  fieldHintClass,
+  fieldLabelClass,
+  fieldTriggerClass,
+  popoverRowClass,
+  POPOVER_MAX_HEIGHT_PX,
+} from './fieldStyles';
+import { useAnchoredPopover } from './useAnchoredPopover';
 
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 type Option = { const: unknown; title?: string };
@@ -53,6 +60,15 @@ function toOptions(schema: JsonSchema7 | undefined): Option[] {
 /** Settings-list scale, matching the textarea renderer's `dense` config. */
 type DropdownFormConfig = { dense?: boolean };
 
+/**
+ * A variable with a fixed set of values, shaped as the design's select: a
+ * bordered control showing the current value on one line, opening a list of
+ * options above the composer.
+ *
+ * It replaced an MUI `Select` whose floating notched label and hard-coded light
+ * palette belonged to neither the design nor the theme, and which sliced a long
+ * option name mid-word.
+ */
 const DropdownRenderer: React.FC<ControlProps> = ({
   data,
   handleChange,
@@ -64,201 +80,132 @@ const DropdownRenderer: React.FC<ControlProps> = ({
   errors,
   config,
   uischema,
+  visible,
 }) => {
-  // Get options from oneOf or anyOf
-  const options = toOptions(schema as JsonSchema7 | undefined);
-
-  const handleSelectionChange = useCallback(
-    (event: SelectChangeEvent<unknown>) => {
-      handleChange(path, event.target.value);
-    },
-    [handleChange, path]
-  );
-
-  const displayValue = data ?? '';
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // In the variables panel these stack with the other fields, so they take the
-  // same compact scale rather than the 40px control the composer bar used.
-  const dense = ((config ?? {}) as DropdownFormConfig).dense === true;
-  const controlHeight = dense ? '34px' : '40px';
-  const labelSize = dense ? '0.75rem' : '0.875rem';
-  const valueSize = dense ? '0.8125rem' : '0.875rem';
+  // compact scale rather than the design's full-size 40px control.
+  const scale =
+    ((config ?? {}) as DropdownFormConfig).dense === true
+      ? 'dense'
+      : 'comfortable';
+
+  const { isOpen, close, toggle, renderPopover } = useAnchoredPopover({
+    trigger: triggerRef,
+    popover: listRef,
+    // A select's list lines up with its own control.
+    width: 'trigger',
+    maxHeight: POPOVER_MAX_HEIGHT_PX,
+    role: 'listbox',
+    label: label || 'Options',
+  });
+
+  const options = toOptions(schema as JsonSchema7 | undefined);
+
+  const select = useCallback(
+    (value: unknown) => {
+      handleChange(path, value);
+      close();
+    },
+    [handleChange, path, close]
+  );
+
+  if (!visible) return null;
 
   // Get readOnly from uischema (set when access === 'Read')
   const readOnly =
     (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
+  const hasError = !!errors;
+
+  const selected = options.find((option) => option.const === data);
+  const valueText = selected
+    ? selected.title ?? String(selected.const)
+    : data != null && data !== ''
+    ? String(data)
+    : '';
+  const triggerId = `${path}-trigger`;
 
   return (
-    <FormControl
-      variant="outlined"
-      size="small"
-      fullWidth
-      error={!!errors}
-      disabled={isDisabled}
-      className="compact-field"
-      sx={{
-        minWidth: '220px',
-      }}
-    >
-      <InputLabel
-        id={`${path}-label`}
-        sx={{
-          color: fieldColor.mutedText,
-          fontSize: labelSize,
-          fontWeight: 500,
-          '&.Mui-focused': {
-            color: fieldColor.accent,
-          },
-          '&.Mui-error': {
-            color: fieldColor.danger,
-          },
-        }}
-      >
-        {label}
-      </InputLabel>
-      <Select
-        labelId={`${path}-label`}
-        value={displayValue}
-        onChange={handleSelectionChange}
-        label={label}
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            backgroundColor: fieldColor.surface,
-            borderRadius: '8px',
-            transition: 'all 0.2s ease-in-out',
-            height: controlHeight,
-            '& fieldset': {
-              borderColor: fieldColor.border,
-              borderWidth: '1px',
-            },
-            '&:hover': {
-              backgroundColor: fieldColor.surface,
-              '& fieldset': {
-                borderColor: fieldColor.borderHover,
-              },
-            },
-            '&.Mui-focused': {
-              backgroundColor: fieldColor.surface,
-              '& fieldset': {
-                borderColor: fieldColor.accent,
-                borderWidth: '2px',
-              },
-            },
-            '&.Mui-error': {
-              '& fieldset': {
-                borderColor: fieldColor.danger,
-              },
-            },
-          },
-          '& .MuiSelect-select': {
-            backgroundColor: fieldColor.surface,
-            borderRadius: '8px',
-            transition: 'all 0.2s ease-in-out',
-            height: controlHeight,
-            fontSize: valueSize,
-            display: 'flex',
-            alignItems: 'center',
-            paddingRight: '32px !important',
-            '&:hover': {
-              backgroundColor: fieldColor.surface,
-            },
-            '&.Mui-focused': {
-              backgroundColor: fieldColor.surface,
-            },
-          },
-          '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: fieldColor.border,
-            borderWidth: '1px',
-            borderRadius: '8px',
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: fieldColor.borderHover,
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: fieldColor.accent,
-            borderWidth: '2px',
-          },
-          '&.Mui-error .MuiOutlinedInput-notchedOutline': {
-            borderColor: fieldColor.danger,
-          },
-          '& .MuiSelect-icon': {
-            color: fieldColor.mutedText,
-            '&:hover': {
-              color: fieldColor.mutedText,
-            },
-          },
-        }}
-        MenuProps={{
-          PaperProps: {
-            sx: {
-              borderRadius: '8px',
-              boxShadow:
-                '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-              border: `1px solid ${fieldColor.border}`,
-              backgroundColor: fieldColor.menuSurface,
-              color: fieldColor.text,
-              marginTop: '4px',
-              maxHeight: '280px',
-            },
-          },
-          MenuListProps: {
-            sx: {
-              padding: 0,
-            },
-          },
-        }}
-      >
-        {options.map((option, index) => {
-          const raw = option.const;
-          const key =
-            typeof raw === 'string' || typeof raw === 'number'
-              ? String(raw)
-              : String(index);
-          const value =
-            typeof raw === 'string' || typeof raw === 'number'
-              ? raw
-              : String(raw ?? index);
+    <div className="ss-jsonforms-field ss-jsonforms-select compact-field">
+      {label && (
+        <label htmlFor={triggerId} className={fieldLabelClass(scale)}>
+          {label}
+        </label>
+      )}
 
-          return (
-            <MenuItem
-              key={key}
-              value={value}
-              sx={{
-                padding: '12px 16px',
-                fontSize: '0.875rem',
-                borderBottom: `1px solid ${fieldColor.hairline}`,
-                '&:last-child': {
-                  borderBottom: 'none',
-                },
-                '&:hover': {
-                  backgroundColor: fieldColor.optionHover,
-                },
-                '&.Mui-selected': {
-                  backgroundColor: fieldColor.optionSelected,
-                  '&:hover': {
-                    backgroundColor: fieldColor.optionSelectedHover,
-                  },
-                },
-              }}
-            >
-              {option.title ?? String(raw)}
-            </MenuItem>
-          );
-        })}
-      </Select>
-      {(description || errors) && (
-        <div
-          style={{
-            fontSize: '0.75rem',
-            marginTop: '4px',
-            color: errors ? fieldColor.danger : fieldColor.mutedText,
-          }}
+      <button
+        id={triggerId}
+        ref={triggerRef}
+        type="button"
+        disabled={isDisabled}
+        onClick={toggle}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        title={valueText || undefined}
+        className={`ss-jsonforms-select-trigger ${fieldTriggerClass(
+          scale,
+          hasError
+        )}`}
+      >
+        {/* The whole point of the clamp: a long option name ends in an
+            ellipsis instead of being cut mid-word. */}
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            valueText ? '' : 'text-muted-foreground'
+          }`}
         >
+          {valueText || `Select ${(label || 'value').toLowerCase()}…`}
+        </span>
+        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+      </button>
+
+      {(errors || description) && (
+        <div className={errors ? fieldErrorClass : fieldHintClass}>
           {errors || description}
         </div>
       )}
-    </FormControl>
+
+      {renderPopover(
+        <div className="min-h-0 overflow-y-auto py-1">
+          {options.length === 0 && (
+            <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+              No options available
+            </p>
+          )}
+          {options.map((option, index) => {
+            const active = option.const === data;
+            const text = option.title ?? String(option.const);
+            return (
+              <button
+                key={
+                  typeof option.const === 'string' ||
+                  typeof option.const === 'number'
+                    ? String(option.const)
+                    : `option-${index}`
+                }
+                type="button"
+                role="option"
+                aria-selected={active}
+                onClick={() => select(option.const)}
+                className={popoverRowClass}
+              >
+                <Check
+                  className={`h-3.5 w-3.5 shrink-0 ${
+                    active ? 'text-primary' : 'opacity-0'
+                  }`}
+                />
+                <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                  {text}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 };
 

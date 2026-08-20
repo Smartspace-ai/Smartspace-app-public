@@ -79,7 +79,9 @@ const NumberRenderer: React.FC<ControlProps> = ({
       {label && (
         <label
           htmlFor={`number-${path}`}
-          className={`whitespace-nowrap ${
+          // Capped like the toggle pill's label: a long variable name ends in
+          // an ellipsis rather than stretching the capsule across the bar.
+          className={`max-w-[9rem] truncate whitespace-nowrap ${
             hasError ? 'text-destructive' : 'text-muted-foreground'
           }`}
         >

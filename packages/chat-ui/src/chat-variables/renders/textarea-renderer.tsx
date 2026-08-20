@@ -8,7 +8,12 @@ import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import React, { useCallback, useEffect, useRef } from 'react';
 
-import { fieldColor } from './fieldColors';
+import {
+  fieldControlClass,
+  fieldErrorClass,
+  fieldHintClass,
+  fieldLabelClass,
+} from './fieldStyles';
 
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 type TextareaUiOptions = {
@@ -25,40 +30,27 @@ type TextareaFormConfig = {
 };
 
 /**
- * Two scales. `comfortable` is a field someone is writing into — an answer to a
- * question asked in the conversation. `dense` is a row in a settings list, where
- * a stack of these has to stay scannable: at the comfortable scale the variables
- * panel came out as a column of chunky three-line boxes with headings.
+ * Two scales, both the design's. `comfortable` is its own field metric — 14px
+ * type in a `px-3 py-2` box — for something being written into, like an answer
+ * to a question asked in the conversation. `dense` is one step down, for the
+ * variables list, where a stack of full-size fields read as a column of blocks.
  *
- * `lineHeight` and `padding` are in px so the row arithmetic below is exact.
+ * `lineHeight` and `padding` are the px behind those classes, so the row
+ * arithmetic below matches what is rendered.
  */
 const SCALE = {
-  comfortable: {
-    fontSize: '16px',
-    lineHeight: 24,
-    padding: 12,
-    labelSize: '0.875rem',
-    labelGap: '0.375rem',
-    radius: '6px',
-  },
-  dense: {
-    fontSize: '0.8125rem',
-    lineHeight: 18,
-    padding: 8,
-    labelSize: '0.75rem',
-    labelGap: '0.25rem',
-    radius: '8px',
-  },
+  comfortable: { lineHeight: 20, padding: 8 },
+  dense: { lineHeight: 16, padding: 6 },
 } as const;
-
-const DEFAULT_MIN_ROWS = 3;
-const DEFAULT_MAX_ROWS = 9;
 
 type Scale = (typeof SCALE)[keyof typeof SCALE];
 
 /** Plus the 1px border on each edge. */
 const rowsToPx = (rows: number, scale: Scale) =>
   rows * scale.lineHeight + scale.padding * 2 + 2;
+
+const DEFAULT_MIN_ROWS = 3;
+const DEFAULT_MAX_ROWS = 9;
 
 const TextareaRenderer: React.FC<ControlProps> = ({
   data,
@@ -84,7 +76,9 @@ const TextareaRenderer: React.FC<ControlProps> = ({
   // The field's own schema wins, then whatever the host form asked for — the
   // chat's user-question form wants a far taller box than the variables bar.
   const formConfig = (config ?? {}) as TextareaFormConfig;
-  const scale = formConfig.dense ? SCALE.dense : SCALE.comfortable;
+  const isDense = formConfig.dense === true;
+  const scaleName = isDense ? 'dense' : 'comfortable';
+  const scale = SCALE[scaleName];
   const minRows =
     textareaOptions.minRows ?? formConfig.minRows ?? DEFAULT_MIN_ROWS;
   const maxRows = Math.max(
@@ -144,91 +138,33 @@ const TextareaRenderer: React.FC<ControlProps> = ({
   return (
     <div className="ss-jsonforms-field ss-jsonforms-textarea">
       {label && (
-        <label
-          style={{
-            display: 'block',
-            color: hasError ? fieldColor.danger : fieldColor.mutedText,
-            fontSize: scale.labelSize,
-            fontWeight: 500,
-            marginBottom: scale.labelGap,
-          }}
-        >
+        <label htmlFor={path} className={fieldLabelClass(scaleName)}>
           {label}
-          {required && (
-            <span style={{ color: fieldColor.danger, marginLeft: '0.25rem' }}>
-              *
-            </span>
-          )}
+          {required && <span className="ml-1 text-destructive">*</span>}
         </label>
       )}
 
-      {description && (
-        <div
-          style={{
-            color: fieldColor.mutedText,
-            fontSize: '0.75rem',
-            marginBottom: '0.5rem',
-          }}
-        >
-          {description}
-        </div>
-      )}
+      {description && <div className={fieldHintClass}>{description}</div>}
 
       <textarea
+        id={path}
         ref={textareaRef}
         value={data || ''}
         onChange={handleInputChange}
         placeholder={placeholder}
         disabled={isDisabled}
         rows={minRows}
+        className={`resize-y ${fieldControlClass(scaleName, !!hasError)}`}
         style={{
-          width: '100%',
           minHeight: `${minHeight}px`,
           maxHeight: `${maxHeight}px`,
-          resize: 'vertical',
-          padding: `${scale.padding}px`,
-          border: hasError
-            ? `1px solid ${fieldColor.danger}`
-            : `1px solid ${fieldColor.border}`,
-          borderRadius: scale.radius,
-          fontSize: scale.fontSize,
-          lineHeight: `${scale.lineHeight}px`,
-          fontFamily: 'inherit',
-          backgroundColor: isDisabled
-            ? fieldColor.surfaceDisabled
-            : fieldColor.surface,
-          color: isDisabled ? fieldColor.mutedText : fieldColor.text,
-          outline: 'none',
-          transition:
-            'border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-          boxShadow: hasError ? `0 0 0 1px ${fieldColor.danger}` : 'none',
+          // iOS zooms a focused control under 16px; the design's fields are
+          // 14px, so opt out of the adjustment rather than the design.
           WebkitTextSizeAdjust: '100%',
-        }}
-        onFocus={(e) => {
-          if (!hasError) {
-            e.target.style.borderColor = fieldColor.accent;
-            e.target.style.boxShadow = `0 0 0 1px ${fieldColor.accent}`;
-          }
-        }}
-        onBlur={(e) => {
-          if (!hasError) {
-            e.target.style.borderColor = fieldColor.border;
-            e.target.style.boxShadow = 'none';
-          }
         }}
       />
 
-      {hasError && (
-        <div
-          style={{
-            color: fieldColor.danger,
-            fontSize: '0.75rem',
-            marginTop: '0.25rem',
-          }}
-        >
-          {errors}
-        </div>
-      )}
+      {hasError && <div className={fieldErrorClass}>{errors}</div>}
     </div>
   );
 };
