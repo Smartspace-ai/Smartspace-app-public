@@ -14,6 +14,17 @@ type TextareaUiOptions = {
   minRows?: number;
   maxRows?: number;
 };
+/** Host-supplied sizing, passed as JsonForms `config`. */
+type TextareaFormConfig = { minRows?: number; maxRows?: number };
+
+/** `lineHeight: 1.5` on the 16px font below. */
+const LINE_HEIGHT_PX = 24;
+/** 0.75rem of padding top and bottom, plus the 1px border on each edge. */
+const VERTICAL_CHROME_PX = 26;
+const DEFAULT_MIN_ROWS = 3;
+const DEFAULT_MAX_ROWS = 9;
+
+const rowsToPx = (rows: number) => rows * LINE_HEIGHT_PX + VERTICAL_CHROME_PX;
 
 const TextareaRenderer: React.FC<ControlProps> = ({
   data,
@@ -27,31 +38,55 @@ const TextareaRenderer: React.FC<ControlProps> = ({
   visible,
   enabled,
   required,
+  config,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea based on content
+  // Get textarea-specific options from schema
+  const textareaOptions =
+    ((schema as unknown as Record<string, unknown>)['ui:textarea'] as
+      | TextareaUiOptions
+      | undefined) ?? {};
+  // The field's own schema wins, then whatever the host form asked for — the
+  // chat's user-question form wants a far taller box than the variables bar.
+  const formConfig = (config ?? {}) as TextareaFormConfig;
+  const minRows =
+    textareaOptions.minRows ?? formConfig.minRows ?? DEFAULT_MIN_ROWS;
+  const maxRows = Math.max(
+    minRows,
+    textareaOptions.maxRows ?? formConfig.maxRows ?? DEFAULT_MAX_ROWS
+  );
+  const minHeight = rowsToPx(minRows);
+  const maxHeight = rowsToPx(maxRows);
+
+  // Grow with the content, between those two bounds, then scroll.
   const autoResize = useCallback(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(
-        Math.max(textareaRef.current.scrollHeight, 80), // Minimum height of 80px
-        240 // Maximum height of 240px
-      )}px`;
-    }
-  }, []);
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(
+      Math.max(el.scrollHeight, minHeight),
+      maxHeight
+    )}px`;
+  }, [minHeight, maxHeight]);
 
   useEffect(() => {
     autoResize();
   }, [data, autoResize]);
 
+  // A narrower box rewraps the text into more lines, so the height has to be
+  // recomputed when the layout around it changes.
+  useEffect(() => {
+    window.addEventListener('resize', autoResize);
+    return () => window.removeEventListener('resize', autoResize);
+  }, [autoResize]);
+
   const handleInputChange = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = event.target.value;
-      handleChange(path, newValue);
-
-      // Trigger auto-resize after state update
-      setTimeout(autoResize, 0);
+      handleChange(path, event.target.value);
+      // Measure the element itself: `data` only comes back on the next render,
+      // and a controlled textarea already holds the new text.
+      autoResize();
     },
     [handleChange, path, autoResize]
   );
@@ -66,16 +101,10 @@ const TextareaRenderer: React.FC<ControlProps> = ({
   const isDisabled = !enabled || readOnly;
   const hasError = errors && errors.length > 0;
 
-  // Get textarea-specific options from schema
-  const textareaOptions =
-    ((schema as unknown as Record<string, unknown>)['ui:textarea'] as
-      | TextareaUiOptions
-      | undefined) ?? {};
   const placeholder =
     textareaOptions.placeholder ||
     (schema as JsonSchema7 | undefined)?.description ||
     `Enter ${label?.toLowerCase() || 'text'}...`;
-  const minRows = textareaOptions.minRows || 3;
 
   return (
     <div className="ss-jsonforms-field ss-jsonforms-textarea">
@@ -117,8 +146,8 @@ const TextareaRenderer: React.FC<ControlProps> = ({
         rows={minRows}
         style={{
           width: '100%',
-          minHeight: '80px',
-          maxHeight: '240px',
+          minHeight: `${minHeight}px`,
+          maxHeight: `${maxHeight}px`,
           resize: 'vertical',
           padding: '0.75rem',
           border: hasError ? '2px solid #ef4444' : '1px solid #d1d5db',

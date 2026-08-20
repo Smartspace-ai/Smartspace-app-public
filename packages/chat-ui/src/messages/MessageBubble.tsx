@@ -27,6 +27,9 @@ type UserOutputPayload = {
   schema: unknown;
 };
 
+/** Sizing for the text fields of an in-conversation question form. */
+const USER_FORM_CONFIG = { minRows: 6, maxRows: 20 };
+
 /**
  * Hidden until the turn is hovered, but only on devices that can hover — on a
  * touch screen there is no hover state to recover it with, so it stays put.
@@ -115,13 +118,18 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
       )}
 
       {showForm && (
-        <div className="mt-4 border-t border-border pt-4">
+        <div className="ss-chat-message__user-form mt-4 border-t border-border pt-4">
           <JsonForms
             schema={userOutput.schema as JsonSchema}
             data={responseFormData}
             renderers={renderers}
             cells={cells}
             readonly={userInput !== undefined}
+            /* An answer to a question in the conversation is a message, not a
+               settings field: give it a composer-sized box that keeps growing
+               with what is typed instead of the three-line default the
+               variables bar uses. */
+            config={USER_FORM_CONFIG}
             onChange={({ data, errors }) => {
               setResponseFormData(data);
               setResponseFormValid(!errors?.length);
