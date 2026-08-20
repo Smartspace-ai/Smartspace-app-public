@@ -17,16 +17,48 @@ type TextareaUiOptions = {
   maxRows?: number;
 };
 /** Host-supplied sizing, passed as JsonForms `config`. */
-type TextareaFormConfig = { minRows?: number; maxRows?: number };
+type TextareaFormConfig = {
+  minRows?: number;
+  maxRows?: number;
+  /** Settings-list scale, for a form that isn't the focus of the screen. */
+  dense?: boolean;
+};
 
-/** `lineHeight: 1.5` on the 16px font below. */
-const LINE_HEIGHT_PX = 24;
-/** 0.75rem of padding top and bottom, plus the 1px border on each edge. */
-const VERTICAL_CHROME_PX = 26;
+/**
+ * Two scales. `comfortable` is a field someone is writing into — an answer to a
+ * question asked in the conversation. `dense` is a row in a settings list, where
+ * a stack of these has to stay scannable: at the comfortable scale the variables
+ * panel came out as a column of chunky three-line boxes with headings.
+ *
+ * `lineHeight` and `padding` are in px so the row arithmetic below is exact.
+ */
+const SCALE = {
+  comfortable: {
+    fontSize: '16px',
+    lineHeight: 24,
+    padding: 12,
+    labelSize: '0.875rem',
+    labelGap: '0.375rem',
+    radius: '6px',
+  },
+  dense: {
+    fontSize: '0.8125rem',
+    lineHeight: 18,
+    padding: 8,
+    labelSize: '0.75rem',
+    labelGap: '0.25rem',
+    radius: '8px',
+  },
+} as const;
+
 const DEFAULT_MIN_ROWS = 3;
 const DEFAULT_MAX_ROWS = 9;
 
-const rowsToPx = (rows: number) => rows * LINE_HEIGHT_PX + VERTICAL_CHROME_PX;
+type Scale = (typeof SCALE)[keyof typeof SCALE];
+
+/** Plus the 1px border on each edge. */
+const rowsToPx = (rows: number, scale: Scale) =>
+  rows * scale.lineHeight + scale.padding * 2 + 2;
 
 const TextareaRenderer: React.FC<ControlProps> = ({
   data,
@@ -52,14 +84,15 @@ const TextareaRenderer: React.FC<ControlProps> = ({
   // The field's own schema wins, then whatever the host form asked for — the
   // chat's user-question form wants a far taller box than the variables bar.
   const formConfig = (config ?? {}) as TextareaFormConfig;
+  const scale = formConfig.dense ? SCALE.dense : SCALE.comfortable;
   const minRows =
     textareaOptions.minRows ?? formConfig.minRows ?? DEFAULT_MIN_ROWS;
   const maxRows = Math.max(
     minRows,
     textareaOptions.maxRows ?? formConfig.maxRows ?? DEFAULT_MAX_ROWS
   );
-  const minHeight = rowsToPx(minRows);
-  const maxHeight = rowsToPx(maxRows);
+  const minHeight = rowsToPx(minRows, scale);
+  const maxHeight = rowsToPx(maxRows, scale);
 
   // Grow with the content, between those two bounds, then scroll.
   const autoResize = useCallback(() => {
@@ -115,9 +148,9 @@ const TextareaRenderer: React.FC<ControlProps> = ({
           style={{
             display: 'block',
             color: hasError ? fieldColor.danger : fieldColor.mutedText,
-            fontSize: '0.875rem',
+            fontSize: scale.labelSize,
             fontWeight: 500,
-            marginBottom: '0.375rem',
+            marginBottom: scale.labelGap,
           }}
         >
           {label}
@@ -153,13 +186,13 @@ const TextareaRenderer: React.FC<ControlProps> = ({
           minHeight: `${minHeight}px`,
           maxHeight: `${maxHeight}px`,
           resize: 'vertical',
-          padding: '0.75rem',
+          padding: `${scale.padding}px`,
           border: hasError
-            ? `2px solid ${fieldColor.danger}`
+            ? `1px solid ${fieldColor.danger}`
             : `1px solid ${fieldColor.border}`,
-          borderRadius: '6px',
-          fontSize: '16px',
-          lineHeight: '1.5',
+          borderRadius: scale.radius,
+          fontSize: scale.fontSize,
+          lineHeight: `${scale.lineHeight}px`,
           fontFamily: 'inherit',
           backgroundColor: isDisabled
             ? fieldColor.surfaceDisabled

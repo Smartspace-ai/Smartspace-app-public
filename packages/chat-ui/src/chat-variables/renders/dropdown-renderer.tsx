@@ -50,6 +50,9 @@ function toOptions(schema: JsonSchema7 | undefined): Option[] {
   return [];
 }
 
+/** Settings-list scale, matching the textarea renderer's `dense` config. */
+type DropdownFormConfig = { dense?: boolean };
+
 const DropdownRenderer: React.FC<ControlProps> = ({
   data,
   handleChange,
@@ -59,6 +62,7 @@ const DropdownRenderer: React.FC<ControlProps> = ({
   label,
   description,
   errors,
+  config,
   uischema,
 }) => {
   // Get options from oneOf or anyOf
@@ -72,6 +76,13 @@ const DropdownRenderer: React.FC<ControlProps> = ({
   );
 
   const displayValue = data ?? '';
+
+  // In the variables panel these stack with the other fields, so they take the
+  // same compact scale rather than the 40px control the composer bar used.
+  const dense = ((config ?? {}) as DropdownFormConfig).dense === true;
+  const controlHeight = dense ? '34px' : '40px';
+  const labelSize = dense ? '0.75rem' : '0.875rem';
+  const valueSize = dense ? '0.8125rem' : '0.875rem';
 
   // Get readOnly from uischema (set when access === 'Read')
   const readOnly =
@@ -94,7 +105,7 @@ const DropdownRenderer: React.FC<ControlProps> = ({
         id={`${path}-label`}
         sx={{
           color: fieldColor.mutedText,
-          fontSize: '0.875rem',
+          fontSize: labelSize,
           fontWeight: 500,
           '&.Mui-focused': {
             color: fieldColor.accent,
@@ -116,7 +127,7 @@ const DropdownRenderer: React.FC<ControlProps> = ({
             backgroundColor: fieldColor.surface,
             borderRadius: '8px',
             transition: 'all 0.2s ease-in-out',
-            height: '40px', // Same height as model dropdown
+            height: controlHeight,
             '& fieldset': {
               borderColor: fieldColor.border,
               borderWidth: '1px',
@@ -144,7 +155,8 @@ const DropdownRenderer: React.FC<ControlProps> = ({
             backgroundColor: fieldColor.surface,
             borderRadius: '8px',
             transition: 'all 0.2s ease-in-out',
-            height: '40px',
+            height: controlHeight,
+            fontSize: valueSize,
             display: 'flex',
             alignItems: 'center',
             paddingRight: '32px !important',

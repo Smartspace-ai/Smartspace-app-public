@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 const PANEL_WIDTH_PX = 320;
 /** Clearance from the trigger and from the edges of the viewport. */
 const PANEL_GAP_PX = 8;
+const PANEL_MAX_HEIGHT_PX = 420;
 
 type Props = {
   /** How many variables the panel holds, shown on the trigger. */
@@ -106,11 +107,15 @@ export function VariablesOverflowPanel({ count, children }: Props) {
                 )
               ),
               bottom: window.innerHeight - anchorRect.top + PANEL_GAP_PX,
-              // The panel opens upward, so it can only have the room between
-              // the trigger and the top of the viewport. Past that the fields
-              // scroll inside it rather than the panel running off screen.
-              // one gap below the panel, one above it
-              maxHeight: Math.max(120, anchorRect.top - PANEL_GAP_PX * 2),
+              // The panel opens upward, so it has at most the room between
+              // the trigger and the top of the viewport — and not even all of
+              // that: one running the full height of a tall window reads as a
+              // page rather than a control. Past this the fields scroll inside
+              // it instead.
+              maxHeight: Math.min(
+                PANEL_MAX_HEIGHT_PX,
+                Math.max(120, anchorRect.top - PANEL_GAP_PX * 2)
+              ),
             }}
           >
             <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">

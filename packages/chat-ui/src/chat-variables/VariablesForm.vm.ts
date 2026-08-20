@@ -63,6 +63,9 @@ interface ChatVariablesFormVm {
     trim: boolean;
     showUnfocusedDescription: boolean;
     hideRequiredAsterisk: boolean;
+    dense: boolean;
+    minRows: number;
+    maxRows: number;
   };
   isLoading: boolean;
   isReady: boolean;
@@ -229,6 +232,12 @@ export function useChatVariablesFormVm({
       trim: false,
       showUnfocusedDescription: true,
       hideRequiredAsterisk: true,
+      // These are settings, not the message being written: text fields start at
+      // one line and grow, on the smaller of the renderers' two scales, so a
+      // panel of them stays a list rather than a column of blocks.
+      dense: true,
+      minRows: 1,
+      maxRows: 6,
     }),
     []
   );
