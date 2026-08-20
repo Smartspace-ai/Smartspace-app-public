@@ -241,6 +241,12 @@
   justify-content: flex-start;
 }
 
+/* The overflow panel stacks its fields one per row, so it wants breathing room
+   between them rather than the action bar's tight chip spacing. */
+.ss-variables-panel .jsonforms-compact .ss-jsonforms-grid {
+  gap: 14px;
+}
+
 /* ============================================================
    PROSE — markdown rendering for AI responses
    ============================================================ */
