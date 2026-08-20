@@ -40,6 +40,12 @@ export default function ThreadItem({ thread }: Props) {
   const avatar = getAvatarColour(thread.name);
 
   const onPointerDown = (e: React.PointerEvent) => {
+    // The rename dialog and the row's own menu are children of this element in
+    // the React tree, but Radix portals them out of it in the DOM. React still
+    // routes their events up the React tree, so a pointer down inside the
+    // dialog arrives here — and used to navigate away mid-rename. Anything that
+    // did not happen inside the row's own DOM subtree is not the row's click.
+    if (e.target instanceof Node && !e.currentTarget.contains(e.target)) return;
     if (
       e.target instanceof Element &&
       (e.target.closest('button') || e.target.closest('[role="menuitem"]'))
@@ -59,6 +65,11 @@ export default function ThreadItem({ thread }: Props) {
       className="chat-thread-item group mb-0.5"
       onPointerDown={onPointerDown}
       onKeyDown={(e) => {
+        // Same portal story as `onPointerDown`: without this guard every
+        // keystroke typed in the rename dialog lands here, Space gets
+        // preventDefault'd out of the name field and Enter opens the thread
+        // instead of saving the new name.
+        if (e.target !== e.currentTarget) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           goToThread();
