@@ -1,6 +1,6 @@
 // src/platform/realtime/useWorkspaceRealtime.ts
 import { SignalR } from '@smartspace/api-client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useOptionalRealtime } from './RealtimeProvider';
 
@@ -26,6 +26,12 @@ export function useWorkspaceRealtime(
   const subscribeToGroup = ctx?.subscribeToGroup;
   const unsubscribeFromGroup = ctx?.unsubscribeFromGroup;
 
+  // Dispatch via ref so the effect below doesn't depend on `handlers`
+  // identity, which changes every render and would otherwise cause the
+  // SignalR group to be left and rejoined on every render.
+  const handlersRef = useRef(handlers);
+  handlersRef.current = handlers;
+
   useEffect(() => {
     if (
       !workspaceId ||
@@ -46,16 +52,16 @@ export function useWorkspaceRealtime(
              still pushed by the server for clients that haven't migrated */
         },
         receiveNotification: async (notification) => {
-          handlers.onNotification?.(notification);
+          handlersRef.current.onNotification?.(notification);
         },
         receiveThreadUpdate: async (thread) => {
-          handlers.onThreadUpdate?.(thread);
+          handlersRef.current.onThreadUpdate?.(thread);
         },
         receiveThreadDeleted: async (thread) => {
-          handlers.onThreadDeleted?.(thread);
+          handlersRef.current.onThreadDeleted?.(thread);
         },
         receiveCommentsUpdate: async (comment) => {
-          handlers.onCommentsUpdate?.(comment);
+          handlersRef.current.onCommentsUpdate?.(comment);
         },
       }
     );
@@ -64,11 +70,5 @@ export function useWorkspaceRealtime(
       unsubscribeFromGroup(workspaceId);
       subscription.dispose();
     };
-  }, [
-    workspaceId,
-    connection,
-    subscribeToGroup,
-    unsubscribeFromGroup,
-    handlers,
-  ]);
+  }, [workspaceId, connection, subscribeToGroup, unsubscribeFromGroup]);
 }

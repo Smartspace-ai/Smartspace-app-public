@@ -9,6 +9,7 @@ import { useRouteIds } from '@/platform/routing/RouteIdsProvider';
 import type { Comment } from '@/domains/comments';
 import { useAddComment } from '@/domains/comments/mutations';
 import { useComments } from '@/domains/comments/queries';
+import { useThreadUsers } from '@/domains/thread-users';
 import { fetchTaggableUsers } from '@/domains/workspaces';
 
 import { ScrollArea } from '@/shared/ui/mui-compat/scroll-area';
@@ -103,6 +104,16 @@ export function SidebarRight() {
   );
   const { mutateAsync: addCommentAsync, isPending: isAddingComment } =
     useAddComment(threadId);
+  // Live comment pushes may omit the resolved display name. Fall back to
+  // the thread's participant list to resolve it locally.
+  const { data: threadUsers } = useThreadUsers(threadId);
+  const displayNameByUserId = useMemo(() => {
+    const map = new Map<string, string>();
+    (threadUsers ?? []).forEach((u) => {
+      if (u.displayName) map.set(u.userId, u.displayName);
+    });
+    return map;
+  }, [threadUsers]);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const [threadComment, setThreadComment] = useState({
@@ -203,6 +214,18 @@ export function SidebarRight() {
                 ) : (
                   comments?.map((comment: Comment) => {
                     const isMine = comment.createdByUserId === currentUserId;
+                    const senderName =
+                      comment.createdBy ||
+                      displayNameByUserId.get(comment.createdByUserId) ||
+                      '';
+                    // Same fallback for mentioned users' names.
+                    const resolvedMentionedUsers = comment.mentionedUsers.map(
+                      (u) => ({
+                        ...u,
+                        displayName:
+                          u.displayName || displayNameByUserId.get(u.id) || '',
+                      })
+                    );
                     return (
                       <div
                         key={comment.id}
@@ -221,14 +244,14 @@ export function SidebarRight() {
                             className={`truncate text-[13px] font-semibold ${
                               isMine ? '' : 'text-primary'
                             }`}
-                            title={comment.createdBy}
+                            title={senderName}
                           >
-                            {comment.createdBy}
+                            {senderName}
                           </p>
                           <p className="mt-0.5 whitespace-pre-wrap break-words text-[13px]">
                             {renderContentWithMentions(
                               comment.content,
-                              comment.mentionedUsers
+                              resolvedMentionedUsers
                             )}
                           </p>
                         </div>
