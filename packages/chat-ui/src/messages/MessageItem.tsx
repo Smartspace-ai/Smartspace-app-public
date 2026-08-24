@@ -150,15 +150,20 @@ export const MessageItem: FC<MessageItemProps> = ({
   const chatbotName = getChatbotName(workspace?.name);
   const { addInputToMessageMutation } = useAddInputToMessage();
 
+  // `channels` must echo the `_user` Output value's own channel map — the
+  // `case '_user'` lookup below matches an Input back to its Output via
+  // `channelsEqual`, so an answer submitted under the wrong channels (e.g.
+  // always `{}`) never matches and the form appears stuck open forever.
   const onSubmitUserForm =
-    (messageId: string) => (name: string, value: unknown) => {
+    (messageId: string, channels: Record<string, number> = {}) =>
+    (name: string, value: unknown) => {
       if (!threadId || !messageId) return;
       addInputToMessageMutation.mutate({
         threadId,
         messageId,
         name,
         value,
-        channels: {},
+        channels,
       });
     };
 
@@ -365,7 +370,7 @@ export const MessageItem: FC<MessageItemProps> = ({
               }
               chatbotName={chatbotName}
               userInput={userInput?.value}
-              onSubmitUserForm={onSubmitUserForm(message.id ?? '')}
+              onSubmitUserForm={onSubmitUserForm(message.id ?? '', v.channels)}
             />
           );
           // A user-interaction form is rendered output: the flow is waiting on
