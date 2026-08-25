@@ -280,7 +280,11 @@ export type ThreadStreamHandlers = {
 
 export type StreamThreadMessagesResult =
   | { status: 'completed' }
-  | { status: 'not-found' };
+  | { status: 'not-found' }
+  // 401/403. Split out from the generic throw because reopening cannot fix
+  // it: the caller has to stop rather than retry, and every retry costs a
+  // token acquisition that counts against the session-expiry breaker.
+  | { status: 'forbidden'; httpStatus: number };
 
 /**
  * Tails the GET `/MessageThreads/{threadId}/messages/stream` SSE endpoint.
@@ -314,6 +318,9 @@ export async function streamThreadMessages({
   );
 
   if (response.status === 404) return { status: 'not-found' };
+  if (response.status === 401 || response.status === 403) {
+    return { status: 'forbidden', httpStatus: response.status };
+  }
   if (!response.ok) {
     throw new Error(`Stream open failed with status ${response.status}`);
   }
