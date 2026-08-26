@@ -8,6 +8,9 @@ const GAP_PX = 8;
 /** A trigger-width list still has to be readable: in the action bar the trigger
  *  shrinks to its value, which is often narrower than the options it holds. */
 const MIN_TRIGGER_WIDTH_PX = 224;
+/** Below this there is no room for a filter and a usable run of options, so the
+ *  panel drops below the trigger instead of opening above it. */
+const MIN_PANEL_HEIGHT_PX = 180;
 
 type Params = {
   trigger: React.RefObject<HTMLElement | null>;
@@ -78,6 +81,21 @@ export function useAnchoredPopover({
         ? Math.max(anchor.width, MIN_TRIGGER_WIDTH_PX)
         : width;
 
+    // It opens upward by default, but the space above the trigger is not fixed:
+    // on a new thread the composer sits centred in the canvas rather than at the
+    // foot of it. Measure both sides, cap the panel to the room it actually has,
+    // and drop below when above is too cramped — a panel taller than its own
+    // room runs off the top of the viewport, and the part that overflows sits
+    // outside the scroll container, so nothing can bring it back.
+    const spaceAbove = anchor.top - GAP_PX * 2;
+    const spaceBelow = window.innerHeight - anchor.bottom - GAP_PX * 2;
+    const openAbove =
+      spaceAbove >= MIN_PANEL_HEIGHT_PX || spaceAbove >= spaceBelow;
+    const panelMaxHeight = Math.max(
+      0,
+      Math.min(maxHeight, openAbove ? spaceAbove : spaceBelow)
+    );
+
     return createPortal(
       <div
         ref={popover as React.RefObject<HTMLDivElement>}
@@ -91,15 +109,10 @@ export function useAnchoredPopover({
             GAP_PX,
             Math.min(anchor.left, window.innerWidth - panelWidth - GAP_PX)
           ),
-          bottom: window.innerHeight - anchor.top + GAP_PX,
-          // It opens upward, so it has at most the room between the trigger and
-          // the top of the viewport — and not all of that: one running the full
-          // height of a tall window reads as a page rather than a control.
-          // Past this the content scrolls inside it.
-          maxHeight: Math.min(
-            maxHeight,
-            Math.max(120, anchor.top - GAP_PX * 2)
-          ),
+          ...(openAbove
+            ? { bottom: window.innerHeight - anchor.top + GAP_PX }
+            : { top: anchor.bottom + GAP_PX }),
+          maxHeight: panelMaxHeight,
         }}
       >
         {children}
