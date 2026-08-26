@@ -6,7 +6,7 @@ import type {
 } from '@jsonforms/core';
 import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   fieldControlClass,
@@ -50,6 +50,14 @@ type Scale = (typeof SCALE)[keyof typeof SCALE];
 const rowsToPx = (rows: number, scale: Scale) =>
   rows * scale.lineHeight + scale.padding * 2 + 2;
 
+/**
+ * However many rows a host asks for, the box is still one message in a
+ * conversation: past this share of the window it fills the chat area and pushes
+ * the send control below the fold. Half leaves the 20-row answer box its full
+ * height on a roomy screen and reins it in on a laptop.
+ */
+const MAX_VIEWPORT_SHARE = 0.5;
+
 const DEFAULT_MIN_ROWS = 3;
 const DEFAULT_MAX_ROWS = 9;
 
@@ -88,6 +96,15 @@ const TextareaRenderer: React.FC<ControlProps> = ({
   const minHeight = rowsToPx(minRows, scale);
   const maxHeight = rowsToPx(maxRows, scale);
 
+  const [viewportCap, setViewportCap] = useState(() =>
+    typeof window === 'undefined'
+      ? Number.POSITIVE_INFINITY
+      : Math.round(window.innerHeight * MAX_VIEWPORT_SHARE)
+  );
+  // The row count is what the host asked for; the window is what there is room
+  // for. Never below `minHeight`, or a short window would invert the two.
+  const ceiling = Math.max(minHeight, Math.min(maxHeight, viewportCap));
+
   // Grow with the content, between those two bounds, then scroll.
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
@@ -95,19 +112,23 @@ const TextareaRenderer: React.FC<ControlProps> = ({
     el.style.height = 'auto';
     el.style.height = `${Math.min(
       Math.max(el.scrollHeight, minHeight),
-      maxHeight
+      ceiling
     )}px`;
-  }, [minHeight, maxHeight]);
+  }, [minHeight, ceiling]);
 
   useEffect(() => {
     autoResize();
   }, [data, autoResize]);
 
-  // A narrower box rewraps the text into more lines, so the height has to be
-  // recomputed when the layout around it changes.
+  // A narrower box rewraps the text into more lines, and a shorter window lowers
+  // the ceiling — both change the height this box should take.
   useEffect(() => {
-    window.addEventListener('resize', autoResize);
-    return () => window.removeEventListener('resize', autoResize);
+    const onResize = () => {
+      setViewportCap(Math.round(window.innerHeight * MAX_VIEWPORT_SHARE));
+      autoResize();
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, [autoResize]);
 
   const handleInputChange = useCallback(
@@ -157,7 +178,7 @@ const TextareaRenderer: React.FC<ControlProps> = ({
         className={`resize-y ${fieldControlClass(scaleName, !!hasError)}`}
         style={{
           minHeight: `${minHeight}px`,
-          maxHeight: `${maxHeight}px`,
+          maxHeight: `${ceiling}px`,
           // iOS zooms a focused control under 16px; the design's fields are
           // 14px, so opt out of the adjustment rather than the design.
           WebkitTextSizeAdjust: '100%',

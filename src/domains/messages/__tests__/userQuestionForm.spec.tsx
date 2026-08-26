@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -33,6 +33,9 @@ const AT = new Date('2026-08-19T11:45:00Z');
 const SIX_ROWS_PX = 138;
 /** Its 20-row ceiling, past which the box scrolls instead of growing. */
 const TWENTY_ROWS_PX = 418;
+/** The box never takes more than half the window, whatever the row count says.
+ *  jsdom reports 768px, so the 20-row ceiling is not what binds here. */
+const HALF_OF_JSDOM_WINDOW_PX = 384;
 
 const workspace = {
   id: WORKSPACE_ID,
@@ -101,7 +104,7 @@ const renderQuestion = () =>
   });
 
 describe('in-conversation question form', () => {
-  it('answers in a composer-sized box that grows to a 20-row ceiling', async () => {
+  it('answers in a composer-sized box, capped to the room the window has', async () => {
     const { container } = renderQuestion();
 
     const field = await waitFor(() => {
@@ -113,7 +116,30 @@ describe('in-conversation question form', () => {
     });
 
     expect(field.style.minHeight).toBe(`${SIX_ROWS_PX}px`);
-    expect(field.style.maxHeight).toBe(`${TWENTY_ROWS_PX}px`);
+    // 20 rows is what the host asks for; half the window is what there is room
+    // for. Unbounded, the box fills the chat area and pushes Send below the
+    // fold — the answer is a message, not a page.
+    expect(HALF_OF_JSDOM_WINDOW_PX).toBeLessThan(TWENTY_ROWS_PX);
+    expect(field.style.maxHeight).toBe(`${HALF_OF_JSDOM_WINDOW_PX}px`);
+  });
+
+  it('lowers that cap when the window gets shorter', async () => {
+    const { container } = renderQuestion();
+
+    const field = await waitFor(() => {
+      const el = container.querySelector(
+        '.ss-chat-message__user-form textarea'
+      );
+      expect(el).not.toBeNull();
+      return el as HTMLTextAreaElement;
+    });
+
+    act(() => {
+      window.innerHeight = 500;
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    await waitFor(() => expect(field.style.maxHeight).toBe('250px'));
   });
 
   it('takes the design’s full field scale, not the variables list’s', async () => {
