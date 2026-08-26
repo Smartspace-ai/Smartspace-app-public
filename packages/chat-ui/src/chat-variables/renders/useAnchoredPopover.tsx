@@ -1,4 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 import { popoverClass } from './fieldStyles';
@@ -11,6 +18,21 @@ const MIN_TRIGGER_WIDTH_PX = 224;
 /** Below this there is no room for a filter and a usable run of options, so the
  *  panel drops below the trigger instead of opening above it. */
 const MIN_PANEL_HEIGHT_PX = 180;
+
+type NestedRegistry = {
+  register: (el: HTMLElement) => void;
+  unregister: (el: HTMLElement) => void;
+};
+
+/**
+ * Every popover portals to `<body>`, so one opened from inside another is a DOM
+ * sibling rather than a descendant. Without this the outer panel reads a
+ * mousedown on the inner list as an outside click and dismisses — unmounting
+ * that list before its `click` can land, so the option a user picked is
+ * silently dropped. Each popover registers its own element with the chain above
+ * it, and an ancestor counts a registered descendant's subtree as its own.
+ */
+const NestedPopoverContext = React.createContext<NestedRegistry | null>(null);
 
 type Params = {
   trigger: React.RefObject<HTMLElement | null>;
@@ -42,21 +64,48 @@ export function useAnchoredPopover({
 }: Params) {
   const [isOpen, setIsOpen] = useState(false);
 
+  const parentRegistry = useContext(NestedPopoverContext);
+  const descendants = useRef(new Set<HTMLElement>());
+
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((open) => !open), []);
+
+  // Ours to track, and the chain above ours to be told about.
+  const registry = useMemo<NestedRegistry>(
+    () => ({
+      register: (el) => {
+        descendants.current.add(el);
+        parentRegistry?.register(el);
+      },
+      unregister: (el) => {
+        descendants.current.delete(el);
+        parentRegistry?.unregister(el);
+      },
+    }),
+    [parentRegistry]
+  );
+
+  // Announce our own panel to that chain for as long as it is open.
+  useEffect(() => {
+    if (!isOpen || !parentRegistry) return;
+    const el = popover.current;
+    if (!el) return;
+    parentRegistry.register(el);
+    return () => parentRegistry.unregister(el);
+  }, [isOpen, parentRegistry, popover]);
 
   useEffect(() => {
     if (!isOpen) return;
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
-      // "Inside" spans two subtrees: the trigger and the portaled panel.
-      if (
-        trigger.current &&
-        !trigger.current.contains(target) &&
-        !(popover.current && popover.current.contains(target))
-      ) {
-        close();
+      // "Inside" spans the trigger, the portaled panel, and any popover opened
+      // from within it — see `NestedPopoverContext`.
+      if (trigger.current?.contains(target)) return;
+      if (popover.current?.contains(target)) return;
+      for (const el of descendants.current) {
+        if (el.contains(target)) return;
       }
+      close();
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close();
@@ -115,7 +164,9 @@ export function useAnchoredPopover({
           maxHeight: panelMaxHeight,
         }}
       >
-        {children}
+        <NestedPopoverContext.Provider value={registry}>
+          {children}
+        </NestedPopoverContext.Provider>
       </div>,
       document.body
     );

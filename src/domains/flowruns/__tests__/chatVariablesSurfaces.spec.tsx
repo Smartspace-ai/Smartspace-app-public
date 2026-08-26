@@ -192,7 +192,12 @@ describe('variables form surfaces', () => {
     fireEvent.click(within(panel).getByRole('button', { name: 'License' }));
 
     const list = await screen.findByRole('listbox', { name: 'License' });
-    fireEvent.click(within(list).getByRole('option', { name: 'Growth 100' }));
+    // A real pointer fires `mousedown` before `click`, and every popover on this
+    // surface dismisses on `mousedown`. Firing only `click` lets an option that
+    // is unmounted before it can be clicked still pass.
+    const option = within(list).getByRole('option', { name: 'Growth 100' });
+    fireEvent.mouseDown(option);
+    fireEvent.click(option);
 
     await waitFor(() =>
       expect(updateFlowRunVariable).toHaveBeenCalledWith({
