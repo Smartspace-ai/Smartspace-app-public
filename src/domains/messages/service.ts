@@ -275,15 +275,21 @@ export type ThreadStreamHandlers = {
    * (so the client learns flow-complete even if SignalR flakes). Not present
    * on intermediate chunk frames.
    */
-  onThread?: (thread: SignalR.MessageThreadSummary) => void;
+  /**
+   * `terminal` distinguishes the authoritative end-of-run summary from the
+   * snapshot frame's, which the server reads at request entry — before the
+   * tail subscribes — and which can therefore report a run finished that is
+   * still going.
+   */
+  onThread?: (thread: SignalR.MessageThreadSummary, terminal: boolean) => void;
 };
 
 export type StreamThreadMessagesResult =
   | { status: 'completed' }
   | { status: 'not-found' }
-  // 401/403. Split out from the generic throw because reopening cannot fix
-  // it: the caller has to stop rather than retry, and every retry costs a
-  // token acquisition that counts against the session-expiry breaker.
+  // 403 only. Split out from the generic throw because no amount of reopening
+  // wins back access the server has refused. 401 is NOT here: an expired token
+  // is recovered by the next attempt.
   | { status: 'forbidden'; httpStatus: number };
 
 /**
@@ -318,7 +324,11 @@ export async function streamThreadMessages({
   );
 
   if (response.status === 404) return { status: 'not-found' };
-  if (response.status === 401 || response.status === 403) {
+  // 401 deliberately falls through to the throw below so the loop retries and
+  // the next attempt mints a fresh token — an access token expiring during a
+  // long run is routine, and stopping there would strand the caller on the
+  // spinner this whole change exists to clear.
+  if (response.status === 403) {
     return { status: 'forbidden', httpStatus: response.status };
   }
   if (!response.ok) {
@@ -353,7 +363,7 @@ export async function streamThreadMessages({
       // it first so the cache flips `isFlowRunning` before we apply the
       // message payload that came with the same frame.
       if (envelope.thread && onThread) {
-        onThread(envelope.thread);
+        onThread(envelope.thread, terminal);
       }
 
       if (Array.isArray(envelope.snapshot)) {

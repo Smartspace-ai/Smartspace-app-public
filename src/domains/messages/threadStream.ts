@@ -43,8 +43,11 @@ export function useThreadMessageStream(
     const controller = new AbortController();
     const state = { stopped: false };
 
-    // Whether the connection currently open has delivered a frame. Half of
-    // the health test below; reset per attempt in the loop.
+    // Whether the tail produced anything AFTER the opening snapshot. The
+    // server sends a snapshot on every successful open, so counting that would
+    // make this true for any connection that opened at all — including the one
+    // shape the health test exists to catch, a server that snapshots and
+    // immediately closes.
     let delivered = false;
 
     // The run state the most recent frame reported. Deliberately not latched:
@@ -122,32 +125,50 @@ export function useThreadMessageStream(
       return out;
     };
 
-    // The SSE is authoritative once it's open. Snapshot fully replaces; we
-    // do not preserve client-only optimistics here because the stream first
-    // opens only after `useSendMessage` has POSTed and written `[realMessage]`
-    // to the cache, so no optimistic temp-ids are still live. Note this now
-    // also runs on every reopen mid-run, where the server's snapshot — which
-    // overlays live Redis state onto the stored rows — is the authority we are
-    // resyncing to. The collapse step merges intermediate streaming frames the
-    // server may include in the snapshot.
+    // The SSE is authoritative once it's open, and its snapshot replaces the
+    // list — except for optimistic state the server has not seen yet, which is
+    // merged back below. This runs on every reopen mid-run, not just at the
+    // start of one, so that carve-out is what stops a reopen deleting an
+    // in-flight write. The collapse step merges intermediate streaming frames
+    // the server may include in the snapshot.
     const onSnapshot = (messages: Message[]) => {
-      delivered = true;
       const sorted = collapseAssistantRuns(
         [...messages].map(dedupValuesInMessage).sort(byCreatedAt)
       );
       qc.setQueryData<Message[]>(messagesKeys.list(threadId), (old = []) => {
         // A snapshot is authoritative for everything the server knows about,
-        // but a reopen mid-run can land while a mutation is still holding an
-        // optimistic entry the server has not seen yet — an input submitted
-        // to a waiting flow, say. Those carry a `temp-` id and are removed by
-        // their own mutation on settle, so carrying them across a replace is
-        // what keeps a reopen from deleting the user's just-sent input.
-        const pending = old.filter(
-          (m) => m.id?.startsWith('temp-') && !sorted.some((x) => x.id === m.id)
-        );
-        return pending.length
-          ? [...sorted, ...pending].sort(byCreatedAt)
-          : sorted;
+        // but a reopen mid-run can land while a mutation is still holding
+        // something the server has not seen yet. Optimistic state comes in two
+        // shapes and both have to survive the replace, or a reopen deletes
+        // what the user just sent:
+        //
+        //   - a whole optimistic message from useSendMessage, flagged
+        //     `optimistic` (its own reconcile drops it once the POST lands);
+        //   - a `temp-` VALUE appended by useAddInputToMessage onto a message
+        //     that already has a server id — an answer typed into a waiting
+        //     flow's form.
+        const byId = new Map(sorted.map((m) => [m.id, m]));
+
+        const merged = sorted.map((incoming) => {
+          const cached = old.find((m) => m.id === incoming.id);
+          if (!cached?.values?.length) return incoming;
+          const carried = cached.values.filter(
+            (v) =>
+              v.id?.startsWith('temp-') &&
+              !incoming.values?.some((x) => x.id === v.id)
+          );
+          return carried.length
+            ? { ...incoming, values: [...(incoming.values ?? []), ...carried] }
+            : incoming;
+        });
+
+        // Only entries the snapshot does not already cover — otherwise the
+        // prompt renders twice until the mutation reconciles.
+        const stillPending = old.filter((m) => m.optimistic && !byId.has(m.id));
+
+        return stillPending.length
+          ? [...merged, ...stillPending].sort(byCreatedAt)
+          : merged;
       });
     };
 
@@ -201,11 +222,20 @@ export function useThreadMessageStream(
     // terminal frames (authoritative flow-complete). Treat these as the source
     // of truth for isFlowRunning — SignalR receiveThreadUpdate is a hint and
     // may silently drop if Azure SignalR flakes.
-    const onThread = (summary: SignalR.MessageThreadSummary) => {
-      // `!` rather than `=== false`, so a summary missing the field reads
-      // the same way here as it does at the gate that enables this hook.
-      delivered = true;
-      runFinished = !summary.isFlowRunning;
+    const onThread = (
+      summary: SignalR.MessageThreadSummary,
+      terminal: boolean
+    ) => {
+      // Only a terminal frame's summary is authoritative. The snapshot frame
+      // carries one the server read at request entry, before its tail
+      // subscribed, so on a reopen it can report a run finished that is still
+      // producing output — and acting on that would end the stream mid-run.
+      // `=== false` rather than `!`, because this is the raw wire object and
+      // is the one field in the frame nothing validates: a missing field has
+      // to mean "no information", not "finished".
+      if (terminal && summary.isFlowRunning === false) {
+        runFinished = true;
+      }
       applyThreadToCache(qc, mapSignalRThreadSummaryToModel(summary));
     };
 
@@ -239,7 +269,7 @@ export function useThreadMessageStream(
       let attempt = 0;
 
       while (!state.stopped && !controller.signal.aborted) {
-        const openedAt = Date.now();
+        const openedAt = performance.now();
         // Tracked separately from the message: an Error with an empty message
         // would otherwise log a thrown failure as a clean close.
         let threw = false;
@@ -304,7 +334,9 @@ export function useThreadMessageStream(
         // connect that hung before failing. Anything else lets `attempt`
         // climb, so a backend that is closing every connection is reopened at
         // the ceiling rather than hammered.
-        const lastedMs = Date.now() - openedAt;
+        // Monotonic: a wall clock that steps (NTP, a laptop resuming from
+        // suspend) would score a dead connection as the healthiest one.
+        const lastedMs = performance.now() - openedAt;
         if (delivered && lastedMs >= MIN_HEALTHY_CONNECTION_MS) {
           attempt = 0;
         }

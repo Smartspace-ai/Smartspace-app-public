@@ -48,8 +48,17 @@ const serverMessage = {
  */
 const deliversThenClosesAfter =
   (ms: number) =>
-  async ({ onSnapshot }: { onSnapshot: (m: unknown[]) => void }) => {
+  async ({
+    onSnapshot,
+    onMessage,
+  }: {
+    onSnapshot: (m: unknown[]) => void;
+    onMessage: (id: string, m: unknown, terminal: boolean) => void;
+  }) => {
     onSnapshot([serverMessage]);
+    // A frame AFTER the snapshot — every open sends a snapshot, so only this
+    // marks the connection as having actually produced anything.
+    onMessage('m1', serverMessage, false);
     await new Promise<void>((resolve) => {
       setTimeout(resolve, ms);
     });
@@ -70,7 +79,19 @@ const mount = () =>
 
 describe('useThreadMessageStream reconnect', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    //  must be faked too: connection health is measured with the
+    // monotonic clock, and leaving it real would make every connection look
+    // instantaneous and quietly kill the branch under test.
+    vi.useFakeTimers({
+      toFake: [
+        'setTimeout',
+        'clearTimeout',
+        'setInterval',
+        'clearInterval',
+        'Date',
+        'performance',
+      ],
+    });
     streamMock.mockReset();
     queryClient = new QueryClient();
   });
@@ -81,7 +102,7 @@ describe('useThreadMessageStream reconnect', () => {
 
   it('stops after a close that reported the run finished', async () => {
     streamMock.mockImplementation(async ({ onThread }) => {
-      onThread?.(summary(false));
+      onThread?.(summary(false), true);
       return { status: 'completed' as const };
     });
 
@@ -109,11 +130,11 @@ describe('useThreadMessageStream reconnect', () => {
     // the next snapshot frame carries the authoritative thread summary.
     streamMock
       .mockImplementationOnce(async ({ onThread }) => {
-        onThread?.(summary(true));
+        onThread?.(summary(true), false);
         return { status: 'completed' as const };
       })
       .mockImplementation(async ({ onThread }) => {
-        onThread?.(summary(false));
+        onThread?.(summary(false), true);
         return { status: 'completed' as const };
       });
 
@@ -145,9 +166,7 @@ describe('useThreadMessageStream reconnect', () => {
       startedAt.push(Date.now());
       call += 1;
       if (call === 5) {
-        await deliversThenClosesAfter(20_000)(
-          opts as { onSnapshot: (m: unknown[]) => void }
-        );
+        await deliversThenClosesAfter(20_000)(opts as never);
       }
       endedAt.push(Date.now());
       return { status: 'completed' as const };
@@ -165,12 +184,39 @@ describe('useThreadMessageStream reconnect', () => {
     expect(gapBeforeHealthy).toBeGreaterThan(1_000);
   });
 
-  it('keeps an in-flight optimistic message across a reopen', async () => {
-    // A reopen mid-run replaces the message list from the server snapshot. An
-    // input submitted to a waiting flow is still only in the cache at that
-    // point, and dropping it deletes what the user just sent.
-    const optimistic = { ...serverMessage, id: 'temp-abc-add' };
-    queryClient.setQueryData(messagesKeys.list('t1'), [optimistic]);
+  it('keeps an in-flight optimistic input value across a reopen', async () => {
+    // The shape useAddInputToMessage actually produces: a `temp-` VALUE
+    // appended to a message that already carries a server id. A reopen
+    // replacing that message wholesale is what deletes the answer a user just
+    // typed into a waiting flow's form.
+    queryClient.setQueryData(messagesKeys.list('t1'), [
+      {
+        ...serverMessage,
+        values: [{ id: 'temp-abc-add', name: 'answer', type: 'Input' }],
+      },
+    ]);
+
+    streamMock.mockImplementation(async ({ onSnapshot }) => {
+      onSnapshot?.([serverMessage] as never);
+      return { status: 'completed' as const };
+    });
+
+    const { unmount } = mount();
+    await vi.advanceTimersByTimeAsync(5_000);
+    unmount();
+
+    const list = queryClient.getQueryData<
+      { id: string; values?: { id: string }[] }[]
+    >(messagesKeys.list('t1'));
+    expect(list?.[0].values?.map((v) => v.id)).toContain('temp-abc-add');
+  });
+
+  it('keeps an unsent optimistic message across a reopen', async () => {
+    // useSendMessage's placeholder, flagged `optimistic` and not yet known to
+    // the server.
+    queryClient.setQueryData(messagesKeys.list('t1'), [
+      { ...serverMessage, id: 'temp-send', optimistic: true },
+    ]);
 
     streamMock.mockImplementation(async ({ onSnapshot }) => {
       onSnapshot?.([serverMessage] as never);
@@ -184,8 +230,43 @@ describe('useThreadMessageStream reconnect', () => {
     const list = queryClient.getQueryData<{ id: string }[]>(
       messagesKeys.list('t1')
     );
-    expect(list?.map((m) => m.id)).toContain('temp-abc-add');
+    expect(list?.map((m) => m.id)).toContain('temp-send');
     expect(list?.map((m) => m.id)).toContain('m1');
+  });
+
+  it('does not duplicate an optimistic message the snapshot already covers', async () => {
+    queryClient.setQueryData(messagesKeys.list('t1'), [
+      { ...serverMessage, optimistic: true },
+    ]);
+
+    streamMock.mockImplementation(async ({ onSnapshot }) => {
+      onSnapshot?.([serverMessage] as never);
+      return { status: 'completed' as const };
+    });
+
+    const { unmount } = mount();
+    await vi.advanceTimersByTimeAsync(5_000);
+    unmount();
+
+    const list = queryClient.getQueryData<{ id: string }[]>(
+      messagesKeys.list('t1')
+    );
+    expect(list?.filter((m) => m.id === 'm1')).toHaveLength(1);
+  });
+
+  it('keeps streaming when a reopen snapshot reports the run finished', async () => {
+    // The snapshot summary is read at request entry, before the tail
+    // subscribes, so it can lag the run. Only a terminal frame ends the loop.
+    streamMock.mockImplementation(async ({ onThread }) => {
+      onThread?.(summary(false), false);
+      return { status: 'completed' as const };
+    });
+
+    const { unmount } = mount();
+    await vi.advanceTimersByTimeAsync(30_000);
+    unmount();
+
+    expect(streamMock.mock.calls.length).toBeGreaterThan(1);
   });
 
   it('keeps retrying a backend that closes at once, without hammering it', async () => {
@@ -224,7 +305,7 @@ describe('useThreadMessageStream reconnect', () => {
         throw new Error('network down');
       })
       .mockImplementation(async ({ onThread }) => {
-        onThread?.(summary(false));
+        onThread?.(summary(false), true);
         return { status: 'completed' as const };
       });
 
@@ -236,8 +317,8 @@ describe('useThreadMessageStream reconnect', () => {
   });
 
   it('stops on a refused stream without reopening', async () => {
-    // Retrying a 403 cannot recover access, and each attempt spends another
-    // token acquisition against the session-expiry breaker.
+    // No amount of reopening wins back access the server has refused. A 401
+    // is deliberately NOT routed here — see the retry test below.
     streamMock.mockImplementation(async () => ({
       status: 'forbidden' as const,
       httpStatus: 403,
