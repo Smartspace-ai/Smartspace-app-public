@@ -40,6 +40,12 @@ export default function ThreadItem({ thread }: Props) {
   const avatar = getAvatarColour(thread.name);
 
   const onPointerDown = (e: React.PointerEvent) => {
+    // The rename dialog and the row's own menu are children of this element in
+    // the React tree, but Radix portals them out of it in the DOM. React still
+    // routes their events up the React tree, so a pointer down inside the
+    // dialog arrives here — and used to navigate away mid-rename. Anything that
+    // did not happen inside the row's own DOM subtree is not the row's click.
+    if (e.target instanceof Node && !e.currentTarget.contains(e.target)) return;
     if (
       e.target instanceof Element &&
       (e.target.closest('button') || e.target.closest('[role="menuitem"]'))
@@ -57,8 +63,17 @@ export default function ThreadItem({ thread }: Props) {
       // `chat-thread-item` carries the row's layout, radius, hover and the
       // active teal edge marker from the theme layer.
       className="chat-thread-item group mb-0.5"
+      // The row's actions overlay the end of the name, so the name only has to
+      // give way while they are on screen. A pinned row keeps its bookmark, and
+      // an open menu keeps its trigger, so both hold the room open.
+      data-actions-visible={thread.pinned || isMenuOpen ? 'true' : undefined}
       onPointerDown={onPointerDown}
       onKeyDown={(e) => {
+        // Same portal story as `onPointerDown`: without this guard every
+        // keystroke typed in the rename dialog lands here, Space gets
+        // preventDefault'd out of the name field and Enter opens the thread
+        // instead of saving the new name.
+        if (e.target !== e.currentTarget) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           goToThread();
@@ -72,8 +87,10 @@ export default function ThreadItem({ thread }: Props) {
         {getInitials(thread.name)}
       </span>
 
-      <span className="block min-w-0 flex-1">
-        <span className="chat-thread-title block truncate">{thread.name}</span>
+      <span className="chat-thread-text block min-w-0 flex-1">
+        <span className="chat-thread-title block" title={thread.name}>
+          {thread.name}
+        </span>
         <span className="chat-thread-meta mt-0.5 block truncate">
           {isRunning ? (
             <span className="inline-flex items-center gap-1 text-star">
@@ -90,7 +107,7 @@ export default function ThreadItem({ thread }: Props) {
         </span>
       </span>
 
-      <span className="flex shrink-0 items-center gap-0.5">
+      <span className="chat-thread-actions">
         <button
           type="button"
           onClick={(e) => {

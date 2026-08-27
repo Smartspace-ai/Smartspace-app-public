@@ -13,9 +13,21 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { createPortal } from 'react-dom';
 
 import { getModelIcon, type Model, useModels } from '@/domains/models';
+
+import {
+  fieldLabelClass,
+  fieldTriggerClass,
+  pillClass,
+  pillValueClass,
+  popoverRowClass,
+  POPOVER_MAX_HEIGHT_PX,
+  POPOVER_WIDTH_PX,
+  scaleFor,
+  type FieldSurface,
+} from './fieldStyles';
+import { useAnchoredPopover } from './useAnchoredPopover';
 
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
@@ -39,13 +51,33 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
   errors,
   uischema,
   visible,
+  config,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearchValue, setDebouncedSearchValue] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const surface =
+    ((config ?? {}) as { surface?: FieldSurface }).surface ?? 'bar';
+  const scale = scaleFor(surface);
+  const isBar = surface === 'bar';
+
+  const {
+    isOpen,
+    close: closeMenu,
+    toggle,
+    renderPopover,
+  } = useAnchoredPopover({
+    trigger: triggerRef,
+    popover: menuRef,
+    // Wide enough for a provider glyph, a model name and its id underneath.
+    width: POPOVER_WIDTH_PX,
+    maxHeight: POPOVER_MAX_HEIGHT_PX,
+    role: 'listbox',
+    label: 'Models',
+  });
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
   );
@@ -94,48 +126,15 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
       handleChange(path, model.id);
       setSearchValue('');
       setDebouncedSearchValue('');
-      setIsOpen(false);
+      closeMenu();
     },
-    [handleChange, path]
+    [handleChange, path, closeMenu]
   );
 
-  const close = useCallback(() => {
-    setIsOpen(false);
-    setSearchValue('');
-  }, []);
-
-  // Dismissal: an outside pointer press, the affordance the reference uses, plus
-  // Escape. Both live on the document so no wrapper element has to carry a
-  // keyboard handler it has no interactive role for.
+  // Clear a stale filter once the list is gone, so it reopens on the full set.
   useEffect(() => {
-    if (!isOpen) return;
-    const onPointerDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      // The list is portaled to <body> (see below), so "inside" spans two
-      // subtrees: the trigger capsule and the floating menu.
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(target) &&
-        !(menuRef.current && menuRef.current.contains(target))
-      ) {
-        close();
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close();
-    };
-    // The floating menu is anchored to a rect read at render time; a resize
-    // invalidates it, so just dismiss rather than track.
-    const onResize = () => close();
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    window.addEventListener('resize', onResize);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('resize', onResize);
-    };
-  }, [isOpen, close]);
+    if (!isOpen) setSearchValue('');
+  }, [isOpen]);
 
   // Send focus into the filter as soon as the list appears.
   useEffect(() => {
@@ -152,145 +151,145 @@ const ModelIdRenderer: React.FC<ControlProps> = ({
   const selectedName = selectedModel
     ? selectedModel.displayName || selectedModel.name || ''
     : '';
-  const triggerText = selectedName || label || 'Select model';
+  const triggerText = selectedName || 'Select model';
   const iconSrc = getModelIcon(selectedModel);
 
   const tooltip = [selectedName || label, description, hasError ? errors : null]
     .filter(Boolean)
     .join(' — ');
 
-  // Anchor for the floating menu, read per render while open. The trigger can't
-  // move without something re-rendering this component (open/close, typing in
-  // the filter, selecting), and a window resize dismisses the menu outright.
-  const anchorRect = isOpen
-    ? containerRef.current?.getBoundingClientRect()
-    : undefined;
+  // `ModelId` is the schema title this renderer is detected by, not a name to
+  // put in front of anyone.
+  const triggerLabel = !label || label === 'ModelId' ? 'Model' : label;
+
+  const trigger = (
+    <button
+      ref={triggerRef}
+      id={`${path}-trigger`}
+      type="button"
+      onClick={toggle}
+      disabled={isDisabled}
+      aria-expanded={isOpen}
+      aria-haspopup="listbox"
+      aria-label={triggerLabel}
+      title={tooltip || undefined}
+      className={
+        isBar
+          ? pillClass({ active: isOpen, hasError, disabled: isDisabled })
+          : fieldTriggerClass(scale, hasError)
+      }
+    >
+      {iconSrc ? (
+        <img
+          src={iconSrc}
+          alt=""
+          className="h-3.5 w-3.5 shrink-0 object-contain"
+        />
+      ) : (
+        <Cpu className="h-3.5 w-3.5 shrink-0" />
+      )}
+      {/* Desktop-first: a base `hidden` can lose to `sm:inline` because the
+          app and the package each ship a full Tailwind build. */}
+      <span
+        className={
+          isBar
+            ? `inline ${pillValueClass} max-sm:hidden`
+            : 'min-w-0 flex-1 truncate'
+        }
+      >
+        {triggerText}
+      </span>
+      <ChevronDown
+        className={`shrink-0 opacity-60 ${isBar ? 'h-3 w-3' : 'h-4 w-4'}`}
+      />
+    </button>
+  );
 
   return (
-    <div className="relative shrink-0" ref={containerRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen((v) => !v)}
-        disabled={isDisabled}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-        aria-label={label || 'Select model'}
-        title={tooltip || undefined}
-        className={`flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-          isOpen
-            ? 'border-primary/30 bg-primary/10 text-primary'
-            : 'border-border/70 bg-transparent text-muted-foreground hover:bg-secondary'
-        } ${hasError ? 'border-destructive text-destructive' : ''} ${
-          isDisabled ? 'cursor-not-allowed opacity-60' : ''
-        }`}
-      >
-        {iconSrc ? (
-          <img
-            src={iconSrc}
-            alt=""
-            className="h-3.5 w-3.5 shrink-0 object-contain"
-          />
-        ) : (
-          <Cpu className="h-3.5 w-3.5 shrink-0" />
-        )}
-        {/* Desktop-first: a base `hidden` can lose to `sm:inline` because the
-            app and the package each ship a full Tailwind build. */}
-        <span className="inline max-w-[9rem] truncate max-sm:hidden">
-          {triggerText}
-        </span>
-        <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
-      </button>
+    <div
+      className={
+        isBar
+          ? 'ss-jsonforms-field ss-jsonforms-model relative shrink-0'
+          : 'ss-jsonforms-field ss-jsonforms-model compact-field'
+      }
+    >
+      {!isBar && (
+        <label htmlFor={`${path}-trigger`} className={fieldLabelClass(scale)}>
+          {triggerLabel}
+        </label>
+      )}
 
-      {/* Portaled to <body> with fixed positioning: inside the composer the
-          menu sits under `.chat-composer`'s `overflow-hidden`, which clips a
-          list opening upward at the composer's rounded frame. Floating it
-          keeps the capsule in the action bar but lets the list stack cleanly
-          above the composer. */}
-      {isOpen &&
-        anchorRect &&
-        createPortal(
-          <div
-            ref={menuRef}
-            role="listbox"
-            aria-label={label || 'Models'}
-            className="fixed z-50 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
-            style={{
-              left: Math.max(
-                8,
-                Math.min(anchorRect.left, window.innerWidth - 288 - 8)
-              ),
-              bottom: window.innerHeight - anchorRect.top + 8,
-            }}
-          >
-            <div className="border-b border-border p-2">
-              <input
-                ref={searchRef}
-                type="search"
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
-                placeholder="Search models…"
-                aria-label="Search models"
-                className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40"
-              />
-            </div>
+      {trigger}
 
-            <div className="max-h-72 overflow-y-auto">
-              {isLoading && listModels.length === 0 && (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                </div>
-              )}
+      {renderPopover(
+        <>
+          <div className="shrink-0 border-b border-border p-2">
+            <input
+              ref={searchRef}
+              type="search"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              placeholder="Search models…"
+              aria-label="Search models"
+              className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40"
+            />
+          </div>
 
-              {!isLoading && listModels.length === 0 && (
-                <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                  {searchValue ? 'No models found' : 'No models available'}
-                </p>
-              )}
+          <div className="min-h-0 overflow-y-auto">
+            {isLoading && listModels.length === 0 && (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              </div>
+            )}
 
-              {listModels.map((model) => {
-                const active = model.id === selectedModel?.id;
-                const optionIcon = getModelIcon(model);
-                return (
-                  <button
-                    key={model.id}
-                    type="button"
-                    role="option"
-                    aria-selected={active}
-                    onClick={() => handleSelect(model)}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-secondary/60"
-                  >
-                    <Check
-                      className={`h-3.5 w-3.5 shrink-0 ${
-                        active ? 'text-primary' : 'opacity-0'
-                      }`}
+            {!isLoading && listModels.length === 0 && (
+              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                {searchValue ? 'No models found' : 'No models available'}
+              </p>
+            )}
+
+            {listModels.map((model) => {
+              const active = model.id === selectedModel?.id;
+              const optionIcon = getModelIcon(model);
+              return (
+                <button
+                  key={model.id}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => handleSelect(model)}
+                  className={popoverRowClass}
+                >
+                  <Check
+                    className={`h-3.5 w-3.5 shrink-0 ${
+                      active ? 'text-primary' : 'opacity-0'
+                    }`}
+                  />
+                  {optionIcon ? (
+                    <img
+                      src={optionIcon}
+                      alt=""
+                      className="h-4 w-4 shrink-0 object-contain"
                     />
-                    {optionIcon ? (
-                      <img
-                        src={optionIcon}
-                        alt=""
-                        className="h-4 w-4 shrink-0 object-contain"
-                      />
-                    ) : (
-                      <Cpu className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm leading-none text-foreground">
-                        {model.displayName || model.name}
-                      </span>
-                      {model.displayName &&
-                        model.name !== model.displayName && (
-                          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                            {model.name}
-                          </span>
-                        )}
+                  ) : (
+                    <Cpu className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm leading-none text-foreground">
+                      {model.displayName || model.name}
                     </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>,
-          document.body
-        )}
+                    {model.displayName && model.name !== model.displayName && (
+                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                        {model.name}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 };

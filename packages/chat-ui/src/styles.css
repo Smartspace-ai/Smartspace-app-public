@@ -241,6 +241,20 @@
   justify-content: flex-start;
 }
 
+/* The overflow panel is a settings list, not a row of chips. In the action bar
+   the cells size to their content so the pills sit side by side; stacked in the
+   panel that same rule leaves ragged half-width text boxes, so here every field
+   takes a full row — and gets room to breathe between rows. */
+.ss-variables-panel .jsonforms-compact .ss-jsonforms-grid {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+.ss-variables-panel .jsonforms-compact .ss-jsonforms-cell,
+.ss-variables-panel .jsonforms-compact .compact-field {
+  width: 100%;
+}
+
 /* ============================================================
    PROSE — markdown rendering for AI responses
    ============================================================ */
