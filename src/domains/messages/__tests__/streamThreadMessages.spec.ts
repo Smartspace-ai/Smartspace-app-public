@@ -117,6 +117,42 @@ describe('streamThreadMessages', () => {
     globalThis.fetch = originalFetch;
   });
 
+  it('returns forbidden when server responds 403', async () => {
+    globalThis.fetch = vi.fn(
+      async () => new Response(null, { status: 403 }) as unknown as Response
+    ) as typeof fetch;
+
+    const result = await streamThreadMessages({
+      threadId: 't1',
+      signal: new AbortController().signal,
+      onSnapshot: () => {
+        throw new Error('should not be called');
+      },
+      onMessage: () => {
+        throw new Error('should not be called');
+      },
+    });
+
+    expect(result).toEqual({ status: 'forbidden', httpStatus: 403 });
+  });
+
+  it('throws on 401 so the caller retries with a fresh token', async () => {
+    // An access token expiring mid-run is routine. Mapping it to a terminal
+    // status would strand the viewer on a spinner nothing clears.
+    globalThis.fetch = vi.fn(
+      async () => new Response(null, { status: 401 }) as unknown as Response
+    ) as typeof fetch;
+
+    await expect(
+      streamThreadMessages({
+        threadId: 't1',
+        signal: new AbortController().signal,
+        onSnapshot: () => undefined,
+        onMessage: () => undefined,
+      })
+    ).rejects.toThrow('401');
+  });
+
   it('returns not-found when server responds 404', async () => {
     globalThis.fetch = vi.fn(
       async () => new Response(null, { status: 404 }) as unknown as Response
