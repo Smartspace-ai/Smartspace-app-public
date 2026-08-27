@@ -9,6 +9,14 @@ import debounce from 'lodash.debounce';
 import React, { useEffect, useRef, useState } from 'react';
 import AceEditor from 'react-ace';
 
+import {
+  fieldErrorClass,
+  fieldHintClass,
+  fieldLabelClass,
+  scaleFor,
+  type FieldSurface,
+} from './fieldStyles';
+
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
 const JsonEditorRenderer: React.FC<ControlProps> = ({
@@ -22,6 +30,7 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
   visible,
   enabled,
   required,
+  config,
 }) => {
   const [jsonValue, setJsonValue] = useState<string>('');
   const [displayedParseError, setDisplayedParseError] = useState<string | null>(
@@ -94,48 +103,25 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
   const readOnly =
     (uischema as unknown as AccessUiSchema | undefined)?.access === 'Read';
   const isDisabled = !enabled || readOnly;
+  const scale = scaleFor(
+    ((config ?? {}) as { surface?: FieldSurface }).surface ?? 'form'
+  );
 
   return (
     <div style={{ marginBottom: '1rem' }}>
       {label && (
-        <label
-          style={{
-            display: 'block',
-            color: '#475569',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            marginBottom: '0.375rem',
-          }}
-        >
+        <label className={fieldLabelClass(scale)}>
           {label}
-          {required && (
-            <span style={{ color: '#ef4444', marginLeft: '0.25rem' }}>*</span>
-          )}
+          {required && <span className="ml-1 text-destructive">*</span>}
         </label>
       )}
 
-      {description && (
-        <div
-          style={{
-            color: '#6b7280',
-            fontSize: '0.75rem',
-            marginBottom: '0.5rem',
-          }}
-        >
-          {description}
-        </div>
-      )}
+      {description && <div className={fieldHintClass}>{description}</div>}
 
       <div
-        style={{
-          border:
-            errors || displayedParseError
-              ? '1px solid #ef4444'
-              : '1px solid #d1d5db',
-          borderRadius: '6px',
-          overflow: 'hidden',
-          opacity: isDisabled ? 0.6 : 1,
-        }}
+        className={`overflow-hidden rounded-md border ${
+          errors || displayedParseError ? 'border-destructive' : 'border-input'
+        } ${isDisabled ? 'opacity-60' : ''}`}
       >
         <AceEditor
           mode="json"
@@ -167,28 +153,10 @@ const JsonEditorRenderer: React.FC<ControlProps> = ({
       </div>
 
       {displayedParseError && (
-        <div
-          style={{
-            color: '#ef4444',
-            fontSize: '0.75rem',
-            marginTop: '0.25rem',
-          }}
-        >
-          {displayedParseError}
-        </div>
+        <div className={fieldErrorClass}>{displayedParseError}</div>
       )}
 
-      {errors && (
-        <div
-          style={{
-            color: '#ef4444',
-            fontSize: '0.75rem',
-            marginTop: '0.25rem',
-          }}
-        >
-          {errors}
-        </div>
-      )}
+      {errors && <div className={fieldErrorClass}>{errors}</div>}
     </div>
   );
 };

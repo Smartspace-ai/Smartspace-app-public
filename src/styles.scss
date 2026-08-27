@@ -266,10 +266,54 @@ button.bg-primary,
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
 }
 
+/* The name owns the full row width. The actions float over its tail (see
+   `.chat-thread-actions`), so instead of hard-truncating the name early to keep
+   a slot free for buttons that are not on screen, it runs to the edge and fades
+   out — and fades out sooner while the buttons are showing. */
+.chat-thread-text {
+  /* The mask ends where the actions begin; both distances are measured from the
+     right edge of the row. */
+  --thread-text-fade-end: 0.25rem;
+  --thread-text-fade-start: 1.25rem;
+
+  mask-image: linear-gradient(
+    to right,
+    black calc(100% - var(--thread-text-fade-start)),
+    transparent calc(100% - var(--thread-text-fade-end))
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black calc(100% - var(--thread-text-fade-start)),
+    transparent calc(100% - var(--thread-text-fade-end))
+  );
+}
+
+/* Room for the two 2rem buttons plus a fade to carry the text under them. */
+.chat-thread-item:hover .chat-thread-text,
+.chat-thread-item:focus-within .chat-thread-text,
+.chat-thread-item[data-actions-visible='true'] .chat-thread-text {
+  --thread-text-fade-end: 4.5rem;
+  --thread-text-fade-start: 5.75rem;
+}
+
 .chat-thread-title {
   font-size: 0.8125rem;
   font-weight: 500;
   color: hsl(var(--foreground));
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Sits over the end of the name rather than in the row's flow. */
+.chat-thread-actions {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.125rem;
 }
 
 .chat-thread-meta {

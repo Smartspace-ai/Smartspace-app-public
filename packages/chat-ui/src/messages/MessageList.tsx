@@ -217,6 +217,15 @@ export function MessageList({
   }
 
   if (safeMessages.length === 0 && !hadMessagesBefore) {
+    // The workspace description is typed into an admin textarea, so its line
+    // breaks are the author's paragraph breaks. Split on them and space the
+    // pieces apart: honouring the breaks with `whitespace-pre-line` alone ran
+    // the sentences together at a single line-height.
+    const descriptionParagraphs = (activeWorkspace?.summary ?? '')
+      .split(/\n+/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+
     return (
       // A new thread opens the way the design does: the greeting and the
       // composer travel together as one narrower block centred in the canvas.
@@ -234,6 +243,23 @@ export function MessageList({
           <h2 className="text-2xl font-semibold text-foreground">
             What&rsquo;s on the agenda today?
           </h2>
+          {/* The workspace's description (`summary` on the API) is the only
+              place the UI says what this workspace is for, and a new thread is
+              where that matters — the sidebar shows the name alone. Rendered as
+              plain text, not markdown: it's metadata, so its own headings would
+              out-shout the greeting above it. Narrower than the block it sits
+              in — supporting text reads better on a shorter measure than the
+              question it answers. */}
+          {descriptionParagraphs.length > 0 && (
+            <div
+              className="mx-auto mt-2 max-w-lg space-y-1.5 text-sm text-muted-foreground"
+              data-ss-layer="workspace-description"
+            >
+              {descriptionParagraphs.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+            </div>
+          )}
           {activeWorkspace?.firstPrompt && (
             <div className="chat-prose mt-3 text-center">
               <MessageMarkdown value={activeWorkspace.firstPrompt} />

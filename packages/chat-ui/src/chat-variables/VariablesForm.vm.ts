@@ -23,6 +23,20 @@ type VarsRecord = Record<
 type SchemaWithDefs = JsonSchema7 & { $defs?: Record<string, JsonSchema7> };
 type VmParams = { workspace: WorkspaceLike; threadId: string };
 
+/**
+ * Past this many variables the action bar stops trying to hold them all: only
+ * the ones worth reaching for mid-message stay inline (today, the model), and
+ * the rest move behind the overflow pill. Three fits a phone-width bar without
+ * wrapping, which is what made a variable-heavy workspace look messy.
+ */
+const MAX_INLINE_VARIABLES = 3;
+
+/** The renderer for these is a pill, and picking a model mid-thread is common
+ *  enough that it keeps its place in the bar however many variables there are. */
+const isModelSelector = (schema: JsonSchema7) =>
+  schema.title === 'ModelId' ||
+  (schema as unknown as Record<string, unknown>)['x-model-selector'] === true;
+
 // Layout helper types
 type VerticalLayout = { type: 'VerticalLayout'; elements: UISchemaElement[] };
 type HorizontalLayout = {
@@ -31,23 +45,52 @@ type HorizontalLayout = {
   options?: Record<string, unknown>;
 };
 
+type VariablesFormConfig = {
+  restrict: boolean;
+  trim: boolean;
+  showUnfocusedDescription: boolean;
+  hideRequiredAsterisk: boolean;
+  /** Which surface the fields are on — see `renders/fieldStyles`. */
+  surface: 'bar' | 'panel';
+  minRows: number;
+  maxRows: number;
+};
+
 interface ChatVariablesFormVm {
   schema: JsonSchema7;
-  uiSchema: UISchemaElement;
+  /** The controls that stay in the action bar, or null when none do. */
+  inlineUiSchema: UISchemaElement | null;
+  /** The controls behind the overflow pill, or null when nothing overflows. */
+  overflowUiSchema: UISchemaElement | null;
+  /** How many controls `overflowUiSchema` holds. */
+  overflowCount: number;
   data: Record<string, unknown> | null;
   renderers: typeof renderers;
   cells: typeof cells;
   ajv: ReturnType<typeof createAjv>;
   onChange: (args: { data: Record<string, unknown> }) => void;
-  config: {
-    restrict: boolean;
-    trim: boolean;
-    showUnfocusedDescription: boolean;
-    hideRequiredAsterisk: boolean;
-  };
+  /** JsonForms config for the action bar, and for the overflow panel. */
+  barConfig: VariablesFormConfig;
+  panelConfig: VariablesFormConfig;
   isLoading: boolean;
   isReady: boolean;
   isHydrated: boolean;
+}
+
+/** One row of controls, laid out by our grid renderer. */
+function rowLayout(controls: ControlElement[]): UISchemaElement {
+  const innerRow: HorizontalLayout = {
+    type: 'HorizontalLayout',
+    elements: controls as unknown as UISchemaElement[],
+    options: { gap: '12px', alignItems: 'flex-start' },
+  };
+
+  const ui: VerticalLayout = {
+    type: 'VerticalLayout',
+    elements: [innerRow as unknown as UISchemaElement],
+  };
+
+  return ui as unknown as UISchemaElement;
 }
 
 function buildSimpleSchemaAndUi(
@@ -56,13 +99,15 @@ function buildSimpleSchemaAndUi(
   useDefaults: boolean
 ): {
   schema: JsonSchema7;
-  uiSchema: UISchemaElement;
+  inlineControls: ControlElement[];
+  overflowControls: ControlElement[];
   initialData: Record<string, unknown>;
 } {
   const names = Object.keys(vars || {});
 
   const properties: Record<string, JsonSchema7> = {};
   const controls: ControlElement[] = [];
+  const inlineOnly: ControlElement[] = [];
   const initialData: Record<string, unknown> = {};
   // Each variable schema arrives self-contained (Pydantic-style: its own
   // `$defs` + `#/$defs/X` refs). Nested under `properties`, those refs would
@@ -96,23 +141,28 @@ function buildSimpleSchemaAndUi(
       (control as unknown as { enabled?: boolean }).enabled = false;
     }
     controls.push(control);
+    if (isModelSelector(properties[name])) inlineOnly.push(control);
   }
 
   const schema: SchemaWithDefs = { type: 'object', properties };
   if (Object.keys($defs).length > 0) schema.$defs = $defs;
 
-  const innerRow: HorizontalLayout = {
-    type: 'HorizontalLayout',
-    elements: controls as unknown as UISchemaElement[],
-    options: { gap: '12px', alignItems: 'flex-start' },
-  };
+  // Few enough to read at a glance: leave them all in the bar.
+  if (controls.length <= MAX_INLINE_VARIABLES) {
+    return {
+      schema,
+      inlineControls: controls,
+      overflowControls: [],
+      initialData,
+    };
+  }
 
-  const ui: VerticalLayout = {
-    type: 'VerticalLayout',
-    elements: [innerRow as unknown as UISchemaElement],
+  return {
+    schema,
+    inlineControls: inlineOnly,
+    overflowControls: controls.filter((c) => !inlineOnly.includes(c)),
+    initialData,
   };
-
-  return { schema, uiSchema: ui as unknown as UISchemaElement, initialData };
 }
 
 export function useChatVariablesFormVm({
@@ -181,25 +231,49 @@ export function useChatVariablesFormVm({
     [workspace.variables, setVariables, updateVariableMutation, threadId]
   );
 
-  const config = React.useMemo(
+  // These are settings, not the message being written: text fields start at one
+  // line and grow, on the smaller of the renderers' two scales, so a panel of
+  // them stays a list rather than a column of blocks.
+  const barConfig = React.useMemo<VariablesFormConfig>(
     () => ({
       restrict: true,
       trim: false,
       showUnfocusedDescription: true,
       hideRequiredAsterisk: true,
+      surface: 'bar',
+      minRows: 1,
+      maxRows: 6,
     }),
     []
+  );
+  const panelConfig = React.useMemo<VariablesFormConfig>(
+    () => ({ ...barConfig, surface: 'panel' }),
+    [barConfig]
+  );
+
+  const inlineUiSchema = React.useMemo(
+    () =>
+      built.inlineControls.length ? rowLayout(built.inlineControls) : null,
+    [built.inlineControls]
+  );
+  const overflowUiSchema = React.useMemo(
+    () =>
+      built.overflowControls.length ? rowLayout(built.overflowControls) : null,
+    [built.overflowControls]
   );
 
   return {
     schema: built.schema,
-    uiSchema: built.uiSchema,
+    inlineUiSchema,
+    overflowUiSchema,
+    overflowCount: built.overflowControls.length,
     data,
     renderers,
     cells,
     ajv,
     onChange,
-    config,
+    barConfig,
+    panelConfig,
     isLoading,
     isReady: querySettled,
     isHydrated: data !== null,
