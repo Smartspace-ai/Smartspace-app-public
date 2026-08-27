@@ -8,13 +8,24 @@ import { rankWith } from '@jsonforms/core';
 import { withJsonFormsControlProps } from '@jsonforms/react';
 import React, { useCallback } from 'react';
 
+import {
+  fieldErrorClass,
+  fieldNumberClass,
+  fieldRowClass,
+  fieldRowLabelClass,
+  pillClass,
+  pillLabelClass,
+  scaleFor,
+  type FieldSurface,
+} from './fieldStyles';
+
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
 /**
- * A numeric workspace variable, shaped to sit in the composer's action bar
- * beside the toggle pills: one bordered capsule holding the label and a bare
- * input. Everything is a semantic token, so it follows the colour scheme
- * instead of staying a white box in dark mode.
+ * A numeric workspace variable. In the composer's action bar it sits beside the
+ * toggle pills as one capsule holding the label and a bare input; in a form it
+ * is a settings row, the name on the left and the design's short number control
+ * on the right.
  *
  * Unlike the toggles, the label stays visible at every width — a lone number
  * box with no name tells the reader nothing.
@@ -30,6 +41,7 @@ const NumberRenderer: React.FC<ControlProps> = ({
   uischema,
   visible,
   enabled,
+  config,
   required,
 }) => {
   const isInteger = (schema as JsonSchema7 | undefined)?.type === 'integer';
@@ -69,36 +81,65 @@ const NumberRenderer: React.FC<ControlProps> = ({
     .filter(Boolean)
     .join(' — ');
 
+  const surface =
+    ((config ?? {}) as { surface?: FieldSurface }).surface ?? 'form';
+  const scale = scaleFor(surface);
+
+  const input = (
+    <input
+      id={`number-${path}`}
+      type="number"
+      value={data ?? ''}
+      onChange={handleInputChange}
+      disabled={isDisabled}
+      min={min}
+      max={max}
+      step={step}
+      className={
+        surface === 'bar'
+          ? 'w-14 border-0 bg-transparent p-0 text-xs font-medium tabular-nums text-foreground outline-none disabled:cursor-not-allowed'
+          : fieldNumberClass(scale, hasError)
+      }
+    />
+  );
+
+  // In the action bar the label and the input share one capsule; in a form they
+  // are a settings row, the name on the left and the stepper on the right.
+  if (surface === 'bar') {
+    return (
+      <div
+        className={`ss-jsonforms-field ss-jsonforms-number ${pillClass({
+          hasError,
+          disabled: isDisabled,
+        })}`}
+        title={tooltip || undefined}
+      >
+        {label && (
+          <label
+            htmlFor={`number-${path}`}
+            className={`${pillLabelClass} whitespace-nowrap ${
+              hasError ? 'text-destructive' : 'text-muted-foreground'
+            }`}
+          >
+            {label}
+            {required && <span className="ml-1 text-destructive">*</span>}
+          </label>
+        )}
+        {input}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`ss-jsonforms-field ss-jsonforms-number flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors focus-within:border-primary/40 ${
-        hasError ? 'border-destructive' : 'border-border/70'
-      } ${isDisabled ? 'opacity-60' : ''}`}
-      title={tooltip || undefined}
-    >
-      {label && (
-        <label
-          htmlFor={`number-${path}`}
-          className={`whitespace-nowrap ${
-            hasError ? 'text-destructive' : 'text-muted-foreground'
-          }`}
-        >
+    <div className="ss-jsonforms-field ss-jsonforms-number">
+      <div className={fieldRowClass}>
+        <label htmlFor={`number-${path}`} className={fieldRowLabelClass(scale)}>
           {label}
           {required && <span className="ml-1 text-destructive">*</span>}
         </label>
-      )}
-
-      <input
-        id={`number-${path}`}
-        type="number"
-        value={data ?? ''}
-        onChange={handleInputChange}
-        disabled={isDisabled}
-        min={min}
-        max={max}
-        step={step}
-        className="w-14 border-0 bg-transparent p-0 text-xs font-medium tabular-nums text-foreground outline-none disabled:cursor-not-allowed"
-      />
+        {input}
+      </div>
+      {hasError && <div className={fieldErrorClass}>{errors}</div>}
     </div>
   );
 };

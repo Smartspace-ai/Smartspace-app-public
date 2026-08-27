@@ -496,10 +496,13 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
             disabled={disabled}
             placeholder="What would you like to do?"
             className="md-editor--bare px-5 pb-3 pt-4 text-sm"
-            /* The reference's textarea is a 76px border-box — its 16/12 padding
-               counts towards that. Ours pads a wrapper around the editor, so the
-               editor itself gets the remainder to land on the same 76px block. */
-            minHeight={48}
+            /* The reference's 76px textarea block carries its own controls; ours
+               stacks an action bar under the editor, so reserving the rest of
+               that block here left a blank second line above it — most obvious
+               on a workspace with no variables, where the bar holds nothing but
+               the send buttons. One line is the floor; the editor grows from
+               there as it is typed into, up to the wrapper's 400px. */
+            minHeight={24}
           />
         </div>
 

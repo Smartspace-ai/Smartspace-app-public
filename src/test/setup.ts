@@ -33,6 +33,16 @@ try {
   // ignore
 }
 
+// jsdom has no Element.scrollTo, which the message list's scroll-to-bottom
+// effect calls from a requestAnimationFrame — an unhandled throw that fails
+// any spec rendering the chat tree. Assigned unconditionally: a later jsdom
+// may define it as a throwing "not implemented" stub, which a presence check
+// would skip. Plain assignment rather than vi.spyOn, which needs the property
+// to already exist.
+if (typeof Element !== 'undefined') {
+  Element.prototype.scrollTo = (() => undefined) as Element['scrollTo'];
+}
+
 // Mock MSAL/Teams/SignalR related modules to avoid real network/SSO in unit tests
 vi.mock('@/platform/auth/msalClient', () => {
   const fakeAccount = {

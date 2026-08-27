@@ -4,6 +4,18 @@ import { withJsonFormsControlProps } from '@jsonforms/react';
 import { Globe, SlidersHorizontal, Zap } from 'lucide-react';
 import React, { useCallback } from 'react';
 
+import {
+  fieldErrorClass,
+  fieldRowClass,
+  fieldRowLabelClass,
+  pillClass,
+  pillLabelClass,
+  scaleFor,
+  switchThumbClass,
+  switchTrackClass,
+  type FieldSurface,
+} from './fieldStyles';
+
 type AccessUiSchema = { access?: 'Read' | 'Write' };
 
 /**
@@ -20,10 +32,12 @@ function iconFor(label: string | undefined) {
 }
 
 /**
- * A boolean workspace variable, rendered as the composer action bar's toggle
- * pill: a bordered capsule that fills with a tint of the accent when it is on.
- * The label collapses away below `sm` so a row of these still fits a 320px
- * phone — the icon plus `aria-label` carry the meaning there.
+ * A boolean workspace variable. In the composer's action bar it is the design's
+ * toggle pill — a capsule that fills with a tint of the accent when it is on,
+ * its label collapsing away below `sm` so a row of them still fits a 320px
+ * phone. Everywhere else it is a settings row: the name on the left, the
+ * design's switch on the right, so it lines up with the fields beside it
+ * instead of sitting among them as a stray capsule.
  */
 const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
   data,
@@ -35,6 +49,7 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
   uischema,
   visible,
   enabled,
+  config,
 }) => {
   const onToggle = useCallback(() => {
     handleChange(path, !data);
@@ -50,6 +65,9 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
   const hasError = !!errors && errors.length > 0;
   const isChecked = Boolean(data);
   const Icon = iconFor(label);
+  const surface =
+    ((config ?? {}) as { surface?: FieldSurface }).surface ?? 'form';
+  const scale = scaleFor(surface);
 
   // The description and any validation message ride along as the native
   // tooltip; an extra block of text would break the single-row action bar.
@@ -57,11 +75,13 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
     .filter(Boolean)
     .join(' — ');
 
-  return (
+  const toggle = (
     <button
       id={`toggle-${path}`}
       type="button"
-      aria-pressed={isChecked}
+      role={surface === 'bar' ? undefined : 'switch'}
+      aria-pressed={surface === 'bar' ? isChecked : undefined}
+      aria-checked={surface === 'bar' ? undefined : isChecked}
       aria-label={label}
       title={tooltip || undefined}
       onClick={onToggle}
@@ -77,24 +97,46 @@ const BooleanRenderer: React.FC<import('@jsonforms/core').ControlProps> = ({
           e.currentTarget.blur();
         }
       }}
-      className={`boolean-switch flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-        isChecked
-          ? 'border-primary/30 bg-primary/10 text-primary'
-          : 'border-transparent bg-transparent text-muted-foreground hover:bg-secondary'
-      } ${hasError ? 'border-destructive text-destructive' : ''} ${
-        isDisabled ? 'cursor-not-allowed opacity-60' : ''
-      }`}
+      className={
+        surface === 'bar'
+          ? `boolean-switch ${pillClass({
+              active: isChecked,
+              hasError,
+              disabled: isDisabled,
+            })}`
+          : switchTrackClass(isChecked, isDisabled)
+      }
     >
-      <Icon className="h-3.5 w-3.5 shrink-0" />
-      {label && (
-        // Desktop-first: the app and the package each ship a full Tailwind
-        // build, so a base `hidden` can out-order `sm:inline`. `max-sm:hidden`
-        // is the form that survives both cascades.
-        <span className="inline max-w-[9rem] truncate max-sm:hidden">
-          {label}
-        </span>
+      {surface === 'bar' ? (
+        <>
+          <Icon className="h-3.5 w-3.5 shrink-0" />
+          {label && (
+            // Desktop-first: the app and the package each ship a full Tailwind
+            // build, so a base `hidden` can out-order `sm:inline`.
+            // `max-sm:hidden` is the form that survives both cascades.
+            <span className={`inline ${pillLabelClass} max-sm:hidden`}>
+              {label}
+            </span>
+          )}
+        </>
+      ) : (
+        <span className={switchThumbClass(isChecked)} />
       )}
     </button>
+  );
+
+  if (surface === 'bar') return toggle;
+
+  return (
+    <div className="ss-jsonforms-field ss-jsonforms-boolean">
+      <div className={fieldRowClass}>
+        <label htmlFor={`toggle-${path}`} className={fieldRowLabelClass(scale)}>
+          {label}
+        </label>
+        {toggle}
+      </div>
+      {hasError && <div className={fieldErrorClass}>{errors}</div>}
+    </div>
   );
 };
 
