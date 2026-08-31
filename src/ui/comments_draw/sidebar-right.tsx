@@ -106,7 +106,8 @@ export function SidebarRight() {
     useAddComment(threadId);
   // Live comment pushes may omit the resolved display name. Fall back to
   // the thread's participant list to resolve it locally.
-  const { data: threadUsers } = useThreadUsers(threadId);
+  const { data: threadUsers, isLoading: isThreadUsersLoading } =
+    useThreadUsers(threadId);
   const displayNameByUserId = useMemo(() => {
     const map = new Map<string, string>();
     (threadUsers ?? []).forEach((u) => {
@@ -114,6 +115,10 @@ export function SidebarRight() {
     });
     return map;
   }, [threadUsers]);
+  // Wait for the participant list too, not just the comments — otherwise a
+  // comment needing the fallback above can flash with a blank/truncated
+  // name for the brief moment before this list has loaded.
+  const isCommentsReady = !isLoading && !isThreadUsersLoading;
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const [threadComment, setThreadComment] = useState({
@@ -196,7 +201,7 @@ export function SidebarRight() {
                   <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                     Failed to load comments
                   </div>
-                ) : isLoading ? (
+                ) : !isCommentsReady ? (
                   <>
                     <CommentSkeleton />
                     <CommentSkeleton mine />

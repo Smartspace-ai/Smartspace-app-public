@@ -399,5 +399,8 @@
   min-width: 220px;
   max-width: 320px;
   overflow: hidden;
-  z-index: 1000;
+  /* Must outrank MUI's Drawer (z-index 1200), which the comments panel
+     becomes on narrow windows — otherwise the drawer's own content paints
+     over this popup even though it's positioned correctly on screen. */
+  z-index: 2000;
 }
