@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { defaultChatService } from '@/platform/chat/defaultChatService';
 import { isNotFoundError } from '@/platform/envelopes';
 
-import { threadsListOptions } from '@/domains/threads';
+import { ensureDraftThread, threadsListOptions } from '@/domains/threads';
 
 import { ThreadRenameModal } from '@/ui/threads/ThreadRenameModal';
 
@@ -57,6 +57,20 @@ export const Route = createFileRoute(
         throw redirect({
           to: '/workspace/$workspaceId/thread/$threadId',
           params: { workspaceId: params.workspaceId, threadId: first.id },
+          replace: true,
+        });
+      }
+
+      if (!first) {
+        // No threads left at all — land on a draft instead of committing the
+        // route with a dead thread id (which paints "failed to load" errors).
+        const { draftId } = ensureDraftThread(
+          params.workspaceId,
+          context.queryClient
+        );
+        throw redirect({
+          to: '/workspace/$workspaceId/thread/$threadId',
+          params: { workspaceId: params.workspaceId, threadId: draftId },
           replace: true,
         });
       }
