@@ -1,3 +1,4 @@
+import { isCancelledError } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { z } from 'zod';
@@ -46,7 +47,13 @@ export const Route = createFileRoute(
       // the boot splash stays up forever and requests fire endlessly. When there
       // is no different thread to show, commit the route with no thread instead
       // of looping (the component renders an empty state and the splash lifts).
-      if (!isNotFoundError(e)) throw e;
+      //
+      // A cancelled fetch gets the same treatment as a 404: deleting the
+      // currently-viewed thread cancels this exact in-flight query (onMutate
+      // cancels threadsKeys.details()), so this loader can be racing that
+      // delete. Rethrowing it uncaught would crash the route (CatchBoundary)
+      // and stall on the dead thread instead of moving on.
+      if (!isNotFoundError(e) && !isCancelledError(e)) throw e;
 
       const list = await context.queryClient.ensureQueryData(
         threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
