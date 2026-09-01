@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import type { MessageThread, ThreadsResponse } from '@smartspace/chat-ui';
-import { threadsKeys } from '@smartspace/chat-ui';
+import { messagesKeys, threadsKeys } from '@smartspace/chat-ui';
 
 import { deleteThread, renameThread, setPin } from './service';
 
@@ -250,6 +250,11 @@ export function useDeleteThread() {
           qc.removeQueries({ queryKey: key, exact: true });
         }
       }
+
+      // Drop the deleted thread's messages too, otherwise a stale cache hit
+      // repaints them if the thread id ever flows back into the URL (e.g. Back).
+      qc.removeQueries({ queryKey: messagesKeys.list(threadId) });
+      qc.removeQueries({ queryKey: messagesKeys.infinite(threadId) });
 
       return { previousLists, previousDetails };
     },
