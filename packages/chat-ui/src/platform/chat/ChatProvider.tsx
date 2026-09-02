@@ -13,10 +13,17 @@ export type ChatContextIds = {
   threadId: string;
 };
 
+/** 'friendly' (default): the category-based, end-user-facing copy in
+ * `getMessageErrorText`. 'verbose': the actual provider error, extracted
+ * from the raw error message — for admin/debugging surfaces (the Sandbox)
+ * only, never production chat. */
+export type ChatErrorDetail = 'friendly' | 'verbose';
+
 type ChatProviderValue = {
   service: ChatService;
   ids: ChatContextIds;
   identity: ChatIdentity;
+  errorDetail: ChatErrorDetail;
 };
 
 const ChatCtx = createContext<ChatProviderValue | null>(null);
@@ -26,6 +33,7 @@ export type ChatProviderProps = {
   workspaceId: string;
   threadId: string;
   identity: ChatIdentity;
+  errorDetail?: ChatErrorDetail;
   children: React.ReactNode;
 };
 
@@ -44,6 +52,7 @@ export function ChatProvider({
   workspaceId,
   threadId,
   identity,
+  errorDetail = 'friendly',
   children,
 }: ChatProviderProps) {
   const value = useMemo<ChatProviderValue>(
@@ -51,6 +60,7 @@ export function ChatProvider({
       service,
       ids: { workspaceId, threadId },
       identity: { userId: identity.userId, displayName: identity.displayName },
+      errorDetail,
     }),
     // Depend on primitives, not the identity object reference — callers
     // commonly pass a fresh object literal each render (see ChatProviderBridge),
@@ -58,7 +68,14 @@ export function ChatProvider({
     // `service` is included as a ref but is expected to be a stable singleton
     // (the production app passes the module-level `defaultChatService`); a
     // caller that swaps services on every render would correctly re-trigger.
-    [service, workspaceId, threadId, identity.userId, identity.displayName]
+    [
+      service,
+      workspaceId,
+      threadId,
+      identity.userId,
+      identity.displayName,
+      errorDetail,
+    ]
   );
   return <ChatCtx.Provider value={value}>{children}</ChatCtx.Provider>;
 }
@@ -83,4 +100,8 @@ export function useChatContext(): ChatContextIds {
 
 export function useChatIdentity(): ChatIdentity {
   return useChatProviderValue().identity;
+}
+
+export function useChatErrorDetail(): ChatErrorDetail {
+  return useChatProviderValue().errorDetail;
 }

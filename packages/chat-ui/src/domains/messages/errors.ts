@@ -52,7 +52,7 @@ const STATUS_CODE_TEXT: Record<number, string> = {
 
 export type MessageErrorLike =
   | number
-  | { code: number; errorCode?: string | null };
+  | { code: number; errorCode?: string | null; message?: string | null };
 
 export const getMessageErrorText = (error: MessageErrorLike): string => {
   if (typeof error === 'number') {
@@ -62,4 +62,59 @@ export const getMessageErrorText = (error: MessageErrorLike): string => {
     return ERROR_CODE_TEXT[error.errorCode];
   }
   return STATUS_CODE_TEXT[error.code] ?? GENERIC_ERROR_TEXT;
+};
+
+/**
+ * Provider error bodies (OpenAI/Azure-style) arrive embedded as a JSON blob
+ * inside a prefixed string, e.g.
+ * `litellm.BadRequestError: AzureException BadRequestError - {"error": {"message": "...", "param": "...", "code": "..."}}`.
+ * Pulls the JSON substring out and returns its `error.message` (or top-level
+ * `message` for providers that don't nest under `error`), plus `param` when
+ * present since it usually names the exact misconfigured field.
+ */
+function extractProviderErrorDetail(
+  raw: string
+): { message: string; param?: string } | null {
+  const start = raw.indexOf('{');
+  if (start === -1) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw.slice(start));
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== 'object' || parsed === null) return null;
+  const record = parsed as Record<string, unknown>;
+  const inner =
+    typeof record.error === 'object' && record.error !== null
+      ? (record.error as Record<string, unknown>)
+      : record;
+  if (typeof inner.message !== 'string') return null;
+  return {
+    message: inner.message,
+    param: typeof inner.param === 'string' ? inner.param : undefined,
+  };
+}
+
+/**
+ * The actual provider detail behind an error, for an optional "Show details"
+ * disclosure under the (always-shown) friendly bubble from
+ * {@link getMessageErrorText} — admin/debugging surfaces (the Sandbox) only,
+ * never end-user-facing chat, since the text is unpolished and
+ * provider-specific. Returns null when there's nothing to add beyond the
+ * friendly copy (a bare HTTP code, or no message on the error at all).
+ */
+export const getMessageErrorDetail = (
+  error: MessageErrorLike
+): string | null => {
+  if (typeof error === 'number' || !error.message) {
+    return null;
+  }
+  const detail = extractProviderErrorDetail(error.message);
+  if (!detail) {
+    return error.message;
+  }
+  return detail.param
+    ? `${detail.message} (param: ${detail.param})`
+    : detail.message;
 };

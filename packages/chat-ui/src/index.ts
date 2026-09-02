@@ -20,11 +20,13 @@ export type { ChatService } from './platform/chat/ChatService';
 export {
   ChatProvider,
   useChatContext,
+  useChatErrorDetail,
   useChatIdentity,
   useChatService,
 } from './platform/chat/ChatProvider';
 export type {
   ChatContextIds,
+  ChatErrorDetail,
   ChatIdentity,
   ChatProviderProps,
 } from './platform/chat/ChatProvider';
@@ -61,6 +63,7 @@ export {
 // Error/status text helpers — exported so forks can override copy and tests
 // can pin the error-code contract with the backend.
 export {
+  getMessageErrorDetail,
   getMessageErrorText,
   type MessageErrorLike,
 } from './domains/messages/errors';
