@@ -1,10 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import {
-  queryOptions,
-  skipToken,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useChatService } from '@/platform/chat';
 import type { ChatService } from '@/platform/chat';
@@ -108,15 +103,28 @@ export const useThreadIsRunning = (
   threadId: string | undefined
 ): boolean => {
   const queryClient = useQueryClient();
+  const service = useChatService();
 
-  // Subscribe to the detail cache without ever fetching. SSE/SignalR populate
-  // it for the active thread via applyThreadToCache; for every other thread
-  // the slot stays empty and we fall back to the list cache. Avoids the N+1
-  // burst of detail GETs that fired when every sidebar ThreadItem ran its
-  // own useThread.
-  const { data: detailThread } = useQuery<MessageThread | undefined>({
-    queryKey: threadsKeys.detail(workspaceId ?? '', threadId ?? ''),
-    queryFn: skipToken,
+  // Subscribe to the detail cache without ever fetching ourselves (enabled:
+  // false). SSE/SignalR populate it for the active thread via
+  // applyThreadToCache; for every other thread the slot stays empty and we
+  // fall back to the list cache. Avoids the N+1 burst of detail GETs that
+  // fired when every sidebar ThreadItem ran its own useThread.
+  //
+  // Must use the SAME queryFn as useThread, not skipToken: TanStack Query
+  // shares one `options` object per query key across every observer, and
+  // whichever observer last calls setOptions wins -- so a mismatched queryFn
+  // here can clobber useThread's real fetcher and poison any
+  // invalidateQueries-triggered refetch for this key (surfaced as "Attempted
+  // to invoke queryFn when set to skipToken" during Ask User Question
+  // resume, with the composer's loading state stuck forever as a result).
+  const { data: detailThread } = useQuery({
+    ...threadDetailOptions({
+      service,
+      workspaceId: workspaceId ?? '',
+      threadId: threadId ?? '',
+    }),
+    enabled: false,
   });
 
   // List cache is the authoritative source for sidebar items. Re-evaluated
