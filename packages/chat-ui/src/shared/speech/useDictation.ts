@@ -309,8 +309,15 @@ export function useDictation({
       } catch {
         /* already closed by stop() */
       }
-      if (published && sessionRef.current === published)
-        sessionRef.current = null;
+      if (published) {
+        // If the throw landed after goLive() armed these, they outlive the
+        // session: stop() is the only other thing that clears them and it bails
+        // once sessionRef is null, so an orphan would later tear down whichever
+        // session happens to be live by then.
+        window.clearTimeout(published.timers.idle);
+        window.clearTimeout(published.timers.max);
+        if (sessionRef.current === published) sessionRef.current = null;
+      }
       if (superseded()) return;
       console.warn('[dictation] failed to start:', e);
       // A `canceled` event during start-up already named the cause; keep it.
@@ -333,8 +340,13 @@ export function useDictation({
   useEffect(() => stop, [stop]);
 
   const toggle = useCallback(() => {
-    if (state === 'listening') stop();
-    else if (state === 'idle') void start();
+    // Anything that isn't idle stops, `starting` included. If no signal ever
+    // arrives — neither sessionStarted, nor the connection, nor the start
+    // callback — the hook would otherwise sit in `starting` with the microphone
+    // open and no way to release it. The button stays enabled during start-up
+    // for exactly this reason.
+    if (state === 'idle') void start();
+    else stop();
   }, [start, state, stop]);
 
   return { supported, available, state, error, start, stop, toggle };

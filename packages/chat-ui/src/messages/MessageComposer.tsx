@@ -218,8 +218,12 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
     (handle: MarkdownEditorHandle | null) => {
       if (handle) editorRef.current = handle;
     },
+    // Both flags matter: the portal mounts on `isMobile && isFullscreen`, and
+    // nothing resets isFullscreen when the breakpoint flips, so crossing it
+    // while fullscreen would unmount the portal editor without re-attaching the
+    // inline one — leaving a destroyed handle and silently swallowing phrases.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isFullscreen]
+    [isFullscreen, isMobile]
   );
 
   // Dictation: only when the service implements it AND the install has speech
