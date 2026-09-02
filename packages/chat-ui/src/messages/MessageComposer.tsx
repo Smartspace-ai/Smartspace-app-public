@@ -224,8 +224,9 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
 
   // Dictation: only when the service implements it AND the install has speech
   // configured; otherwise the design's mic stays as a disabled placeholder.
-  // Final phrases go straight into the editor at the caret; interim text is
-  // shown in a strip below the prompt rather than written into the doc.
+  // Final phrases become real text at the caret; provisional ones render as
+  // greyed ghost text there and never enter the document, so a mid-phrase send
+  // can't ship half-heard words.
   const { data: speechConfig } = useSpeechConfig();
   const getSpeechToken = useMemo(
     () => chatService.getSpeechToken?.bind(chatService),
@@ -235,7 +236,10 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
     endpoint: speechConfig?.enabled ? speechConfig.endpoint : null,
     locale: speechConfig?.defaultLocale ?? 'en-US',
     getToken: getSpeechToken,
+    // Final phrases become real text; provisional ones render as greyed ghost
+    // text at the caret and never enter the document.
     onPhrase: (text) => editorRef.current?.insertText(`${text} `),
+    onInterim: (text) => editorRef.current?.setDictationGhost(text),
   });
   const { stop: stopDictation } = dictation;
   const handleDictationToggle = () => {
@@ -554,33 +558,28 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
           />
         </div>
 
-        {/* Dictation status. The live region is mounted permanently — content
-            arriving in the same tick a region appears usually isn't announced —
-            and carries only the state change. The interim transcript updates
-            several times a second, so it sits outside the region and is muted
-            for assistive tech; the mobile-fullscreen copy is visual only, so
-            nothing is announced twice. */}
-        <div
-          role="status"
-          className={
-            dictation.state !== 'idle' || dictation.error
-              ? `px-5 pb-1 text-xs ${
-                  dictation.error ? 'text-destructive' : 'text-muted-foreground'
-                }`
-              : 'sr-only'
-          }
-        >
-          {dictation.error
-            ? dictationErrorMessages[dictation.error]
-            : dictation.state === 'listening'
-            ? 'Listening…'
+        {/* Dictation state is carried by the microphone itself and by the ghost
+            text at the caret, so nothing is reported in two places. This region
+            is for assistive tech only: permanently mounted (content arriving in
+            the same tick a region appears usually is not announced) and carrying
+            only the state change, never the transcript, which rewrites several
+            times a second. */}
+        <div role="status" className="sr-only">
+          {dictation.state === 'listening'
+            ? 'Listening'
             : dictation.state === 'starting'
-            ? 'Starting…'
+            ? 'Starting dictation'
             : ''}
-          {!dictation.error && dictation.interim && (
-            <span aria-hidden="true"> {dictation.interim}</span>
-          )}
         </div>
+
+        {/* Errors are the one thing the button cannot convey on its own: a
+            tooltip is invisible to touch and to screen readers, and
+            permission-denied is the common first-run outcome. */}
+        {dictation.error && (
+          <div role="alert" className="px-5 pb-1 text-xs text-destructive">
+            {dictationErrorMessages[dictation.error]}
+          </div>
+        )}
 
         {/* Action bar */}
         <div className="flex items-center justify-between gap-2 px-3 pb-3">
@@ -715,23 +714,16 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                       className="md-editor--bare text-sm h-full"
                     />
                   </div>
-                  {/* Visual only — the announcing live region is the one in the
-                      card behind this portal, which stays mounted. */}
-                  {(dictation.state !== 'idle' || dictation.error) && (
+                  {/* Errors only. State is on the microphone and the transcript
+                      is ghosted at the caret in the editor above, so there is no
+                      status text to duplicate. aria-hidden because the announcing
+                      region lives in the card behind this portal. */}
+                  {dictation.error && (
                     <div
                       aria-hidden="true"
-                      className={`px-4 pb-1 text-xs ${
-                        dictation.error
-                          ? 'text-destructive'
-                          : 'text-muted-foreground'
-                      }`}
+                      className="px-4 pb-1 text-xs text-destructive"
                     >
-                      {dictation.error
-                        ? dictationErrorMessages[dictation.error]
-                        : dictation.interim ||
-                          (dictation.state === 'listening'
-                            ? 'Listening…'
-                            : 'Starting…')}
+                      {dictationErrorMessages[dictation.error]}
                     </div>
                   )}
                   <div className="flex items-center gap-2 px-3 py-2 border-t bg-background">

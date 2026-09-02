@@ -10,14 +10,17 @@ type FakeRecognizer = {
   recognized?: (s: unknown, e: unknown) => void;
   canceled?: (s: unknown, e: unknown) => void;
   sessionStopped?: (s: unknown, e: unknown) => void;
+  sessionStarted?: (s: unknown, e: unknown) => void;
   startContinuousRecognitionAsync: ReturnType<typeof vi.fn>;
   stopContinuousRecognitionAsync: ReturnType<typeof vi.fn>;
   close: ReturnType<typeof vi.fn>;
 };
 
-const { recognizers, fromEndpoint } = vi.hoisted(() => ({
+const { recognizers, fromEndpoint, state } = vi.hoisted(() => ({
   recognizers: [] as FakeRecognizer[],
   fromEndpoint: vi.fn(),
+  // Lets a test simulate the SDK deferring its start callback.
+  state: { pendingStart: null as null | ((cb: () => void) => void) },
 }));
 
 vi.mock('microsoft-cognitiveservices-speech-sdk', () => {
@@ -26,7 +29,11 @@ vi.mock('microsoft-cognitiveservices-speech-sdk', () => {
     recognized?: (s: unknown, e: unknown) => void;
     canceled?: (s: unknown, e: unknown) => void;
     sessionStopped?: (s: unknown, e: unknown) => void;
-    startContinuousRecognitionAsync = vi.fn((cb: () => void) => cb());
+    sessionStarted?: (s: unknown, e: unknown) => void;
+    startContinuousRecognitionAsync = vi.fn((cb: () => void) => {
+      if (state.pendingStart) return state.pendingStart(cb);
+      return cb();
+    });
     stopContinuousRecognitionAsync = vi.fn((cb: () => void) => cb());
     close = vi.fn();
     constructor() {
@@ -87,6 +94,8 @@ describe('useDictation', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    // Never let a deferred-start override leak into the next test.
+    state.pendingStart = null;
   });
 
   it('is unavailable without an endpoint or token provider', () => {
@@ -101,9 +110,10 @@ describe('useDictation', () => {
     const { stream, track } = makeStream();
     getUserMedia.mockResolvedValueOnce(stream);
     const onPhrase = vi.fn();
+    const onInterim = vi.fn();
 
     const { result } = renderHook(() =>
-      useDictation({ endpoint, locale: 'en-NZ', getToken, onPhrase })
+      useDictation({ endpoint, locale: 'en-NZ', getToken, onPhrase, onInterim })
     );
     expect(result.current.available).toBe(true);
 
@@ -127,7 +137,7 @@ describe('useDictation', () => {
     act(() => {
       recognizer.recognizing?.(null, { result: { text: 'hel' } });
     });
-    expect(result.current.interim).toBe('hel');
+    expect(onInterim).toHaveBeenCalledWith('hel');
     expect(onPhrase).not.toHaveBeenCalled();
 
     act(() => {
@@ -136,7 +146,9 @@ describe('useDictation', () => {
       });
     });
     expect(onPhrase).toHaveBeenCalledWith('hello world');
-    expect(result.current.interim).toBe('');
+    // the guess is cleared before the real text is inserted, so the ghost never
+    // renders beside the final words
+    expect(onInterim).toHaveBeenLastCalledWith('');
 
     // NoMatch results carry no text worth inserting.
     act(() => {
@@ -200,6 +212,45 @@ describe('useDictation', () => {
     expect(result.current.state).toBe('idle');
     expect(result.current.error).toBe('network');
     expect(track.stop).toHaveBeenCalled();
+  });
+
+  it('arms as soon as the session starts, without waiting for the start promise', async () => {
+    const { stream } = makeStream();
+    getUserMedia.mockResolvedValueOnce(stream);
+
+    // The real SDK does not resolve startContinuousRecognitionAsync when the mic
+    // is armed — it waits on the service handshake, which it defers until audio
+    // arrives. Gating "listening" on it left the button spinning until the user
+    // spoke. Simulate that by never invoking the success callback.
+    const neverResolves = vi.fn();
+    state.pendingStart = neverResolves;
+
+    const { result } = renderHook(() =>
+      useDictation({
+        endpoint,
+        locale: 'en-NZ',
+        getToken,
+        onPhrase: vi.fn(),
+      })
+    );
+
+    await act(async () => {
+      void result.current.start();
+    });
+    // The recogniser exists and start was invoked, but the callback never came.
+    await waitFor(() => expect(recognizers).toHaveLength(1));
+    expect(neverResolves).toHaveBeenCalled();
+    expect(result.current.state).toBe('starting');
+
+    // The service reports the session is up; that is what should arm the button.
+    await act(async () => {
+      recognizers[0].sessionStarted?.(null, {});
+    });
+    await waitFor(() => expect(result.current.state).toBe('listening'));
+
+    act(() => {
+      result.current.stop();
+    });
   });
 
   it('reports a permanent token failure as unavailable and does not open the mic session', async () => {

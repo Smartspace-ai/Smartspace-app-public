@@ -33,6 +33,12 @@ export type UseDictationOptions = {
   getToken?: () => Promise<SpeechToken>;
   /** A final recognised phrase — insert it into the editor. */
   onPhrase: (text: string) => void;
+  /**
+   * Provisional text, revised several times a second. Rendered as greyed ghost
+   * text at the caret. Deliberately a callback rather than hook state: holding it
+   * in state would re-render the whole composer on every partial result.
+   */
+  onInterim?: (text: string) => void;
   /** Hard stop, so a forgotten mic can't run for an hour. */
   maxDurationMs?: number;
   /** Stop after this long without any speech. */
@@ -64,19 +70,19 @@ function classifyTokenFailure(error: unknown): DictationError {
  * Streams microphone audio to Azure AI Speech and hands back recognised
  * phrases. Owns the whole session: mic permission + stream, lazy SDK load,
  * recogniser lifecycle, idle/max timers, and teardown on stop or unmount.
- * Interim (not yet final) text is exposed for display only; only final phrases
- * reach `onPhrase`.
+ * Interim (not yet final) text goes to `onInterim` for display only; only final
+ * phrases reach `onPhrase`.
  */
 export function useDictation({
   endpoint,
   locale,
   getToken,
   onPhrase,
+  onInterim,
   maxDurationMs = 180_000,
   idleTimeoutMs = 20_000,
 }: UseDictationOptions) {
   const [state, setState] = useState<DictationState>('idle');
-  const [interim, setInterim] = useState('');
   const [error, setError] = useState<DictationError | null>(null);
 
   const sessionRef = useRef<Session | null>(null);
@@ -85,9 +91,12 @@ export function useDictation({
   // clean up after itself instead of publishing a session.
   const generationRef = useRef(0);
   const onPhraseRef = useRef(onPhrase);
+  const onInterimRef = useRef(onInterim);
   useEffect(() => {
     onPhraseRef.current = onPhrase;
+    onInterimRef.current = onInterim;
   });
+  const clearInterim = useCallback(() => onInterimRef.current?.(''), []);
 
   const supported = isSupported();
   const available = supported && !!endpoint && !!getToken;
@@ -96,7 +105,7 @@ export function useDictation({
     generationRef.current += 1;
     const session = sessionRef.current;
     sessionRef.current = null;
-    setInterim('');
+    clearInterim();
     setState('idle');
     // Deliberately does NOT clear `error`: a real failure arrives as `canceled`
     // and then calls straight through to here, so clearing would erase the very
@@ -115,7 +124,7 @@ export function useDictation({
       () => session.recognizer.close(),
       () => session.recognizer.close()
     );
-  }, []);
+  }, [clearInterim]);
 
   const start = useCallback(async () => {
     if (!available || sessionRef.current) return;
@@ -173,6 +182,8 @@ export function useDictation({
     }
 
     let recognizer: Session['recognizer'] | null = null;
+    // Tracked out here so the catch can retract a session it already published.
+    let published: Session | null = null;
     try {
       // The SDK is large; only users who press the mic pay for it.
       const sdk: SpeechSdk = await import(
@@ -217,31 +228,44 @@ export function useDictation({
       // sessionStopped must not tear down a newer session, and the `canceled`
       // that our own teardown provokes must not paint an error.
       const isLive = () => sessionRef.current === session;
-      // A cancel can also arrive while start-up is still awaiting, before the
-      // session is live — e.g. the service rejects the token.
-      let cancelledBeforeLive = false;
+
+      // Publish the session before starting, so the SDK's own lifecycle events
+      // can drive state. `startContinuousRecognitionAsync` does not resolve when
+      // the microphone is armed — it waits on the service handshake, which the
+      // SDK defers until audio actually arrives. Gating "listening" on it meant
+      // the button span until the user spoke, which is backwards: the moment you
+      // most need to know it is ready is before you say anything.
+      sessionRef.current = session;
+      published = session;
+
+      const goLive = () => {
+        if (!isLive()) return;
+        session.timers.max ??= window.setTimeout(stop, maxDurationMs);
+        armIdle();
+        setState('listening');
+      };
+
+      // The service's own signal that the session is up.
+      recognizer.sessionStarted = () => goLive();
 
       recognizer.recognizing = (_sender, event) => {
         if (!isLive()) return;
-        setInterim(event.result.text ?? '');
+        onInterimRef.current?.(event.result.text ?? '');
         armIdle();
       };
       recognizer.recognized = (_sender, event) => {
         if (!isLive()) return;
         const text = event.result.text?.trim();
+        // Clear the guess before inserting the real text, so the ghost never
+        // renders alongside the final words it was guessing at.
+        clearInterim();
         if (event.result.reason === sdk.ResultReason.RecognizedSpeech && text) {
           onPhraseRef.current(text);
         }
-        setInterim('');
         armIdle();
       };
       recognizer.canceled = (_sender, event) => {
-        if (!isLive()) {
-          if (event.reason === sdk.CancellationReason.Error) {
-            cancelledBeforeLive = true;
-          }
-          return;
-        }
+        if (!isLive()) return;
         if (event.reason === sdk.CancellationReason.Error) {
           // errorCode only: errorDetails is free text from the service and is the
           // one sink near the credential whose contents we don't control.
@@ -261,23 +285,32 @@ export function useDictation({
         if (isLive()) stop();
       };
 
+      // Open the socket up front rather than letting the SDK do it lazily on the
+      // first audio. It arms the mic sooner and takes the connection handshake
+      // off the path to the first word.
+      try {
+        const connection = sdk.Connection.fromRecognizer(recognizer);
+        connection.connected = () => goLive();
+        connection.openConnection();
+      } catch {
+        /* pre-connect is an optimisation; recognition still starts without it */
+      }
+
       await new Promise<void>((resolve, reject) =>
         session.recognizer.startContinuousRecognitionAsync(resolve, reject)
       );
-      if (superseded() || cancelledBeforeLive) {
-        stream.getTracks().forEach((t) => t.stop());
-        recognizer.close();
-        if (!superseded()) setState('idle');
-        return;
-      }
-
-      sessionRef.current = session;
-      session.timers.max = window.setTimeout(stop, maxDurationMs);
-      armIdle();
-      setState('listening');
+      // Fallback: if neither `connected` nor `sessionStarted` reached us, the
+      // recogniser is running regardless by the time this resolves.
+      goLive();
     } catch (e) {
       stream.getTracks().forEach((t) => t.stop());
-      recognizer?.close();
+      try {
+        recognizer?.close();
+      } catch {
+        /* already closed by stop() */
+      }
+      if (published && sessionRef.current === published)
+        sessionRef.current = null;
       if (superseded()) return;
       console.warn('[dictation] failed to start:', e);
       // A `canceled` event during start-up already named the cause; keep it.
@@ -286,6 +319,7 @@ export function useDictation({
     }
   }, [
     available,
+    clearInterim,
     endpoint,
     getToken,
     idleTimeoutMs,
@@ -303,5 +337,5 @@ export function useDictation({
     else if (state === 'idle') void start();
   }, [start, state, stop]);
 
-  return { supported, available, state, interim, error, start, stop, toggle };
+  return { supported, available, state, error, start, stop, toggle };
 }
