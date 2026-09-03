@@ -12,6 +12,8 @@ import { applyCommentToCache, commentsKeys } from '@/domains/comments';
 import { useThreadMessageStream } from '@/domains/messages/threadStream';
 import { notificationsKeys } from '@/domains/notifications';
 
+import { useIsDraftThreadId } from '@/shared/utils/threadId';
+
 import { threadDetailOptions } from '@smartspace/chat-ui';
 
 import { handleThreadDeleted, handleThreadUpdate } from './threadEvents';
@@ -51,13 +53,22 @@ export function useWorkspaceSubscriptions() {
   // successful POST /messages) by useSendMessage — that last write is
   // post-server-confirmation so the gate doesn't open against a flow the
   // backend hasn't actually started yet.
+  // A draft thread is client-only until the first message — fetching its
+  // detail always 404s, and since this query shares its cache entry with
+  // useThread's (same key), that error bleeds into every observer of the
+  // key, including useThread's own draft-aware one. Skip fetching here too.
+  //
+  // Reactive hook, not the plain isDraftThreadId() check: a draft gets
+  // unmarked from a different component (the sidebar's ThreadsList), which
+  // wouldn't otherwise re-render this one, risking a stale read.
+  const isDraft = useIsDraftThreadId(threadId);
   const { data: thread } = useQuery({
     ...threadDetailOptions({
       service,
       workspaceId: workspaceId || '',
       threadId: threadId || '',
     }),
-    enabled: !!workspaceId && !!threadId,
+    enabled: !!workspaceId && !!threadId && !isDraft,
   });
   useThreadMessageStream(threadId || undefined, !!thread?.isFlowRunning);
 
@@ -103,7 +114,13 @@ export function useWorkspaceSubscriptions() {
     onThreadDeleted: (threadEvent) => {
       if (!workspaceId) return;
       if (handleThreadDeleted(qc, workspaceId, threadId, threadEvent)) {
-        navigate({ to: '/workspace/$workspaceId', params: { workspaceId } });
+        // replace: true so the deleted thread's URL isn't left in history,
+        // reachable via Back after it's gone from the cache.
+        navigate({
+          to: '/workspace/$workspaceId',
+          params: { workspaceId },
+          replace: true,
+        });
       }
     },
     onCommentsUpdate: (summary) => {

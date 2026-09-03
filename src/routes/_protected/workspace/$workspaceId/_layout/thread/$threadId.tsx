@@ -1,3 +1,4 @@
+import { isCancelledError } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { z } from 'zod';
@@ -5,7 +6,7 @@ import { z } from 'zod';
 import { defaultChatService } from '@/platform/chat/defaultChatService';
 import { isNotFoundError } from '@/platform/envelopes';
 
-import { threadsListOptions } from '@/domains/threads';
+import { ensureDraftThread, threadsListOptions } from '@/domains/threads';
 
 import { ThreadRenameModal } from '@/ui/threads/ThreadRenameModal';
 
@@ -39,6 +40,16 @@ export const Route = createFileRoute(
         })
       );
     } catch (e: unknown) {
+      // A cancelled fetch means "unknown", not "gone" — pin/rename/delete's
+      // onMutate all cancel the shared threadsKeys.details() query space, not
+      // just a thread actually being deleted. Treating it as not-found and
+      // redirecting (with replace: true, undoable by Back) could bounce the
+      // user away from a perfectly good thread they just clicked into. The
+      // loader's return value isn't consumed — ThreadRouteComponent and
+      // MessageList read useThread()/useMessages() directly — so returning
+      // null here just lets those hooks' own queries resolve normally.
+      if (isCancelledError(e)) return null;
+
       // If a thread can't be loaded, fall back to the first thread — but ONLY if
       // it's a DIFFERENT thread. A thread can appear in the list while its detail
       // endpoint 404s (data inconsistency); "redirect to first" then resolves
@@ -48,15 +59,38 @@ export const Route = createFileRoute(
       // of looping (the component renders an empty state and the splash lifts).
       if (!isNotFoundError(e)) throw e;
 
-      const list = await context.queryClient.ensureQueryData(
-        threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
-      );
+      let list;
+      try {
+        list = await context.queryClient.ensureQueryData(
+          threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
+        );
+      } catch (listError: unknown) {
+        // Same reasoning as above: an unrelated mutation can cancel this
+        // list refetch too (threadsKeys.lists()) mid-recovery. That isn't
+        // evidence the workspace is empty, so don't act on it.
+        if (isCancelledError(listError)) return null;
+        throw listError;
+      }
       const first = list.data[0];
 
       if (first?.id && first.id !== params.threadId) {
         throw redirect({
           to: '/workspace/$workspaceId/thread/$threadId',
           params: { workspaceId: params.workspaceId, threadId: first.id },
+          replace: true,
+        });
+      }
+
+      if (!first) {
+        // No threads left at all — land on a draft instead of committing the
+        // route with a dead thread id (which paints "failed to load" errors).
+        const { draftId } = ensureDraftThread(
+          params.workspaceId,
+          context.queryClient
+        );
+        throw redirect({
+          to: '/workspace/$workspaceId/thread/$threadId',
+          params: { workspaceId: params.workspaceId, threadId: draftId },
           replace: true,
         });
       }
