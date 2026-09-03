@@ -12,3 +12,10 @@ paths = [
   '''(^|/)(node_modules|\.venv|venv|\.nuget)/''',
   '''(^|/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|poetry\.lock|packages\.lock\.json)$''',
 ]
+
+[[allowlists]]
+description = "npm version pins in package.json are not secrets (auto-bumped @smartspace/api-client versions like 0.1.0-main.<sha> trip generic-api-key)"
+regexTarget = "line"
+regexes = [
+  '''"@smartspace/[a-z0-9.-]+":\s*"[~^]?\d+\.\d+\.\d+[0-9A-Za-z.+-]*"''',
+]
