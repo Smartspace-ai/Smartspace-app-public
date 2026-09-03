@@ -71,6 +71,16 @@ export function handleThreadDeleted(
 ): boolean {
   invalidateWorkspaceThreadLists(qc, workspaceId);
   const eventThreadId = threadIdFromEvent(payload);
+  if (eventThreadId) {
+    // Drop the deleted thread's detail/messages caches so a stale hit can't
+    // repaint them if its id ever flows back into the URL (e.g. Back).
+    qc.removeQueries({
+      queryKey: threadsKeys.detail(workspaceId, eventThreadId),
+      exact: true,
+    });
+    qc.removeQueries({ queryKey: messagesKeys.list(eventThreadId) });
+    qc.removeQueries({ queryKey: messagesKeys.infinite(eventThreadId) });
+  }
   // Truthy check on both sides: an empty-string id must never read as a
   // match (e.g. a malformed payload while on a non-thread route).
   return !!eventThreadId && eventThreadId === viewedThreadId;
