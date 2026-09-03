@@ -17,55 +17,15 @@ import { Sidebar, SidebarTrigger } from '@/shared/ui/mui-compat/sidebar';
 import { useIsDraftThreadId } from '@/shared/utils/threadId';
 
 import type { MarkdownEditorHandle } from '@smartspace/chat-ui';
-import { MarkdownEditor, parseDateTime } from '@smartspace/chat-ui';
+import {
+  MarkdownEditor,
+  parseDateTime,
+  useTaggableWorkspaceUsers,
+} from '@smartspace/chat-ui';
+
+import { renderContentWithMentions } from './renderContentWithMentions';
 
 const MAX_COMMENT_LENGTH = 350;
-
-function escapeRegExp(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function renderContentWithMentions(
-  text: string,
-  users?: Array<{ displayName?: string | null }>
-) {
-  const renderWithPattern = (pattern: RegExp) => {
-    const nodes: React.ReactNode[] = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-    let key = 0;
-    while ((match = pattern.exec(text)) !== null) {
-      const start = match.index;
-      const end = start + match[0].length;
-      if (start > lastIndex) {
-        nodes.push(<span key={key++}>{text.slice(lastIndex, start)}</span>);
-      }
-      nodes.push(
-        <span key={key++} className="font-semibold opacity-90">
-          {match[0]}
-        </span>
-      );
-      lastIndex = end;
-    }
-    if (lastIndex < text.length) {
-      nodes.push(<span key={key++}>{text.slice(lastIndex)}</span>);
-    }
-    return nodes;
-  };
-
-  const names = (users || [])
-    .map((u) => u.displayName)
-    .filter((n): n is string => Boolean(n))
-    .sort((a, b) => b.length - a.length);
-
-  if (names.length > 0) {
-    const union = names.map((n) => `@${escapeRegExp(n)}`).join('|');
-    return renderWithPattern(new RegExp(`(?:${union})`, 'g'));
-  }
-
-  // Fallback: highlight @ followed by one or two words (First or First Last)
-  return renderWithPattern(/@[A-Za-z0-9._-]+(?:\s+[A-Za-z0-9._-]+)?/g);
-}
 
 function CommentSkeleton({ mine }: { mine?: boolean }) {
   return (
@@ -105,20 +65,33 @@ export function SidebarRight() {
   const { mutateAsync: addCommentAsync, isPending: isAddingComment } =
     useAddComment(threadId);
   // Live comment pushes may omit the resolved display name. Fall back to
-  // the thread's participant list to resolve it locally.
+  // the thread's participant list to resolve it locally — and to the
+  // broader workspace user list behind that. Mentioning someone is what
+  // adds them to the thread server-side (their membership row is inserted
+  // at post time), so at the moment a live push about that mention lands,
+  // other viewers' cached thread-participant list doesn't have them yet;
+  // the workspace-wide list (already fetched for the mention picker) does.
   const { data: threadUsers, isLoading: isThreadUsersLoading } =
     useThreadUsers(threadId);
+  const { data: workspaceUsers, isLoading: isWorkspaceUsersLoading } =
+    useTaggableWorkspaceUsers(workspaceId);
   const displayNameByUserId = useMemo(() => {
     const map = new Map<string, string>();
+    (workspaceUsers ?? []).forEach((u) => {
+      if (u.displayName) map.set(u.userId, u.displayName);
+    });
+    // Thread participants layered on top: same data for anyone already in
+    // both lists, and authoritative for anyone the workspace list omits.
     (threadUsers ?? []).forEach((u) => {
       if (u.displayName) map.set(u.userId, u.displayName);
     });
     return map;
-  }, [threadUsers]);
-  // Wait for the participant list too, not just the comments — otherwise a
-  // comment needing the fallback above can flash with a blank/truncated
-  // name for the brief moment before this list has loaded.
-  const isCommentsReady = !isLoading && !isThreadUsersLoading;
+  }, [threadUsers, workspaceUsers]);
+  // Wait for both participant lists too, not just the comments — otherwise
+  // a comment needing the fallback above can flash with a blank/truncated
+  // name for the brief moment before they've loaded.
+  const isCommentsReady =
+    !isLoading && !isThreadUsersLoading && !isWorkspaceUsersLoading;
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<MarkdownEditorHandle | null>(null);
   const [threadComment, setThreadComment] = useState({

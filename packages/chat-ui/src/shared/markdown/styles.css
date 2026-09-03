@@ -401,6 +401,8 @@
   overflow: hidden;
   /* Must outrank MUI's Drawer (z-index 1200), which the comments panel
      becomes on narrow windows — otherwise the drawer's own content paints
-     over this popup even though it's positioned correctly on screen. */
-  z-index: 2000;
+     over this popup even though it's positioned correctly on screen. Kept
+     below MUI's Modal/Snackbar/Tooltip tiers (1300/1400/1500) rather than
+     jumping above all of them. */
+  z-index: 1250;
 }
