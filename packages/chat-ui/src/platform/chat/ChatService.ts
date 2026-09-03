@@ -113,9 +113,10 @@ export interface ChatService {
    * Speech-to-text (composer dictation). Both are optional so existing
    * service implementations keep compiling — the composer renders a
    * microphone only when both are provided AND the config says enabled.
-   * `getSpeechConfig` is read once per session; `getSpeechToken` is called
-   * lazily by the Speech SDK when it connects and again as the token nears
-   * expiry, so implementations needn't cache.
+   * `getSpeechConfig` is read once per session. `getSpeechToken` is called once
+   * per dictation session, before the SDK connects — the token it returns is
+   * handed over as-is and never refreshed, so a session is capped to stay
+   * inside its life. No caching wanted: a stale token cannot be renewed.
    */
   getSpeechConfig?(): Promise<SpeechConfig>;
   getSpeechToken?(): Promise<SpeechToken>;

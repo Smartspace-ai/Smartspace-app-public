@@ -47,6 +47,9 @@ export type UseDictationOptions = {
   idleTimeoutMs?: number;
 };
 
+/** Stop this far short of the token's expiry rather than dying mid-word. */
+const TOKEN_EXPIRY_MARGIN_MS = 15_000;
+
 const isSupported = () =>
   typeof window !== 'undefined' &&
   window.isSecureContext &&
@@ -219,6 +222,17 @@ export function useDictation({
         sdk.AudioConfig.fromStreamInput(stream)
       );
 
+      // The token is fetched once and never refreshed, so the session must not outlive
+      // it. `maxDurationMs` is a caller-supplied option, so the cap is enforced here
+      // rather than left to the default happening to be short enough. An expiry we
+      // can't read falls back to the option and lets the service report the failure.
+      const untilExpiry =
+        Date.parse(token.expiresOn) - Date.now() - TOKEN_EXPIRY_MARGIN_MS;
+      const sessionCapMs =
+        Number.isFinite(untilExpiry) && untilExpiry > 0
+          ? Math.min(maxDurationMs, untilExpiry)
+          : maxDurationMs;
+
       const session: Session = { recognizer, stream, timers: {} };
       const armIdle = () => {
         window.clearTimeout(session.timers.idle);
@@ -243,7 +257,7 @@ export function useDictation({
 
       const goLive = () => {
         if (!isLive()) return;
-        session.timers.max ??= window.setTimeout(stop, maxDurationMs);
+        session.timers.max ??= window.setTimeout(stop, sessionCapMs);
         armIdle();
         setState('listening');
       };

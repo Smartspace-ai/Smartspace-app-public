@@ -255,6 +255,49 @@ describe('useDictation', () => {
     });
   });
 
+  it('caps the session at the token expiry when that lands before maxDurationMs', async () => {
+    vi.useFakeTimers();
+    try {
+      const { stream } = makeStream();
+      getUserMedia.mockResolvedValueOnce(stream);
+      // The token is fetched once and never refreshed, so a caller raising
+      // maxDurationMs past its life would otherwise die mid-utterance on an auth
+      // failure. 30s of token, less the 15s margin, should stop the session at 15s
+      // rather than at the 3-minute cap asked for.
+      const shortToken = vi.fn(async () => ({
+        token: 'tok',
+        expiresOn: new Date(Date.now() + 30_000).toISOString(),
+      }));
+
+      const { result } = renderHook(() =>
+        useDictation({
+          region,
+          locale: 'en-NZ',
+          getToken: shortToken,
+          onPhrase: vi.fn(),
+          maxDurationMs: 180_000,
+        })
+      );
+
+      await act(async () => {
+        await result.current.start();
+      });
+      expect(result.current.state).toBe('listening');
+
+      await act(async () => {
+        vi.advanceTimersByTime(14_000);
+      });
+      expect(result.current.state).toBe('listening');
+
+      await act(async () => {
+        vi.advanceTimersByTime(2_000);
+      });
+      expect(result.current.state).toBe('idle');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('reports a permanent token failure as unavailable and does not open the mic session', async () => {
     const { stream, track } = makeStream();
     getUserMedia.mockResolvedValueOnce(stream);

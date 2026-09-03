@@ -10,8 +10,9 @@ export async function fetchSpeechConfig(): Promise<SpeechConfig> {
 }
 
 /**
- * A short-lived Speech token. Called by the Speech SDK (via chat-ui's
- * credential shim) on connect and near expiry — no caching needed here.
+ * A ~10-minute token from the Speech account's own token service. Fetched once
+ * per dictation session and handed to the SDK as-is; never refreshed, so don't
+ * cache it here either.
  */
 export async function fetchSpeechToken(): Promise<SpeechToken> {
   return apiParsed.get(SpeechTokenSchema, '/speech/token');
