@@ -100,7 +100,7 @@ function classifyTokenFailure(error: unknown): DictationError {
 
 /**
  * Streams microphone audio to Azure AI Speech and hands back recognised
- * phrases. Owns the whole session: mic permission + stream, lazy SDK load,
+ * phrases. Owns the whole session: mic permission + stream, SDK loading,
  * recogniser lifecycle, idle/max timers, and teardown on stop or unmount.
  * Interim (not yet final) text goes to `onInterim` for display only; only final
  * phrases reach `onPhrase`.
@@ -132,6 +132,35 @@ export function useDictation({
 
   const supported = isSupported();
   const available = supported && !!region && !!getToken;
+
+  // Once dictation is known to be available, load the SDK in the background so
+  // the first click pays neither its download nor its compile — import() on
+  // purpose, not a bare prefetch: the click needs the module evaluated, not
+  // just in the HTTP cache. Gated on `available` (installs without speech
+  // never load it) and skipped for data-saver users. Re-running on an
+  // `available` flip is fine: the module registry dedupes to one fetch.
+  //
+  // The trade, stated plainly: a failed background load is swallowed here and
+  // the browser memoises a failed dynamic import for the page's lifetime, so
+  // the click then fails without a network attempt until reload. A blip in
+  // this window was already fatal to the click's own import; warming moves
+  // that window earlier, it does not create it.
+  useEffect(() => {
+    if (!available) return;
+    const nav = navigator as { connection?: { saveData?: boolean } };
+    if (nav.connection?.saveData) return;
+    const warm = () =>
+      void kickOff(() => import('microsoft-cognitiveservices-speech-sdk'));
+    // The timeout bounds Chrome's otherwise unbounded idle deferral (a busy or
+    // hidden tab may never go idle); the timer branch covers runtimes without
+    // requestIdleCallback (Safari before 16.4, jsdom).
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(warm, { timeout: 2_000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(warm, 1_500);
+    return () => window.clearTimeout(id);
+  }, [available]);
 
   const stop = useCallback(() => {
     generationRef.current += 1;
@@ -182,7 +211,7 @@ export function useDictation({
       })
     );
     const tokenPromise = kickOff(getToken as () => Promise<SpeechToken>);
-    // The SDK is large; only users who press the mic pay for it.
+    // Usually already warm (see the effect above); the registry dedupes.
     const sdkPromise = kickOff(
       () => import('microsoft-cognitiveservices-speech-sdk')
     );

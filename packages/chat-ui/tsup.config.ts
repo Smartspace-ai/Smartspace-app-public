@@ -36,7 +36,9 @@ const externals = [
   // shared-singleton concern, and declaring it means every consumer's installer
   // provides it (npm skips *optional* peers, which broke the admin app's build).
   // Only ever reached via dynamic import() from useDictation, so the consumer's
-  // bundler still splits it out and non-dictating users never download it.
+  // bundler still splits it out. Users on installs without speech never download
+  // it; on speech-enabled installs it is prefetched in the background once the
+  // composer knows dictation is available, so the first click doesn't pay for it.
   'microsoft-cognitiveservices-speech-sdk',
   'react',
   'react-ace',

@@ -169,8 +169,9 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('/@microsoft/signalr/')) return 'signalr';
 
           // Speech-to-text (composer dictation). chat-ui only ever reaches
-          // this via dynamic import(), so its own chunk means it is fetched on
-          // the first mic click rather than riding along in `vendor`.
+          // this via dynamic import(), so its own chunk keeps it out of
+          // `vendor`: prefetched in the background on speech-enabled installs,
+          // never fetched on installs without speech.
           if (id.includes('/microsoft-cognitiveservices-speech-sdk/'))
             return 'speech';
 
