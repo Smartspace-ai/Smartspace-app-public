@@ -1,17 +1,20 @@
 /**
  * What the backend tells the composer about speech-to-text (dictation).
- * `endpoint` is the Speech resource's custom-domain URL the browser SDK
- * connects to directly; it is absent when speech isn't configured.
+ * `region` is the Azure region of the Speech resource, e.g. `australiaeast`.
+ * The SDK needs the region rather than the account's custom-domain URL: the
+ * recognition path only exists on the regional host, and that is what the
+ * issued token is scoped to. Absent when speech isn't configured.
  */
 export type SpeechConfig = {
   enabled: boolean;
-  endpoint?: string | null;
+  region?: string | null;
   /** BCP-47 locale to recognise when the client doesn't ask for one. */
   defaultLocale: string;
 };
 
 /**
- * A short-lived bearer token for the Speech resource. Handed to the Speech SDK
+ * A short-lived token from the Speech resource's own token service, scoped to
+ * recognition in one region and good for about ten minutes. Handed to the SDK
  * as-is; the backend owns how it is minted.
  */
 export type SpeechToken = {

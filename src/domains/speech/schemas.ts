@@ -4,7 +4,7 @@ import { z } from 'zod';
 // (same story as /flowruns/{id}/cancel). Swap for ChatZod once it republishes.
 export const SpeechConfigSchema = z.object({
   enabled: z.boolean(),
-  endpoint: z.string().nullish(),
+  region: z.string().nullish(),
   defaultLocale: z.string().default('en-US'),
 });
 

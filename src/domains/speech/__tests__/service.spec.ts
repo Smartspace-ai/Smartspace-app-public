@@ -12,29 +12,29 @@ describe('speech service', () => {
   it('fetchSpeechConfig reads GET /speech/config and validates the shape', async () => {
     const spy = vi.spyOn(api, 'get').mockResolvedValueOnce({
       enabled: true,
-      endpoint: 'https://speech-x.cognitiveservices.azure.com/',
+      region: 'australiaeast',
       defaultLocale: 'en-NZ',
     } as unknown as never);
 
     await expect(fetchSpeechConfig()).resolves.toEqual({
       enabled: true,
-      endpoint: 'https://speech-x.cognitiveservices.azure.com/',
+      region: 'australiaeast',
       defaultLocale: 'en-NZ',
     });
     expect(spy.mock.calls[0]?.[0]).toBe('/speech/config');
     spy.mockRestore();
   });
 
-  it('fetchSpeechConfig accepts the not-configured shape (null endpoint)', async () => {
+  it('fetchSpeechConfig accepts the not-configured shape (null region)', async () => {
     const spy = vi.spyOn(api, 'get').mockResolvedValueOnce({
       enabled: false,
-      endpoint: null,
+      region: null,
       defaultLocale: 'en-NZ',
     } as unknown as never);
 
     await expect(fetchSpeechConfig()).resolves.toMatchObject({
       enabled: false,
-      endpoint: null,
+      region: null,
     });
     spy.mockRestore();
   });

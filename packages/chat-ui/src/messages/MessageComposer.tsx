@@ -237,7 +237,7 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
     [chatService]
   );
   const dictation = useDictation({
-    endpoint: speechConfig?.enabled ? speechConfig.endpoint : null,
+    region: speechConfig?.enabled ? speechConfig.region : null,
     locale: speechConfig?.defaultLocale ?? 'en-US',
     getToken: getSpeechToken,
     // Final phrases become real text; provisional ones render as greyed ghost

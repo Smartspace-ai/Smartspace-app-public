@@ -14,8 +14,6 @@ export { ChatVariablesForm } from './chat-variables/VariablesForm';
 export { DictationButton } from './messages/DictationButton';
 export type { DictationButtonProps } from './messages/DictationButton';
 export { useDictation } from './shared/speech/useDictation';
-export { createSpeechTokenCredential } from './shared/speech/speechTokenCredential';
-export type { SpeechTokenCredential } from './shared/speech/speechTokenCredential';
 export type {
   DictationError,
   DictationState,

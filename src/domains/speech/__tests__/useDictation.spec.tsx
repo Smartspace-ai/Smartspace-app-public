@@ -16,9 +16,9 @@ type FakeRecognizer = {
   close: ReturnType<typeof vi.fn>;
 };
 
-const { recognizers, fromEndpoint, state } = vi.hoisted(() => ({
+const { recognizers, fromAuthorizationToken, state } = vi.hoisted(() => ({
   recognizers: [] as FakeRecognizer[],
-  fromEndpoint: vi.fn(),
+  fromAuthorizationToken: vi.fn(),
   // Lets a test simulate the SDK deferring its start callback.
   state: { pendingStart: null as null | ((cb: () => void) => void) },
 }));
@@ -42,7 +42,7 @@ vi.mock('microsoft-cognitiveservices-speech-sdk', () => {
   }
   return {
     SpeechConfig: {
-      fromEndpoint: fromEndpoint.mockImplementation(() => ({
+      fromAuthorizationToken: fromAuthorizationToken.mockImplementation(() => ({
         speechRecognitionLanguage: '',
         setProfanity: vi.fn(),
         setProperty: vi.fn(),
@@ -74,7 +74,7 @@ const getToken = vi.fn(async () => ({
   expiresOn: new Date(Date.now() + 3_600_000).toISOString(),
 }));
 
-const endpoint = 'https://speech-x.cognitiveservices.azure.com/';
+const region = 'australiaeast';
 
 describe('useDictation', () => {
   let getUserMedia: ReturnType<typeof vi.fn>;
@@ -98,7 +98,7 @@ describe('useDictation', () => {
     state.pendingStart = null;
   });
 
-  it('is unavailable without an endpoint or token provider', () => {
+  it('is unavailable without a region or token provider', () => {
     const { result } = renderHook(() =>
       useDictation({ locale: 'en-NZ', onPhrase: vi.fn() })
     );
@@ -113,7 +113,7 @@ describe('useDictation', () => {
     const onInterim = vi.fn();
 
     const { result } = renderHook(() =>
-      useDictation({ endpoint, locale: 'en-NZ', getToken, onPhrase, onInterim })
+      useDictation({ region, locale: 'en-NZ', getToken, onPhrase, onInterim })
     );
     expect(result.current.available).toBe(true);
 
@@ -129,8 +129,10 @@ describe('useDictation', () => {
         autoGainControl: true,
       },
     });
-    expect(fromEndpoint).toHaveBeenCalledTimes(1);
-    expect(String(fromEndpoint.mock.calls[0]?.[0])).toBe(endpoint);
+    expect(fromAuthorizationToken).toHaveBeenCalledTimes(1);
+    // The token from getToken, and the region rather than the account URL: the
+    // recognition path only exists on the regional host.
+    expect(fromAuthorizationToken.mock.calls[0]).toEqual(['tok', region]);
     const recognizer = recognizers[0];
     expect(recognizer.startContinuousRecognitionAsync).toHaveBeenCalled();
 
@@ -177,7 +179,7 @@ describe('useDictation', () => {
       Object.assign(new Error('denied'), { name: 'NotAllowedError' })
     );
     const { result } = renderHook(() =>
-      useDictation({ endpoint, locale: 'en-NZ', getToken, onPhrase: vi.fn() })
+      useDictation({ region, locale: 'en-NZ', getToken, onPhrase: vi.fn() })
     );
 
     await act(async () => {
@@ -193,7 +195,7 @@ describe('useDictation', () => {
     const { stream, track } = makeStream();
     getUserMedia.mockResolvedValueOnce(stream);
     const { result } = renderHook(() =>
-      useDictation({ endpoint, locale: 'en-NZ', getToken, onPhrase: vi.fn() })
+      useDictation({ region, locale: 'en-NZ', getToken, onPhrase: vi.fn() })
     );
 
     await act(async () => {
@@ -227,7 +229,7 @@ describe('useDictation', () => {
 
     const { result } = renderHook(() =>
       useDictation({
-        endpoint,
+        region,
         locale: 'en-NZ',
         getToken,
         onPhrase: vi.fn(),
@@ -263,7 +265,7 @@ describe('useDictation', () => {
 
     const { result } = renderHook(() =>
       useDictation({
-        endpoint,
+        region,
         locale: 'en-NZ',
         getToken: failing,
         onPhrase: vi.fn(),
@@ -290,7 +292,7 @@ describe('useDictation', () => {
 
     const { result } = renderHook(() =>
       useDictation({
-        endpoint,
+        region,
         locale: 'en-NZ',
         getToken: failing,
         onPhrase: vi.fn(),
@@ -308,7 +310,7 @@ describe('useDictation', () => {
     const { stream, track } = makeStream();
     getUserMedia.mockResolvedValueOnce(stream);
     const { result, unmount } = renderHook(() =>
-      useDictation({ endpoint, locale: 'en-NZ', getToken, onPhrase: vi.fn() })
+      useDictation({ region, locale: 'en-NZ', getToken, onPhrase: vi.fn() })
     );
 
     await act(async () => {

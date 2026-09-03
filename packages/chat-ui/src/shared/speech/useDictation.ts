@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { SpeechToken } from '@/domains/speech/model';
 
-import { createSpeechTokenCredential } from './speechTokenCredential';
-
 type SpeechSdk = typeof import('microsoft-cognitiveservices-speech-sdk');
 
 export type DictationState = 'idle' | 'starting' | 'listening';
@@ -25,8 +23,8 @@ type Session = {
 };
 
 export type UseDictationOptions = {
-  /** Speech resource endpoint from `SpeechConfig`; dictation is unavailable without it. */
-  endpoint?: string | null;
+  /** Azure region from `SpeechConfig`; dictation is unavailable without it. */
+  region?: string | null;
   /** BCP-47 recognition locale (server default unless the user chose one). */
   locale: string;
   /** From the ChatService; dictation is unavailable without it. */
@@ -39,7 +37,11 @@ export type UseDictationOptions = {
    * in state would re-render the whole composer on every partial result.
    */
   onInterim?: (text: string) => void;
-  /** Hard stop, so a forgotten mic can't run for an hour. */
+  /**
+   * Hard stop, so a forgotten mic can't run for an hour. Keep it under the
+   * token's ~10 minute life: the token is fetched once per session and never
+   * refreshed, so a longer cap would end the session on an auth failure.
+   */
   maxDurationMs?: number;
   /** Stop after this long without any speech. */
   idleTimeoutMs?: number;
@@ -74,7 +76,7 @@ function classifyTokenFailure(error: unknown): DictationError {
  * phrases reach `onPhrase`.
  */
 export function useDictation({
-  endpoint,
+  region,
   locale,
   getToken,
   onPhrase,
@@ -99,7 +101,7 @@ export function useDictation({
   const clearInterim = useCallback(() => onInterimRef.current?.(''), []);
 
   const supported = isSupported();
-  const available = supported && !!endpoint && !!getToken;
+  const available = supported && !!region && !!getToken;
 
   const stop = useCallback(() => {
     generationRef.current += 1;
@@ -194,12 +196,13 @@ export function useDictation({
         return;
       }
 
-      const speechConfig = sdk.SpeechConfig.fromEndpoint(
-        new URL(endpoint as string),
-        createSpeechTokenCredential(
-          getToken as () => Promise<SpeechToken>,
-          token
-        )
+      // A token from the resource's own /sts/v1.0/issueToken, not an Entra one:
+      // it expires in ~10 minutes and only works for recognition in this region.
+      // It has to go to the regional host — the custom-domain URL answers 404 on
+      // the recognition path — which is what `fromAuthorizationToken` builds.
+      const speechConfig = sdk.SpeechConfig.fromAuthorizationToken(
+        token.token,
+        region as string
       );
       speechConfig.speechRecognitionLanguage = locale;
       // It's the user's own words; don't asterisk them.
@@ -327,11 +330,11 @@ export function useDictation({
   }, [
     available,
     clearInterim,
-    endpoint,
     getToken,
     idleTimeoutMs,
     locale,
     maxDurationMs,
+    region,
     stop,
   ]);
 
