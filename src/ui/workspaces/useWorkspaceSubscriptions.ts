@@ -12,7 +12,7 @@ import { applyCommentToCache, commentsKeys } from '@/domains/comments';
 import { useThreadMessageStream } from '@/domains/messages/threadStream';
 import { notificationsKeys } from '@/domains/notifications';
 
-import { isDraftThreadId } from '@/shared/utils/threadId';
+import { useIsDraftThreadId } from '@/shared/utils/threadId';
 
 import { threadDetailOptions } from '@smartspace/chat-ui';
 
@@ -57,13 +57,18 @@ export function useWorkspaceSubscriptions() {
   // detail always 404s, and since this query shares its cache entry with
   // useThread's (same key), that error bleeds into every observer of the
   // key, including useThread's own draft-aware one. Skip fetching here too.
+  //
+  // Reactive hook, not the plain isDraftThreadId() check: a draft gets
+  // unmarked from a different component (the sidebar's ThreadsList), which
+  // wouldn't otherwise re-render this one, risking a stale read.
+  const isDraft = useIsDraftThreadId(threadId);
   const { data: thread } = useQuery({
     ...threadDetailOptions({
       service,
       workspaceId: workspaceId || '',
       threadId: threadId || '',
     }),
-    enabled: !!workspaceId && !!threadId && !isDraftThreadId(threadId),
+    enabled: !!workspaceId && !!threadId && !isDraft,
   });
   useThreadMessageStream(threadId || undefined, !!thread?.isFlowRunning);
 
