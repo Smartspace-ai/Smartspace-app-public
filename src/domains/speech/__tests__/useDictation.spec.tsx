@@ -174,6 +174,141 @@ describe('useDictation', () => {
     expect(onPhrase).toHaveBeenCalledTimes(1);
   });
 
+  it('fetches the token without waiting on the mic permission', async () => {
+    // Hold the permission prompt open and observe the fetch already went out.
+    let grantMic!: (s: MediaStream) => void;
+    getUserMedia.mockReturnValueOnce(
+      new Promise<MediaStream>((resolve) => {
+        grantMic = resolve;
+      })
+    );
+    const { stream } = makeStream();
+
+    const { result } = renderHook(() =>
+      useDictation({ region, locale: 'en-NZ', getToken, onPhrase: vi.fn() })
+    );
+
+    await act(async () => {
+      void result.current.start();
+    });
+    // Permission still undecided, token fetch already in flight.
+    expect(result.current.state).toBe('starting');
+    expect(getToken).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      grantMic(stream);
+    });
+    await waitFor(() => expect(result.current.state).toBe('listening'));
+
+    act(() => {
+      result.current.stop();
+    });
+  });
+
+  it('reports the denied mic, not the failed token, when both fail', async () => {
+    // Failures are reported in await order, so the actionable message wins:
+    // "allow the mic in your browser settings" beats a retryable token blip.
+    // This also exercises the guard that keeps the abandoned token rejection
+    // from surfacing as an unhandled rejection.
+    getUserMedia.mockRejectedValueOnce(
+      Object.assign(new Error('denied'), { name: 'NotAllowedError' })
+    );
+    const failing = vi
+      .fn()
+      .mockRejectedValue({ type: 'UnknownError', code: 'SP503' });
+
+    const { result } = renderHook(() =>
+      useDictation({
+        region,
+        locale: 'en-NZ',
+        getToken: failing,
+        onPhrase: vi.fn(),
+      })
+    );
+
+    await act(async () => {
+      await result.current.start();
+    });
+
+    expect(result.current.error).toBe('permission-denied');
+    expect(result.current.state).toBe('idle');
+  });
+
+  it('stops the granted mic when the token had already failed during the prompt', async () => {
+    // The token settles (here: rejects) while the permission prompt is still
+    // open. Once the user grants, the tracks they just handed over must be
+    // released on the way out of the failed start.
+    let grantMic!: (s: MediaStream) => void;
+    getUserMedia.mockReturnValueOnce(
+      new Promise<MediaStream>((resolve) => {
+        grantMic = resolve;
+      })
+    );
+    const { stream, track } = makeStream();
+    const failing = vi
+      .fn()
+      .mockRejectedValue({ type: 'UnknownError', code: 'SP500' });
+
+    const { result } = renderHook(() =>
+      useDictation({
+        region,
+        locale: 'en-NZ',
+        getToken: failing,
+        onPhrase: vi.fn(),
+      })
+    );
+
+    await act(async () => {
+      void result.current.start();
+    });
+    await act(async () => {
+      grantMic(stream);
+    });
+
+    await waitFor(() => expect(result.current.state).toBe('idle'));
+    expect(result.current.error).toBe('unavailable');
+    expect(track.stop).toHaveBeenCalled();
+    expect(recognizers).toHaveLength(0);
+  });
+
+  it('re-mints a token that aged out while the permission prompt sat open', async () => {
+    const { stream } = makeStream();
+    getUserMedia.mockResolvedValueOnce(stream);
+    // First token nearly dead (the prompt sat open); the session must start on
+    // a fresh one rather than die seconds in, or hand the service a dead token.
+    const staleThenFresh = vi
+      .fn()
+      .mockResolvedValueOnce({
+        token: 'stale',
+        expiresOn: new Date(Date.now() + 10_000).toISOString(),
+      })
+      .mockResolvedValueOnce({
+        token: 'fresh',
+        expiresOn: new Date(Date.now() + 600_000).toISOString(),
+      });
+
+    const { result } = renderHook(() =>
+      useDictation({
+        region,
+        locale: 'en-NZ',
+        getToken: staleThenFresh,
+        onPhrase: vi.fn(),
+      })
+    );
+
+    await act(async () => {
+      await result.current.start();
+    });
+    await waitFor(() => expect(result.current.state).toBe('listening'));
+
+    expect(staleThenFresh).toHaveBeenCalledTimes(2);
+    expect(fromAuthorizationToken.mock.calls[0]).toEqual(['fresh', region]);
+
+    act(() => {
+      result.current.stop();
+    });
+  });
+
   it('maps a denied microphone permission to an error and stays idle', async () => {
     getUserMedia.mockRejectedValueOnce(
       Object.assign(new Error('denied'), { name: 'NotAllowedError' })

@@ -39,8 +39,8 @@ export type UseDictationOptions = {
   onInterim?: (text: string) => void;
   /**
    * Hard stop, so a forgotten mic can't run for an hour. Keep it under the
-   * token's ~10 minute life: the token is fetched once per session and never
-   * refreshed, so a longer cap would end the session on an auth failure.
+   * token's ~10 minute life: the token is never refreshed once the session is
+   * running, so a longer cap would end the session on an auth failure.
    */
   maxDurationMs?: number;
   /** Stop after this long without any speech. */
@@ -49,6 +49,33 @@ export type UseDictationOptions = {
 
 /** Stop this far short of the token's expiry rather than dying mid-word. */
 const TOKEN_EXPIRY_MARGIN_MS = 15_000;
+
+/**
+ * Re-mint rather than start a session on a token with less life than this —
+ * enough for the expiry margin plus a session worth having. Reachable because
+ * the token is minted in parallel with a permission prompt a human can leave
+ * open indefinitely.
+ */
+const STALE_TOKEN_FLOOR_MS = 60_000;
+
+/**
+ * Starts one of a session's independent steps. A synchronous throw becomes a
+ * rejection so it reaches the same catch as an async failure — `getToken`
+ * crosses a package boundary, and a fork's implementation may throw before it
+ * returns a promise. The no-op catch keeps a promise abandoned after an
+ * earlier step failed from surfacing as an unhandled rejection; the await for
+ * it still receives the real error.
+ */
+function kickOff<T>(fn: () => Promise<T>): Promise<T> {
+  let promise: Promise<T>;
+  try {
+    promise = Promise.resolve(fn());
+  } catch (e) {
+    promise = Promise.reject(e);
+  }
+  promise.catch(() => undefined);
+  return promise;
+}
 
 const isSupported = () =>
   typeof window !== 'undefined' &&
@@ -139,17 +166,32 @@ export function useDictation({
     setError(null);
     setState('starting');
 
-    // Ask for the mic ourselves rather than via the SDK so permission failures
-    // are ours to explain and we hold the tracks to stop them promptly.
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
+    // The mic permission, the token mint and the SDK download are independent,
+    // so all three start now and the wait is the slowest of them, not their
+    // sum. They are awaited in order below so each failure keeps its own
+    // message — a denied mic outranks a failed token. Accepted cost: a press
+    // that ends in denial has still minted a short-lived, recognition-only
+    // token and fetched the SDK chunk.
+    const streamPromise = kickOff(() =>
+      navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
         },
-      });
+      })
+    );
+    const tokenPromise = kickOff(getToken as () => Promise<SpeechToken>);
+    // The SDK is large; only users who press the mic pay for it.
+    const sdkPromise = kickOff(
+      () => import('microsoft-cognitiveservices-speech-sdk')
+    );
+
+    // The mic is asked for ourselves rather than via the SDK so permission
+    // failures are ours to explain and we hold the tracks to stop them promptly.
+    let stream: MediaStream;
+    try {
+      stream = await streamPromise;
     } catch (e) {
       if (superseded()) return;
       const name = (e as DOMException | undefined)?.name;
@@ -168,12 +210,20 @@ export function useDictation({
       return;
     }
 
-    // Fetch the token up front rather than letting the SDK pull it mid-connect:
-    // a failure here keeps its own error code, where inside the SDK it would only
+    // Fetched up front rather than letting the SDK pull it mid-connect: a
+    // failure here keeps its own error code, where inside the SDK it would only
     // ever reach us as an opaque cancellation.
     let token: SpeechToken;
     try {
-      token = await (getToken as () => Promise<SpeechToken>)();
+      token = await tokenPromise;
+      // It aged while the permission prompt sat open. Too little life left for
+      // a useful session means trading it for a fresh one — the spent life was
+      // the user's decision time, not dictation. Same catch: the failure story
+      // is identical. (An unparseable expiry is NaN here, never re-mints, and
+      // falls to the session-cap fallback.)
+      if (Date.parse(token.expiresOn) - Date.now() < STALE_TOKEN_FLOOR_MS) {
+        token = await (getToken as () => Promise<SpeechToken>)();
+      }
     } catch (e) {
       stream.getTracks().forEach((t) => t.stop());
       if (superseded()) return;
@@ -190,10 +240,7 @@ export function useDictation({
     // Tracked out here so the catch can retract a session it already published.
     let published: Session | null = null;
     try {
-      // The SDK is large; only users who press the mic pay for it.
-      const sdk: SpeechSdk = await import(
-        'microsoft-cognitiveservices-speech-sdk'
-      );
+      const sdk: SpeechSdk = await sdkPromise;
       if (superseded()) {
         stream.getTracks().forEach((t) => t.stop());
         return;
