@@ -40,6 +40,16 @@ export const Route = createFileRoute(
         })
       );
     } catch (e: unknown) {
+      // A cancelled fetch means "unknown", not "gone" — pin/rename/delete's
+      // onMutate all cancel the shared threadsKeys.details() query space, not
+      // just a thread actually being deleted. Treating it as not-found and
+      // redirecting (with replace: true, undoable by Back) could bounce the
+      // user away from a perfectly good thread they just clicked into. The
+      // loader's return value isn't consumed — ThreadRouteComponent and
+      // MessageList read useThread()/useMessages() directly — so returning
+      // null here just lets those hooks' own queries resolve normally.
+      if (isCancelledError(e)) return null;
+
       // If a thread can't be loaded, fall back to the first thread — but ONLY if
       // it's a DIFFERENT thread. A thread can appear in the list while its detail
       // endpoint 404s (data inconsistency); "redirect to first" then resolves
@@ -47,17 +57,20 @@ export const Route = createFileRoute(
       // the boot splash stays up forever and requests fire endlessly. When there
       // is no different thread to show, commit the route with no thread instead
       // of looping (the component renders an empty state and the splash lifts).
-      //
-      // A cancelled fetch gets the same treatment as a 404: deleting the
-      // currently-viewed thread cancels this exact in-flight query (onMutate
-      // cancels threadsKeys.details()), so this loader can be racing that
-      // delete. Rethrowing it uncaught would crash the route (CatchBoundary)
-      // and stall on the dead thread instead of moving on.
-      if (!isNotFoundError(e) && !isCancelledError(e)) throw e;
+      if (!isNotFoundError(e)) throw e;
 
-      const list = await context.queryClient.ensureQueryData(
-        threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
-      );
+      let list;
+      try {
+        list = await context.queryClient.ensureQueryData(
+          threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
+        );
+      } catch (listError: unknown) {
+        // Same reasoning as above: an unrelated mutation can cancel this
+        // list refetch too (threadsKeys.lists()) mid-recovery. That isn't
+        // evidence the workspace is empty, so don't act on it.
+        if (isCancelledError(listError)) return null;
+        throw listError;
+      }
       const first = list.data[0];
 
       if (first?.id && first.id !== params.threadId) {
