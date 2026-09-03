@@ -109,7 +109,13 @@ export function useWorkspaceSubscriptions() {
     onThreadDeleted: (threadEvent) => {
       if (!workspaceId) return;
       if (handleThreadDeleted(qc, workspaceId, threadId, threadEvent)) {
-        navigate({ to: '/workspace/$workspaceId', params: { workspaceId } });
+        // replace: true so the deleted thread's URL isn't left in history,
+        // reachable via Back after it's gone from the cache.
+        navigate({
+          to: '/workspace/$workspaceId',
+          params: { workspaceId },
+          replace: true,
+        });
       }
     },
     onCommentsUpdate: (summary) => {
