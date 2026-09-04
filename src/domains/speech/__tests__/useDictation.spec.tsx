@@ -61,10 +61,13 @@ vi.mock('microsoft-cognitiveservices-speech-sdk', () => {
   };
 });
 
-const makeStream = () => {
-  const track = { stop: vi.fn() };
+const makeStream = (label = 'Fake Microphone') => {
+  const track = { stop: vi.fn(), label };
   return {
-    stream: { getTracks: () => [track] } as unknown as MediaStream,
+    stream: {
+      getTracks: () => [track],
+      getAudioTracks: () => [track],
+    } as unknown as MediaStream,
     track,
   };
 };
@@ -303,6 +306,32 @@ describe('useDictation', () => {
 
     expect(staleThenFresh).toHaveBeenCalledTimes(2);
     expect(fromAuthorizationToken.mock.calls[0]).toEqual(['fresh', region]);
+
+    act(() => {
+      result.current.stop();
+    });
+  });
+
+  it('names the microphone it is actually using', async () => {
+    // The browser picks the device, not us. A wrong-but-healthy device is
+    // otherwise invisible: the session runs, Azure returns nothing, and the UI
+    // has nothing to say. Surfacing the label is what makes that diagnosable.
+    const { stream } = makeStream('Headset (Wrong Device)');
+    getUserMedia.mockResolvedValueOnce(stream);
+
+    const { result } = renderHook(() =>
+      useDictation({ region, locale: 'en-NZ', getToken, onPhrase: vi.fn() })
+    );
+
+    await act(async () => {
+      await result.current.start();
+    });
+    await waitFor(() => expect(result.current.state).toBe('listening'));
+
+    expect(result.current.deviceLabel).toBe('Headset (Wrong Device)');
+    // Web Audio is absent in jsdom, so the level monitor degrades to a no-op --
+    // and crucially the session still runs. That containment is the point.
+    expect(result.current.silent).toBe(false);
 
     act(() => {
       result.current.stop();

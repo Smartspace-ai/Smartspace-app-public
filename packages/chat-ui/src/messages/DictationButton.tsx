@@ -21,6 +21,12 @@ export type DictationButtonProps = {
   error: DictationError | null;
   disabled?: boolean;
   onToggle: () => void;
+  /**
+   * Microphone in use. Shown while listening because the browser picks the
+   * device, not us, and picking the wrong one is otherwise invisible: the
+   * session looks perfectly healthy and simply transcribes nothing.
+   */
+  deviceLabel?: string;
   /** Icon/button sizing to match the surrounding toolbar. */
   size?: 'sm' | 'md';
 };
@@ -37,11 +43,13 @@ export function DictationButton({
   error,
   disabled,
   onToggle,
+  deviceLabel,
   size = 'sm',
 }: DictationButtonProps) {
   const listening = state === 'listening';
   const starting = state === 'starting';
   const label = listening ? 'Stop dictation' : 'Dictate a message';
+  const hint = listening && deviceLabel ? `${label} — ${deviceLabel}` : label;
   const dims = size === 'sm' ? 'h-8 w-8' : 'h-9 w-9';
   const icon = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5';
 
@@ -55,7 +63,7 @@ export function DictationButton({
       disabled={disabled}
       aria-pressed={listening}
       aria-label={label}
-      title={error ? dictationErrorMessages[error] : label}
+      title={error ? dictationErrorMessages[error] : hint}
       className={`relative ${dims} rounded-full transition-colors ${
         listening
           ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'

@@ -231,7 +231,8 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
   // Final phrases become real text at the caret; provisional ones render as
   // greyed ghost text there and never enter the document, so a mid-phrase send
   // can't ship half-heard words.
-  const { data: speechConfig } = useSpeechConfig();
+  const { data: speechConfig, isFetching: speechConfigLoading } =
+    useSpeechConfig();
   const getSpeechToken = useMemo(
     () => chatService.getSpeechToken?.bind(chatService),
     [chatService]
@@ -246,6 +247,15 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
     onInterim: (text) => editorRef.current?.setDictationGhost(text),
   });
   const { stop: stopDictation } = dictation;
+  // `supported` is the browser/secure-context verdict; everything else means the
+  // install or the service does not offer speech. While the probe is still in
+  // flight we know neither, and claiming "not enabled for this workspace" would
+  // be false on every workspace that does have it.
+  const dictationUnavailableReason = speechConfigLoading
+    ? 'Checking whether dictation is available'
+    : dictation.supported
+    ? 'Dictation is not enabled for this workspace'
+    : 'Dictation is not available in this browser';
   const handleDictationToggle = () => {
     // Put the caret where the words will land before the first phrase arrives.
     if (dictation.state === 'idle') editorRef.current?.focus();
@@ -570,11 +580,29 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
             times a second. */}
         <div role="status" className="sr-only">
           {dictation.state === 'listening'
-            ? 'Listening'
+            ? dictation.silent
+              ? `Listening, but not hearing anything from ${
+                  dictation.deviceLabel || 'your microphone'
+                }`
+              : 'Listening'
             : dictation.state === 'starting'
             ? 'Starting dictation'
             : ''}
         </div>
+
+        {/* Listening, but nothing is coming in. Not an error — the session is
+            healthy and may still pick up — so it reads as a hint and names the
+            device, which is the thing the user has to go and change. Without it
+            a wrong input device is indistinguishable from not speaking.
+            Deliberately no role of its own: the permanently-mounted region above
+            announces this, because a live region that appears and fills in the
+            same tick is usually not read out. */}
+        {dictation.state === 'listening' && dictation.silent && (
+          <div className="px-5 pb-1 text-xs text-muted-foreground">
+            Not hearing anything from{' '}
+            {dictation.deviceLabel || 'your microphone'}.
+          </div>
+        )}
 
         {/* Errors are the one thing the button cannot convey on its own: a
             tooltip is invisible to touch and to screen readers, and
@@ -615,24 +643,34 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
           <div className="flex shrink-0 items-center gap-1.5">
             {/* The design pairs a dictation button with Send. On installs
                 without speech configured (or a service that doesn't offer it)
-                it keeps the shape as a disabled placeholder that says so. */}
+                it keeps the shape as a disabled placeholder that says so.
+                The reason is worth distinguishing: "your browser" is the user's
+                to fix, "this workspace" is not. */}
             {dictation.available ? (
               <DictationButton
                 state={dictation.state}
                 error={dictation.error}
                 disabled={disabled}
                 onToggle={handleDictationToggle}
+                deviceLabel={dictation.deviceLabel}
               />
             ) : (
-              <IconButton
-                type="button"
-                disabled
-                aria-label="Dictate a message"
-                title="Dictation is not available"
-                className="h-8 w-8 cursor-not-allowed rounded-full text-muted-foreground"
+              // A disabled button receives no pointer events, so its own
+              // `title` never renders a tooltip. The wrapper is what the user
+              // actually hovers.
+              <span
+                title={dictationUnavailableReason}
+                className="inline-flex cursor-not-allowed"
               >
-                <Mic className="h-4 w-4" />
-              </IconButton>
+                <IconButton
+                  type="button"
+                  disabled
+                  aria-label={`Dictate a message. ${dictationUnavailableReason}`}
+                  className="h-8 w-8 rounded-full text-muted-foreground"
+                >
+                  <Mic className="h-4 w-4" />
+                </IconButton>
+              </span>
             )}
 
             {canStop ? (
@@ -752,6 +790,7 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                         error={dictation.error}
                         disabled={disabled}
                         onToggle={handleDictationToggle}
+                        deviceLabel={dictation.deviceLabel}
                       />
                     )}
                     {canStop ? (

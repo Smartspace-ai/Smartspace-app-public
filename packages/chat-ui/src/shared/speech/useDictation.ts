@@ -20,6 +20,8 @@ type Session = {
   recognizer: InstanceType<SpeechSdk['SpeechRecognizer']>;
   stream: MediaStream;
   timers: { idle?: number; max?: number };
+  /** Tears the input-level monitor down; a no-op until one starts. */
+  stopLevelMonitor: () => void;
 };
 
 export type UseDictationOptions = {
@@ -49,6 +51,101 @@ export type UseDictationOptions = {
 
 /** Stop this far short of the token's expiry rather than dying mid-word. */
 const TOKEN_EXPIRY_MARGIN_MS = 15_000;
+
+/** Stable sentinel so goLive can tell "monitor not started yet" from a real one. */
+const noLevelMonitor = () => undefined;
+
+/**
+ * Unbroken silence before we say we are not hearing anything. Long enough that
+ * pausing to think does not trip it; the hint clears itself the moment sound
+ * arrives, so erring slightly long costs nothing.
+ */
+const SILENCE_HINT_MS = 6_000;
+
+/**
+ * 8-bit PCM is centred on 128 and true silence sits within a count or two of
+ * it, so anything past this is real sound rather than noise floor.
+ */
+const SILENCE_LEVEL = 3;
+
+/**
+ * Watches how much sound the microphone is actually producing.
+ *
+ * Nothing else can tell us: a muted mic, or one on a device the user is not
+ * talking into, yields a MediaStream that looks completely healthy — live
+ * track, open session, no errors — and the Speech service simply returns no
+ * results, so the UI would sit there saying "listening" forever. Returns its own
+ * teardown; if Web Audio is unavailable the session runs exactly as before,
+ * just without the hint.
+ */
+function monitorInputLevel(
+  stream: MediaStream,
+  onSilent: () => void,
+  onSound: () => void
+): () => void {
+  let context: AudioContext;
+  let source: MediaStreamAudioSourceNode;
+  let analyser: AnalyserNode;
+  try {
+    context = new AudioContext();
+    // Everything below can throw too, so it is all inside the try -- otherwise a
+    // failure part-way leaves a live AudioContext with nothing holding it.
+    source = context.createMediaStreamSource(stream);
+    analyser = context.createAnalyser();
+    analyser.fftSize = 512;
+    source.connect(analyser);
+  } catch {
+    return () => undefined;
+  }
+
+  // goLive runs off a socket callback rather than the click, so the gesture may
+  // no longer be in scope and the context can come back suspended.
+  if (context.state === 'suspended')
+    void context.resume().catch(() => undefined);
+
+  // getByteTimeDomainData fills fftSize samples, not frequencyBinCount (half of
+  // it) -- sizing to the latter would inspect only half the window.
+  const samples = new Uint8Array(analyser.fftSize);
+  let lastSound = Date.now();
+  let silent = false;
+  let stopped = false;
+
+  const poll = window.setInterval(() => {
+    // A suspended context yields flat silence forever. Reporting that as "we
+    // cannot hear you" would accuse a session that is transcribing perfectly.
+    if (context.state !== 'running') return;
+
+    analyser.getByteTimeDomainData(samples);
+    let peak = 0;
+    for (const sample of samples) peak = Math.max(peak, Math.abs(sample - 128));
+
+    if (peak > SILENCE_LEVEL) {
+      lastSound = Date.now();
+      if (silent) {
+        silent = false;
+        onSound();
+      }
+    } else if (!silent && Date.now() - lastSound > SILENCE_HINT_MS) {
+      silent = true;
+      onSilent();
+    }
+  }, 250);
+
+  // Idempotent and non-throwing: stop() and the failed-start cleanup can both
+  // reach it, and neither may be interrupted -- stop() still has microphone
+  // tracks to release after this line.
+  return () => {
+    if (stopped) return;
+    stopped = true;
+    window.clearInterval(poll);
+    try {
+      source.disconnect();
+      void context.close().catch(() => undefined);
+    } catch {
+      /* already torn down by the browser */
+    }
+  };
+}
 
 /**
  * Re-mint rather than start a session on a token with less life than this —
@@ -116,6 +213,10 @@ export function useDictation({
 }: UseDictationOptions) {
   const [state, setState] = useState<DictationState>('idle');
   const [error, setError] = useState<DictationError | null>(null);
+  // Which microphone the browser actually gave us, and whether it is producing
+  // any sound. Both exist to make a silent-but-healthy session diagnosable.
+  const [deviceLabel, setDeviceLabel] = useState('');
+  const [silent, setSilent] = useState(false);
 
   const sessionRef = useRef<Session | null>(null);
   // Bumped by every start/stop; an in-flight start that sees a different
@@ -168,6 +269,10 @@ export function useDictation({
     sessionRef.current = null;
     clearInterim();
     setState('idle');
+    // Diagnostics describe a live session; the hook is public API, so leaving
+    // them set would report "silent" on an idle one.
+    setSilent(false);
+    setDeviceLabel('');
     // Deliberately does NOT clear `error`: a real failure arrives as `canceled`
     // and then calls straight through to here, so clearing would erase the very
     // error we need to show. `start` clears it instead, so a message persists
@@ -176,6 +281,7 @@ export function useDictation({
     if (!session) return;
     window.clearTimeout(session.timers.idle);
     window.clearTimeout(session.timers.max);
+    session.stopLevelMonitor();
     // Stopping the tracks first turns the browser's mic indicator off at once
     // rather than after the service acknowledges the stop. The service reacts to
     // the closed stream by firing `canceled`, which is why every handler below
@@ -193,6 +299,7 @@ export function useDictation({
     const superseded = () => generationRef.current !== generation;
 
     setError(null);
+    setSilent(false);
     setState('starting');
 
     // The mic permission, the token mint and the SDK download are independent,
@@ -309,7 +416,12 @@ export function useDictation({
           ? Math.min(maxDurationMs, untilExpiry)
           : maxDurationMs;
 
-      const session: Session = { recognizer, stream, timers: {} };
+      const session: Session = {
+        recognizer,
+        stream,
+        timers: {},
+        stopLevelMonitor: noLevelMonitor,
+      };
       const armIdle = () => {
         window.clearTimeout(session.timers.idle);
         session.timers.idle = window.setTimeout(stop, idleTimeoutMs);
@@ -334,6 +446,26 @@ export function useDictation({
       const goLive = () => {
         if (!isLive()) return;
         session.timers.max ??= window.setTimeout(stop, sessionCapMs);
+        // goLive can fire from three signals; only wire the monitor once.
+        // All of this is diagnostic decoration around a session that already
+        // works, so it is contained: a browser that surprises us here loses the
+        // hint, not the dictation.
+        if (session.stopLevelMonitor === noLevelMonitor) {
+          try {
+            setDeviceLabel(stream.getAudioTracks()[0]?.label ?? '');
+            session.stopLevelMonitor = monitorInputLevel(
+              stream,
+              () => {
+                if (isLive()) setSilent(true);
+              },
+              () => {
+                if (isLive()) setSilent(false);
+              }
+            );
+          } catch {
+            session.stopLevelMonitor = noLevelMonitor;
+          }
+        }
         armIdle();
         setState('listening');
       };
@@ -409,6 +541,7 @@ export function useDictation({
         // session happens to be live by then.
         window.clearTimeout(published.timers.idle);
         window.clearTimeout(published.timers.max);
+        published.stopLevelMonitor();
         if (sessionRef.current === published) sessionRef.current = null;
       }
       if (superseded()) return;
@@ -442,5 +575,17 @@ export function useDictation({
     else stop();
   }, [start, state, stop]);
 
-  return { supported, available, state, error, start, stop, toggle };
+  return {
+    supported,
+    available,
+    state,
+    error,
+    /** Name of the microphone in use, once a session is live. May be ''. */
+    deviceLabel,
+    /** Listening, but the microphone has produced no sound for a while. */
+    silent,
+    start,
+    stop,
+    toggle,
+  };
 }
