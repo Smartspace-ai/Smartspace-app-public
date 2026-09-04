@@ -256,6 +256,52 @@
 }
 
 /* ============================================================
+   VANILLA JSONFORMS FALLBACK CONTROL
+   A schema with no custom renderer match (e.g. a bare `{"type":
+   "string"}` tool-call answer form) falls through to
+   `@jsonforms/vanilla-renderers`, whose default DOM ships unstyled —
+   Tailwind's preflight then strips the browser's native input chrome
+   too, leaving a border-less, near-transparent field that's nearly
+   invisible against the chat background.
+   ============================================================ */
+.control.root input,
+.control.root select,
+.control.root textarea {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--input));
+  border-radius: 0.5rem;
+  outline: none;
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+.control.root input:focus,
+.control.root select:focus,
+.control.root textarea:focus {
+  border-color: hsl(var(--brand-accent) / 0.5);
+  box-shadow: 0 0 0 3px hsl(var(--brand-accent) / 0.12);
+}
+.control.root input:disabled,
+.control.root select:disabled,
+.control.root textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.control.root input.invalid,
+.control.root select.invalid,
+.control.root textarea.invalid {
+  border-color: hsl(var(--destructive));
+}
+.control.root .validation.input-description {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ============================================================
    PROSE — markdown rendering for AI responses
    ============================================================ */
 
@@ -1072,7 +1118,12 @@
   min-width: 220px;
   max-width: 320px;
   overflow: hidden;
-  z-index: 1000;
+  /* Must outrank MUI's Drawer (z-index 1200), which the comments panel
+     becomes on narrow windows — otherwise the drawer's own content paints
+     over this popup even though it's positioned correctly on screen. Kept
+     below MUI's Modal/Snackbar/Tooltip tiers (1300/1400/1500) rather than
+     jumping above all of them. */
+  z-index: 1250;
 }
 
 /* While provisional dictation text is showing, hide ProseMirror's empty-block

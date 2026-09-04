@@ -1,3 +1,4 @@
+import { isCancelledError } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { ensureDraftThread, threadsListOptions } from '@/domains/threads';
@@ -8,9 +9,21 @@ export const Route = createFileRoute(
 )({
   pendingMs: 0,
   loader: async ({ params, context }) => {
-    const list = await context.queryClient.ensureQueryData(
-      threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
-    );
+    let list;
+    try {
+      list = await context.queryClient.ensureQueryData(
+        threadsListOptions(params.workspaceId, { take: 1, skip: 0 })
+      );
+    } catch (e: unknown) {
+      // An unrelated mutation (pin/rename/delete) can cancel this exact
+      // fetch via its own onMutate cancelling threadsKeys.lists() — that's
+      // not evidence the workspace is empty. This route renders nothing
+      // either way, so just commit with no redirect and let whichever
+      // observer needs the list (e.g. the sidebar) re-fetch it normally,
+      // rather than crashing into the error boundary.
+      if (isCancelledError(e)) return null;
+      throw e;
+    }
     const first = list.data[0];
     if (first?.id) {
       throw redirect({
