@@ -68,6 +68,9 @@
     "tailwind-merge": "^2.6.1",
     "zod": "^4.3.6"
   },
+  "dependencies": {
+    "microsoft-cognitiveservices-speech-sdk": "^1.51.0"
+  },
   "devDependencies": {
     "@smartspace/api-client": "dev",
     "tailwindcss": "^3.4.10",
