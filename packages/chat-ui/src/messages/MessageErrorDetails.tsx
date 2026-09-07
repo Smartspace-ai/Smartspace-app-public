@@ -2,22 +2,19 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
 /**
- * Optional disclosure under an error bubble — the bubble itself always shows
- * the friendly, category-based copy (see `getMessageErrorText`); this reveals
- * the actual provider detail on demand, for admin/debugging surfaces (the
- * Sandbox) only. Collapsed by default so the friendly copy stays the one
- * thing every reader sees.
+ * Disclosure under an error bubble that reveals the provider detail on
+ * demand. Collapsed by default, so the friendly copy (see
+ * `getMessageErrorText`) stays the only thing shown until a reader
+ * chooses to look closer.
  */
 export function MessageErrorDetails({ detail }: { detail: string }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="mt-1">
-      {/* Reset every native <button> chrome property explicitly (background,
-          border, padding, sizing) rather than relying on a global Tailwind
-          preflight to strip it — this renders inside host apps (e.g. the
-          Admin Sandbox) that don't ship one, and unset properties fall back
-          to the browser's default button box otherwise. */}
+      {/* Explicit button-chrome reset: host apps (e.g. the Admin Sandbox)
+          may not ship a Tailwind preflight, so unset properties would
+          otherwise fall back to the browser's default button box. */}
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}

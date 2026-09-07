@@ -2,7 +2,7 @@
 
 import { FC, Fragment, ReactNode } from 'react';
 
-import { useChatContext, useChatErrorDetail } from '@/platform/chat';
+import { useChatContext } from '@/platform/chat';
 
 import { FileInfo } from '@/domains/files';
 import { Message, MessageContentItem } from '@/domains/messages';
@@ -150,7 +150,6 @@ export const MessageItem: FC<MessageItemProps> = ({
   isLive = false,
 }) => {
   const { workspaceId, threadId } = useChatContext();
-  const errorDetail = useChatErrorDetail();
   const { data: workspace } = useWorkspace(workspaceId);
   const chatbotName = getChatbotName(workspace?.name);
   const { addInputToMessageMutation } = useAddInputToMessage();
@@ -466,11 +465,9 @@ export const MessageItem: FC<MessageItemProps> = ({
     const key = `error-${message.id ?? 'msg'}-${errorIndex}-${
       error.errorCode ?? error.code
     }`;
-    // The bubble always shows the friendly, category-based copy — the detail
-    // disclosure (admin/debugging surfaces only) sits underneath it, never
-    // replaces it.
-    const detail =
-      errorDetail === 'verbose' ? getMessageErrorDetail(error) : null;
+    // The bubble always shows the friendly, category-based copy; the detail
+    // disclosure sits underneath it and never replaces it.
+    const detail = getMessageErrorDetail(error);
     bubbles.push(
       <Fragment key={key}>
         <MessageBubble

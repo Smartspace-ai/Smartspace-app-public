@@ -97,12 +97,10 @@ function extractProviderErrorDetail(
 }
 
 /**
- * The actual provider detail behind an error, for an optional "Show details"
- * disclosure under the (always-shown) friendly bubble from
- * {@link getMessageErrorText} — admin/debugging surfaces (the Sandbox) only,
- * never end-user-facing chat, since the text is unpolished and
- * provider-specific. Returns null when there's nothing to add beyond the
- * friendly copy (a bare HTTP code, or no message on the error at all).
+ * The provider detail behind an error, shown in an optional "Show details"
+ * disclosure under the friendly bubble from {@link getMessageErrorText}.
+ * Returns null when there's nothing to add (a bare HTTP code, or no message
+ * on the error at all).
  */
 export const getMessageErrorDetail = (
   error: MessageErrorLike

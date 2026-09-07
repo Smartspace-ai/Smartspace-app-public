@@ -20,13 +20,11 @@ export type { ChatService } from './platform/chat/ChatService';
 export {
   ChatProvider,
   useChatContext,
-  useChatErrorDetail,
   useChatIdentity,
   useChatService,
 } from './platform/chat/ChatProvider';
 export type {
   ChatContextIds,
-  ChatErrorDetail,
   ChatIdentity,
   ChatProviderProps,
 } from './platform/chat/ChatProvider';
