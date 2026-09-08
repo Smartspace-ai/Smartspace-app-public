@@ -61,6 +61,7 @@ export {
 // Error/status text helpers — exported so forks can override copy and tests
 // can pin the error-code contract with the backend.
 export {
+  getMessageErrorDetail,
   getMessageErrorText,
   type MessageErrorLike,
 } from './domains/messages/errors';
