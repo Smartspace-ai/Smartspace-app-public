@@ -138,4 +138,21 @@ describe('handleThreadDeleted', () => {
     expect(handleThreadDeleted(qc, 'ws-1', '', { id: '' })).toBe(false);
     expect(handleThreadDeleted(qc, 'ws-1', '', { threadId: '' })).toBe(false);
   });
+
+  it('drops the deleted thread detail and messages caches for every viewer', () => {
+    const { qc } = makeQc();
+    qc.setQueryData(threadsKeys.detail('ws-1', 'gone'), { id: 'gone' });
+    qc.setQueryData(messagesKeys.list('gone'), [{ id: 'm1' }]);
+    qc.setQueryData(messagesKeys.infinite('gone'), {
+      pages: [],
+      pageParams: [],
+    });
+
+    // Another tab/user deletes it — this viewer isn't even looking at it.
+    handleThreadDeleted(qc, 'ws-1', 'some-other-thread', { threadId: 'gone' });
+
+    expect(qc.getQueryData(threadsKeys.detail('ws-1', 'gone'))).toBeUndefined();
+    expect(qc.getQueryData(messagesKeys.list('gone'))).toBeUndefined();
+    expect(qc.getQueryData(messagesKeys.infinite('gone'))).toBeUndefined();
+  });
 });
