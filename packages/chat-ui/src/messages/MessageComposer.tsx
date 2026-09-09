@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import type * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useChatService } from '@/platform/chat';
@@ -27,12 +27,15 @@ import type { FileInfo } from '@/domains/files/model';
 import { useFileMutations } from '@/domains/files/mutations';
 import { useCancelFlowRun } from '@/domains/flowruns/mutations';
 import { useMessages } from '@/domains/messages';
+import { useSpeechConfig } from '@/domains/speech/queries';
 
 import type { MarkdownEditorHandle } from '@/shared/markdown/MarkdownEditor';
 import { MarkdownEditor } from '@/shared/markdown/MarkdownEditor';
+import { useDictation } from '@/shared/speech/useDictation';
 
 import { ChatVariablesForm } from '@/chat-variables/VariablesForm';
 
+import { DictationButton, dictationErrorMessages } from './DictationButton';
 import { useMessageComposerVm } from './MessageComposer.vm';
 
 declare global {
@@ -204,6 +207,63 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
       cancelReset();
     }
   }, [isSending, cancelAccepted, cancelErrored, cancelReset]);
+
+  // Two MarkdownEditors (inline + the mobile-fullscreen portal) can be mounted at
+  // once and share `editorRef`; the portal commits later, so it wins. React nulls
+  // a ref on unmount, which on collapse would leave the surviving inline editor
+  // detached — and dictation would then insert into nothing, silently. This
+  // callback's identity deliberately changes with `isFullscreen` so React
+  // re-invokes it on the editor that is still mounted.
+  const attachEditor = useCallback(
+    (handle: MarkdownEditorHandle | null) => {
+      if (handle) editorRef.current = handle;
+    },
+    // Both flags matter: the portal mounts on `isMobile && isFullscreen`, and
+    // nothing resets isFullscreen when the breakpoint flips, so crossing it
+    // while fullscreen would unmount the portal editor without re-attaching the
+    // inline one — leaving a destroyed handle and silently swallowing phrases.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isFullscreen, isMobile]
+  );
+
+  // Dictation: only when the service implements it AND the install has speech
+  // configured; otherwise the design's mic stays as a disabled placeholder.
+  // Final phrases become real text at the caret; provisional ones render as
+  // greyed ghost text there and never enter the document, so a mid-phrase send
+  // can't ship half-heard words.
+  const { data: speechConfig, isFetching: speechConfigLoading } =
+    useSpeechConfig();
+  const getSpeechToken = useMemo(
+    () => chatService.getSpeechToken?.bind(chatService),
+    [chatService]
+  );
+  const dictation = useDictation({
+    region: speechConfig?.enabled ? speechConfig.region : null,
+    locale: speechConfig?.defaultLocale ?? 'en-US',
+    getToken: getSpeechToken,
+    // Final phrases become real text; provisional ones render as greyed ghost
+    // text at the caret and never enter the document.
+    onPhrase: (text) => editorRef.current?.insertText(`${text} `),
+    onInterim: (text) => editorRef.current?.setDictationGhost(text),
+  });
+  const { stop: stopDictation } = dictation;
+  // `supported` is the browser/secure-context verdict; everything else means the
+  // install or the service does not offer speech. While the probe is still in
+  // flight we know neither, and claiming "not enabled for this workspace" would
+  // be false on every workspace that does have it.
+  const dictationUnavailableReason = speechConfigLoading
+    ? 'Checking whether dictation is available'
+    : dictation.supported
+    ? 'Dictation is not enabled for this workspace'
+    : 'Dictation is not available in this browser';
+  const handleDictationToggle = () => {
+    // Put the caret where the words will land before the first phrase arrives.
+    if (dictation.state === 'idle') editorRef.current?.focus();
+    dictation.toggle();
+  };
+  useEffect(() => {
+    if (disabled) stopDictation();
+  }, [disabled, stopDictation]);
   // Provide a global downloader for ssImage node views (non-React context).
   // Milkdown's image node view reads `window.__ssDownloadFile` by name on
   // first render, so an effect-based assignment runs early enough.
@@ -350,7 +410,13 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
     // editor remount to wipe characters the user had just typed.
     const latestText = editorRef.current?.getMarkdown() ?? newMessage;
     const sent = handleSendMessage(latestText, uploadedAttachments);
+    // A refused send (empty, still uploading, flow running) must leave dictation
+    // alone — stopping here would silently bin what the user just said.
     if (!sent) return;
+    // Only once the message is away: the editor remounts below, and a phrase
+    // arriving after that would land in the next message unannounced. A phrase
+    // still in flight at this instant belongs to neither message and is dropped.
+    stopDictation();
     handleClearAttachments();
     setEditorKey((k) => k + 1);
   };
@@ -483,7 +549,7 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
         <div className="max-h-[400px] w-full overflow-y-auto">
           <MarkdownEditor
             key={`composer-md-${editorKey}`}
-            ref={editorRef}
+            ref={attachEditor}
             value={newMessage}
             onChange={(md) => setNewMessage(md)}
             onKeyDown={handleComposerKeyDown}
@@ -505,6 +571,47 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
             minHeight={24}
           />
         </div>
+
+        {/* Dictation state is carried by the microphone itself and by the ghost
+            text at the caret, so nothing is reported in two places. This region
+            is for assistive tech only: permanently mounted (content arriving in
+            the same tick a region appears usually is not announced) and carrying
+            only the state change, never the transcript, which rewrites several
+            times a second. */}
+        <div role="status" className="sr-only">
+          {dictation.state === 'listening'
+            ? dictation.silent
+              ? `Listening, but not hearing anything from ${
+                  dictation.deviceLabel || 'your microphone'
+                }`
+              : 'Listening'
+            : dictation.state === 'starting'
+            ? 'Starting dictation'
+            : ''}
+        </div>
+
+        {/* Listening, but nothing is coming in. Not an error — the session is
+            healthy and may still pick up — so it reads as a hint and names the
+            device, which is the thing the user has to go and change. Without it
+            a wrong input device is indistinguishable from not speaking.
+            Deliberately no role of its own: the permanently-mounted region above
+            announces this, because a live region that appears and fills in the
+            same tick is usually not read out. */}
+        {dictation.state === 'listening' && dictation.silent && (
+          <div className="px-5 pb-1 text-xs text-muted-foreground">
+            Not hearing anything from{' '}
+            {dictation.deviceLabel || 'your microphone'}.
+          </div>
+        )}
+
+        {/* Errors are the one thing the button cannot convey on its own: a
+            tooltip is invisible to touch and to screen readers, and
+            permission-denied is the common first-run outcome. */}
+        {dictation.error && (
+          <div role="alert" className="px-5 pb-1 text-xs text-destructive">
+            {dictationErrorMessages[dictation.error]}
+          </div>
+        )}
 
         {/* Action bar */}
         <div className="flex items-center justify-between gap-2 px-3 pb-3">
@@ -534,18 +641,37 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            {/* The design pairs a dictation button with Send. There is no
-                speech-to-text in the app yet, so this carries the shape only and
-                says as much rather than looking live and doing nothing. */}
-            <IconButton
-              type="button"
-              disabled
-              aria-label="Dictate a message"
-              title="Dictation is not available yet"
-              className="h-8 w-8 cursor-not-allowed rounded-full text-muted-foreground"
-            >
-              <Mic className="h-4 w-4" />
-            </IconButton>
+            {/* The design pairs a dictation button with Send. On installs
+                without speech configured (or a service that doesn't offer it)
+                it keeps the shape as a disabled placeholder that says so.
+                The reason is worth distinguishing: "your browser" is the user's
+                to fix, "this workspace" is not. */}
+            {dictation.available ? (
+              <DictationButton
+                state={dictation.state}
+                error={dictation.error}
+                disabled={disabled}
+                onToggle={handleDictationToggle}
+                deviceLabel={dictation.deviceLabel}
+              />
+            ) : (
+              // A disabled button receives no pointer events, so its own
+              // `title` never renders a tooltip. The wrapper is what the user
+              // actually hovers.
+              <span
+                title={dictationUnavailableReason}
+                className="inline-flex cursor-not-allowed"
+              >
+                <IconButton
+                  type="button"
+                  disabled
+                  aria-label={`Dictate a message. ${dictationUnavailableReason}`}
+                  className="h-8 w-8 rounded-full text-muted-foreground"
+                >
+                  <Mic className="h-4 w-4" />
+                </IconButton>
+              </span>
+            )}
 
             {canStop ? (
               <IconButton
@@ -616,7 +742,7 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                   <div className="flex-1 p-4">
                     <MarkdownEditor
                       key={`composer-md-${editorKey}`}
-                      ref={editorRef}
+                      ref={attachEditor}
                       value={newMessage}
                       onChange={(md) => setNewMessage(md)}
                       onKeyDown={handleComposerKeyDown}
@@ -630,6 +756,18 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                       className="md-editor--bare text-sm h-full"
                     />
                   </div>
+                  {/* Errors only. State is on the microphone and the transcript
+                      is ghosted at the caret in the editor above, so there is no
+                      status text to duplicate. aria-hidden because the announcing
+                      region lives in the card behind this portal. */}
+                  {dictation.error && (
+                    <div
+                      aria-hidden="true"
+                      className="px-4 pb-1 text-xs text-destructive"
+                    >
+                      {dictationErrorMessages[dictation.error]}
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 px-3 py-2 border-t bg-background">
                     <div className="flex-1" />
                     {supportsFiles && (
@@ -644,6 +782,16 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                           strokeWidth={2}
                         />
                       </IconButton>
+                    )}
+                    {dictation.available && (
+                      <DictationButton
+                        size="md"
+                        state={dictation.state}
+                        error={dictation.error}
+                        disabled={disabled}
+                        onToggle={handleDictationToggle}
+                        deviceLabel={dictation.deviceLabel}
+                      />
                     )}
                     {canStop ? (
                       <IconButton

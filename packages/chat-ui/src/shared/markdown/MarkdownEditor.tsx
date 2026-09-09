@@ -31,6 +31,7 @@ import { createPortal } from 'react-dom';
 // Note: Mention plugin is not published under @milkdown/plugin-mention on npm.
 // This setup is ready to add a mention-like plugin later if desired.
 import { autolink } from './extensions/autolink';
+import { dictationGhost, setDictationGhost } from './extensions/dictationGhost';
 import { fileTag } from './extensions/fileTag';
 import { htmlPreviewView } from './extensions/htmlPreview';
 import { mention } from './extensions/mention';
@@ -69,6 +70,19 @@ export type MarkdownEditorHandle = {
    * Callers that need the freshest text (e.g. sending on Enter) should read from here.
    */
   getMarkdown: () => string;
+  /**
+   * Inserts plain text at the caret (dictation, snippets), replacing any
+   * selection. Prepends a space when the caret directly follows a
+   * non-whitespace character so successive inserts read as prose. No-op when
+   * the editor isn't editable.
+   */
+  insertText: (text: string) => void;
+  /**
+   * Shows provisional dictation text greyed at the caret. Display-only — it never
+   * enters the document, so it cannot be serialised, undone, or sent. Pass '' to
+   * clear; inserting the final text via `insertText` clears it too.
+   */
+  setDictationGhost: (text: string) => void;
   /**
    * Returns mention users currently present in the editor document.
    * Useful for building API payloads (e.g. comments.mentionedUsers).
@@ -452,6 +466,7 @@ function EditorInner({
         .use(clipboard)
         .use(listener)
         .use(autolink)
+        .use(dictationGhost)
         .use(fileTag)
         .use(ssImageNode)
         .use(ssImageView)
@@ -712,6 +727,28 @@ function EditorInner({
           return serializer(view.state.doc);
         } catch {
           return (value ?? '') as string;
+        }
+      },
+      insertText: (text: string) => {
+        const view = viewRef.current;
+        if (!view || !isEditable || !text) return;
+        try {
+          const { from } = view.state.selection;
+          const before =
+            from > 0 ? view.state.doc.textBetween(from - 1, from, ' ') : '';
+          const needsSpace = before !== '' && !/\s/.test(before);
+          insertTextAtSelection(view, (needsSpace ? ' ' : '') + text);
+        } catch {
+          /* ignore insert errors */
+        }
+      },
+      setDictationGhost: (text: string) => {
+        const view = viewRef.current;
+        if (!view || !isEditable) return;
+        try {
+          setDictationGhost(view, text);
+        } catch {
+          /* ignore ghost errors - it is display-only */
         }
       },
       clear: () => {

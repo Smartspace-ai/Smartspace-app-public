@@ -848,6 +848,48 @@
   line-height: inherit;
 }
 
+/* Provisional dictation text at the caret. A ProseMirror widget decoration, not
+   document content: it cannot be selected, copied, undone into, or serialised
+   into the sent message. Grey while the service is still revising; replaced by
+   real (black) text when the phrase finalises. The trailing dots reuse the
+   thinking-dots wave so "still listening" reads the same way it does elsewhere. */
+.md-editor__dictation-ghost {
+  color: #9aa2af;
+  pointer-events: none;
+  user-select: none;
+  white-space: pre-wrap;
+  font: inherit;
+  /* `font: inherit` does not reliably carry line-height, and a span whose
+     line-height differs from the editor's grows the line box the moment ghost
+     text appears - which reads as the composer jumping taller mid-sentence.
+     The sibling .md-editor__ghost rule sets this for the same reason. */
+  line-height: inherit;
+}
+.md-editor__dictation-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  /* Contribute no leading of its own, and centre the 4px dots on the text
+     rather than hanging them off the baseline, so the dots cannot make the
+     line taller either. */
+  line-height: 0;
+  vertical-align: middle;
+}
+.md-editor__dictation-dots > span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: chat-dot-wave 1.1s ease-in-out infinite;
+}
+.md-editor__dictation-dots > span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.md-editor__dictation-dots > span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
 /* Normalize top margin so caret height is consistent when empty */
 .md-editor .ProseMirror > :first-child {
   margin-top: 0;
@@ -1082,4 +1124,12 @@
      below MUI's Modal/Snackbar/Tooltip tiers (1300/1400/1500) rather than
      jumping above all of them. */
   z-index: 1250;
+}
+
+/* While provisional dictation text is showing, hide ProseMirror's empty-block
+   placeholder break. The ghost is a decoration, not document content, so the
+   block still counts as empty and keeps its trailing <br> - which would put the
+   ghost on one line and the break on the next, growing the composer by a line. */
+.md-editor__has-dictation-ghost br.ProseMirror-trailingBreak {
+  display: none;
 }
