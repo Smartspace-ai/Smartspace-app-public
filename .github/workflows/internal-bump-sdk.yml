@@ -46,7 +46,7 @@ jobs:
     steps:
       - name: Generate CI_DISPATCH_APP token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.CI_DISPATCH_APP_ID }}
           private-key: ${{ secrets.CI_DISPATCH_APP_PRIVATE_KEY }}
@@ -54,16 +54,16 @@ jobs:
           repositories: Smartspace-app-public
 
       - name: Checkout target branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ env.TARGET_BRANCH }}
           # App token so the bump PR is authored by the App and therefore
           # triggers CI on it. The default GITHUB_TOKEN is anti-recursive.
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: pnpm
@@ -150,7 +150,7 @@ jobs:
 
       - name: Open issue on failure
         if: failure()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           # Default GITHUB_TOKEN — has issues:write via the workflow permissions
           # block above. The App token doesn't carry Issues permission.
