@@ -1,13 +1,16 @@
 // src/ui/messages/MessageList/MessageItem.tsx
 
-import { FC, ReactNode } from 'react';
+import { FC, Fragment, ReactNode } from 'react';
 
 import { useChatContext } from '@/platform/chat';
 
 import { FileInfo } from '@/domains/files';
 import { Message, MessageContentItem } from '@/domains/messages';
 import { MessageValueType } from '@/domains/messages/enums';
-import { getMessageErrorText } from '@/domains/messages/errors';
+import {
+  getMessageErrorDetail,
+  getMessageErrorText,
+} from '@/domains/messages/errors';
 import { useAddInputToMessage } from '@/domains/messages/mutations';
 import { MessageResponseSchema } from '@/domains/messages/schemas';
 import {
@@ -20,6 +23,7 @@ import { getChatbotName } from '@/theme/public-config';
 
 // local UI
 import { MessageBubble } from './MessageBubble';
+import { MessageErrorDetails } from './MessageErrorDetails';
 import type { MessageResponseSource } from './MessageSources';
 import { ThinkingSection } from './ThinkingSection';
 
@@ -463,21 +467,27 @@ export const MessageItem: FC<MessageItemProps> = ({
   // (a run that failed the same way on two rounds), and keying on the code
   // alone made React drop one of the pair as a duplicate.
   (message.errors ?? []).forEach((error, errorIndex) => {
+    const key = `error-${message.id ?? 'msg'}-${errorIndex}-${
+      error.errorCode ?? error.code
+    }`;
+    // The bubble always shows the friendly, category-based copy; the detail
+    // disclosure sits underneath it and never replaces it.
+    const detail = getMessageErrorDetail(error);
     bubbles.push(
-      <MessageBubble
-        key={`error-${message.id ?? 'msg'}-${errorIndex}-${
-          error.errorCode ?? error.code
-        }`}
-        createdBy={chatbotName}
-        createdAt={message.createdAt}
-        type={MessageValueType.OUTPUT}
-        content={[{ text: getMessageErrorText(error) }]}
-        files={[]}
-        sources={[]}
-        chatbotName={chatbotName}
-        userOutput={null}
-        userInput={null}
-      />
+      <Fragment key={key}>
+        <MessageBubble
+          createdBy={chatbotName}
+          createdAt={message.createdAt}
+          type={MessageValueType.OUTPUT}
+          content={[{ text: getMessageErrorText(error) }]}
+          files={[]}
+          sources={[]}
+          chatbotName={chatbotName}
+          userOutput={null}
+          userInput={null}
+        />
+        {detail && <MessageErrorDetails detail={detail} />}
+      </Fragment>
     );
   });
 

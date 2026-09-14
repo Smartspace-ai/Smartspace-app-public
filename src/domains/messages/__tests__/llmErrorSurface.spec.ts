@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  getMessageErrorDetail,
   getMessageErrorText,
   getRetryStatusText,
   mapMessageErrorDtoToModel,
@@ -50,6 +51,37 @@ describe('getMessageErrorText', () => {
     expect(getMessageErrorText(429)).toContain('too many requests');
     expect(getMessageErrorText({ code: 503 })).toContain('interrupted');
     expect(getMessageErrorText({ code: 418 })).toContain('unexpected error');
+  });
+});
+
+describe('getMessageErrorDetail', () => {
+  it('pulls the nested provider message + param out of an embedded JSON error', () => {
+    const detail = getMessageErrorDetail({
+      code: 400,
+      errorCode: 'llm.invalid_request',
+      message:
+        'litellm.BadRequestError: AzureException BadRequestError - {"error": {"message": "Invalid schema for response_format \'response\': \'json_schema\' is not valid under any of the given schemas.", "type": "invalid_request_error", "param": "text.format.schema", "code": "invalid_json_schema"}}',
+    });
+    expect(detail).toContain('Invalid schema for response_format');
+    expect(detail).toContain('param: text.format.schema');
+  });
+
+  it('falls back to the raw message when it is not JSON-embedded', () => {
+    const detail = getMessageErrorDetail({
+      code: 500,
+      message: 'connection reset by peer',
+    });
+    expect(detail).toBe('connection reset by peer');
+  });
+
+  it('returns null when there is no message to extract from — nothing to disclose beyond the friendly copy', () => {
+    expect(
+      getMessageErrorDetail({ code: 429, errorCode: 'llm.rate_limit' })
+    ).toBeNull();
+  });
+
+  it('returns null for bare HTTP codes (back-compat)', () => {
+    expect(getMessageErrorDetail(429)).toBeNull();
   });
 });
 
