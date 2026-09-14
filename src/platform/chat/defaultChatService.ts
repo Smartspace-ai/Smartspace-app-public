@@ -15,6 +15,10 @@ import {
   postMessage as messagesPostMessage,
 } from '@/domains/messages/service';
 import { fetchModels as modelsFetchModels } from '@/domains/models/service';
+import {
+  fetchSpeechConfig as speechFetchSpeechConfig,
+  fetchSpeechToken as speechFetchSpeechToken,
+} from '@/domains/speech/service';
 import { fetchThread as threadsFetchThread } from '@/domains/threads/service';
 import {
   fetchTaggableUsers as workspacesFetchTaggableUsers,
@@ -78,6 +82,10 @@ export function createDefaultChatService(): ChatService {
     fetchModels: (opts) => modelsFetchModels(opts),
 
     cancelFlowRun: (flowRunId) => flowrunsCancelFlowRun(flowRunId),
+
+    getSpeechConfig: () => speechFetchSpeechConfig(),
+
+    getSpeechToken: () => speechFetchSpeechToken(),
   };
 }
 

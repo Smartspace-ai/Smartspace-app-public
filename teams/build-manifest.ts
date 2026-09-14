@@ -76,6 +76,9 @@ const manifest = {
     },
   ],
   permissions: ['identity', 'messageTeamMembers'],
+  // Composer dictation calls getUserMedia for the microphone; without this
+  // Teams desktop/web never prompts and the mic just fails.
+  devicePermissions: ['media'],
   validDomains: [host, 'login.microsoftonline.com'],
   webApplicationInfo: {
     id: clientId,

@@ -168,6 +168,13 @@ export default defineConfig(({ mode }) => ({
           // Realtime
           if (id.includes('/@microsoft/signalr/')) return 'signalr';
 
+          // Speech-to-text (composer dictation). chat-ui only ever reaches
+          // this via dynamic import(), so its own chunk keeps it out of
+          // `vendor`: prefetched in the background on speech-enabled installs,
+          // never fetched on installs without speech.
+          if (id.includes('/microsoft-cognitiveservices-speech-sdk/'))
+            return 'speech';
+
           // Markdown pipeline — unified, remark/rehype, mdast/hast utils, visit
           if (
             id.includes('/react-markdown/') ||
