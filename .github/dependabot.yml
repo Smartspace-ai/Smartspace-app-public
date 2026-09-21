@@ -8,7 +8,8 @@ updates:
       time: "06:00"
       timezone: Pacific/Auckland
     target-branch: develop
-    open-pull-requests-limit: 3
+    # Version updates paused for the V2 push; was 3. Restore to resume.
+    open-pull-requests-limit: 0
     # React 19 is a deliberate migration, not a routine bump — it needs
     # cloneElement typing fixes in src/shared/ui/mui-compat/, @testing-library/react
     # on 16.x, and widened peer ranges in packages/chat-ui. Left ungated, the react
@@ -73,7 +74,8 @@ updates:
       time: "06:00"
       timezone: Pacific/Auckland
     target-branch: develop
-    open-pull-requests-limit: 3
+    # Version updates paused for the V2 push; was 3. Restore to resume.
+    open-pull-requests-limit: 0
     # Mirrors the root entry above — chat-ui declares react/react-dom as peer
     # dependencies, so its React major has to move in lockstep with the app's.
     ignore:
@@ -109,7 +111,8 @@ updates:
       time: "06:00"
       timezone: Pacific/Auckland
     target-branch: develop
-    open-pull-requests-limit: 3
+    # Version updates paused for the V2 push; was 3. Restore to resume.
+    open-pull-requests-limit: 0
     groups:
       actions:
         patterns:
