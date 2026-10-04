@@ -16,14 +16,56 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Resolve the ref to a single commit up front. inputs.ref defaults to a branch
+  # NAME, so letting the quality job and the deploy job each resolve it would let
+  # a merge landing between them reach dev without passing quality.
+  resolve:
+    runs-on: ubuntu-latest
+    # Bounded like every other job here. It holds the no-cancel deploy-dev lock,
+    # so an unbounded hang would block all dev deploys for 6 hours.
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.r.outputs.sha }}
+    steps:
+      - id: r
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          if [ -z "$REF" ]; then
+            SHA="$GITHUB_SHA"
+          else
+            SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$REF" --jq .sha)
+          fi
+          if [ -z "$SHA" ]; then
+            echo "::error::Could not resolve '$REF' to a commit."
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Gating and deploying $SHA" >> "$GITHUB_STEP_SUMMARY"
+
+  # The deploy waits on the same quality check that gates a pull request.
+  #
+  # Known limit: the check builds with no .env and throws the build away, and
+  # deploy.yml then builds again with one - so an env-dependent build failure
+  # still only surfaces after the gate has passed.
+  quality:
+    needs: [resolve]
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+    secrets: inherit
+
   deploy:
+    needs: [resolve, quality]
     permissions:
       contents: read
       id-token: write # deploy.yml can only use what the caller grants
     uses: ./.github/workflows/deploy.yml
     with:
       environment: develop
-      # On push, inputs.ref is empty, so deploy.yml checks out the pushed commit
-      # (unchanged behaviour). On manual runs, build the requested ref instead.
-      ref: ${{ inputs.ref }}
+      ref: ${{ needs.resolve.outputs.sha }}
     secrets: inherit
