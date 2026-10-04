@@ -3,13 +3,37 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, develop]
+    # The dev DEPLOY is gated instead: deploy-dev.yml calls this workflow as a
+    # job so the deploy can depend on it, and a push trigger here as well would
+    # run the same check twice on the same commit.
+    #
+    # Only that one consumer is gated. chat-ui-publish-develop.yml and
+    # internal-notify-app.yml both still fire on every push to develop with no
+    # dependency on this check, so a red develop commit still reaches the npm
+    # `dev` dist-tag and the downstream Smartspace-app image rebuild.
+    #
+    # main keeps its push run, which is a parallel check and NOT a gate -
+    # deploy-production.yml does not depend on it, so a red commit on main can
+    # still reach the production container.
+    branches: [main]
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+        default: ""
+        description: Commit SHA to check. Empty = the triggering ref.
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # github.workflow is the CALLER's name when this workflow is called, so a
+  # gate run and a standalone run on the same ref land in different groups.
+  # Sharing one with cancel-in-progress would let a push to a branch cancel an
+  # in-flight gate for that branch, failing the deploy with no test failure to
+  # point at.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -20,6 +44,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Empty on push and pull_request, which means the triggering ref - the
+          # behaviour before this input existed.
+          ref: ${{ inputs.ref }}
 
       - name: Quality check
         uses: dagger/dagger-for-github@v7
