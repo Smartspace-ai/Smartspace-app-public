@@ -1,73 +1,56 @@
 # SmartSpace Chat UI
 
-> **Template Repository:**
->
-> This repository is intended as a starting point for clients who want to build their own customized chat UI for Smartspace. The recommended workflow is to **fork this repository**, then white label and customize it to fit your organization's branding and requirements. Once customized, you can deploy your version and connect it to your own Smartspace backend.
+> **Template repository.** This is a starting point for organisations who want their own branded chat interface for SmartSpace. Take a copy, brand it, deploy it to an address you control, and point it at your own SmartSpace installation. It talks to the same backend as the interface you already have — it is an additional way in, not a replacement.
 
-A modern, customizable chat interface built with React 18.3, utilizing [shadcn UI](https://ui.shadcn.com/) components and [Tailwind CSS](https://tailwindcss.com/) for styling. This project is designed to integrate seamlessly with [smartspace.ai](https://smartspace.ai).
+A chat interface built with React 18.3, [shadcn UI](https://ui.shadcn.com/) and [Tailwind CSS](https://tailwindcss.com/), designed to integrate with [smartspace.ai](https://smartspace.ai).
 
----
-
-## 🚀 Features
-
-- **React 18.3:** Leverages the latest features of React for building robust and efficient components.
-- **shadcn UI Components:** Accessible and customizable UI components.
-- **Tailwind CSS:** Utility-first CSS for rapid UI development.
-- **Theming Support:** Easily customize the primary color and other theme aspects.
-- **Logo Customization:** Simple process to update the application logo.
+Working on the template itself rather than deploying it? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-## 🛠️ Getting Started
+## What you need
 
-### Prerequisites
+- **Node.js 20+** and **pnpm 9**. Easiest install: enable Corepack (bundled with Node) and let it resolve the version pinned in `package.json` — `corepack enable`.
+- **An Azure subscription** you can create a storage account in.
+- **A Microsoft Entra administrator**, for one consent step.
+- **Your SmartSpace version**, from the `/updates` page of your SmartSpace admin interface. It shows the version you are currently on.
 
-Ensure you have the following installed:
+Deploying inside Microsoft Teams as well? Read [teams/Readme.md](teams/Readme.md) **before** creating your app registration — Teams needs settings on it that are awkward to add afterwards.
 
-- [Node.js](https://nodejs.org/en/download/) (version 20 or higher)
-- [pnpm](https://pnpm.io/installation) (version 9). Easiest install: enable Corepack (bundled with Node.js) and let it resolve the version pinned in `package.json`:
+---
 
-  ```bash
-  corepack enable
-  ```
+## 1. Take your own copy
 
-### Versioning
-
-This repository is tagged to match SmartSpace deployment versions. **Always pull by the tag that matches the version of SmartSpace your instance is running** — this is the only way to be sure you have the stable, up-to-date version of the UI that is known to work with your backend. Apply the same rule every time you want to update.
-
-You can check your SmartSpace version in the admin portal, then clone the matching tag:
+GitHub cannot create a private fork of a public repository, so clone and push rather than using the Fork button:
 
 ```bash
-# Replace v1.13.1 with your SmartSpace version
-git clone --branch v1.13.1 https://github.com/Smartspace-ai/Smartspace-app-public.git
+gh repo create <your-org>/<name>-smartspace-ui --private
+git clone https://github.com/Smartspace-ai/Smartspace-app-public.git <name>
+cd <name>
+git remote rename origin upstream
+git remote add origin https://github.com/<your-org>/<name>-smartspace-ui.git
+git push origin main --tags
 ```
 
-To see all available versions:
+Keeping the original as `upstream` is what lets you pull in later versions.
+
+### Pin to the version that matches your installation
+
+**Always build from the tag matching the SmartSpace version your installation is running.**
 
 ```bash
-git ls-remote --tags https://github.com/Smartspace-ai/Smartspace-app-public.git
+# Replace v1.14.9 with your version, from the admin /updates page
+git checkout -B main v1.14.9
+git push origin main --force
 ```
 
-> **Do not clone from `main` directly** unless you are running the latest version of SmartSpace. The `main` branch tracks the most recent release and may include API changes that are incompatible with older SmartSpace versions.
+To see the available versions: `git ls-remote --tags https://github.com/Smartspace-ai/Smartspace-app-public.git`
 
-#### Updating an existing fork
+> **Do not build from `main`** unless you are on the latest version of SmartSpace. The interface validates every response it receives from the backend, and `main` tracks the most recent release — it can expect response shapes your installation does not send yet, which surfaces as validation errors and blank panels even though the backend is answering correctly.
 
-Any time you want to refresh your fork, merge the SmartSpace version tag that matches your instance — **not** `main`. This keeps your fork aligned with a known-compatible release instead of whatever is currently on `main`. If nothing has changed between the tag you're on and the tag you're merging, the merge will be a no-op and git will tell you "Already up to date." — that's your signal there's nothing new to pick up.
+### Optional: remove the internal workflows
 
-```bash
-# Add the upstream template as a remote (one-time setup)
-git remote add upstream https://github.com/Smartspace-ai/Smartspace-app-public.git
-
-# Fetch tags from upstream
-git fetch upstream --tags
-
-# Merge the tag that matches your SmartSpace version
-git merge v1.13.1
-```
-
-#### Optional cleanup after forking
-
-This repo ships a few GitHub Actions workflows that only exist for SmartSpace-internal automation (SDK bumps, cross-repo notifications, the standing `release/next` PR). They are gated on the upstream repo and won't run in your fork even if you leave them in place, but you can delete them for cleanliness:
+Three GitHub Actions workflows exist only for SmartSpace-internal automation. They are gated on the upstream repository and will not run in your copy, but you can delete them for cleanliness. Each carries a `# Smartspace-internal: safe to delete in forks.` comment at the top:
 
 ```bash
 rm .github/workflows/internal-bump-sdk.yml
@@ -75,209 +58,133 @@ rm .github/workflows/internal-notify-app.yml
 rm .github/workflows/update-release-next.yml
 ```
 
-Each of these files has a `# Smartspace-internal: safe to delete in forks.` comment at the top so you can identify them at a glance.
+### Updating later
 
-### Installation
+When SmartSpace updates your installation, merge the **matching version tag** — not `upstream/main`:
 
-1. **Fork [this repository](https://github.com/Smartspace-ai/Smartspace-app-public) to your own GitHub account.**
-2. **Clone your fork at the correct version:**
-
-   ```bash
-   # Replace v1.13.1 with your SmartSpace version
-   git clone --branch v1.13.1 https://github.com/<your-org-or-username>/Smartspace-app-public.git
-   ```
-
-3. **Navigate to the project directory:**
-
-   ```bash
-   cd Smartspace-app-public
-   ```
-
-4. **Install the dependencies:**
-
-   ```bash
-   pnpm install
-   ```
-
-### SDK Dependency
-
-This project depends on `@smartspace/api-client`, published to [npmjs.com](https://www.npmjs.com/package/@smartspace/api-client). Stable releases install automatically — no extra setup or authentication needed.
-
-### Configuration
-
-Create a file named `.env` in your project root directory with the following environment variables:
-
-```env
-VITE_CLIENT_ID=             # Your Entra ID app client ID
-VITE_CLIENT_AUTHORITY=      # https://login.microsoftonline.com/{tenantId}
-VITE_CLIENT_SCOPES=         # Required scopes (comma-separated)
-VITE_CHAT_API_URI=          # SmartSpace chat API endpoint
-
-# Optional (Teams SSO / cross-tenant)
-VITE_TENANT_ID=             # Tenant GUID — used by MSAL config and Teams NAA fallback
-VITE_TEAMS_SSO_RESOURCE=    # App ID URI of your Teams app registration (NAA / on-behalf-of flows)
-VITE_TEAMS_USE_MSAL=        # true to force MSAL popup/redirect inside Teams (cross-tenant)
+```bash
+git fetch upstream --tags
+git merge v1.14.9
+git push origin main
 ```
 
-> **Note:** The first four variables are required for authentication and API access. The Teams-related vars are only needed if you are deploying inside Microsoft Teams. See [.env.example](.env.example) for a copy-pasteable template.
+If nothing has changed between your tag and the one you are merging, git will say "Already up to date" — that is your signal there is nothing to pick up.
 
 ---
 
-## 📜 Available Scripts
+## 2. Create an app registration
 
-In the project directory, you can run the following scripts:
+Your interface signs users in against an app registration **in your own tenant**. Create a new one — do not reuse the SmartSpace application that your installation already has.
 
-- **Start the development server:**
+1. Microsoft Entra admin centre → **App registrations → New registration**.
+   - **Name:** the brand your users will see. It appears on the consent prompt.
+   - **Supported account types:** accounts in this organizational directory only.
+   - **Redirect URI:** **Single-page application (SPA)**, set to the address you will deploy to, with a trailing slash.
+2. Copy the **Application (client) ID** from the overview page. This is your `VITE_CLIENT_ID`.
+3. **API permissions → Add a permission → APIs my organization uses →** search for **SmartSpace** → **Delegated permissions** → add `smartspaceapi.chat.access` and `smartspaceapi.config.access`.
+4. **Grant admin consent** for your organisation. Without it, the first sign-in fails with `AADSTS65001`.
 
-  ```bash
-  pnpm run start
-  ```
-
-### Dev tunnels (optional)
-
-If you need a public URL to your local dev server (e.g. for Teams manifests / callbacks), you can use **Microsoft Dev Tunnels** (via the `devtunnel` CLI) instead of ngrok.
-
-- **Start the app (no tunnel):**
-
-  ```bash
-  pnpm run start:local
-  # or
-  pnpm run start:dev
-  ```
-
-- **Start the tunnel (separate command):**
-
-  ```bash
-  pnpm run start:tunnel
-  # or
-  pnpm run start:tunnel:dev
-  ```
-
-- **Env vars** (in `.env.local` / `.env.dev`):
-
-  - `PUBLIC_ORIGIN`: the tunnel URL (hostname is used by Vite `server.allowedHosts`)
-  - `TUNNEL_ID` (optional, recommended): existing tunnel id to reuse (stable URL), e.g. `puzzled-chair-8bzd2hr.aue`
-
-- **Build the application for production:**
-
-  ```bash
-  pnpm run build
-  ```
-
-- **Run tests:**
-
-  ```bash
-  pnpm run test
-  ```
+Deploying into Teams? [teams/Readme.md](teams/Readme.md) adds four more things to this registration. Doing them now is easier than retrofitting.
 
 ---
 
-## 🚀 Automatic Deployment to Azure Static Web Apps
+## 3. Configure
 
-You can set up automatic deployment of your customized project to an Azure Storage Account configured as a static website using GitHub Actions. This requires the following configuration:
+Create a `.env` in the project root.
 
-### 1. Create a GitHub Environment
+| Variable                  | What it is                                                                                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_CLIENT_ID`          | **The client ID of the app registration you created in step 2** — your own, not SmartSpace's.                                                                                                           |
+| `VITE_CLIENT_AUTHORITY`   | `https://login.microsoftonline.com/{your-tenant-id}`                                                                                                                                                    |
+| `VITE_CLIENT_SCOPES`      | `api://2b53f19a-35f6-4c6e-a1ef-2a9b9fd87fe9/smartspaceapi.chat.access` — the **SmartSpace** application's scope. This is the audience your chat API accepts, and it is the same for every installation. |
+| `VITE_CHAT_API_URI`       | Your chat API address. Azure portal → the resource group created by your SmartSpace installation → the container app whose name contains `api-chat` → its application URL.                              |
+| `VITE_TENANT_ID`          | Your tenant GUID.                                                                                                                                                                                       |
+| `VITE_TEAMS_USE_MSAL`     | Teams only. See [teams/Readme.md](teams/Readme.md).                                                                                                                                                     |
+| `VITE_TEAMS_SSO_RESOURCE` | Teams only, and only on the NAA path. See [teams/Readme.md](teams/Readme.md).                                                                                                                           |
 
-- Go to your forked repository on GitHub.
-- Navigate to **Settings** > **Environments**.
-- Click **New environment** and name it `smartspace`.
+The two IDs are easy to mix up, and getting them the wrong way round is the most common setup failure: **`VITE_CLIENT_ID` is yours, `VITE_CLIENT_SCOPES` names SmartSpace's.**
 
-### 2. Add the Azure Storage Connection String Secret
+```env
+VITE_CLIENT_ID=
+VITE_CLIENT_AUTHORITY=https://login.microsoftonline.com/{your-tenant-id}
+VITE_CLIENT_SCOPES=api://2b53f19a-35f6-4c6e-a1ef-2a9b9fd87fe9/smartspaceapi.chat.access
+VITE_CHAT_API_URI=
+VITE_TENANT_ID=
+```
 
-- In your new `smartspace` environment.
-- Click **Add environment secret**.
-- Name the secret `AZURE_STORAGE_CONNECTION_STRING`.
-- Paste your Azure Storage Account connection string as the value.
+See [.env.example](.env.example) for the full list including the Teams variables.
 
-### 3. How It Works
+### SDK dependency
 
-When you push to the `main` branch, GitHub Actions will use the `AZURE_STORAGE_CONNECTION_STRING` secret to deploy the built application to your Azure Storage Account configured for static website hosting.
-
-> **Note:** Ensure your Azure Storage Account is set up for static website hosting. For more information, see the [Azure documentation](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-static-website).
-
----
-
-## 🎨 Theming
-
-The application uses CSS variables for theming, allowing easy customization of colors and styles. The primary color is defined in `src/_theme.scss`.
-
-### Changing the Primary Color
-
-To update the primary color of the application:
-
-1. **Open `src/_theme.scss`.**
-2. **Locate the `$primary-hex` variable:**
-
-   ```scss
-   // Primary input color
-   $primary-hex: #6443f4;
-   ```
-
-3. **Replace the `#6443f4` value with your desired hex color code.**
-4. **Save the file.** The application's primary color will now reflect the new value.
-
-> **Note:** `src/_theme.scss` uses HSL (Hue, Saturation, Lightness) values derived from `$primary-hex` to generate the full palette of CSS custom properties. Ensure that the new primary color provides sufficient contrast and accessibility.
-
-For more detailed information on theming with shadcn UI and Tailwind CSS, refer to the [shadcn UI Theming Documentation](https://ui.shadcn.com/docs/theming).
+The project depends on `@smartspace/api-client`, published to [npmjs.com](https://www.npmjs.com/package/@smartspace/api-client). It installs automatically — no package-feed authentication needed.
 
 ---
 
-## 🖼️ Updating the Logo
+## 4. Run it locally
 
-The logo component is located at `src/assets/logo.tsx` and ships as an inline SVG so it can be styled via CSS (`currentColor`, sizing classes, etc.). To replace it:
+```bash
+pnpm install
+pnpm run serve
+```
 
-1. **Open `src/assets/logo.tsx`.**
-2. **Replace the inline SVG with your own**, or swap to an imported image file. For example, to use an image:
+Sign in with an account from your tenant. If the workspace list renders with real data, your configuration is correct.
 
-   ```tsx
-   import React from 'react';
-   import logoUrl from './my-logo.png'; // Drop your file next to logo.tsx
-
-   interface LogoProps {
-     className?: string;
-   }
-
-   export const Logo: React.FC<LogoProps> = ({ className }) => {
-     return <img src={logoUrl} alt="Your Brand" className={className} />;
-   };
-   ```
-
-3. **Keep the `LogoProps` shape (`className`) so consumers across the app stay unchanged.**
-4. **Save the file.** The application will now display the updated logo.
+> `pnpm run start` also starts a public dev tunnel alongside the app, which you only need when something outside your machine has to reach it — a Teams manifest, for instance. For ordinary local work, `serve` is the one you want. See [CONTRIBUTING.md](CONTRIBUTING.md) for the tunnel setup.
 
 ---
 
-## 🤝 Contributing
+## 5. Deploy
 
-We welcome contributions to the SmartSpace Chat UI template! To contribute improvements to the template itself:
+The app is a static site: files in an Azure Storage account with no server to run or patch.
 
-1. **Fork the repository.**
-2. **Create a new branch for your feature or fix:**
+### Create the storage account
 
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+1. Create a **Storage account** in your subscription. The name must be lowercase letters and numbers.
+2. **Data management → Static website → Enabled.** Index document `index.html`, error document path `index.html`. This creates the `$web` container — without it the deploy fails with `ContainerNotFound`.
+3. Note the **primary endpoint**. That is the address your users visit, and the one your app registration's redirect URI must match.
 
-3. **Make your changes and commit them:**
+### Configure the GitHub environment
 
-   ```bash
-   git commit -m "Add your commit message here"
-   ```
+Create an environment named **`production`** (**Settings → Environments**). `deploy-production.yml` reads it on every push to `main`.
 
-4. **Push to your fork:**
+Add the six `VITE_*` values from step 3 as environment **variables**. They are compiled into the files served to the browser, which is normal for a web application — none of them are secrets.
 
-   ```bash
-   git push origin feature/your-feature-name
-   ```
+Then pick how the deploy authenticates to storage:
 
-5. **Open a pull request with a detailed description of your changes.**
+- **Access key:** add a secret `AZURE_STORAGE_CONNECTION_STRING`.
+- **Workload identity**, if you would rather not store a key: add variables `AZURE_STORAGE_ACCOUNT`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID`, and give that identity **Storage Blob Data Contributor** on the account. The deploy uses a federated token whenever `AZURE_STORAGE_ACCOUNT` is set, and the connection string when it is not.
 
-> **Tip:** Please follow any existing code style and contribution guidelines. If you have questions, open an issue or ask in your pull request.
+### Run it
+
+Pushing to `main` deploys. That is the only trigger — there is no "Run workflow" button for production. Once a run exists you can repeat it with **Re-run all jobs**, which is the quickest fix when a run failed because a variable was not saved yet rather than because of anything in the code. If you want on-demand runs, add `workflow_dispatch:` to `on:` in `.github/workflows/deploy-production.yml`.
+
+### Expected console noise
+
+A `404` when refreshing a deep link is normal — the path is not a stored file, so storage returns 404 and serves `index.html`, which loads and routes correctly. Errors from `chrome-extension://` sources come from the reader's own browser extensions.
+
+---
+
+## 6. Branding
+
+| What               | Where                                                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Accent colour      | `src/_theme.scss` — `$primary-hex` at the top. The rest of the palette derives from it.                                               |
+| Full colour scheme | The same file. The comment at the top links to theme generators whose output pastes in wholesale.                                     |
+| Logo               | `src/assets/logo.tsx` — an inline SVG so it can be styled with `currentColor`. Keep the `className` prop so consumers stay unchanged. |
+| Browser tab icon   | `public/favicon.ico`                                                                                                                  |
+| Page title         | `index.html`                                                                                                                          |
+| Teams icons        | `teams/icon-color.png` (192×192) and `teams/icon-outline.png` (32×32, transparent)                                                    |
+
+The app also reads a brand name and logo at runtime from the CSS variables `--ss-brand-name` and `--ss-brand-logo-url`, if you would rather set them in your theme than edit components.
 
 ---
 
-## 📄 License
+## 7. Microsoft Teams
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
+To make this available as an app inside Teams, with users signed in automatically, see **[teams/Readme.md](teams/Readme.md)**. It covers the additional app registration settings, the package, and uploading it to your tenant.
 
 ---
+
+## License
+
+MIT. See [LICENSE](LICENSE).
