@@ -2,7 +2,7 @@ import '@/test/factories/setup';
 
 import { faker } from '@faker-js/faker';
 import { ChatModels, ChatZod } from '@smartspace/api-client';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
 import { fake } from 'zod-schema-faker/v4';
 
@@ -567,25 +567,6 @@ describe('harness self-checks', () => {
 });
 
 describe('spec conformance fuzz', () => {
-  // `values[].type` is a plain string in the schema, so the fuzz sends types
-  // the UI cannot place and the mapper warns once per such type, by design.
-  // Keep that expected warning out of the run's output; everything else passes through.
-  beforeAll(() => {
-    const warn = console.warn;
-    vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
-      if (
-        typeof args[0] === 'string' &&
-        args[0].startsWith('[messages] dropped value with unknown type')
-      ) {
-        return;
-      }
-      warn(...args);
-    });
-  });
-  afterAll(() => {
-    vi.restoreAllMocks();
-  });
-
   for (const conformance of cases) {
     describe(conformance.name, () => {
       it(`survives ${RUNS} seeded spec-conformant payloads`, () => {

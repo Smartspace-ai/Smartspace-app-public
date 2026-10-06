@@ -1,5 +1,5 @@
 import { ChatModels } from '@smartspace/api-client';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { mapMessageDtoToModel, MessageValueType } from '@smartspace/chat-ui';
 
@@ -10,14 +10,8 @@ import { mapMessageDtoToModel, MessageValueType } from '@smartspace/chat-ui';
  * the rest of the message, never throw.
  */
 
-afterEach(() => {
-  vi.restoreAllMocks();
-});
-
 describe('message value type from the SDK', () => {
   it('drops a value whose type this UI cannot place and keeps the others', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
     const message = mapMessageDtoToModel({
       id: 'm1',
       createdAt: '2026-10-07T00:00:00Z',
@@ -64,11 +58,6 @@ describe('message value type from the SDK', () => {
       ['v-in', MessageValueType.INPUT],
       ['v-out', MessageValueType.OUTPUT],
     ]);
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('dropped value'),
-      'Reasoning',
-      'v-new'
-    );
   });
 
   it('has a MessageValueType member for every value type the SDK publishes', () => {

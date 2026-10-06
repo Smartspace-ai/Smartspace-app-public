@@ -2,6 +2,7 @@ import { ChatZod } from '@smartspace/api-client';
 import type { z } from 'zod';
 
 import { utcDate } from '@/shared/utils/dateFromApi';
+import { isMember } from '@/shared/utils/enums';
 
 import { MessageValueType } from './enums';
 import { Message, MessageValue } from './model';
@@ -39,17 +40,6 @@ const normalizeChannels = (
     Object.entries(channels).map(([key, val]) => [key, toChannelNumber(val)])
   );
 
-// The API publishes `type` as an extensible enum, so the SDK's zod lets any
-// string through. Input and Output decide where a value sits on the page, and
-// `MessageValueType` is the set this UI can place.
-const placeableTypes = new Set<string>(Object.values(MessageValueType));
-const warnedTypes = new Set<string>();
-
-/**
- * Maps one value as the API sent it. Does not apply the unknown-type rule, so
- * existing callers keep their contract; map a list through
- * `mapMessageValuesDtoToModels` to get it.
- */
 export function mapMessageValueDtoToModel(dto: MessageValueDto): MessageValue {
   return {
     id: dto.id,
@@ -63,31 +53,13 @@ export function mapMessageValueDtoToModel(dto: MessageValueDto): MessageValue {
   };
 }
 
-/**
- * Maps the values the UI can place and drops the rest, warning once per
- * unknown type. An API value this build has never seen hides that value; it
- * never breaks the message.
- */
-export function mapMessageValuesDtoToModels(
+/** `type` is an extensible enum; a value this UI cannot place is dropped. */
+export const mapMessageValuesDtoToModels = (
   dtos: MessageValueDto[]
-): MessageValue[] {
-  const kept: MessageValue[] = [];
-  for (const dto of dtos) {
-    if (!placeableTypes.has(dto.type)) {
-      if (!warnedTypes.has(dto.type)) {
-        warnedTypes.add(dto.type);
-        console.warn(
-          '[messages] dropped value with unknown type:',
-          dto.type,
-          dto.id
-        );
-      }
-      continue;
-    }
-    kept.push(mapMessageValueDtoToModel(dto));
-  }
-  return kept;
-}
+): MessageValue[] =>
+  dtos
+    .filter((dto) => isMember(MessageValueType, dto.type))
+    .map(mapMessageValueDtoToModel);
 
 export function mapMessageErrorDtoToModel(dto: MessageErrorDto): MessageError {
   const { error_code, ...rest } = dto;
