@@ -1,10 +1,18 @@
+<!--
+  Editing this file? Two things are not obvious:
+  1. It is fetched at runtime by the SmartSpace admin interface and rendered on
+     its API documentation page, so a change here reaches every installation
+     once it lands on a release - there is no separate publish step.
+  2. That page replaces the whole fenced `env` block below with values from the
+     reader's own installation. Keep exactly one such block, and keep anything
+     you want the reader to see OUTSIDE it.
+-->
+
 # SmartSpace Chat UI
 
 > **Template repository.** This is a starting point for organisations who want their own branded chat interface for SmartSpace. Take a copy, brand it, deploy it to an address you control, and point it at your own SmartSpace installation. It talks to the same backend as the interface you already have — it is an additional way in, not a replacement.
 
 A chat interface built with React 18.3, [shadcn UI](https://ui.shadcn.com/) and [Tailwind CSS](https://tailwindcss.com/), designed to integrate with [smartspace.ai](https://smartspace.ai).
-
-Working on the template itself rather than deploying it? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
@@ -124,12 +132,10 @@ The project depends on `@smartspace/api-client`, published to [npmjs.com](https:
 
 ```bash
 pnpm install
-pnpm run serve
+pnpm run start
 ```
 
 Sign in with an account from your tenant. If the workspace list renders with real data, your configuration is correct.
-
-> `pnpm run start` also starts a public dev tunnel alongside the app, which you only need when something outside your machine has to reach it — a Teams manifest, for instance. For ordinary local work, `serve` is the one you want. See [CONTRIBUTING.md](CONTRIBUTING.md) for the tunnel setup.
 
 ---
 
