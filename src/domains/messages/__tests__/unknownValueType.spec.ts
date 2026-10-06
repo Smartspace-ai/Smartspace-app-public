@@ -1,5 +1,5 @@
 import { ChatModels } from '@smartspace/api-client';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mapMessageDtoToModel, MessageValueType } from '@smartspace/chat-ui';
 
@@ -9,6 +9,10 @@ import { mapMessageDtoToModel, MessageValueType } from '@smartspace/chat-ui';
  * decides what the UI does with one it cannot place: drop that value, keep
  * the rest of the message, never throw.
  */
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('message value type from the SDK', () => {
   it('drops a value whose type this UI cannot place and keeps the others', () => {
@@ -60,13 +64,16 @@ describe('message value type from the SDK', () => {
       ['v-in', MessageValueType.INPUT],
       ['v-out', MessageValueType.OUTPUT],
     ]);
-    expect(warn).toHaveBeenCalledTimes(1);
-    warn.mockRestore();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('dropped value'),
+      'Reasoning',
+      'v-new'
+    );
   });
 
   it('renders every value type the SDK publishes', () => {
-    // Goes red when the API adds a value: the UI then owes it a decision,
-    // either a MessageValueType member or a deliberate drop here.
+    // Goes red when the API adds a value, so the UI owes it a decision before
+    // that SDK bump merges: a MessageValueType member and the rendering for it.
     const published = Object.values(ChatModels.EnumsMessageValueType);
     const rendered = Object.values(MessageValueType) as string[];
 

@@ -41,36 +41,52 @@ const normalizeChannels = (
 
 // The API publishes `type` as an extensible enum, so the SDK's zod lets any
 // string through. Input and Output decide where a value sits on the page, and
-// `MessageValueType` is the set this UI can place; a value outside it is
-// dropped here, once, rather than cast into the closed enum.
-const toMessageValueType = (type: string): MessageValueType | undefined =>
-  (Object.values(MessageValueType) as string[]).includes(type)
-    ? (type as MessageValueType)
-    : undefined;
+// `MessageValueType` is the set this UI can place.
+const placeableTypes = new Set<string>(Object.values(MessageValueType));
+const warnedTypes = new Set<string>();
 
-/** `undefined` when the value's type is one this build does not render. */
-export function mapMessageValueDtoToModel(
-  dto: MessageValueDto
-): MessageValue | undefined {
-  const type = toMessageValueType(dto.type);
-  if (type === undefined) {
-    console.warn(
-      '[messages] dropped value with unknown type:',
-      dto.type,
-      dto.id
-    );
-    return undefined;
-  }
+/**
+ * Maps one value as the API sent it. Does not apply the unknown-type rule, so
+ * existing callers keep their contract; map a list through
+ * `mapMessageValuesDtoToModels` to get it.
+ */
+export function mapMessageValueDtoToModel(dto: MessageValueDto): MessageValue {
   return {
     id: dto.id,
     name: dto.name,
-    type,
+    type: dto.type as unknown as MessageValueType,
     value: dto.value,
     channels: normalizeChannels(dto.channels ?? {}),
     createdAt: utcDate(dto.createdAt),
     createdBy: dto.createdBy ?? '',
     createdByUserId: dto.createdByUserId ?? undefined,
   };
+}
+
+/**
+ * Maps the values the UI can place and drops the rest, warning once per
+ * unknown type. An API value this build has never seen hides that value; it
+ * never breaks the message.
+ */
+export function mapMessageValuesDtoToModels(
+  dtos: MessageValueDto[]
+): MessageValue[] {
+  const kept: MessageValue[] = [];
+  for (const dto of dtos) {
+    if (!placeableTypes.has(dto.type)) {
+      if (!warnedTypes.has(dto.type)) {
+        warnedTypes.add(dto.type);
+        console.warn(
+          '[messages] dropped value with unknown type:',
+          dto.type,
+          dto.id
+        );
+      }
+      continue;
+    }
+    kept.push(mapMessageValueDtoToModel(dto));
+  }
+  return kept;
 }
 
 export function mapMessageErrorDtoToModel(dto: MessageErrorDto): MessageError {
@@ -91,10 +107,7 @@ export function mapMessageDtoToModel(dto: MessageDto): Message {
     createdByUserId: dto.createdByUserId ?? undefined,
     messageThreadId: dto.messageThreadId ?? undefined,
     errors: dto.errors?.map(mapMessageErrorDtoToModel) ?? undefined,
-    values: dto.values?.flatMap((value) => {
-      const mapped = mapMessageValueDtoToModel(value);
-      return mapped ? [mapped] : [];
-    }),
+    values: dto.values && mapMessageValuesDtoToModels(dto.values),
   };
 }
 

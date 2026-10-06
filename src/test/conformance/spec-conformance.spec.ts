@@ -2,7 +2,7 @@ import '@/test/factories/setup';
 
 import { faker } from '@faker-js/faker';
 import { ChatModels, ChatZod } from '@smartspace/api-client';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
 import { fake } from 'zod-schema-faker/v4';
 
@@ -570,10 +570,9 @@ describe('spec conformance fuzz', () => {
   // `values[].type` is a plain string in the schema, so the fuzz sends types
   // the UI cannot place and the mapper warns on each, by design. Keep that
   // one expected warning out of the run's output; everything else passes through.
-  let warn: typeof console.warn;
   beforeAll(() => {
-    warn = console.warn;
-    console.warn = (...args: unknown[]) => {
+    const warn = console.warn;
+    vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
       if (
         typeof args[0] === 'string' &&
         args[0].startsWith('[messages] dropped value with unknown type')
@@ -581,10 +580,10 @@ describe('spec conformance fuzz', () => {
         return;
       }
       warn(...args);
-    };
+    });
   });
   afterAll(() => {
-    console.warn = warn;
+    vi.restoreAllMocks();
   });
 
   for (const conformance of cases) {

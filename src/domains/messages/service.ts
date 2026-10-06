@@ -9,8 +9,8 @@ import { FileInfo } from '@smartspace/chat-ui';
 import {
   mapMessageDtoToModel,
   mapMessageErrorDtoToModel,
-  mapMessageValueDtoToModel,
   mapMessagesDtoToModels,
+  mapMessageValuesDtoToModels,
   type MessageError,
   Message,
   MessageContentItem,
@@ -393,12 +393,13 @@ export async function streamThreadMessages({
       if (envelope.delta) {
         const targetId = envelope.delta.messageId ?? envelope.messageId;
         if (!targetId || !onDelta) continue;
-        const outputs = (envelope.delta.outputs ?? []).flatMap((raw) => {
-          const obj = raw as Record<string, unknown>;
-          coerceMessageValueDto(obj);
-          const mapped = mapMessageValueDtoToModel(valueDtoSchema.parse(obj));
-          return mapped ? [mapped] : [];
-        });
+        const outputs = mapMessageValuesDtoToModels(
+          (envelope.delta.outputs ?? []).map((raw) => {
+            const obj = raw as Record<string, unknown>;
+            coerceMessageValueDto(obj);
+            return valueDtoSchema.parse(obj);
+          })
+        );
         const errors = (envelope.delta.errors ?? []).map((raw) =>
           mapMessageErrorDtoToModel({
             ...errorDtoSchema.parse(raw),
