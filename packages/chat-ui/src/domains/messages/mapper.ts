@@ -39,11 +39,32 @@ const normalizeChannels = (
     Object.entries(channels).map(([key, val]) => [key, toChannelNumber(val)])
   );
 
-export function mapMessageValueDtoToModel(dto: MessageValueDto): MessageValue {
+// The API publishes `type` as an extensible enum, so the SDK's zod lets any
+// string through. Input and Output decide where a value sits on the page, and
+// `MessageValueType` is the set this UI can place; a value outside it is
+// dropped here, once, rather than cast into the closed enum.
+const toMessageValueType = (type: string): MessageValueType | undefined =>
+  (Object.values(MessageValueType) as string[]).includes(type)
+    ? (type as MessageValueType)
+    : undefined;
+
+/** `undefined` when the value's type is one this build does not render. */
+export function mapMessageValueDtoToModel(
+  dto: MessageValueDto
+): MessageValue | undefined {
+  const type = toMessageValueType(dto.type);
+  if (type === undefined) {
+    console.warn(
+      '[messages] dropped value with unknown type:',
+      dto.type,
+      dto.id
+    );
+    return undefined;
+  }
   return {
     id: dto.id,
     name: dto.name,
-    type: dto.type as unknown as MessageValueType,
+    type,
     value: dto.value,
     channels: normalizeChannels(dto.channels ?? {}),
     createdAt: utcDate(dto.createdAt),
@@ -70,7 +91,10 @@ export function mapMessageDtoToModel(dto: MessageDto): Message {
     createdByUserId: dto.createdByUserId ?? undefined,
     messageThreadId: dto.messageThreadId ?? undefined,
     errors: dto.errors?.map(mapMessageErrorDtoToModel) ?? undefined,
-    values: dto.values?.map(mapMessageValueDtoToModel),
+    values: dto.values?.flatMap((value) => {
+      const mapped = mapMessageValueDtoToModel(value);
+      return mapped ? [mapped] : [];
+    }),
   };
 }
 

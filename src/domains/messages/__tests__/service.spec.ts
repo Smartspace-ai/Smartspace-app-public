@@ -217,7 +217,7 @@ describe('messages service', () => {
         {
           id: 'v1',
           name: 'x',
-          type: 'INPUT',
+          type: 'Input',
           value: 'y',
           channels: {},
           createdAt: '2024-01-01',

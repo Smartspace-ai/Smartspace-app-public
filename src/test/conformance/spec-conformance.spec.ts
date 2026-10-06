@@ -1,8 +1,8 @@
 import '@/test/factories/setup';
 
 import { faker } from '@faker-js/faker';
-import { ChatZod } from '@smartspace/api-client';
-import { describe, expect, it } from 'vitest';
+import { ChatModels, ChatZod } from '@smartspace/api-client';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { z } from 'zod';
 import { fake } from 'zod-schema-faker/v4';
 
@@ -288,7 +288,9 @@ const cases: ConformanceCase[] = [
       );
       return mapMessagesDtoToModels(parsed.data);
     },
-    variants: messageValueSchema.shape.type.options.map((option) => ({
+    // `type` is an extensible enum: the zod schema is a plain string, and the
+    // values this SDK build knows live on the generated const.
+    variants: Object.values(ChatModels.EnumsMessageValueType).map((option) => ({
       name: `values[0].type=${option}`,
       payload: () => {
         faker.seed(SEED_BASE);
@@ -363,22 +365,19 @@ const cases: ConformanceCase[] = [
       return mapModelsEnvelopeDtoToModels(parsed);
     },
     variants: [
-      ...modelListItemSchema.shape.deploymentStatus
-        .unwrap()
-        .options.map((option) => ({
-          name: `deploymentStatus=${option}`,
-          payload: () => {
-            faker.seed(SEED_BASE);
-            const payload = fake(ChatZod.modelsGetModelsResponse);
-            payload.data = [
-              { ...fake(modelListItemSchema), deploymentStatus: option },
-            ];
-            return payload;
-          },
-        })),
-      ...modelListItemSchema.shape.modelDeploymentProviderType
-        .unwrap()
-        .options.map((option) => ({
+      ...Object.values(ChatModels.EnumsModelDeploymentStatus).map((option) => ({
+        name: `deploymentStatus=${option}`,
+        payload: () => {
+          faker.seed(SEED_BASE);
+          const payload = fake(ChatZod.modelsGetModelsResponse);
+          payload.data = [
+            { ...fake(modelListItemSchema), deploymentStatus: option },
+          ];
+          return payload;
+        },
+      })),
+      ...Object.values(ChatModels.EnumsModelDeploymentProviderType).map(
+        (option) => ({
           name: `modelDeploymentProviderType=${option}`,
           payload: () => {
             faker.seed(SEED_BASE);
@@ -391,28 +390,27 @@ const cases: ConformanceCase[] = [
             ];
             return payload;
           },
-        })),
-      ...modelListItemSchema.shape.properties.element.shape.type.options.map(
-        (option) => ({
-          name: `properties[0].type=${option}`,
-          payload: () => {
-            faker.seed(SEED_BASE);
-            const payload = fake(ChatZod.modelsGetModelsResponse);
-            payload.data = [
-              {
-                ...fake(modelListItemSchema),
-                properties: [
-                  {
-                    ...fake(modelListItemSchema.shape.properties.element),
-                    type: option,
-                  },
-                ],
-              },
-            ];
-            return payload;
-          },
         })
       ),
+      ...Object.values(ChatModels.EnumsModelPropertyType).map((option) => ({
+        name: `properties[0].type=${option}`,
+        payload: () => {
+          faker.seed(SEED_BASE);
+          const payload = fake(ChatZod.modelsGetModelsResponse);
+          payload.data = [
+            {
+              ...fake(modelListItemSchema),
+              properties: [
+                {
+                  ...fake(modelListItemSchema.shape.properties.element),
+                  type: option,
+                },
+              ],
+            },
+          ];
+          return payload;
+        },
+      })),
     ],
   }),
 
@@ -434,19 +432,17 @@ const cases: ConformanceCase[] = [
       const parsed = parseOrThrow(ChatZod.notificationGetResponse, payload);
       return mapNotificationsEnvelopeDto(parsed);
     },
-    variants: notificationItemSchema.shape.notificationType.options.map(
-      (option) => ({
-        name: `notificationType=${option}`,
-        payload: () => {
-          faker.seed(SEED_BASE);
-          const payload = fake(ChatZod.notificationGetResponse);
-          payload.data = [
-            { ...fake(notificationItemSchema), notificationType: option },
-          ];
-          return payload;
-        },
-      })
-    ),
+    variants: Object.values(ChatModels.EnumsNotificationType).map((option) => ({
+      name: `notificationType=${option}`,
+      payload: () => {
+        faker.seed(SEED_BASE);
+        const payload = fake(ChatZod.notificationGetResponse);
+        payload.data = [
+          { ...fake(notificationItemSchema), notificationType: option },
+        ];
+        return payload;
+      },
+    })),
   }),
 
   // thread-users — fetchThreadUsers
@@ -517,17 +513,19 @@ const cases: ConformanceCase[] = [
       const parsed = parseOrThrow(ChatZod.workSpacesGetIdResponse, payload);
       return mapWorkspaceDtoToModel(parsed);
     },
-    variants: workspaceVariableSchema.shape.access.options.map((option) => ({
-      name: `variables.access=${option}`,
-      payload: () => {
-        faker.seed(SEED_BASE);
-        const payload = fake(ChatZod.workSpacesGetIdResponse);
-        payload.variables = {
-          conformance: { ...fake(workspaceVariableSchema), access: option },
-        };
-        return payload;
-      },
-    })),
+    variants: Object.values(ChatModels.EnumsFlowVariableAccess).map(
+      (option) => ({
+        name: `variables.access=${option}`,
+        payload: () => {
+          faker.seed(SEED_BASE);
+          const payload = fake(ChatZod.workSpacesGetIdResponse);
+          payload.variables = {
+            conformance: { ...fake(workspaceVariableSchema), access: option },
+          };
+          return payload;
+        },
+      })
+    ),
   }),
 
   // workspaces — fetchTaggableUsers
@@ -569,6 +567,26 @@ describe('harness self-checks', () => {
 });
 
 describe('spec conformance fuzz', () => {
+  // `values[].type` is a plain string in the schema, so the fuzz sends types
+  // the UI cannot place and the mapper warns on each, by design. Keep that
+  // one expected warning out of the run's output; everything else passes through.
+  let warn: typeof console.warn;
+  beforeAll(() => {
+    warn = console.warn;
+    console.warn = (...args: unknown[]) => {
+      if (
+        typeof args[0] === 'string' &&
+        args[0].startsWith('[messages] dropped value with unknown type')
+      ) {
+        return;
+      }
+      warn(...args);
+    };
+  });
+  afterAll(() => {
+    console.warn = warn;
+  });
+
   for (const conformance of cases) {
     describe(conformance.name, () => {
       it(`survives ${RUNS} seeded spec-conformant payloads`, () => {

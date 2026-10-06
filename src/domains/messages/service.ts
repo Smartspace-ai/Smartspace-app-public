@@ -393,10 +393,11 @@ export async function streamThreadMessages({
       if (envelope.delta) {
         const targetId = envelope.delta.messageId ?? envelope.messageId;
         if (!targetId || !onDelta) continue;
-        const outputs = (envelope.delta.outputs ?? []).map((raw) => {
+        const outputs = (envelope.delta.outputs ?? []).flatMap((raw) => {
           const obj = raw as Record<string, unknown>;
           coerceMessageValueDto(obj);
-          return mapMessageValueDtoToModel(valueDtoSchema.parse(obj));
+          const mapped = mapMessageValueDtoToModel(valueDtoSchema.parse(obj));
+          return mapped ? [mapped] : [];
         });
         const errors = (envelope.delta.errors ?? []).map((raw) =>
           mapMessageErrorDtoToModel({
