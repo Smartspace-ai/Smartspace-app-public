@@ -22,3 +22,11 @@ Surfaced by the push warning when PR #277 was pushed: **2 critical, 20 high, 18 
 - Group runtime-affecting vs. dev-only vulnerabilities.
 - Identify the handful of upgrades that clear most of the alert count.
 - Open a dedicated security/upgrade PR — do **not** bundle into unrelated work.
+
+## Extensible enums: followups from the SDK-values PR
+
+`values[].type` is published as `x-extensible-enum` and the SDK's zod lets any string through. `mapMessageValuesDtoToModels` in chat-ui drops a value whose type the UI cannot place; the single `mapMessageValueDtoToModel` keeps its old contract (a cast) for existing callers.
+
+- `spec-conformance.spec.ts`, case "messages: SSE delta output", still runs the single mapper while `streamThreadMessages` now sends deltas through the plural one. Mirror the service, or state why the single mapper is the thing under test there.
+- `packages/chat-ui/src/domains/messages/schemas.ts` validates `values[].type` with `z.nativeEnum(MessageValueType)`. Nothing parses with that schema today; if something starts to, an unseen type throws. Either delete it or make it `z.string()` plus the drop rule.
+- Smartspace-app `apps/admin/src/platform/chat/sandboxThreadStream.ts` maps delta outputs with the single mapper and forwards them unfiltered; move it to `mapMessageValuesDtoToModels` on its next chat-ui bump.

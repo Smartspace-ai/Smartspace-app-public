@@ -2,6 +2,7 @@ import { ChatZod } from '@smartspace/api-client';
 import type { z } from 'zod';
 
 import { utcDate } from '@/shared/utils/dateFromApi';
+import { isMember } from '@/shared/utils/enums';
 
 import { MessageValueType } from './enums';
 import { Message, MessageValue } from './model';
@@ -52,6 +53,14 @@ export function mapMessageValueDtoToModel(dto: MessageValueDto): MessageValue {
   };
 }
 
+/** `type` is an extensible enum; a value this UI cannot place is dropped. */
+export const mapMessageValuesDtoToModels = (
+  dtos: MessageValueDto[]
+): MessageValue[] =>
+  dtos
+    .filter((dto) => isMember(MessageValueType, dto.type))
+    .map(mapMessageValueDtoToModel);
+
 export function mapMessageErrorDtoToModel(dto: MessageErrorDto): MessageError {
   const { error_code, ...rest } = dto;
   return {
@@ -70,7 +79,7 @@ export function mapMessageDtoToModel(dto: MessageDto): Message {
     createdByUserId: dto.createdByUserId ?? undefined,
     messageThreadId: dto.messageThreadId ?? undefined,
     errors: dto.errors?.map(mapMessageErrorDtoToModel) ?? undefined,
-    values: dto.values?.map(mapMessageValueDtoToModel),
+    values: dto.values && mapMessageValuesDtoToModels(dto.values),
   };
 }
 
