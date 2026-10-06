@@ -71,7 +71,7 @@ describe('message value type from the SDK', () => {
     );
   });
 
-  it('renders every value type the SDK publishes', () => {
+  it('has a MessageValueType member for every value type the SDK publishes', () => {
     // Goes red when the API adds a value, so the UI owes it a decision before
     // that SDK bump merges: a MessageValueType member and the rendering for it.
     const published = Object.values(ChatModels.EnumsMessageValueType);

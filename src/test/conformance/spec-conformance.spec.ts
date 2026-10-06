@@ -568,8 +568,8 @@ describe('harness self-checks', () => {
 
 describe('spec conformance fuzz', () => {
   // `values[].type` is a plain string in the schema, so the fuzz sends types
-  // the UI cannot place and the mapper warns on each, by design. Keep that
-  // one expected warning out of the run's output; everything else passes through.
+  // the UI cannot place and the mapper warns once per such type, by design.
+  // Keep that expected warning out of the run's output; everything else passes through.
   beforeAll(() => {
     const warn = console.warn;
     vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
