@@ -2,7 +2,7 @@
 
 This guide makes your deployed SmartSpace interface available as an app inside Microsoft Teams, with users signed in automatically.
 
-Work through [the main setup guide](../Readme.md) first — this one assumes you already have the interface deployed at an address you control, and an app registration in your tenant.
+Work through [the main setup guide](https://github.com/Smartspace-ai/Smartspace-app-public/blob/main/Readme.md) first — this one assumes you already have the interface deployed at an address you control, and an app registration in your tenant.
 
 Throughout, `{host}` means the address your site is served from **without** a trailing slash (`https://smartspace.contoso.com`), and `{host-without-scheme}` is the same thing with `https://` removed (`smartspace.contoso.com`).
 

@@ -23,7 +23,7 @@ A chat interface built with React 18.3, [shadcn UI](https://ui.shadcn.com/) and 
 - **A Microsoft Entra administrator**, for one consent step.
 - **Your SmartSpace version**, from the `/updates` page of your SmartSpace admin interface. It shows the version you are currently on.
 
-Deploying inside Microsoft Teams as well? Read [teams/Readme.md](teams/Readme.md) **before** creating your app registration — Teams needs settings on it that are awkward to add afterwards.
+Deploying inside Microsoft Teams as well? Read [teams/Readme.md](https://github.com/Smartspace-ai/Smartspace-app-public/blob/main/teams/Readme.md) **before** creating your app registration — Teams needs settings on it that are awkward to add afterwards.
 
 ---
 
@@ -92,7 +92,7 @@ Your interface signs users in against an app registration **in your own tenant**
 3. **API permissions → Add a permission → APIs my organization uses →** search for **SmartSpace** → **Delegated permissions** → add `smartspaceapi.chat.access` and `smartspaceapi.config.access`.
 4. **Grant admin consent** for your organisation. Without it, the first sign-in fails with `AADSTS65001`.
 
-Deploying into Teams? [teams/Readme.md](teams/Readme.md) adds four more things to this registration. Doing them now is easier than retrofitting.
+Deploying into Teams? [teams/Readme.md](https://github.com/Smartspace-ai/Smartspace-app-public/blob/main/teams/Readme.md) adds four more things to this registration. Doing them now is easier than retrofitting.
 
 ---
 
@@ -107,8 +107,8 @@ Create a `.env` in the project root.
 | `VITE_CLIENT_SCOPES`      | `api://2b53f19a-35f6-4c6e-a1ef-2a9b9fd87fe9/smartspaceapi.chat.access` — the **SmartSpace** application's scope. This is the audience your chat API accepts, and it is the same for every installation. |
 | `VITE_CHAT_API_URI`       | Your chat API address. Azure portal → the resource group created by your SmartSpace installation → the container app whose name contains `api-chat` → its application URL.                              |
 | `VITE_TENANT_ID`          | Your tenant GUID.                                                                                                                                                                                       |
-| `VITE_TEAMS_USE_MSAL`     | Teams only. See [teams/Readme.md](teams/Readme.md).                                                                                                                                                     |
-| `VITE_TEAMS_SSO_RESOURCE` | Teams only, and only on the NAA path. See [teams/Readme.md](teams/Readme.md).                                                                                                                           |
+| `VITE_TEAMS_USE_MSAL`     | Teams only. See [teams/Readme.md](https://github.com/Smartspace-ai/Smartspace-app-public/blob/main/teams/Readme.md).                                                                                    |
+| `VITE_TEAMS_SSO_RESOURCE` | Teams only, and only on the NAA path. See [teams/Readme.md](https://github.com/Smartspace-ai/Smartspace-app-public/blob/main/teams/Readme.md).                                                          |
 
 The two IDs are easy to mix up, and getting them the wrong way round is the most common setup failure: **`VITE_CLIENT_ID` is yours, `VITE_CLIENT_SCOPES` names SmartSpace's.**
 
@@ -120,7 +120,7 @@ VITE_CHAT_API_URI=
 VITE_TENANT_ID=
 ```
 
-See [.env.example](.env.example) for the full list including the Teams variables.
+See [.env.example](https://github.com/Smartspace-ai/Smartspace-app-public/blob/main/.env.example) for the full list including the Teams variables.
 
 ### SDK dependency
 
@@ -187,10 +187,10 @@ The app also reads a brand name and logo at runtime from the CSS variables `--ss
 
 ## 7. Microsoft Teams
 
-To make this available as an app inside Teams, with users signed in automatically, see **[teams/Readme.md](teams/Readme.md)**. It covers the additional app registration settings, the package, and uploading it to your tenant.
+To make this available as an app inside Teams, with users signed in automatically, see **[teams/Readme.md](https://github.com/Smartspace-ai/Smartspace-app-public/blob/main/teams/Readme.md)**. It covers the additional app registration settings, the package, and uploading it to your tenant.
 
 ---
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/Smartspace-ai/Smartspace-app-public/blob/main/LICENSE).
