@@ -1,189 +1,160 @@
-# Microsoft Teams Integration Setup Guide
+# Microsoft Teams integration
 
-This guide walks you through integrating your SmartSpace application with Microsoft Teams as a custom app.
+This guide makes your deployed SmartSpace interface available as an app inside Microsoft Teams, with users signed in automatically.
 
-## 📋 Prerequisites
+Work through [the main setup guide](../Readme.md) first — this one assumes you already have the interface deployed at an address you control, and an app registration in your tenant.
 
-Before starting, ensure you have:
+Throughout, `{host}` means the address your site is served from **without** a trailing slash (`https://smartspace.contoso.com`), and `{host-without-scheme}` is the same thing with `https://` removed (`smartspace.contoso.com`).
 
-- **Azure AD Admin Access** - You'll need permissions to create app registrations
-- **SmartSpace Backend** - A deployed SmartSpace backend instance
-- **Teams Admin Access** - To upload custom apps to your Teams tenant
-- **Node.js** - Version 20 or higher for building the Teams package
+## What you need
 
-## 🔧 Step-by-Step Setup
+- The interface deployed and working in a browser. Get that right first — it separates configuration problems from Teams packaging problems, which are much harder to untangle together.
+- **A Microsoft Entra administrator**, to grant consent.
+- **A Microsoft Teams administrator**, to upload the app to your tenant's catalogue.
+- **Node.js 20+**, if you build the package locally rather than in GitHub Actions.
 
-### 1. Create Azure AD App Registration
+---
 
-1. **Go to [Azure Entra ID](https://entra.microsoft.com/)**
-2. **Navigate to** `App registrations` → `New registration`
-3. **Configure the registration:**
-   - **Name:** Choose a descriptive name (e.g., "SmartSpace App")
-   - **Supported account types:** `Accounts in this organizational directory only`
-   - **Redirect URI:** Select `Single Page Application (SPA)` and enter your deployed SmartSpace URL
-4. **Click** `Register`
+## 1. Add the Teams settings to your app registration
 
-### 2. Configure API Permissions
+Four additions to the registration you created in the main guide. All four matter: miss one and sign-in fails inside Teams while continuing to work in a browser.
 
-1. **In your new app registration, go to** `API permissions`
-2. **Click** `Add a permission`
-3. **Select** `APIs my organization uses`
-4. **Search for and select** `SmartSpace`
-5. **Choose** `smartspaceapi.chat.access` permission
-6. **Click** `Add permissions`
+### Redirect addresses
 
-### 3. Expose an API
-
-1. **Go to** `Expose an API`
-2. **Set the Application ID URI** to:
-   ```
-   api://{your-deployed-smartspace-url}/{your-app-client-id}
-   ```
-   - Replace `{your-deployed-smartspace-url}` with the url of your deployed custom SmartSpace web
-   - Replace `{your-app-client-id}` with the Client ID from step 1
-
-### 4. Configure Environment Variables
-
-1. **In your project root, update the `.env` file:**
-   ```env
-   VITE_CLIENT_ID=your-app-client-id-from-step-1
-   VITE_CLIENT_AUTHORITY=https://login.microsoftonline.com/your-tenant-id
-   VITE_CLIENT_SCOPES=api://smartspace-app-client-id/smartspaceapi.chat.access
-   VITE_CHAT_API_URI=https://your-smartspace-chat-api-url
-   ```
-
-### 5. Configure Teams Settings
-
-1. **Open** `teams/config.json`
-2. **Update the configuration:**
-
-   ```json
-   {
-     "appId": "generate-a-unique-guid-for-your-teams-app",
-     "baseUrl": "https://your-deployed-smartspace-url",
-     "appName": "Your Company SmartSpace",
-     "version": "1.0.0"
-   }
-   ```
-
-   > **Note:** The `appId` should be a unique GUID different from your Azure AD app's Client ID. You can generate one at [guidgenerator.com](https://guidgenerator.com).
-
-### 6. Prepare App Icons
-
-1. **Add your app icons to the `teams/` directory:**
-   - `icon-color.png` - 192x192 pixels, full-color icon
-   - `icon-outline.png` - 32x32 pixels, transparent outline icon
-
-### 7. Build the Teams App Package
-
-1. **Run the build command:**
-
-   ```bash
-   pnpm run build:teams
-   ```
-
-2. **This will generate:**
-   - `teams/manifest.json` - The Teams app manifest
-   - `teams/smartspace.zip` - The Teams app package ready for upload
-
-### 8. Upload to Microsoft Teams
-
-1. **Go to Microsoft Teams Admin Center** at [admin.teams.microsoft.com](https://admin.teams.microsoft.com)
-2. **Navigate to** `Teams apps` → `Manage apps`
-3. **Click** `Upload new app`
-4. **Upload the** `teams/smartspace.zip` file
-5. **Configure app permissions and availability** as needed for your organization
-
-## 🔍 Verification
-
-After installation, verify the integration:
-
-1. **Open Microsoft Teams**
-2. **Go to** `Apps` and search for your SmartSpace app
-3. **Add the app** to a team or use it personally
-4. **Verify** that authentication works seamlessly (users should not need to log in again)
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-**🔴 Consent Required Error (AADSTS65001)**
-
-If you see this error in Teams:
+**Authentication →** under the single-page application platform, you should have these five:
 
 ```
-Error getting msal token:InteractionRequiredAuthError: consent_required: AADSTS65001: The user or administrator has not consented to use the application
+{host}/
+{host}/teams-auth-end.html
+{host}/auth-redirect.html
+brk-multihub://{host-without-scheme}/
+brk-5e3ce6c0-2b1f-4285-8d4b-75ee78787346://{host-without-scheme}/
 ```
 
-**Solution Options:**
+The `brk-` pair are the addresses Teams uses to hand a sign-in back to your app. If the portal rejects the scheme, add them to `spa.redirectUris` in the **Manifest** instead — the same setting, behind a stricter form.
 
-1. **Teams Authentication Popup (Automatic):**
+### Application ID URI
 
-   - The app is configured to automatically show a Teams-native authentication popup
-   - This should appear when you first try to use the app in Teams
-   - The popup will ask for the necessary permissions
-   - If the popup doesn't appear, try refreshing the Teams app
+**Expose an API →** set the Application ID URI to exactly:
 
-2. **Admin Consent (Recommended):**
+```
+api://{host-without-scheme}/{your-client-id}
+```
 
-   - Go to your Azure AD app registration
-   - Navigate to `API permissions`
-   - Click `Grant admin consent for [Your Organization]`
-   - This provides consent for all users in your organization
+Teams only issues a token when the domain in this URI matches the domain the tab is served from, so the default `api://{client-id}` will not work.
 
-3. **Individual User Consent:**
+### The `access_as_user` scope
 
-   - Have users access your SmartSpace app in a regular browser first (outside Teams)
-   - Complete the login flow there to grant initial consent
-   - Then they can use the app in Teams
+On the same page, add a scope named `access_as_user`:
 
-4. **Pre-authorize the Application:**
+- **Who can consent:** admins and users
+- **Admin consent display name:** Access <Your Brand> as the signed-in user
+- **Admin consent description:** Allows Microsoft Teams and approved clients to access <Your Brand> on behalf of the signed-in user.
+- **User consent display name:** Access <Your Brand> as you
+- **User consent description:** Allow this app to access <Your Brand> on your behalf.
+- **State:** Enabled
 
-   - In your SmartSpace backend's Azure AD app registration
-   - Go to `Expose an API` → `Authorized client applications`
-   - Add your Teams app's Client ID as an authorized application
-   - Select the required scopes
+One scope is enough. It exists so Teams can exchange its own sign-in for one that works with your app; nothing else uses it.
 
-5. **Teams App Permissions:**
-   - Ensure your Teams app manifest includes proper permissions
-   - The `webApplicationInfo` section should match your Azure AD app configuration
+### Authorised client applications
 
-**Authentication Errors:**
+Still on **Expose an API**, under **Authorized client applications**, pre-authorise both Teams clients against `access_as_user`. These are Microsoft's own identifiers and are the same for every organisation:
 
-- Verify the Application ID URI format in step 3
-- Ensure the redirect URI matches your deployed URL exactly
-- Check that admin consent has been granted for API permissions
+| Client                   | Application ID                         |
+| ------------------------ | -------------------------------------- |
+| Teams desktop and mobile | `1fec8e78-bce4-4aaf-ab1b-5451cc387264` |
+| Teams web                | `5e3ce6c0-2b1f-4285-8d4b-75ee78787346` |
 
-**App Not Loading:**
+This is what lets Teams sign users in without a consent prompt. Without it, users are asked to consent before they can use the app.
 
-- Confirm the `baseUrl` in `teams/config.json` is correct and accessible
-- Verify your SmartSpace backend is running and accessible
-- Check the Teams app manifest for any validation errors
+---
 
-**Build Failures:**
+## 2. Choose a sign-in path
 
-- Ensure `VITE_CLIENT_ID` is set in your `.env` file
-- Verify Node.js version is 20 or higher
-- Check that all required files are present in the `teams/` directory
+Teams has two. The setting is `VITE_TEAMS_USE_MSAL`, and it is **compiled into the site when it is built** — one deployment has one answer for everyone who uses it. It is not per user and not per Teams app.
 
-### Getting Help
+- **`false`** uses the faster path, which resolves your app registration in the signed-in user's _own_ tenant. It only works for people who are members of yours, and it is the one that gets users straight in with no prompt.
+- **`true`** signs in against the authority you configured. Members and guests both work; expect a sign-in step the first time.
 
-If you encounter issues:
+This matters if people from another organisation will use your SmartSpace. A Teams app can only be installed from the catalogue of the tenant it was uploaded to, so that organisation uploads its own Teams package — pointing at the same website of yours. Two Teams apps, one website, one setting between them. Those users are guests in your tenant, and the fast path fails for them with `AADSTS700016`, reporting that the application cannot be found: it is looking in their organisation, where your registration does not exist.
 
-1. **Check the browser console** for error messages when the app loads in Teams
-2. **Verify your environment variables** are correctly set
-3. **Test the app in a regular browser** first to isolate Teams-specific issues
-4. **Contact your SmartSpace administrator** for backend configuration issues
+So `false` only when every user is a member of your tenant, and `true` the moment anyone outside it is in scope. Leaving it unset is a third state, where the choice falls to a flag stored in each person's browser — set it explicitly either way.
 
-## 📝 Additional Notes
+`VITE_TEAMS_SSO_RESOURCE` is the Application ID URI from step 1, and is only needed on the `false` path.
 
-- **Single Sign-On (SSO):** This setup enables seamless authentication within Teams
-- **Theme Integration:** The app automatically adapts to Teams' light/dark themes
-- **Mobile Support:** The app works on Teams mobile clients
-- **Updates:** When you update your app, increment the version in `teams/config.json` and rebuild
+---
 
-## 🔗 Useful Links
+## 3. Configure the package
 
-- [Microsoft Teams Developer Documentation](https://learn.microsoft.com/en-us/microsoftteams/platform/)
-- [Azure AD App Registration Guide](https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app)
-- [Teams App Manifest Schema](https://learn.microsoft.com/en-us/microsoftteams/platform/resources/schema/manifest-schema)
+Open `teams/config.json`:
+
+```json
+{
+  "appId": "a-brand-new-guid",
+  "baseUrl": "{host}",
+  "appName": "Your Brand",
+  "version": "1.0.0"
+}
+```
+
+**Every value in this file ships as a placeholder.** The ones in the repository point at a SmartSpace deployment and are not valid for yours — all four need replacing before you build.
+
+**Generate a fresh GUID for `appId`.** It identifies your app in your Teams catalogue and must not match anything already uploaded there, so it has to be one you generate rather than the shipped example. It is unrelated to your client ID — a separate identifier that exists only for Teams.
+
+### Icons
+
+Replace `teams/icon-color.png` (192×192, full colour) and `teams/icon-outline.png` (32×32, transparent outline) with your own.
+
+---
+
+## 4. Build the package
+
+**In GitHub Actions**, run the **Build Teams package** workflow, pick the environment and a version, and download the package from the run. It reads `VITE_CLIENT_ID`, `TEAMS_APP_ID`, `TEAMS_BASE_URL` and `TEAMS_APP_NAME` from the environment you select, so add those `TEAMS_*` variables alongside your `VITE_*` ones.
+
+> If those `TEAMS_*` variables are not set, the build falls back to `teams/config.json` without warning — which is how a package ends up pointing at the wrong address with nothing in the log to show it.
+
+**Or locally**, with `VITE_CLIENT_ID` in a root `.env`:
+
+```bash
+pnpm install
+pnpm run build:teams
+```
+
+Either way you get `teams/manifest.json` and `teams/smartspace.zip`.
+
+### Check the manifest before uploading
+
+Open `teams/manifest.json` and confirm `webApplicationInfo.resource` matches the Application ID URI from step 1 character for character:
+
+```
+api://{host-without-scheme}/{your-client-id}
+```
+
+The script derives it from `baseUrl` and the client ID, so it is right automatically when the config is. If it does not match, one of those two is wrong, and Teams will refuse to issue a token.
+
+---
+
+## 5. Upload and roll out
+
+1. [Teams admin centre](https://admin.teams.microsoft.com) → **Teams apps → Manage apps → Upload new app** → upload `teams/smartspace.zip`.
+2. Set availability for the users or groups who should see it.
+3. **Optional but worth doing:** **Teams apps → Setup policies** lets you add the app to a policy so it is installed — and, if you like, pinned to the sidebar — for everyone assigned that policy. Otherwise each person has to find and add it themselves.
+
+Open Teams, find the app and add it. On the `false` path you should land straight in. On `true`, expect one sign-in.
+
+When you change anything about the app, increment the version in `teams/config.json` or the workflow input and re-upload. Teams only applies an update when the version increases.
+
+---
+
+## Troubleshooting
+
+| What you see                                                                            | What it means                                                                                                                                              |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AADSTS65001`, consent required                                                         | Admin consent was not granted on the SmartSpace permissions. Main guide, step 2.                                                                           |
+| `AADSTS700016`, application not found in directory _&lt;a tenant that is not yours&gt;_ | A guest or external user on the fast sign-in path — the broker is looking in their organisation. Set `VITE_TEAMS_USE_MSAL` to `true` and redeploy.         |
+| Sign-in opens a popup instead of being silent                                           | The Teams clients are not pre-authorised on `access_as_user`, or the Application ID URI is not host-bound. Step 1.                                         |
+| Upload rejected: "already an app in the catalog with the same app ID"                   | The `appId` in `teams/config.json` has been uploaded to your tenant before. Generate a fresh GUID. Step 3.                                                 |
+| On mobile: a popup error, then "interaction in progress" on retry                       | Popup sign-in is fragile on mobile. Close Teams fully and retry. If it persists for a guest, have them sign in to the site once in a mobile browser first. |
+| The app loads but shows nothing                                                         | Usually not a Teams problem. Check the site works in a browser, and that your copy is built from the tag matching your SmartSpace version.                 |
+
+Still stuck? Open the app in a browser first to establish whether the problem is Teams-specific, and check the browser console for the error behind the symptom.

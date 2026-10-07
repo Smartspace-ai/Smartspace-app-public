@@ -68,6 +68,7 @@ export {
   mapMessageErrorDtoToModel,
   mapMessageValueDtoToModel,
   mapMessagesDtoToModels,
+  mapMessageValuesDtoToModels,
   type MessageError,
 } from './domains/messages/mapper';
 // Error/status text helpers — exported so forks can override copy and tests
