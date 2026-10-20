@@ -1,5 +1,8 @@
 # TODO
 
+> **Frozen (2026-10-07).** Do not add items. Open items are being triaged into Monday (bugs into bug
+> tickets, follow-ups into the Follow-ups groups); this file is deleted once that is done.
+
 Followups surfaced during the repo-hygiene audit in PR #277. None of these were in-scope for that PR; capture them here so they aren't lost.
 
 ## `packages/chat-ui` version is pinned at `0.0.0`
