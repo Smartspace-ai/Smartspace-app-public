@@ -262,18 +262,18 @@ const cases: ConformanceCase[] = [
     },
   }),
 
-  // threads — createThread. The service maps `parsed.data[0]` and throws a
-  // deliberate domain error when the array is empty; mapping every element
-  // covers the parse+map invariant without re-testing that guard.
+  // threads — createThread. The response is one MessageThreadSummary (201);
+  // the service validates it with the list's item schema, so that is the
+  // schema exercised here.
   conformanceCase({
-    name: 'threads: create (messageThreadsCreateMessageThreadResponse)',
-    schema: ChatZod.messageThreadsCreateMessageThreadResponse,
+    name: 'threads: create (workSpacesThreadResponse item)',
+    schema: ChatZod.workSpacesThreadResponse.shape.data.element,
     run: (payload) => {
       const parsed = parseOrThrow(
-        ChatZod.messageThreadsCreateMessageThreadResponse,
+        ChatZod.workSpacesThreadResponse.shape.data.element,
         payload
       );
-      return parsed.data.map(mapThreadDtoToModel);
+      return mapThreadDtoToModel(parsed);
     },
   }),
 
