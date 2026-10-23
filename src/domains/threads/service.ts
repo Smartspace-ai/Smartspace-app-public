@@ -11,8 +11,13 @@ const {
   workSpacesThreadResponse: threadsListResponseSchema,
   messageThreadsGetMessageThreadWorkspacesWorkspaceIdMessagethreadsIdResponse:
     threadResponseSchema,
-  messageThreadsCreateMessageThreadResponse: createThreadResponseSchema,
 } = ChatZod;
+// POST /workspaces/{id}/messagethreads is declared as it behaves: one summary,
+// 201 Created. The generator emits a zod response schema only for 200, so the
+// created thread is validated against the list's item schema, the same
+// MessageThreadSummary on the wire. (The old schema said 200 with a paged
+// list, which the server never sent.)
+const createThreadResponseSchema = threadsListResponseSchema.shape.data.element;
 const chatApi = ChatApi.getSmartSpaceChatAPI();
 
 // Fetch threads for a given workspace. `search` is matched server-side against
@@ -78,9 +83,5 @@ export async function createThread(name: string, workspaceId: string) {
     response.data,
     `POST /workspaces/${workspaceId}/messagethreads`
   );
-  const first = parsed.data?.[0];
-  if (!first) {
-    throw new Error('Create thread response did not include a thread');
-  }
-  return mapThreadDtoToModel(first);
+  return mapThreadDtoToModel(parsed);
 }
