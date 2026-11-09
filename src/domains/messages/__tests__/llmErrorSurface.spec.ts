@@ -39,6 +39,20 @@ describe('getMessageErrorText', () => {
     expect(getMessageErrorText({ code: 500, errorCode })).toContain(fragment);
   });
 
+  // A secret's failure arrives as a 404 or 400. Without these the 404 reads as
+  // "the model or deployment could not be found".
+  it.each([
+    ['secret.user_value_not_set', 404, "Your own key for this isn't set"],
+    ['secret.run_has_no_user', 400, 'needs a signed-in user'],
+    ['secret.user_mismatch', 403, "credential couldn't be loaded"],
+    ['secret.run_required', 400, "credential couldn't be loaded"],
+    ['MS404', 404, "secret this flow uses doesn't exist"],
+  ])('has a specific message for %s', (errorCode, code, fragment) => {
+    const text = getMessageErrorText({ code, errorCode });
+    expect(text).toContain(fragment);
+    expect(text).not.toContain('model');
+  });
+
   it('falls back to the HTTP code when the error code is unknown', () => {
     const text = getMessageErrorText({
       code: 429,

@@ -1,7 +1,7 @@
 /**
  * User-facing text for message errors.
  *
- * The backend attaches a stable machine-readable category to LLM failures
+ * The backend attaches a stable machine-readable category to failures
  * (`errorCode`, e.g. "llm.rate_limit") alongside the numeric HTTP `code`.
  * Prefer the category — it distinguishes causes the HTTP code can't (a 400
  * can be a content filter, a context-window blowout, or a malformed
@@ -36,6 +36,18 @@ const ERROR_CODE_TEXT: Record<string, string> = {
   'llm.unsupported_modality':
     "⚠️ **This model can't read images**\n\nSwitch to a vision-capable model, or remove the attachment and describe it instead.",
   'llm.unknown': GENERIC_ERROR_TEXT,
+  // Managed secrets. A secret's failure arrives as a 404 or 400, which the
+  // status table below would read as a missing model or a generic error.
+  'secret.user_value_not_set':
+    "⚠️ **Your own key for this isn't set**\n\nThis step uses a credential each person sets for themselves, and none is set for you yet. Ask an administrator to add it.",
+  'secret.run_has_no_user':
+    "⚠️ **This step needs a signed-in user**\n\nIt uses a person's own credential, so it can't run when no one started the run.",
+  'secret.user_mismatch':
+    "⚠️ **A credential couldn't be loaded**\n\nAn administrator needs to check this flow's secrets.",
+  'secret.run_required':
+    "⚠️ **A credential couldn't be loaded**\n\nAn administrator needs to check this flow's secrets.",
+  MS404:
+    "⚠️ **A secret this flow uses doesn't exist**\n\nAn administrator needs to add it, or point the flow at another one.",
 };
 
 const STATUS_CODE_TEXT: Record<number, string> = {
