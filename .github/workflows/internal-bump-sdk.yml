@@ -69,6 +69,24 @@ jobs:
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Wait for the version to be resolvable on the registry
+        run: |
+          # The publisher dispatches straight after `npm publish`, but the
+          # registry serves the new version about a minute later. Without this
+          # wait, `pnpm add` below fails ERR_PNPM_NO_MATCHING_VERSION on every
+          # publish. Tests the output, not the exit code: npm view's exit code
+          # for an unpublished version has varied between npm releases.
+          for attempt in $(seq 1 12); do
+            if [ -n "$(npm view "@smartspace/api-client@${NEW_VERSION}" version 2>/dev/null)" ]; then
+              echo "@smartspace/api-client@${NEW_VERSION} is on the registry."
+              exit 0
+            fi
+            echo "Not on the registry yet (attempt ${attempt}/12); retrying in 15s."
+            sleep 15
+          done
+          echo "::error::@smartspace/api-client@${NEW_VERSION} is not on the registry after 3 minutes."
+          exit 1
+
       - name: Bump SDK lockfile and restore literal channel pin
         run: |
           # Pin the exact resolved version. This forces pnpm to refresh the
