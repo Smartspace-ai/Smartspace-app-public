@@ -1,2 +1,18 @@
-# Ensure shell scripts keep LF line endings on all platforms
+# Line endings: stored as LF and checked out as LF on every OS.
+* text=auto eol=lf
+
+# Husky hooks are extensionless shell scripts; keep them LF explicitly.
 .husky/* text eol=lf
+
+# Binary: never touch line endings.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.pdf   binary
+*.zip   binary
+*.ttf   binary
+*.woff  binary
+*.woff2 binary
