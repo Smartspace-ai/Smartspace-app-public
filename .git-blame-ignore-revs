@@ -1,0 +1,5 @@
+# Revisions for git blame to skip: bulk mechanical changes with no semantic edits.
+# Enable locally with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Line-ending renormalisation to LF
+141a3d227d31b413dc5a4bcbb6872ff748d65089
