@@ -1,4 +1,3 @@
-import { SignalR } from '@smartspace/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
@@ -6,14 +5,18 @@ import { ssInfo, ssWarn } from '@/platform/log';
 
 import {
   applyThreadToCache,
-  mapSignalRThreadSummaryToModel,
+  mapThreadDtoToModel,
   applyDeltaToMessage,
   Message,
   MessageValueType,
   messagesKeys,
 } from '@smartspace/chat-ui';
 
-import { type MessageDelta, streamThreadMessages } from './service';
+import {
+  type MessageDelta,
+  streamThreadMessages,
+  type ThreadStreamSummary,
+} from './service';
 
 const RECONNECT_BASE_DELAY_MS = 500;
 const RECONNECT_MAX_DELAY_MS = 10_000;
@@ -222,21 +225,15 @@ export function useThreadMessageStream(
     // terminal frames (authoritative flow-complete). Treat these as the source
     // of truth for isFlowRunning — SignalR receiveThreadUpdate is a hint and
     // may silently drop if Azure SignalR flakes.
-    const onThread = (
-      summary: SignalR.MessageThreadSummary,
-      terminal: boolean
-    ) => {
+    const onThread = (summary: ThreadStreamSummary, terminal: boolean) => {
       // Only a terminal frame's summary is authoritative. The snapshot frame
       // carries one the server read at request entry, before its tail
       // subscribed, so on a reopen it can report a run finished that is still
       // producing output — and acting on that would end the stream mid-run.
-      // `=== false` rather than `!`, because this is the raw wire object and
-      // is the one field in the frame nothing validates: a missing field has
-      // to mean "no information", not "finished".
       if (terminal && summary.isFlowRunning === false) {
         runFinished = true;
       }
-      applyThreadToCache(qc, mapSignalRThreadSummaryToModel(summary));
+      applyThreadToCache(qc, mapThreadDtoToModel(summary));
     };
 
     // Resolves early on abort, so a teardown doesn't leave this effect's
