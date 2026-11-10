@@ -1,4 +1,5 @@
-import { ChatApi, ChatZod, SignalR } from '@smartspace/api-client';
+import { ChatApi, ChatZod } from '@smartspace/api-client';
+import type { z } from 'zod';
 
 import { fetchAuthed } from '@/platform/api/fetchAuthed';
 import { parseOrThrow } from '@/platform/validation';
@@ -281,8 +282,37 @@ export type ThreadStreamHandlers = {
    * tail subscribes — and which can therefore report a run finished that is
    * still going.
    */
-  onThread?: (thread: SignalR.MessageThreadSummary, terminal: boolean) => void;
+  onThread?: (thread: ThreadStreamSummary, terminal: boolean) => void;
 };
+
+const threadStreamFrameSchema =
+  ChatZod.messageThreadsStreamThreadMessagesIdMessagesStreamResponse;
+
+export type ThreadStreamSummary = NonNullable<
+  z.infer<typeof threadStreamFrameSchema>['thread']
+>;
+
+type RawThreadStreamFrame = {
+  snapshot?: Record<string, unknown>[];
+  message?: Record<string, unknown> | null;
+  delta?: { outputs?: Record<string, unknown>[]; errors?: unknown[] } | null;
+  thread?: unknown;
+};
+
+/**
+ * The null-tolerance the per-message reads apply, over every message in a
+ * frame. Also drops a null message, delta or thread: a server from before the
+ * frame was documented sends those as null, which the schema (an object, or
+ * absent) would otherwise reject, dropping the terminal frame that ends a run.
+ */
+function coerceThreadStreamFrame(raw: RawThreadStreamFrame): void {
+  if (raw.message === null) delete raw.message;
+  if (raw.delta === null) delete raw.delta;
+  if (raw.thread === null) delete raw.thread;
+  raw.snapshot?.forEach(coerceMessageDto);
+  if (raw.message) coerceMessageDto(raw.message);
+  raw.delta?.outputs?.forEach(coerceMessageValueDto);
+}
 
 export type StreamThreadMessagesResult =
   | { status: 'completed' }
@@ -338,26 +368,23 @@ export async function streamThreadMessages({
     throw new Error('Stream response missing body');
   }
 
-  const messageDtoSchema = messagesResponseSchema.shape.data.element;
-  const valueDtoSchema = messageDtoSchema.shape.values.element;
-  const errorDtoSchema = messageDtoSchema.shape.errors.element;
-
   for await (const frame of parseSseStream(response.body, signal)) {
     if (!frame.data) continue;
     try {
-      const envelope = JSON.parse(frame.data) as {
-        snapshot?: unknown[];
-        messageId?: string;
-        message?: unknown;
-        delta?: {
-          messageId?: string;
-          outputs?: unknown[];
-          errors?: unknown[];
-        } | null;
-        terminal?: boolean;
-        thread?: SignalR.MessageThreadSummary | null;
-      };
-      const terminal = Boolean(envelope.terminal);
+      const raw = JSON.parse(frame.data) as RawThreadStreamFrame;
+      coerceThreadStreamFrame(raw);
+      // Generated from the server's ThreadStreamFrame. A frame it rejects is
+      // dropped like a malformed one; the next frame brings fresh state.
+      const parsed = threadStreamFrameSchema.safeParse(raw);
+      if (!parsed.success) {
+        console.warn(
+          'Dropped a thread stream frame that does not match the API schema',
+          parsed.error.issues
+        );
+        continue;
+      }
+      const envelope = parsed.data;
+      const terminal = envelope.terminal;
 
       // `thread` is attached to initial snapshot + terminal frames. Surface
       // it first so the cache flips `isFlowRunning` before we apply the
@@ -366,24 +393,19 @@ export async function streamThreadMessages({
         onThread(envelope.thread, terminal);
       }
 
-      if (Array.isArray(envelope.snapshot)) {
-        const messages = envelope.snapshot.map((raw) => {
-          const obj = raw as Record<string, unknown>;
-          coerceMessageDto(obj);
-          return mapMessageDtoToModel(
-            preserveErrorCodes(obj, messageDtoSchema.parse(obj))
-          );
-        });
-        onSnapshot(messages);
+      if (envelope.snapshot) {
+        onSnapshot(
+          envelope.snapshot.map((message, i) =>
+            mapMessageDtoToModel(preserveErrorCodes(raw.snapshot?.[i], message))
+          )
+        );
         continue;
       }
 
       // Chunk #0 for a new message — full Message payload.
       if (envelope.messageId && envelope.message) {
-        const raw = envelope.message as Record<string, unknown>;
-        coerceMessageDto(raw);
         const message = mapMessageDtoToModel(
-          preserveErrorCodes(raw, messageDtoSchema.parse(raw))
+          preserveErrorCodes(raw.message, envelope.message)
         );
         onMessage(envelope.messageId, message, terminal);
         continue;
@@ -393,17 +415,11 @@ export async function streamThreadMessages({
       if (envelope.delta) {
         const targetId = envelope.delta.messageId ?? envelope.messageId;
         if (!targetId || !onDelta) continue;
-        const outputs = mapMessageValuesDtoToModels(
-          (envelope.delta.outputs ?? []).map((raw) => {
-            const obj = raw as Record<string, unknown>;
-            coerceMessageValueDto(obj);
-            return valueDtoSchema.parse(obj);
-          })
-        );
-        const errors = (envelope.delta.errors ?? []).map((raw) =>
+        const outputs = mapMessageValuesDtoToModels(envelope.delta.outputs);
+        const errors = (envelope.delta.errors ?? []).map((error, i) =>
           mapMessageErrorDtoToModel({
-            ...errorDtoSchema.parse(raw),
-            errorCode: rawErrorCode(raw),
+            ...error,
+            errorCode: rawErrorCode(raw.delta?.errors?.[i]),
           })
         );
         onDelta(targetId, { outputs, errors }, terminal);
