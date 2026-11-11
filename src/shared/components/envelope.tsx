@@ -4,11 +4,14 @@ import { Button } from '@/shared/ui/mui-compat/button';
 export function Envelope({
   title,
   message,
+  reference,
   onRetry,
   onSignIn,
 }: {
   title: string;
   message: string;
+  /** Trace id of the failed request, shown so a user can quote it to support. */
+  reference?: string;
   onRetry?: () => void;
   onSignIn?: () => void;
 }) {
@@ -20,6 +23,11 @@ export function Envelope({
         </div>
         <div className="p-4">
           <p className="text-sm text-muted-foreground">{message}</p>
+          {reference ? (
+            <p className="mt-2 break-all font-mono text-xs text-muted-foreground">
+              Reference: {reference}
+            </p>
+          ) : null}
           {onRetry || onSignIn ? (
             <div className="mt-4 flex gap-2">
               {onSignIn ? (

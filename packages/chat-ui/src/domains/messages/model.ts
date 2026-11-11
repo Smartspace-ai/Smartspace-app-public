@@ -37,6 +37,8 @@ export type Message = {
         message?: string | null;
         data?: string | null;
         blockId?: string | null;
+        /** Trace id of the request that recorded the error, for a support reference. */
+        traceId?: string | null;
       }[]
     | null;
   values?: MessageValue[] | null;

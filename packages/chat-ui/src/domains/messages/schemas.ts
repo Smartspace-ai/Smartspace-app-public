@@ -48,6 +48,7 @@ export const MessageErrorMessageSchema = z.object({
   message: z.string().nullish(),
   data: z.string().nullish(),
   blockId: z.string().nullish(),
+  traceId: z.string().nullish(),
 });
 
 // Message schema
