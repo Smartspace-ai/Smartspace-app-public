@@ -2,12 +2,18 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
 /**
- * Disclosure under an error bubble that reveals the provider detail on
- * demand. Collapsed by default, so the friendly copy (see
+ * Disclosure under an error bubble that reveals the provider detail and the
+ * trace id on demand. Collapsed by default, so the friendly copy (see
  * `getMessageErrorText`) stays the only thing shown until a reader
  * chooses to look closer.
  */
-export function MessageErrorDetails({ detail }: { detail: string }) {
+export function MessageErrorDetails({
+  detail,
+  traceId,
+}: {
+  detail?: string | null;
+  traceId?: string | null;
+}) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -31,6 +37,11 @@ export function MessageErrorDetails({ detail }: { detail: string }) {
       {expanded && (
         <div className="mt-1.5 whitespace-pre-wrap break-words rounded-md bg-secondary/60 p-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
           {detail}
+          {traceId && (
+            <div className={detail ? 'mt-1.5' : undefined}>
+              Reference: {traceId}
+            </div>
+          )}
         </div>
       )}
     </div>
