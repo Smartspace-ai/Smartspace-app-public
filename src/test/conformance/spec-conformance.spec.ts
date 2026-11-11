@@ -395,18 +395,17 @@ const cases: ConformanceCase[] = [
       ...Object.values(ChatModels.EnumsModelPropertyType).map((option) => ({
         name: `properties[0].type=${option}`,
         payload: () => {
+          // A property is a union keyed on `type`: fake the member this type
+          // belongs to, so the other fields (step, minValue) match it.
+          const member =
+            modelListItemSchema.shape.properties.element.options.find(
+              (candidate) => candidate.shape.type.safeParse(option).success
+            );
+          if (!member) throw new Error(`no property schema for type ${option}`);
           faker.seed(SEED_BASE);
           const payload = fake(ChatZod.modelsGetModelsResponse);
           payload.data = [
-            {
-              ...fake(modelListItemSchema),
-              properties: [
-                {
-                  ...fake(modelListItemSchema.shape.properties.element),
-                  type: option,
-                },
-              ],
-            },
+            { ...fake(modelListItemSchema), properties: [fake(member)] },
           ];
           return payload;
         },
