@@ -3,7 +3,7 @@ import { MutationCache, QueryClient } from '@tanstack/react-query';
 
 import { AuthRequiredError } from './auth/errors';
 import { SESSION_QUERY_KEY } from './auth/sessionQuery';
-import { isTransient } from './envelopes';
+import { isTransient, isTransientRead } from './envelopes';
 
 export const queryClient = new QueryClient({
   mutationCache: new MutationCache({
@@ -16,10 +16,10 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      // Never retry auth errors; retry only network/5xx errors, up to 2 times
+      // Never retry auth errors; retry what isTransientRead allows, up to 2 times
       retry: (failureCount, error) => {
         if (error instanceof AuthRequiredError) return false;
-        return isTransient(error) && failureCount < 2;
+        return isTransientRead(error) && failureCount < 2;
       },
       staleTime: 60_000, // 1 min
       // 2 min — every visited thread caches its full message list under
