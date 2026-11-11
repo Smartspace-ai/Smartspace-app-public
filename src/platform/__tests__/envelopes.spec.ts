@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isTransient, toAppError } from '@/platform/envelopes';
+import { isTransient, isTransientRead, toAppError } from '@/platform/envelopes';
 
 describe('toAppError', () => {
   it('maps known status codes', () => {
@@ -97,8 +97,44 @@ describe('isTransient', () => {
   it('falls back to the status for a 5xx without a problem body', () => {
     expect(isTransient(toAppError(502, '<html>Bad gateway</html>'))).toBe(true);
   });
+  it('false for a raw axios error, even one the API calls retryable', () => {
+    expect(
+      isTransient({
+        isAxiosError: true,
+        response: { status: 503, data: { code: 'SP503', retryable: true } },
+      })
+    ).toBe(false);
+  });
   it('false for other shapes', () => {
     expect(isTransient(null)).toBe(false);
     expect(isTransient({})).toBe(false);
+  });
+});
+
+describe('isTransientRead', () => {
+  it('follows the API on a raw axios error', () => {
+    expect(
+      isTransientRead({
+        isAxiosError: true,
+        response: { status: 503, data: { code: 'SP503', retryable: true } },
+      })
+    ).toBe(true);
+    expect(
+      isTransientRead({
+        isAxiosError: true,
+        response: { status: 500, data: { code: 'internal', retryable: false } },
+      })
+    ).toBe(false);
+  });
+  it('false for a raw axios error whose body is not a problem document', () => {
+    expect(
+      isTransientRead({
+        isAxiosError: true,
+        response: { status: 502, data: '<html>Bad gateway</html>' },
+      })
+    ).toBe(false);
+  });
+  it('true for whatever isTransient already retries', () => {
+    expect(isTransientRead({ type: 'NetworkError', message: 'x' })).toBe(true);
   });
 });

@@ -107,6 +107,18 @@ export const isTransient = (e: unknown): boolean => {
   return false;
 };
 
+/**
+ * For reads only. As isTransient, and also follows the API's `retryable` on a
+ * raw AxiosError, which is what every generated client call throws. A write
+ * must not use this: resending a POST the API calls retryable can apply it
+ * twice.
+ */
+export const isTransientRead = (e: unknown): boolean => {
+  if (isTransient(e)) return true;
+  const body = asRecord(asRecord(asRecord(e)?.response)?.data);
+  return problemOf(body).retryable === true;
+};
+
 /** True when error is AppError NotFound or HTTP 404 (e.g. axios error). */
 export function isNotFoundError(e: unknown): boolean {
   const r = e && typeof e === 'object' ? (e as Record<string, unknown>) : null;
