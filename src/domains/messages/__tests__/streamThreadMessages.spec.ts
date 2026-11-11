@@ -1,37 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const {
-  mockMessageElementParse,
-  mockValueElementParse,
-  mockErrorElementParse,
-  mockGetAccessToken,
-} = vi.hoisted(() => ({
-  mockMessageElementParse: vi.fn((data: unknown) => data),
-  mockValueElementParse: vi.fn((data: unknown) => data),
-  mockErrorElementParse: vi.fn((data: unknown) => data),
+const { mockGetAccessToken } = vi.hoisted(() => ({
   mockGetAccessToken: vi.fn(async () => 'test-token'),
 }));
 
-vi.mock('@smartspace/api-client', () => ({
+// The generated zod schemas stay real: every frame below goes through the
+// thread stream's frame schema, so a fixture the server could not send fails.
+vi.mock('@smartspace/api-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@smartspace/api-client')>()),
   ChatApi: {
     getSmartSpaceChatAPI: () => ({
       messageThreadsThreadMessagesIdMessages: vi.fn(),
     }),
-  },
-  ChatZod: {
-    messageThreadsThreadMessagesIdMessagesResponse: {
-      shape: {
-        data: {
-          element: {
-            parse: mockMessageElementParse,
-            shape: {
-              values: { element: { parse: mockValueElementParse } },
-              errors: { element: { parse: mockErrorElementParse } },
-            },
-          },
-        },
-      },
-    },
   },
   AXIOS_INSTANCE: { defaults: { baseURL: 'https://api.test' } },
 }));
@@ -76,6 +56,13 @@ function bodyFromChunks(chunks: string[]): ReadableStream<Uint8Array> {
   });
 }
 
+const T1 = '10000000-0000-0000-0000-000000000001';
+const W1 = '20000000-0000-0000-0000-000000000001';
+const M1 = '30000000-0000-0000-0000-000000000001';
+const M2 = '30000000-0000-0000-0000-000000000002';
+const V1 = '40000000-0000-0000-0000-000000000001';
+const V2 = '40000000-0000-0000-0000-000000000002';
+
 function dto(id: string, text: string) {
   return {
     id,
@@ -83,11 +70,11 @@ function dto(id: string, text: string) {
     createdBy: 'bot',
     createdByUserId: 'bot',
     hasComments: false,
-    messageThreadId: 't1',
+    messageThreadId: T1,
     errors: [],
     values: [
       {
-        id: `${id}-v1`,
+        id: V1,
         name: 'response',
         type: 'Output',
         value: text,
@@ -104,12 +91,6 @@ describe('streamThreadMessages', () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    mockMessageElementParse.mockClear();
-    mockMessageElementParse.mockImplementation((data: unknown) => data);
-    mockValueElementParse.mockClear();
-    mockValueElementParse.mockImplementation((data: unknown) => data);
-    mockErrorElementParse.mockClear();
-    mockErrorElementParse.mockImplementation((data: unknown) => data);
     mockGetAccessToken.mockClear();
   });
 
@@ -174,8 +155,8 @@ describe('streamThreadMessages', () => {
 
   it('delivers snapshot, per-message upserts, and thread summaries on snapshot + terminal frames', async () => {
     const threadRunning = {
-      id: 't1',
-      workSpaceId: 'w1',
+      id: T1,
+      workSpaceId: W1,
       name: 'My Thread',
       totalMessages: 2,
       favorited: false,
@@ -188,19 +169,19 @@ describe('streamThreadMessages', () => {
     const threadDone = { ...threadRunning, isFlowRunning: false };
 
     const snapshotFrame = `data: ${JSON.stringify({
-      snapshot: [dto('m1', 'hi'), dto('m2', 'world')],
+      snapshot: [dto(M1, 'hi'), dto(M2, 'world')],
       thread: threadRunning,
       terminal: false,
     })}\n\n`;
     const upsertFrame = `data: ${JSON.stringify({
-      messageId: 'm2',
-      message: dto('m2', 'world!'),
+      messageId: M2,
+      message: dto(M2, 'world!'),
       terminal: false,
     })}\n\n`;
     // Real backend terminal frame: message is null and the thread summary
     // carries the authoritative isFlowRunning: false.
     const terminalFrame = `data: ${JSON.stringify({
-      messageId: 'm2',
+      messageId: M2,
       message: null,
       terminal: true,
       thread: threadDone,
@@ -229,7 +210,7 @@ describe('streamThreadMessages', () => {
     });
 
     expect(snapshots).toEqual([{ count: 2 }]);
-    expect(upserts).toEqual([{ messageId: 'm2', terminal: false }]);
+    expect(upserts).toEqual([{ messageId: M2, terminal: false }]);
     expect(threadCalls).toEqual([
       { isFlowRunning: true },
       { isFlowRunning: false },
@@ -276,8 +257,8 @@ describe('streamThreadMessages', () => {
 
   it('emits onMessage for chunk #0 and onDelta for appended outputs', async () => {
     const threadRunning = {
-      id: 't1',
-      workSpaceId: 'w1',
+      id: T1,
+      workSpaceId: W1,
       name: 'Thread',
       totalMessages: 1,
       favorited: false,
@@ -291,12 +272,12 @@ describe('streamThreadMessages', () => {
 
     // Chunk #0: full Message (inputs present, outputs empty).
     const messageFrame = `data: ${JSON.stringify({
-      messageId: 'm1',
+      messageId: M1,
       message: {
-        ...dto('m1', ''),
+        ...dto(M1, ''),
         values: [
           {
-            id: 'm1-prompt',
+            id: V1,
             name: 'prompt',
             type: 'Input',
             value: 'hello',
@@ -314,10 +295,10 @@ describe('streamThreadMessages', () => {
     // Chunk #1: cumulative delta carrying the response output so far.
     const deltaFrame1 = `data: ${JSON.stringify({
       delta: {
-        messageId: 'm1',
+        messageId: M1,
         outputs: [
           {
-            id: 'm1-o1',
+            id: V2,
             name: 'response',
             type: 'Output',
             value: 'Hel',
@@ -335,10 +316,10 @@ describe('streamThreadMessages', () => {
     // Chunk #2: cumulative delta with the same (name, type) extended.
     const deltaFrame2 = `data: ${JSON.stringify({
       delta: {
-        messageId: 'm1',
+        messageId: M1,
         outputs: [
           {
-            id: 'm1-o1',
+            id: V2,
             name: 'response',
             type: 'Output',
             value: 'Hello',
@@ -355,7 +336,7 @@ describe('streamThreadMessages', () => {
 
     // Terminal: null message, thread summary with isFlowRunning: false.
     const terminalFrame = `data: ${JSON.stringify({
-      messageId: 'm1',
+      messageId: M1,
       message: null,
       terminal: true,
       thread: threadDone,
@@ -402,10 +383,10 @@ describe('streamThreadMessages', () => {
       onThread: (thread) => threadCalls.push({ running: thread.isFlowRunning }),
     });
 
-    expect(messageCalls).toEqual([{ id: 'm1', outputCount: 0 }]);
+    expect(messageCalls).toEqual([{ id: M1, outputCount: 0 }]);
     expect(deltaCalls).toEqual([
-      { id: 'm1', outputCount: 1, firstValue: 'Hel' },
-      { id: 'm1', outputCount: 1, firstValue: 'Hello' },
+      { id: M1, outputCount: 1, firstValue: 'Hel' },
+      { id: M1, outputCount: 1, firstValue: 'Hello' },
     ]);
     expect(threadCalls).toEqual([{ running: true }, { running: false }]);
   });
@@ -413,8 +394,8 @@ describe('streamThreadMessages', () => {
   it('skips malformed JSON frames without aborting the stream', async () => {
     const bad = `data: {not valid json}\n\n`;
     const good = `data: ${JSON.stringify({
-      messageId: 'm1',
-      message: dto('m1', 'ok'),
+      messageId: M1,
+      message: dto(M1, 'ok'),
       terminal: true,
     })}\n\n`;
 
@@ -430,6 +411,6 @@ describe('streamThreadMessages', () => {
       onMessage: (messageId) => received.push(messageId),
     });
 
-    expect(received).toEqual(['m1']);
+    expect(received).toEqual([M1]);
   });
 });
