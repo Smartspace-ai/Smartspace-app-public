@@ -486,7 +486,9 @@ export const MessageItem: FC<MessageItemProps> = ({
           userOutput={null}
           userInput={null}
         />
-        {detail && <MessageErrorDetails detail={detail} />}
+        {(detail || error.traceId) && (
+          <MessageErrorDetails detail={detail} traceId={error.traceId} />
+        )}
       </Fragment>
     );
   });

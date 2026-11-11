@@ -64,6 +64,24 @@ function getErrorMessage(error: unknown): string {
   return 'Something went wrong.';
 }
 
+/**
+ * The trace id the API put on the failed response. Route loaders call the
+ * generated client, which throws the axios error as-is, so the id is read off
+ * the response body as well as off an AppError.
+ */
+function getTraceId(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined;
+  if ('response' in error) {
+    const body = (error as { response?: { data?: unknown } }).response?.data;
+    const traceId =
+      body && typeof body === 'object'
+        ? (body as { traceId?: unknown }).traceId
+        : undefined;
+    if (typeof traceId === 'string') return traceId;
+  }
+  return isAppError(error) && 'traceId' in error ? error.traceId : undefined;
+}
+
 function getErrorDetail(error: unknown): string | null {
   if (!isInTeams()) return null;
   try {
@@ -125,6 +143,7 @@ export function RootErrorBoundary({ error, reset }: ErrorComponentProps) {
       <Envelope
         title="Oops"
         message={message}
+        reference={getTraceId(error)}
         onRetry={authError ? undefined : reset}
         onSignIn={authError ? () => goToLogin(navigate) : undefined}
       />

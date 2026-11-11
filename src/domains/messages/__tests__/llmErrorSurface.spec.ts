@@ -179,6 +179,14 @@ describe('mapMessageErrorDtoToModel', () => {
     expect(model.errorCode).toBeUndefined();
     expect(model.code).toBe(500);
   });
+
+  it('keeps the trace id', () => {
+    const model = mapMessageErrorDtoToModel({
+      code: 503,
+      traceId: '0af7651916cd43dd8448eb211c80319c',
+    } as never);
+    expect(model.traceId).toBe('0af7651916cd43dd8448eb211c80319c');
+  });
 });
 
 describe('preserveErrorCodes', () => {
