@@ -1,0 +1,103 @@
+name: chat UI artifact (main)
+
+# Every main commit: build the chat UI once and publish it to the registry as
+# a versioned zip, the OCI artifact smartspace-chat-ui:main-<run#>. A release
+# pins one of these; nothing is rebuilt from a tag. Nothing installs from the
+# artifact yet.
+#
+# Internal to Smartspace-ai/Smartspace-app-public: in a fork or a clone the job
+# is skipped, and a self-hosted site keeps deploying with deploy.yml.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chat-ui-artifact-main
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'Smartspace-ai/Smartspace-app-public'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Scopes the OIDC subject to environment:registry, the only subject the
+    # registry identity trusts. The environment allows the main branch only.
+    environment: registry
+    permissions:
+      contents: read
+      id-token: write # for the GitHub OIDC token azure/login exchanges - no stored credential
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # No environment values: the build carries none, and the committed
+      # public/ss-config.js placeholder is what goes into the zip.
+      - run: pnpm run -s build
+
+      # The content of the @smartspace/chat-ui package at this commit. The npm
+      # package carries the same hash (chat-ui-publish-main.yml), so equal
+      # hashes mean the admin was built with the package this build contains.
+      - name: Hash the chat-ui package
+        id: pkg
+        run: echo "tree=$(git rev-parse HEAD:packages/chat-ui)" >> "$GITHUB_OUTPUT"
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Registry login
+        run: az acr login --name iacsmartspaceappacr
+
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v2
+        with:
+          version: 1.3.4
+
+      - name: Publish the chat UI as an OCI artifact
+        run: |
+          set -euo pipefail
+          VERSION="main-${{ github.run_number }}"
+          ARTIFACT="iacsmartspaceappacr.azurecr.io/smartspace-chat-ui:$VERSION"
+          if oras manifest fetch "$ARTIFACT" >/dev/null 2>&1; then
+            echo "::error::$ARTIFACT already exists. A published version is never overwritten."
+            exit 1
+          fi
+          # Read from what was installed, so the manifest cannot name a
+          # version the bundle does not contain.
+          SDK_VERSION=$(jq -r .version node_modules/@smartspace/api-client/package.json)
+          CHAT_UI_TREE="${{ steps.pkg.outputs.tree }}"
+          jq -n \
+            --arg version "$VERSION" \
+            --arg commit "${{ github.sha }}" \
+            --arg sdk "$SDK_VERSION" \
+            --arg tree "$CHAT_UI_TREE" \
+            '{app: "chat", version: $version, commit: $commit, sdkVersion: $sdk, chatUiTree: $tree}' \
+            > dist/smartspace/manifest.json
+          (cd dist/smartspace && zip -qr "$RUNNER_TEMP/chat-$VERSION.zip" .)
+          cd "$RUNNER_TEMP"
+          oras push "$ARTIFACT" \
+            --artifact-type application/vnd.smartspace.ui.v1 \
+            --annotation "org.opencontainers.image.revision=${{ github.sha }}" \
+            --annotation "ai.smartspace.sdk.version=$SDK_VERSION" \
+            --annotation "ai.smartspace.chat-ui.tree=$CHAT_UI_TREE" \
+            "chat-$VERSION.zip:application/zip"
+          echo "Published \`smartspace-chat-ui:$VERSION\` (SDK $SDK_VERSION, chat-ui tree $CHAT_UI_TREE)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Azure logout
+        if: always()
+        run: az logout
