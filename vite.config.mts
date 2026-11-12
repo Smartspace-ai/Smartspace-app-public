@@ -1,14 +1,15 @@
 /// <reference types='vitest' />
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import react from '@vitejs/plugin-react';
+import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
 import { defineConfig, loadEnv, type Plugin, type PluginOption } from 'vite';
 
-// Dev server only. A deploy writes ss-config.js; locally the same file is
-// answered from the VITE_* variables in your .env file. The app never reads
-// those variables itself, so a build bakes in none of them. With none of them
-// set, public/ss-config.js is served as it is.
+// Dev server only. A deploy adds its values to ss-config.js; locally the same
+// file is answered with the VITE_* variables in your .env file added. The app
+// never reads those variables itself, so a build bakes in none of them. With
+// none of them set, public/ss-config.js is served as it is.
 const devSsConfig = (mode: string): Plugin => ({
   name: 'dev-ss-config',
   apply: 'serve',
@@ -25,8 +26,16 @@ const devSsConfig = (mode: string): Plugin => ({
     };
     server.middlewares.use('/ss-config.js', (_req, res, next) => {
       if (!Object.values(ssconfig).some(Boolean)) return next();
+      // As the deploy does: the committed file first, so keys set there
+      // (branding) are kept, then the variables on top.
+      const committedPath = path.resolve(__dirname, 'public/ss-config.js');
+      const committed = existsSync(committedPath)
+        ? readFileSync(committedPath, 'utf8')
+        : '';
       res.setHeader('Content-Type', 'application/javascript');
-      res.end(`window.ssconfig = ${JSON.stringify(ssconfig)};`);
+      res.end(
+        `${committed}\nwindow.ssconfig = Object.assign(window.ssconfig || {}, ${JSON.stringify(ssconfig)});`
+      );
     });
   },
 });

@@ -30,9 +30,10 @@ jobs:
           ref: ${{ inputs.ref }}
 
       # The build reads no configuration. The site reads ss-config.js when it
-      # loads, and this step writes that file from the environment's variables;
-      # the build then copies public/ into the site.
-      - name: Write ss-config.js from environment
+      # loads. This step appends the environment's variables to the committed
+      # public/ss-config.js, so keys set there (branding) are kept; the build
+      # then copies public/ into the site.
+      - name: Add environment values to ss-config.js
         env:
           Client_Id: ${{ vars.VITE_CLIENT_ID }}
           Client_Authority: ${{ vars.VITE_CLIENT_AUTHORITY }}
@@ -60,7 +61,7 @@ jobs:
             Teams_Sso_Resource: env.Teams_Sso_Resource,
             Teams_Use_Msal: env.Teams_Use_Msal
           } | with_entries(select(.value != ""))')
-          echo "window.ssconfig = $config;" > public/ss-config.js
+          printf '\nwindow.ssconfig = Object.assign(window.ssconfig || {}, %s);\n' "$config" >> public/ss-config.js
 
       - name: Build
         uses: dagger/dagger-for-github@v7
