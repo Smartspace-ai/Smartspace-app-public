@@ -1,4 +1,5 @@
 import { isInTeams } from '@/platform/auth/msalConfig';
+import { ssConfig } from '@/platform/config/ssConfig';
 import { ssInfoAlways } from '@/platform/log';
 
 import { createMsalWebAdapter } from './providers/msalWeb';
@@ -10,8 +11,8 @@ let cached: { adapter: AuthAdapter; key: string } | null = null;
 
 function adapterKey(): string {
   const r = getAuthRuntimeState();
-  const env = String(import.meta.env.VITE_TEAMS_USE_MSAL);
-  return `${r.isInTeams}-${env}-${getStoredUseMsalInTeams()}`;
+  const configured = String(ssConfig('Teams_Use_Msal'));
+  return `${r.isInTeams}-${configured}-${getStoredUseMsalInTeams()}`;
 }
 
 /**
@@ -23,13 +24,13 @@ export function getAuthAdapter(): AuthAdapter {
   if (cached?.key === key) return cached.adapter;
 
   const runtime = getAuthRuntimeState();
-  // The env flag is authoritative: 'true' forces MSAL, 'false' forces NAA.
-  // The `storedUseMsal` runtime escape-hatch only applies when the env flag is
-  // unset — otherwise a stale flag from a prior MSAL success would stick and
-  // override an explicit NAA configuration.
-  const envMsal = import.meta.env.VITE_TEAMS_USE_MSAL;
-  const forceMsalInTeams = envMsal === 'true';
-  const forceNaaInTeams = envMsal === 'false';
+  // Teams_Use_Msal is authoritative: 'true' forces MSAL, 'false' forces NAA.
+  // The `storedUseMsal` runtime escape-hatch only applies when it is unset —
+  // otherwise a stale flag from a prior MSAL success would stick and override
+  // an explicit NAA configuration.
+  const configuredMsal = ssConfig('Teams_Use_Msal');
+  const forceMsalInTeams = configuredMsal === 'true';
+  const forceNaaInTeams = configuredMsal === 'false';
   const inTeams = runtime.isInTeams === true || isInTeams();
   const storedUseMsal = getStoredUseMsalInTeams();
 

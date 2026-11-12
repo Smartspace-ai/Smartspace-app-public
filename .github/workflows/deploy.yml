@@ -29,26 +29,38 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
-      - name: Generate .env from environment
+      # The build reads no configuration. The site reads ss-config.js when it
+      # loads, and this step writes that file from the environment's variables;
+      # the build then copies public/ into the site.
+      - name: Write ss-config.js from environment
+        env:
+          Client_Id: ${{ vars.VITE_CLIENT_ID }}
+          Client_Authority: ${{ vars.VITE_CLIENT_AUTHORITY }}
+          Client_Scopes: ${{ vars.VITE_CLIENT_SCOPES }}
+          Chat_Api_Uri: ${{ vars.VITE_CHAT_API_URI }}
+          Teams_Use_Msal: ${{ vars.VITE_TEAMS_USE_MSAL }}
+          Tenant_Id: ${{ vars.VITE_TENANT_ID }}
+          Teams_Sso_Resource: ${{ vars.VITE_TEAMS_SSO_RESOURCE }}
         run: |
-          {
-            echo "VITE_CLIENT_ID=${{ vars.VITE_CLIENT_ID }}"
-            echo "VITE_CLIENT_AUTHORITY=${{ vars.VITE_CLIENT_AUTHORITY }}"
-            echo "VITE_CLIENT_SCOPES=${{ vars.VITE_CLIENT_SCOPES }}"
-            echo "VITE_CHAT_API_URI=${{ vars.VITE_CHAT_API_URI }}"
-            echo "VITE_TEAMS_USE_MSAL=${{ vars.VITE_TEAMS_USE_MSAL }}"
-            echo "VITE_TENANT_ID=${{ vars.VITE_TENANT_ID }}"
-          } > .env
-
-      - name: Validate .env
-        uses: dagger/dagger-for-github@v7
-        with:
-          version: "0.20.3"
-          verb: call
-          module: ./ci
-          args: >-
-            check-env
-            --source=.
+          set -euo pipefail
+          missing=""
+          for key in Client_Id Client_Authority Client_Scopes Chat_Api_Uri Teams_Use_Msal; do
+            [ -n "${!key}" ] || missing="$missing VITE_$(echo "$key" | tr '[:lower:]' '[:upper:]')"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Environment variables not set:$missing"
+            exit 1
+          fi
+          config=$(jq -n '{
+            Client_Id: env.Client_Id,
+            Tenant_Id: env.Tenant_Id,
+            Client_Authority: env.Client_Authority,
+            Client_Scopes: env.Client_Scopes,
+            Chat_Api_Uri: env.Chat_Api_Uri,
+            Teams_Sso_Resource: env.Teams_Sso_Resource,
+            Teams_Use_Msal: env.Teams_Use_Msal
+          } | with_entries(select(.value != ""))')
+          echo "window.ssconfig = $config;" > public/ss-config.js
 
       - name: Build
         uses: dagger/dagger-for-github@v7

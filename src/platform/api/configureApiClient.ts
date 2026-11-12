@@ -14,31 +14,9 @@ import {
   isReauthRequired,
 } from '@/platform/auth/sessionExpiry';
 import { SESSION_QUERY_KEY } from '@/platform/auth/sessionQuery';
+import { ssConfig } from '@/platform/config/ssConfig';
 import { ssInfo, ssWarn } from '@/platform/log';
 import { queryClient } from '@/platform/reactQueryClient';
-
-type SsConfig = {
-  Chat_Api_Uri?: unknown;
-};
-
-type SsWindow = Window & {
-  ssconfig?: SsConfig;
-};
-
-function getSsWindow(): SsWindow | null {
-  try {
-    return window as unknown as SsWindow;
-  } catch {
-    return null;
-  }
-}
-
-function getBaseUrl() {
-  const w = getSsWindow();
-  const configBaseUrl =
-    w?.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
-  return configBaseUrl ?? '';
-}
 
 /**
  * Configure the shared API-client package's axios instance with
@@ -47,7 +25,7 @@ function getBaseUrl() {
  * Call once at app startup, before any API calls are made.
  */
 export function configureApiClient() {
-  AXIOS_INSTANCE.defaults.baseURL = getBaseUrl();
+  AXIOS_INSTANCE.defaults.baseURL = ssConfig('Chat_Api_Uri') ?? '';
 
   // Axios only auto-stringifies objects for application/json. Orval generates
   // application/*+json for some endpoints, so primitive body values (boolean,

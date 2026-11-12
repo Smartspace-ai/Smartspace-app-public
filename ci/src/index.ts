@@ -11,16 +11,6 @@ const NODE_IMAGE = 'node:20-slim';
 const WORK_DIR = '/work';
 const DIST_DIR = '/work/dist/smartspace';
 
-// SECURITY: These must remain hardcoded — they are interpolated into shell
-// commands in checkEnv(). Never source these from external input.
-const REQUIRED_ENV_VARS = [
-  'VITE_CLIENT_ID',
-  'VITE_CLIENT_AUTHORITY',
-  'VITE_CLIENT_SCOPES',
-  'VITE_CHAT_API_URI',
-  'VITE_TEAMS_USE_MSAL',
-];
-
 @object()
 class WebPipeline {
   /**
@@ -53,36 +43,6 @@ class WebPipeline {
     ]);
 
     return ctr.directory(DIST_DIR);
-  }
-
-  /**
-   * Validate that .env contains all required variables with non-empty values.
-   */
-  @func()
-  @check()
-  async checkEnv(source: Directory): Promise<string> {
-    const checks = REQUIRED_ENV_VARS.map(
-      (v) => `
-      if ! grep -q "^${v}=" .env; then
-        echo "FAIL: .env does not contain ${v}" && FAILED=1
-      elif [ -z "$(grep "^${v}=" .env | cut -d'=' -f2-)" ]; then
-        echo "FAIL: ${v} in .env is empty" && FAILED=1
-      fi`
-    ).join('');
-
-    return dag
-      .container()
-      .from(NODE_IMAGE)
-      .withDirectory(WORK_DIR, source)
-      .withWorkdir(WORK_DIR)
-      .withExec([
-        'sh',
-        '-c',
-        `FAILED=0${checks}
-      if [ "$FAILED" = "1" ]; then exit 1; fi
-      echo "All required .env variables present."`,
-      ])
-      .stdout();
   }
 
   // ---------------------------------------------------------------------------
