@@ -64,6 +64,31 @@ describe('getMessageErrorText', () => {
     expect(text).toContain('too many requests');
   });
 
+  it('reads a provider error by its HTTP code', () => {
+    const text = getMessageErrorText({
+      code: 502,
+      errorCode: 'llm.provider_error',
+    });
+    expect(text).toContain('provider had a problem');
+  });
+
+  it.each([404, 403, 503])(
+    'does not blame the model for an unknown non-model code at %s',
+    (code) => {
+      const text = getMessageErrorText({ code, errorCode: 'file.not_found' });
+      expect(text).toContain('unexpected error');
+      expect(text).not.toContain('model');
+    }
+  );
+
+  it.each([
+    ['embeddings.model_not_found', 404, 'could not be found'],
+    ['ai_api.unavailable', 503, 'interrupted'],
+    ['ai_api.stream_broken', 503, 'interrupted'],
+  ])('keeps the model wording for %s', (errorCode, code, fragment) => {
+    expect(getMessageErrorText({ code, errorCode })).toContain(fragment);
+  });
+
   it('maps bare HTTP codes for older messages (back-compat)', () => {
     expect(getMessageErrorText(429)).toContain('too many requests');
     expect(getMessageErrorText({ code: 503 })).toContain('interrupted');

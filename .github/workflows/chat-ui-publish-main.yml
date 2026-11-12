@@ -43,10 +43,15 @@ jobs:
           VERSION="${BASE}-main.${GITHUB_SHA:0:7}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Stamp version into package.json
+      # gitTree is the content hash of this package at this commit. The chat UI
+      # artifact records the same hash (chat-ui-artifact-main.yml), so a
+      # release can tell whether an admin build and a chat build contain the
+      # same package. Read from HEAD, so the stamp below does not change it.
+      - name: Stamp version and content hash into package.json
         run: |
+          TREE=$(git rev-parse HEAD:packages/chat-ui)
           cd packages/chat-ui
-          jq --arg v "${{ steps.ver.outputs.version }}" '.version = $v' package.json > p.json
+          jq --arg v "${{ steps.ver.outputs.version }}" --arg t "$TREE" '.version = $v | .gitTree = $t' package.json > p.json
           mv p.json package.json
 
       - run: pnpm --filter @smartspace/chat-ui build
