@@ -63,6 +63,10 @@ export function useWorkspaceRealtime(
         receiveCommentsUpdate: async (comment) => {
           handlersRef.current.onCommentsUpdate?.(comment);
         },
+        // No-op: change tags reach only a connection that joined a change
+        // topic, and this app joins none. Spread in so the receiver compiles
+        // on both sides of the api-client bump that added it to IChatReceiver.
+        ...{ receiveChanges: async () => undefined },
       }
     );
 
