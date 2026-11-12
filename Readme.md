@@ -98,7 +98,7 @@ Deploying into Teams? [teams/Readme.md](https://github.com/Smartspace-ai/Smartsp
 
 ## 3. Configure
 
-Create a `.env` in the project root.
+Create a `.env` in the project root. The dev server reads it and serves the values to the app as `ss-config.js`; the deploy in step 5 writes the same file from your GitHub environment. A build reads neither, so the built files carry no configuration of their own.
 
 | Variable                  | What it is                                                                                                                                                                                              |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -153,7 +153,7 @@ The app is a static site: files in an Azure Storage account with no server to ru
 
 Create an environment named **`production`** (**Settings → Environments**). `deploy-production.yml` reads it on every push to `main`.
 
-Add the six `VITE_*` values from step 3 as environment **variables**. They are compiled into the files served to the browser, which is normal for a web application — none of them are secrets.
+Add the `VITE_*` values from step 3 as environment **variables**. The deploy writes them to `ss-config.js`, a file served to the browser alongside the app, which is normal for a web application — none of them are secrets. The deploy fails, naming the variable, if `VITE_CLIENT_ID`, `VITE_CLIENT_AUTHORITY`, `VITE_CLIENT_SCOPES`, `VITE_CHAT_API_URI` or `VITE_TEAMS_USE_MSAL` is not set.
 
 Then pick how the deploy authenticates to storage:
 

@@ -5,27 +5,8 @@ import {
 } from '@azure/msal-browser';
 import { app as teamsApp } from '@microsoft/teams-js';
 
+import { ssConfig } from '@/platform/config/ssConfig';
 import { ssInfo, ssWarn } from '@/platform/log';
-
-type SsConfig = {
-  Client_Id?: unknown;
-  Tenant_Id?: unknown;
-};
-
-function cleanString(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
-}
-
-function getSsConfig(): SsConfig | null {
-  try {
-    const w = window as unknown as Window & { ssconfig?: SsConfig };
-    return w?.ssconfig ?? null;
-  } catch {
-    return null;
-  }
-}
 
 let pcaPromise: Promise<IPublicClientApplication> | null = null;
 
@@ -43,13 +24,8 @@ export const naaInit = () => {
         );
         // Continue anyway, might work with existing initialization
       }
-      const cfg = getSsConfig();
-      const clientId =
-        cleanString(cfg?.Client_Id) ??
-        (import.meta.env.VITE_CLIENT_ID as string | undefined);
-      const tenantId =
-        cleanString(cfg?.Tenant_Id) ??
-        (import.meta.env.VITE_TENANT_ID as string | undefined);
+      const clientId = ssConfig('Client_Id');
+      const tenantId = ssConfig('Tenant_Id');
       if (!clientId || !tenantId) {
         throw new Error(
           'Missing auth configuration for NAA (Client_Id/Tenant_Id).'

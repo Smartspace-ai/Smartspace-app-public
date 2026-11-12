@@ -3,7 +3,33 @@ import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { createRequire } from 'module';
-import { defineConfig, type PluginOption } from 'vite';
+import { defineConfig, loadEnv, type Plugin, type PluginOption } from 'vite';
+
+// Dev server only. A deploy writes ss-config.js; locally the same file is
+// answered from the VITE_* variables in your .env file. The app never reads
+// those variables itself, so a build bakes in none of them. With none of them
+// set, public/ss-config.js is served as it is.
+const devSsConfig = (mode: string): Plugin => ({
+  name: 'dev-ss-config',
+  apply: 'serve',
+  configureServer(server) {
+    const env = { ...loadEnv(mode, __dirname, 'VITE_'), ...process.env };
+    const ssconfig = {
+      Client_Id: env.VITE_CLIENT_ID,
+      Tenant_Id: env.VITE_TENANT_ID,
+      Client_Authority: env.VITE_CLIENT_AUTHORITY,
+      Client_Scopes: env.VITE_CLIENT_SCOPES,
+      Chat_Api_Uri: env.VITE_CHAT_API_URI,
+      Teams_Sso_Resource: env.VITE_TEAMS_SSO_RESOURCE,
+      Teams_Use_Msal: env.VITE_TEAMS_USE_MSAL,
+    };
+    server.middlewares.use('/ss-config.js', (_req, res, next) => {
+      if (!Object.values(ssconfig).some(Boolean)) return next();
+      res.setHeader('Content-Type', 'application/javascript');
+      res.end(`window.ssconfig = ${JSON.stringify(ssconfig)};`);
+    });
+  },
+});
 
 const publicOriginHost = (() => {
   const origin = process.env.PUBLIC_ORIGIN;
@@ -65,6 +91,7 @@ export default defineConfig(({ mode }) => ({
         ]),
     react(),
     nxViteTsPaths(),
+    devSsConfig(mode),
   ],
 
   resolve: {
