@@ -181,14 +181,16 @@ const isSupported = () =>
 
 /**
  * The API answers a failed token mint with a code, because 5xx bodies are scrubbed
- * of everything else: SP503 is transient (usually a role assignment still
- * propagating after a deploy), SP500 means the install is misconfigured. Anything
+ * of everything else: speech.token_unavailable is transient (usually a role
+ * assignment still propagating after a deploy), speech.identity_misconfigured means
+ * the install is misconfigured (SP500 is that code's name on an older API). Anything
  * else we treat as worth retrying, since the common causes — a dropped request, a
  * gateway blip — are.
  */
 function classifyTokenFailure(error: unknown): DictationError {
   const code = (error as { code?: unknown } | null)?.code;
-  if (code === 'SP500') return 'unavailable';
+  if (code === 'speech.identity_misconfigured' || code === 'SP500')
+    return 'unavailable';
   if ((error as { type?: unknown } | null)?.type === 'NotFound') {
     return 'unavailable';
   }

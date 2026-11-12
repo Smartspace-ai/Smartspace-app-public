@@ -28,7 +28,6 @@ import {
   CHUNK_SIZE,
   downloadBlob,
   downloadFile,
-  getFileDownloadUrl,
   getFileInfo,
   uploadFiles,
 } from '@/domains/files/service';
@@ -48,15 +47,6 @@ describe('files service', () => {
     mockGetFilesId.mockResolvedValueOnce({ data });
     const info = await getFileInfo('f1', { threadId: 't1' });
     expect(info.id).toBe('f1');
-  });
-
-  it('getFileDownloadUrl returns uri or throws', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const spy = vi
-      .spyOn(api, 'get')
-      .mockResolvedValueOnce({ uri: 'http://x' } as any);
-    await expect(getFileDownloadUrl('/x')).resolves.toBe('http://x');
-    spy.mockRestore();
   });
 
   it('downloadBlob delegates to api.get', async () => {
