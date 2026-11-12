@@ -72,7 +72,7 @@
     "microsoft-cognitiveservices-speech-sdk": "^1.51.0"
   },
   "devDependencies": {
-    "@smartspace/api-client": "0.1.0-main.06a8b6f",
+    "@smartspace/api-client": "0.1.0-main.53a201e",
     "tailwindcss": "^3.4.10",
     "tailwindcss-animate": "^1.0.7",
     "tsup": "^8.5.0",
