@@ -36,12 +36,18 @@ const ERROR_CODE_TEXT: Record<string, string> = {
   'llm.unsupported_modality':
     "⚠️ **This model can't read images**\n\nSwitch to a vision-capable model, or remove the attachment and describe it instead.",
   'llm.unknown': GENERIC_ERROR_TEXT,
-  // The AI API's current names for the two above; older messages stored those.
+  // The AI API's current name for llm.auth; older messages stored that one.
   'llm.auth_failed':
     "⚠️ **The model connection isn't authorised**\n\nAn administrator needs to check the model configuration.",
-  'llm.provider_error': GENERIC_ERROR_TEXT,
   'llm.unsupported_tools':
     "⚠️ **This model can't use tools**\n\nAn administrator needs to choose a model that supports tools for this step.",
+  'embeddings.model_not_found':
+    '⚠️ **The model or deployment could not be found**\n\nAn administrator needs to check the model configuration.',
+  // The app API's names for losing the AI API before or part-way through a reply.
+  'ai_api.unavailable':
+    '⚠️ **The connection to the model was interrupted**\n\nThis is usually temporary. Please try again.',
+  'ai_api.stream_broken':
+    '⚠️ **The connection to the model was interrupted**\n\nThis is usually temporary. Please try again.',
   // Managed secrets. A secret's failure arrives as a 404 or 400, which the
   // status table below would read as a missing model or a generic error.
   'secret.user_value_not_set':
@@ -81,6 +87,11 @@ export const getMessageErrorText = (error: MessageErrorLike): string => {
   }
   if (error.errorCode && ERROR_CODE_TEXT[error.errorCode]) {
     return ERROR_CODE_TEXT[error.errorCode];
+  }
+  // The status table's wording is about the model, so it speaks only for a
+  // failure with no code or a model one.
+  if (error.errorCode && !error.errorCode.startsWith('llm.')) {
+    return GENERIC_ERROR_TEXT;
   }
   return STATUS_CODE_TEXT[error.code] ?? GENERIC_ERROR_TEXT;
 };
