@@ -31,6 +31,18 @@ const devSsConfig = (mode: string): Plugin => ({
   },
 });
 
+// ss-config.js is written at the site root by a deploy, not into the build's
+// own folder, so its tag keeps the root path when `base` makes the rest
+// relative.
+const rootSsConfig = (): Plugin => ({
+  name: 'root-ss-config',
+  transformIndexHtml: {
+    order: 'post',
+    handler: (html) =>
+      html.replace('src="./ss-config.js"', 'src="/ss-config.js"'),
+  },
+});
+
 const publicOriginHost = (() => {
   const origin = process.env.PUBLIC_ORIGIN;
   if (!origin) return undefined;
@@ -43,6 +55,9 @@ const publicOriginHost = (() => {
 
 export default defineConfig(({ mode }) => ({
   root: __dirname,
+  // Relative asset paths, so a build runs from whatever folder it is served
+  // from. index.html's <base> decides where that is.
+  base: './',
   cacheDir: './node_modules/.vite/smartspace',
 
   server: {
@@ -92,6 +107,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     nxViteTsPaths(),
     devSsConfig(mode),
+    rootSsConfig(),
   ],
 
   resolve: {
