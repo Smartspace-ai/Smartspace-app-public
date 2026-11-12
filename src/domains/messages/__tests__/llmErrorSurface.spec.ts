@@ -30,6 +30,8 @@ describe('getMessageErrorText', () => {
     ['llm.transient_connection', 'interrupted'],
     ['llm.upstream_error', 'provider had a problem'],
     ['llm.auth', "isn't authorised"],
+    ['llm.auth_failed', "isn't authorised"],
+    ['llm.unsupported_tools', "can't use tools"],
     ['llm.not_found', 'could not be found'],
     ['llm.invalid_request', 'rejected'],
     ['llm.content_policy', 'content filter'],
@@ -46,6 +48,7 @@ describe('getMessageErrorText', () => {
     ['secret.run_has_no_user', 400, 'needs a signed-in user'],
     ['secret.user_mismatch', 403, "credential couldn't be loaded"],
     ['secret.run_required', 400, "credential couldn't be loaded"],
+    ['secret.not_found', 404, "secret this flow uses doesn't exist"],
     ['MS404', 404, "secret this flow uses doesn't exist"],
   ])('has a specific message for %s', (errorCode, code, fragment) => {
     const text = getMessageErrorText({ code, errorCode });

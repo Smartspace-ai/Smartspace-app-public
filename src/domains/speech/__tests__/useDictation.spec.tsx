@@ -218,7 +218,10 @@ describe('useDictation', () => {
     );
     const failing = vi
       .fn()
-      .mockRejectedValue({ type: 'UnknownError', code: 'SP503' });
+      .mockRejectedValue({
+        type: 'UnknownError',
+        code: 'speech.token_unavailable',
+      });
 
     const { result } = renderHook(() =>
       useDictation({
@@ -250,7 +253,10 @@ describe('useDictation', () => {
     const { stream, track } = makeStream();
     const failing = vi
       .fn()
-      .mockRejectedValue({ type: 'UnknownError', code: 'SP500' });
+      .mockRejectedValue({
+        type: 'UnknownError',
+        code: 'speech.identity_misconfigured',
+      });
 
     const { result } = renderHook(() =>
       useDictation({
@@ -465,10 +471,13 @@ describe('useDictation', () => {
   it('reports a permanent token failure as unavailable and does not open the mic session', async () => {
     const { stream, track } = makeStream();
     getUserMedia.mockResolvedValueOnce(stream);
-    // SP500 = the install's speech identity is misconfigured; retrying won't help.
+    // speech.identity_misconfigured = the install's speech identity is misconfigured; retrying won't help.
     const failing = vi
       .fn()
-      .mockRejectedValue({ type: 'UnknownError', code: 'SP500' });
+      .mockRejectedValue({
+        type: 'UnknownError',
+        code: 'speech.identity_misconfigured',
+      });
 
     const { result } = renderHook(() =>
       useDictation({
@@ -492,10 +501,13 @@ describe('useDictation', () => {
   it('reports a transient token failure as retryable', async () => {
     const { stream } = makeStream();
     getUserMedia.mockResolvedValueOnce(stream);
-    // SP503 = role assignment still propagating after a deploy.
+    // speech.token_unavailable = role assignment still propagating after a deploy.
     const failing = vi
       .fn()
-      .mockRejectedValue({ type: 'UnknownError', code: 'SP503' });
+      .mockRejectedValue({
+        type: 'UnknownError',
+        code: 'speech.token_unavailable',
+      });
 
     const { result } = renderHook(() =>
       useDictation({
