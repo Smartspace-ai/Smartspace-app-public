@@ -36,6 +36,12 @@ const ERROR_CODE_TEXT: Record<string, string> = {
   'llm.unsupported_modality':
     "⚠️ **This model can't read images**\n\nSwitch to a vision-capable model, or remove the attachment and describe it instead.",
   'llm.unknown': GENERIC_ERROR_TEXT,
+  // The AI API's current names for the two above; older messages stored those.
+  'llm.auth_failed':
+    "⚠️ **The model connection isn't authorised**\n\nAn administrator needs to check the model configuration.",
+  'llm.provider_error': GENERIC_ERROR_TEXT,
+  'llm.unsupported_tools':
+    "⚠️ **This model can't use tools**\n\nAn administrator needs to choose a model that supports tools for this step.",
   // Managed secrets. A secret's failure arrives as a 404 or 400, which the
   // status table below would read as a missing model or a generic error.
   'secret.user_value_not_set':
@@ -46,6 +52,9 @@ const ERROR_CODE_TEXT: Record<string, string> = {
     "⚠️ **A credential couldn't be loaded**\n\nAn administrator needs to check this flow's secrets.",
   'secret.run_required':
     "⚠️ **A credential couldn't be loaded**\n\nAn administrator needs to check this flow's secrets.",
+  'secret.not_found':
+    "⚠️ **A secret this flow uses doesn't exist**\n\nAn administrator needs to add it, or point the flow at another one.",
+  // The API's name for secret.not_found before it was renamed; older messages stored it.
   MS404:
     "⚠️ **A secret this flow uses doesn't exist**\n\nAn administrator needs to add it, or point the flow at another one.",
 };
