@@ -79,7 +79,7 @@ Dual-mode auth via `AuthAdapter` interface:
 - **MsalWebAdapter** (`src/platform/auth/providers/msalWeb.ts`) — MSAL popup/redirect for browser and Teams with MSAL flag
 - **TeamsNaaAdapter** (`src/platform/auth/providers/teamsNaa.ts`) — Teams Native App Authentication (SSO)
 - Runtime detection in `src/platform/auth/runtime.ts`; adapter selected in `src/platform/auth/session.tsx`
-- `VITE_TEAMS_USE_MSAL=true` forces MSAL in Teams (cross-tenant scenarios)
+- `Teams_Use_Msal: 'true'` in `ss-config.js` (`VITE_TEAMS_USE_MSAL` locally and in the deploy) forces MSAL in Teams (cross-tenant scenarios)
 
 ### API Layer
 
@@ -110,6 +110,8 @@ Dual-mode auth via `AuthAdapter` interface:
 - Unused vars prefixed with `_` are allowed
 
 ## Environment Variables
+
+The app reads install configuration only from `window.ssconfig` (`ss-config.js`), through `src/platform/config/ssConfig.ts`. Never read these with `import.meta.env`: `src/test/architecture/buildTimeConfig.spec.ts` fails if you do. Locally the dev server serves `ss-config.js` from the variables below; `deploy.yml` writes it from the GitHub environment's variables of the same names.
 
 ```
 VITE_CLIENT_ID=              # Entra ID client ID

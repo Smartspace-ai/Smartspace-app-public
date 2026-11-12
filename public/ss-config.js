@@ -5,6 +5,7 @@ window.ssconfig = {
   Client_Scopes: undefined,
   Chat_Api_Uri: undefined,
   Teams_Sso_Resource: undefined,
+  Teams_Use_Msal: undefined,
   Brand_Name: undefined,
   Brand_Logo_Uri: undefined,
 };

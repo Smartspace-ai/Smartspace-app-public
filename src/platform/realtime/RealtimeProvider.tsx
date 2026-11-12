@@ -17,11 +17,12 @@ import {
   type ReactNode,
 } from 'react';
 
-import { parseScopes } from '@/platform/auth/scopes';
+import { getClientScopes } from '@/platform/auth/scopes';
 import {
   handleSessionExpired,
   isUnauthorizedError,
 } from '@/platform/auth/sessionExpiry';
+import { ssConfig } from '@/platform/config/ssConfig';
 
 const createChatHub = (connection: HubConnection) =>
   SignalR.getHubProxyFactory('IChatHubInvoker').createHubProxy(connection);
@@ -48,37 +49,23 @@ export type RealtimeProviderProps = {
   children: ReactNode;
   /** returns a bearer token; scopes are optional (depends on your backend) */
   getAccessToken: (scopes?: string[]) => Promise<string>;
-  /** override base url if needed (defaults to env/ssconfig) */
+  /** override base url if needed (default: Chat_Api_Uri from ss-config.js) */
   baseUrl?: string;
   /** hub path (default: "/notifications") */
   hubPath?: string;
   /** force WS only (default: negotiate best) */
   webSocketsOnly?: boolean;
-  /** scopes (default: VITE_CLIENT_SCOPES) */
+  /** scopes (default: Client_Scopes from ss-config.js) */
   scopes?: string[];
-};
-
-const defaultBaseUrl = () => {
-  type SsConfig = { Chat_Api_Uri?: unknown };
-  type SsWindow = Window & { ssconfig?: SsConfig };
-  const cfg = (() => {
-    try {
-      const w = window as unknown as SsWindow;
-      return w.ssconfig?.Chat_Api_Uri ?? import.meta.env.VITE_CHAT_API_URI;
-    } catch {
-      return import.meta.env.VITE_CHAT_API_URI;
-    }
-  })();
-  return typeof cfg === 'string' && cfg.length ? cfg : '';
 };
 
 export function RealtimeProvider({
   children,
   getAccessToken,
-  baseUrl = defaultBaseUrl(),
+  baseUrl = ssConfig('Chat_Api_Uri') ?? '',
   hubPath = '/notifications',
   webSocketsOnly = false,
-  scopes = parseScopes(import.meta.env.VITE_CLIENT_SCOPES),
+  scopes = getClientScopes(),
 }: RealtimeProviderProps) {
   const [connection, setConnection] = useState<HubConnection>();
   // Bumped when a connection closes permanently (automatic-reconnect exhausted)

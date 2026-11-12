@@ -71,7 +71,7 @@ This is what lets Teams sign users in without a consent prompt. Without it, user
 
 ## 2. Choose a sign-in path
 
-Teams has two. The setting is `VITE_TEAMS_USE_MSAL`, and it is **compiled into the site when it is built** — one deployment has one answer for everyone who uses it. It is not per user and not per Teams app.
+Teams has two. The setting is `VITE_TEAMS_USE_MSAL`, and it is **written into the site's `ss-config.js` when it is deployed** — one deployment has one answer for everyone who uses it. It is not per user and not per Teams app.
 
 - **`false`** uses the faster path, which resolves your app registration in the signed-in user's _own_ tenant. It only works for people who are members of yours, and it is the one that gets users straight in with no prompt.
 - **`true`** signs in against the authority you configured. Members and guests both work; expect a sign-in step the first time.

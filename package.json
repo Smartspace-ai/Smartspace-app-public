@@ -22,8 +22,6 @@
     "start:local": "env-cmd -f .env.local pnpm run serve",
     "start:tunnel": "env-cmd -f .env.local pnpm run dev:tunnel",
     "start:tunnel:dev": "env-cmd -f .env.dev pnpm run dev:tunnel",
-    "build:dev": "env-cmd -f .env.dev pnpm run build",
-    "build:local": "env-cmd -f .env.local pnpm run build",
     "test:dev": "env-cmd -f .env.dev pnpm run test",
     "test:local": "env-cmd -f .env.local pnpm run test",
     "build:teams": "ts-node teams/build-manifest.ts",
