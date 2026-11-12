@@ -59,24 +59,6 @@ export const useFileMutations = (scope: FileScope) => {
     onError: () => toast.error('Failed to download file'),
   });
 
-  const downloadFileByUriMutation = useMutation({
-    mutationFn: async ({
-      name,
-      sourceUri,
-    }: {
-      name: string;
-      sourceUri: string;
-    }) => {
-      const uri = await service.getFileDownloadUrl(sourceUri);
-      if (!uri) throw new Error('No download URL');
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      saveFile(blob, name);
-      return blob;
-    },
-    onError: () => toast.error('Failed to download file'),
-  });
-
   const fileStates = (files: File[]) =>
     files.map((file) => ({
       name: file.name,
@@ -110,7 +92,6 @@ export const useFileMutations = (scope: FileScope) => {
   return {
     uploadFilesMutation,
     downloadFileMutation,
-    downloadFileByUriMutation,
     getFileBlobUrl,
     fileProgress,
     uploadedFiles,

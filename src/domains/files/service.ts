@@ -131,15 +131,6 @@ export const getFileInfo = async (
   return mapFileInfoDtoToModel(parsed);
 };
 
-export const getFileDownloadUrl = async (
-  sourceUri: string
-): Promise<string> => {
-  const data = await api.get<{ uri: string }>(sourceUri);
-  const uri = data?.uri;
-  if (!uri) throw new Error('Download URL is missing');
-  return uri;
-};
-
 export const downloadBlob = async (sourceUri: string) => {
   return await api.get<Blob>(sourceUri);
 };

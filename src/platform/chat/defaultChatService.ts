@@ -1,6 +1,5 @@
 import {
   downloadFile as filesDownloadFile,
-  getFileDownloadUrl as filesGetFileDownloadUrl,
   getFileInfo as filesGetFileInfo,
   uploadFiles as filesUploadFiles,
 } from '@/domains/files/service';
@@ -61,8 +60,6 @@ export function createDefaultChatService(): ChatService {
     downloadFile: (id, scope) => filesDownloadFile(id, scope),
 
     getFileInfo: (id, scope) => filesGetFileInfo(id, scope),
-
-    getFileDownloadUrl: (sourceUri) => filesGetFileDownloadUrl(sourceUri),
 
     fetchThread: (workspaceId, threadId) =>
       threadsFetchThread(workspaceId, threadId),

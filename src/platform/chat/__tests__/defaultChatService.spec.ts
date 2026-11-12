@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 const {
   mockFilesDownloadFile,
-  mockFilesGetFileDownloadUrl,
   mockFilesGetFileInfo,
   mockFilesUploadFiles,
   mockMessagesAddInput,
@@ -13,7 +12,6 @@ const {
   mockWorkspacesFetchTaggable,
 } = vi.hoisted(() => ({
   mockFilesDownloadFile: vi.fn(),
-  mockFilesGetFileDownloadUrl: vi.fn(),
   mockFilesGetFileInfo: vi.fn(),
   mockFilesUploadFiles: vi.fn(),
   mockMessagesAddInput: vi.fn(),
@@ -26,7 +24,6 @@ const {
 
 vi.mock('@/domains/files/service', () => ({
   downloadFile: mockFilesDownloadFile,
-  getFileDownloadUrl: mockFilesGetFileDownloadUrl,
   getFileInfo: mockFilesGetFileInfo,
   uploadFiles: mockFilesUploadFiles,
 }));
@@ -108,11 +105,10 @@ describe('createDefaultChatService', () => {
     expect(result).toEqual([{ id: 'f1' }]);
   });
 
-  it('downloadFile / getFileInfo / getFileDownloadUrl delegate to files/service', async () => {
+  it('downloadFile / getFileInfo delegate to files/service', async () => {
     const blob = new Blob();
     mockFilesDownloadFile.mockResolvedValueOnce(blob);
     mockFilesGetFileInfo.mockResolvedValueOnce({ id: 'f' });
-    mockFilesGetFileDownloadUrl.mockResolvedValueOnce('https://example/file');
 
     await expect(
       service.downloadFile('f1', { workspaceId: 'ws', threadId: 't' })
@@ -120,9 +116,6 @@ describe('createDefaultChatService', () => {
     await expect(
       service.getFileInfo('f1', { workspaceId: 'ws', threadId: 't' })
     ).resolves.toEqual({ id: 'f' });
-    await expect(service.getFileDownloadUrl('source://x')).resolves.toBe(
-      'https://example/file'
-    );
 
     expect(mockFilesDownloadFile).toHaveBeenCalledWith('f1', {
       workspaceId: 'ws',
@@ -132,7 +125,6 @@ describe('createDefaultChatService', () => {
       workspaceId: 'ws',
       threadId: 't',
     });
-    expect(mockFilesGetFileDownloadUrl).toHaveBeenCalledWith('source://x');
   });
 
   it('fetchThread / fetchWorkspace / fetchTaggableUsers delegate', async () => {

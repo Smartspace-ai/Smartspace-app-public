@@ -29,7 +29,6 @@ export function createFakeChatService(
     uploadFiles: notStubbed('uploadFiles'),
     downloadFile: notStubbed('downloadFile'),
     getFileInfo: notStubbed('getFileInfo'),
-    getFileDownloadUrl: notStubbed('getFileDownloadUrl'),
     fetchThread: notStubbed('fetchThread'),
     fetchWorkspace: notStubbed('fetchWorkspace'),
     fetchTaggableUsers: notStubbed('fetchTaggableUsers'),
