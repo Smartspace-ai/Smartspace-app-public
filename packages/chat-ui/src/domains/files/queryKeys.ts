@@ -13,7 +13,5 @@ export const filesKeys = {
       [...filesKeys.mutations(), 'download', { fileId }] as const,
     downloadBlob: (fileId: string) =>
       [...filesKeys.mutations(), 'downloadBlob', { fileId }] as const,
-    downloadByUri: (uri: string) =>
-      [...filesKeys.mutations(), 'downloadByUri', { uri }] as const,
   },
 };

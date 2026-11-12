@@ -66,8 +66,6 @@ export interface ChatService {
 
   getFileInfo(id: string, scope: FileScope): Promise<FileInfo>;
 
-  getFileDownloadUrl(sourceUri: string): Promise<string>;
-
   fetchThread(workspaceId: string, threadId: string): Promise<MessageThread>;
 
   fetchWorkspace(workspaceId: string): Promise<Workspace>;
