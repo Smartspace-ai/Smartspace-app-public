@@ -63,8 +63,8 @@ src/
 
 A domain's files are split between `packages/chat-ui/src/domains/<feature>/` and `src/domains/<feature>/`. [PATTERNS.md](PATTERNS.md) §1 says which half owns what; read it before adding a domain, query, mutation, route or component.
 
-- `model.ts` — TypeScript `type` aliases
-- `schemas.ts` — Zod validation
+- `model.ts` — TypeScript `type` aliases (and an `enum` where a value set needs one)
+- `schemas.ts` — Zod validation (either side)
 - `service.ts` — API calls (app side only)
 - `mapper.ts` — DTO ↔ model transformation
 - `queries.ts` / `mutations.ts` — TanStack Query hooks

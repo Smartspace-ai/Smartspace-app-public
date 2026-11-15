@@ -1,25 +1,29 @@
 # PATTERNS.md
 
-How the code in this repo is shaped. Read it before adding a domain, a query, a mutation, a route or a component. Layer boundaries, commands and code style are in [AGENTS.md](AGENTS.md); this file does not repeat them.
+How the code in this repo is shaped, and the rules new code follows. Read it before adding a domain, a query, a mutation, a route or a component. Layer boundaries, commands and code style are in [AGENTS.md](AGENTS.md); this file does not repeat them.
 
-Each rule names a file that follows it. When the code and this file disagree, the code wins and this file gets fixed.
+Where the code does not follow a rule yet, this file says so. Where an architecture spec in `src/test/architecture/` tracks the exceptions, it names the spec; the spec's list is the record, not this file. When the code and this file disagree on what exists, the code wins and this file gets fixed.
 
 ---
 
 ## 1. Domains live in two places
 
-The `@smartspace/chat-ui` package holds what the chat surface needs: messages, thread detail, workspace detail, files, flow-run variables. The app's `src/domains/<name>/` holds every service, and the app-only surface of each domain: the sidebar's thread list with pin, rename and delete, the workspace list, comments, notifications.
+The `@smartspace/chat-ui` package holds what the chat surface needs: messages, thread detail, workspace detail, files, flow-run variables, models, speech. The app's `src/domains/<name>/` holds every service, the app-only surface of a shared domain (the sidebar's thread list with pin, rename and delete; the workspace list), and the domains only the app uses (`comments`, `notifications`, `thread-users`).
 
-| Half    | Where                                  | Owns                                                                                                                                             |
-| ------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Package | `packages/chat-ui/src/domains/<name>/` | The domain's `model.ts`, `mapper.ts`, `schemas.ts`, `queryKeys.ts`, and the chat surface's `queries.ts` / `mutations.ts`                         |
-| App     | `src/domains/<name>/`                  | `service.ts` (the SDK call, `parseOrThrow`, any coercion the generated schema needs), and `queries.ts` / `mutations.ts` for the app-only surface |
+| Half    | Where                                  | Holds                                                                                                                                                    |
+| ------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Package | `packages/chat-ui/src/domains/<name>/` | The model and key factory of a shared domain, and the chat surface's `queries.ts` / `mutations.ts`. Mappers and schemas where the package maps the data  |
+| App     | `src/domains/<name>/`                  | `service.ts` (the SDK call, `parseOrThrow`, any coercion the generated schema needs), app-only `queries.ts` / `mutations.ts`, and app-only domains whole |
 
-The package never calls the API. Its hooks take a `ChatService` (`packages/chat-ui/src/platform/chat/ChatService.ts`) and call methods on it. The app supplies one: `src/platform/chat/defaultChatService.ts` delegates each method to a `src/domains/*/service.ts` function and does nothing else. A fork replaces that one file.
+The package never calls the API through the generated client. Its hooks take a `ChatService` (`packages/chat-ui/src/platform/chat/ChatService.ts`) and call methods on it. The app supplies one: `src/platform/chat/defaultChatService.ts` maps each method onto a `src/domains/*/service.ts` function, renaming an argument or dropping a return value where the two shapes differ, and holds no other logic. A fork replaces that one file. One exception: `packages/chat-ui/src/shared/utils/userPhoto.ts` builds a `/users/{id}/photo` URL from `window.ssconfig` itself.
 
-App-side hooks call their service directly, not through `ChatService`. Where the package has the domain, they use its key factory (`threadsKeys`, `workspaceKeys` from `@smartspace/chat-ui`), so an invalidation from either side reaches the same cache entries. Each app barrel says which half it holds (`src/domains/threads/index.ts`).
+App-side hooks call their service directly, not through `ChatService`. `src/domains/threads` and `src/domains/workspaces` use the package's key factories (`threadsKeys`, `workspaceKeys`), so an invalidation from either side reaches the same cache entries. The barrels of `threads`, `workspaces`, `messages` and `files` say in a header comment which half they hold.
 
-A domain only the app uses (`comments`, `notifications`, `thread-users`) is whole in `src/domains/<name>/`. A `src/domains/<name>/` folder with only `service.ts` and `index.ts` is the normal shape for a domain the chat surface owns, not an unfinished one.
+The shape is not uniform today:
+
+- `src/domains/models` and `src/domains/flowruns` have their own `model.ts`, `mapper.ts` and `queryKeys.ts` beside the package's. Their services use the app copies; the app copies of the keys and of `useFlowRunVariables` have no callers outside their folder.
+- `src/domains/speech` has no `index.ts`. `src/domains/messages` adds `threadStream.ts`.
+- Schemas live on both sides: `src/domains/{comments,models,speech}/schemas.ts` and `packages/chat-ui/src/domains/{files,messages}/schemas.ts`.
 
 ### Where new things go
 
@@ -57,8 +61,8 @@ export async function fetchWorkspace(id: string): Promise<Workspace> {
 - Call the generated method on `ChatApi.getSmartSpaceChatAPI()`.
 - Validate with the generated `ChatZod` schema through `parseOrThrow` (`src/platform/validation.ts`), with the method and path as context.
 - Map to the domain model before returning. Callers never see a DTO (data transfer object).
-- The streaming endpoints use `fetchAuthed` (`src/platform/api/fetchAuthed.ts`), because the generated client cannot read a stream. It attaches the token and routes an auth 401 into re-sign-in, as the axios interceptor does.
-- Raw `api.get` / `api.put` / `api.post` calls remain in `domains/files`, `domains/flowruns` and `domains/speech`. Do not add another without the reason the generated method cannot be used.
+- An endpoint that streams uses `fetchAuthed` (`src/platform/api/fetchAuthed.ts`), because the generated client cannot read a stream. It attaches the token and routes an auth 401 into re-sign-in, as the axios interceptor does.
+- Every other hand-written call is listed, with its reason, in `src/test/architecture/rawTransport.spec.ts`. Several now have a generated method and are waiting to move. Moving one changes what it throws (see §7), so check the caller's error handling when you do.
 
 Never read install config from `import.meta.env`. Use `ssConfig('<key>')` (`src/platform/config/ssConfig.ts`). `src/test/architecture/buildTimeConfig.spec.ts` fails a new read.
 
@@ -72,15 +76,16 @@ export const threadDetailOptions = ({ service, workspaceId, threadId }) =>
   queryOptions({
     queryKey: threadsKeys.detail(workspaceId, threadId),
     queryFn: () => service.fetchThread(workspaceId, threadId),
+    refetchOnWindowFocus: false,
     staleTime: 60_000,
   });
 ```
 
-- Export a `queryOptions` factory, and a `use*` hook that spreads it. Route loaders use the factory (`ensureQueryData`); components use the hook.
-- Write a `queryFn` only inside a factory in a domain `queries.ts`. A component that needs `enabled`, polling or a placeholder spreads the factory and adds it.
+- Export a `queryOptions` factory from the domain's `queries.ts`, and a `use*` hook that spreads it. Route loaders use the factory (`ensureQueryData`); components use the hook.
+- Write a `queryFn` only inside such a factory. A component that needs `enabled`, polling or a placeholder spreads the factory and adds it. `src/test/architecture/queryOwnership.spec.ts` enforces this and lists the files that do not follow it yet.
 - Keys come from the domain's `queryKeys.ts` factory, so invalidation can target a list, a detail or the whole domain.
-- The default `staleTime` is 60 seconds (`src/platform/reactQueryClient.ts`). Seven queries use 30 seconds and two use `Infinity`, none with a stated reason. A new query that sets a value other than the default says why in a comment.
-- Reads retry up to twice, and only when the failure is transient (`isTransientRead` in `src/platform/envelopes.ts`). Auth failures never retry.
+- The default `staleTime` is 60 seconds (`src/platform/reactQueryClient.ts`). Many queries set another value, from 0 to `Infinity`, and few say why. A new query that sets a value other than the default says why in a comment, as `packages/chat-ui/src/domains/speech/queries.ts` does.
+- By default a read retries up to twice, only when the failure is transient (`isTransientRead` in `src/platform/envelopes.ts`), and never on an `AuthRequiredError`. A query can override this: several in the package set `retry: false` or `retry: 1`, and `useSpeechConfig` retries any failure twice.
 
 ---
 
@@ -96,11 +101,16 @@ return useMutation({
 });
 ```
 
-- `useMutation` is called only in a domain `mutations.ts`.
-- Every mutation has an `onError`. It tells the user with `toast.error('<what failed>')` from `sonner`, naming the action.
-- Invalidate in `onSettled`, so the cache refreshes whether the write succeeded or not. `onSuccess` is for a success toast or a follow-up the success alone causes.
+The rules, each enforced by an architecture spec that lists the mutations not following it yet:
+
+- `useMutation` is called only in a domain `mutations.ts` (`queryOwnership.spec.ts`).
+- Every mutation has an `onError` that tells the user, with `toast.error('<what failed>')` from `sonner`, naming the action (`mutationHygiene.spec.ts`).
+- Invalidate in `onSettled`, so the cache refreshes whether the write succeeded or not. Not in `onSuccess`, and not at the end of `mutationFn`; both run only as far as the write succeeds. `onSuccess` is for a success toast or a follow-up the success alone causes (`mutationHygiene.spec.ts`). `src/domains/threads` and `src/domains/thread-users` follow it today.
+
+Also:
+
 - Optimistic updates (pin, rename, delete in `src/domains/threads/mutations.ts`) cancel the queries they touch, snapshot, write, and restore the snapshot in `onError`.
-- Mutations retry at most once, and only when `isTransient` says so: a network error, an `AppError` the API marked `retryable`, or a 5xx with no body. It does not read the body of a raw `AxiosError`. `isTransientRead` does, and is for reads only, because resending a write can apply it twice.
+- By default a mutation retries at most once, and only when `isTransient` says so: a network error, an `AppError` the API marked `retryable`, or an `UnknownError` with status 500 or above and no `retryable` flag. It does not read the body of a raw `AxiosError`. `isTransientRead` does, and is for reads only, because resending a write can apply it twice. Some mutations set `retry` themselves.
 
 ---
 
@@ -112,8 +122,8 @@ return useMutation({
 
 ### When logic leaves the component
 
-- **Orchestration** — navigation, mutations, toasts, derived flags from several hooks — goes in a view-model hook beside the component: `ThreadItem.vm.ts` exports `useThreadItemVm`, and `ThreadItem.tsx` calls it and renders. Five components use this today (`ThreadItem`, `ThreadsList`, `WorkspaceSwitcher`, `MessageComposer`, `VariablesForm`).
-- **Pure logic** — formatting, mapping, decisions on loaded data — goes in a plain function: the domain's mapper, or `src/shared/utils/`. It takes data, not hooks, and gets its own spec.
+- **Orchestration** (navigation, mutations, toasts, derived flags from several hooks) goes in a view-model hook beside the component: `ThreadItem.vm.ts` exports `useThreadItemVm`, and `ThreadItem.tsx` calls it and renders. Five components use this today (`ThreadItem`, `ThreadsList`, `WorkspaceSwitcher`, `MessageComposer`, `VariablesForm`).
+- **Pure logic** (formatting, mapping, decisions on loaded data) goes in a plain function: the domain's mapper, or `src/shared/utils/`. It takes data, not hooks, and gets its own spec.
 - A small component with one hook and no branching stays one file.
 
 ---
@@ -123,10 +133,11 @@ return useMutation({
 - TanStack Router, file-based, under `src/routes/`. `routeTree.gen.ts` is generated; never edit it.
 - Everything signed-in sits under `_protected`. Its `beforeLoad` checks the session and a silent token, and redirects to `/login?redirect=<path>` if either fails (`src/routes/_protected.tsx`).
 - A route with a record primes it in its loader with `ensureQueryData(<domain>DetailOptions(...))`.
-- A record that is gone redirects; it does not show a not-found page. A missing workspace goes to `/workspace`; a missing thread goes to another thread or a new draft (`$threadId.tsx`). Check `isNotFoundError` first and rethrow anything else.
-- A cancelled fetch in a loader is not a not-found. `$threadId.tsx` returns `null` on `isCancelledError` for this reason.
+- A record that is gone redirects; it does not show a not-found page. A missing workspace goes to `/workspace`; a missing thread goes to another thread or a new draft (`$threadId.tsx`).
+- In a loader's catch, check `isCancelledError` first: a fetch cancelled by an unrelated mutation is not a not-found, and `$threadId.tsx` returns `null` for it. Then `isNotFoundError`, and rethrow anything else.
+- When a thread's detail 404s and the first thread in the list is the same one, `$threadId.tsx` returns `null` instead of redirecting, so it cannot loop.
 - URL state is validated with a zod schema in `validateSearch` (`threadRouteSearchSchema`) and written with `navigate({ to: '.', search: (prev) => ({ ...prev, ... }) })`.
-- Navigate with a typed `to` and `params`. No string paths.
+- Navigate with a typed `to` and `params`, never a string path.
 - Read route ids through `useRouteIds()` (`src/platform/routing/RouteIdsProvider.tsx`) or the route's own `Route.useParams()`.
 
 ---
@@ -140,7 +151,14 @@ return useMutation({
 | A mutation                           | A `sonner` toast naming the action                           | the domain's `mutations.ts`                                                          |
 | A render error outside the router    | "Something went wrong" with the message                      | `fallbackRender` in `src/main.tsx`                                                   |
 
-- Errors come in two shapes. The generated client throws an `AxiosError`. `request()` (`src/platform/request.ts`) returns an `AppError` (`src/platform/envelopes.ts`). Helpers that classify a failure handle both: `isNotFoundError`, `isTransientRead`, and the boundary's `isAuthError`.
+A failed call reaches its caller in one of three shapes:
+
+- The generated client throws an `AxiosError`.
+- `request()` (`src/platform/request.ts`) returns a `Result` whose error is an `AppError` (`src/platform/envelopes.ts`), and the `api` / `apiParsed` wrappers throw that `AppError`.
+- A `fetchAuthed` caller throws a plain `Error` with its own message (`src/domains/messages/service.ts`).
+
+`isNotFoundError`, `isTransientRead` and the boundary's `isAuthError` handle the first two. None of them classifies the third.
+
 - A 5xx response's detail is not shown to the user. `toAppError` keeps a 4xx detail only.
 - Show the API's `traceId` as the support reference where the error page has one (`getTraceId`).
 
@@ -157,11 +175,19 @@ return useMutation({
 
 ## 9. Tests
 
-Detail is in [docs/testing.md](docs/testing.md). The rules:
+Detail is in [docs/testing.md](docs/testing.md). The rules for new specs:
 
 - Vitest and React Testing Library. Specs sit in a `__tests__/` folder beside the code.
-- The network is faked with MSW (Mock Service Worker) handlers in `src/test/mocks/handlers/`. Response bodies come from factories built on the SDK's zod schemas (`src/test/factories/`), so they stay valid when the SDK changes. Override one handler per test with `server.use(...)`.
+- Fake the network with MSW (Mock Service Worker) handlers in `src/test/mocks/handlers/`. Response bodies come from factories built on the SDK's zod schemas (`src/test/factories/`), so they stay valid when the SDK changes. Override one handler per test with `server.use(...)`.
 - No factories for domain models. Get a model by running a factory's DTO through the real mapper.
-- `src/test/setup.ts` mocks MSAL, Teams NAA (Nested App Authentication), SignalR and logging for every spec. Do not mock a domain's queries, mutations or service in a new spec; fake the network instead. Three older specs still do (`threadStreamReconnect.spec.tsx`, `defaultChatService.spec.ts`, `ThreadRenameModal.spec.tsx`); they are not the pattern.
+- `src/test/setup.ts` mocks MSAL, Teams NAA (Nested App Authentication), SignalR and logging for every spec. Do not mock or spy on a domain's queries, mutations or service, and do not mock `@smartspace/api-client`; fake the network instead.
+
+Older specs do not all follow this, and are not the pattern to copy:
+
+- Seven mock or spy on domain code: `comments/__tests__/mutations.spec.tsx` and `queries.spec.ts`, `flowruns/__tests__/queries.spec.ts`, `notifications/__tests__/mutations.spec.tsx`, `messages/__tests__/threadStreamReconnect.spec.tsx` (all under `src/domains/`), `src/platform/chat/__tests__/defaultChatService.spec.ts`, and `src/ui/threads/__tests__/ThreadRenameModal.spec.tsx`.
+- Nine mock `@smartspace/api-client` instead of using MSW, among them the `service.spec.ts` files under `src/domains/*/__tests__/`.
+
+Two suites guard the shape of the code:
+
 - `src/test/conformance/spec-conformance.spec.ts` fuzzes each generated response schema through the domain's parse and mapper. If an SDK bump fails it, relax the mapper, never the test.
 - `src/test/architecture/` holds fitness tests. Each lists the violations that remain, and the list must equal what is on disk exactly: a new violation fails, and so does a fixed one left on the list. Shrink a list in the same change that fixes an entry. Never add to one.
