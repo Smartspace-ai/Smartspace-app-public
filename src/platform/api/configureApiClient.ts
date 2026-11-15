@@ -1,7 +1,7 @@
 import { AXIOS_INSTANCE } from '@smartspace/api-client';
 import axios, { AxiosHeaders } from 'axios';
 
-import { AuthRequiredError } from '@/platform/auth/errors';
+import { AuthRequiredError, TransientAuthError } from '@/platform/auth/errors';
 import { getAuthAdapter } from '@/platform/auth/index';
 import { isInTeams } from '@/platform/auth/msalConfig';
 import {
@@ -76,6 +76,12 @@ export function configureApiClient() {
       config.headers = headers;
       setRuntimeAuthError(null);
     } catch (e) {
+      // The network failed, not the session: fail like any offline request,
+      // with no sign-in prompt.
+      if (e instanceof TransientAuthError) {
+        ssWarn('api', 'token request failed on the network', e);
+        throw e;
+      }
       // Record diagnostic signal for UI troubleshooting (Teams login screen reads this)
       setRuntimeAuthError({
         source: 'api',

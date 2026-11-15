@@ -10,6 +10,7 @@ import {
 import { interactiveTeamsAuth } from '@/platform/auth/teamsAuthHelper';
 import { ssInfo, ssWarn } from '@/platform/log';
 
+import { isMsalNetworkFailure, TransientAuthError } from '../errors';
 import { setStoredUseMsalInTeams } from '../runtime';
 import { AuthAdapter, GetTokenOptions, SignInOptions } from '../types';
 
@@ -137,7 +138,20 @@ function consumePopupFallbackToken(): string | null {
  * cached one. No window opens. Throws when only an interactive sign-in can
  * help.
  */
-export async function refreshWebTokenSilently(): Promise<void> {
+export function refreshWebTokenSilently(): Promise<void> {
+  return acquireWebTokenSilently(true);
+}
+
+/**
+ * The check when the tab becomes visible again: the cached token if it is
+ * still good, else a refresh. Throws MSAL's InteractionRequiredAuthError when
+ * only an interactive sign-in can help.
+ */
+export function checkWebTokenSilently(): Promise<void> {
+  return acquireWebTokenSilently(false);
+}
+
+async function acquireWebTokenSilently(forceRefresh: boolean): Promise<void> {
   const msalInstance = getMsalInstance();
   const account =
     msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
@@ -145,7 +159,7 @@ export async function refreshWebTokenSilently(): Promise<void> {
   await msalInstance.acquireTokenSilent({
     ...loginRequest,
     account,
-    forceRefresh: true,
+    forceRefresh,
   });
 }
 
@@ -268,7 +282,11 @@ export function createMsalWebAdapter(): AuthAdapter {
               }
             }
           }
-          if (opts?.silentOnly) throw new Error('Silent token failed');
+          if (opts?.silentOnly) {
+            throw isMsalNetworkFailure(e)
+              ? new TransientAuthError()
+              : new Error('Silent token failed');
+          }
           // Cooldown: after a popup, retry silent first (token should be cached). Avoids AADSTS50196 loop.
           const now = Date.now();
           if (now < popupCooldownUntil) {

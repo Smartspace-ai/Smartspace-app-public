@@ -1,22 +1,26 @@
+import { InteractionRequiredAuthError } from '@azure/msal-browser';
 import { AxiosHeaders } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockRefresh,
+  mockCheck,
   mockPopup,
   mockSetSessionExpired,
   mockSetAuthStuck,
   state,
 } = vi.hoisted(() => ({
   mockRefresh: vi.fn(),
+  mockCheck: vi.fn(),
   mockPopup: vi.fn(),
   mockSetSessionExpired: vi.fn(),
   mockSetAuthStuck: vi.fn(),
-  state: { inTeams: false },
+  state: { inTeams: false, sessionExpired: false },
 }));
 
 vi.mock('@/platform/auth/providers/msalWeb', () => ({
   refreshWebTokenSilently: mockRefresh,
+  checkWebTokenSilently: mockCheck,
   signInWithPopup: mockPopup,
 }));
 
@@ -25,7 +29,11 @@ vi.mock('@/platform/auth/msalConfig', () => ({
 }));
 
 vi.mock('@/platform/auth/runtime', () => ({
-  getAuthRuntimeState: () => ({ isInTeams: null }),
+  getAuthRuntimeState: () => ({
+    isInTeams: null,
+    sessionExpired: state.sessionExpired,
+    authStuck: false,
+  }),
   setSessionExpired: mockSetSessionExpired,
   setAuthStuck: mockSetAuthStuck,
 }));
@@ -36,6 +44,7 @@ vi.mock('@/platform/log', () => ({
 }));
 
 import {
+  checkSessionOnVisible,
   handleSessionExpired,
   isReauthRequired,
   onSessionRenewed,
@@ -79,9 +88,12 @@ describe('session expiry recovery', () => {
 
   beforeEach(() => {
     state.inTeams = false;
+    state.sessionExpired = false;
     resetSessionExpiry();
     mockRefresh.mockReset();
     mockRefresh.mockResolvedValue(undefined);
+    mockCheck.mockReset();
+    mockCheck.mockResolvedValue(undefined);
     mockPopup.mockReset();
     mockPopup.mockResolvedValue({ switchedAccount: false });
     mockSetSessionExpired.mockClear();
@@ -270,5 +282,110 @@ describe('session expiry recovery', () => {
     expect(mockSetSessionExpired).toHaveBeenCalledWith(true);
     expect(mockRefresh).not.toHaveBeenCalled();
     expect(mockPopup).not.toHaveBeenCalled();
+  });
+
+  it('web: a refresh that fails on the network shows no prompt, and the next failure tries again', async () => {
+    // Breaks if an offline blip is treated as expiry (the prompt offers a
+    // sign-in that cannot work offline), or if the guard stays set (recovery
+    // never runs again once the network is back).
+    mockRefresh.mockRejectedValueOnce(popupError('no_network_connectivity'));
+
+    await handleSessionExpired();
+    expect(mockSetSessionExpired).not.toHaveBeenCalled();
+    expect(renewed).not.toHaveBeenCalled();
+
+    await handleSessionExpired();
+    expect(mockRefresh).toHaveBeenCalledTimes(2);
+    expect(renewed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('session check when the tab becomes visible', () => {
+  const renewed = vi.fn();
+  let unsubscribe: () => void = () => undefined;
+
+  beforeEach(() => {
+    state.inTeams = false;
+    state.sessionExpired = false;
+    resetSessionExpiry();
+    mockRefresh.mockReset();
+    mockRefresh.mockResolvedValue(undefined);
+    mockCheck.mockReset();
+    mockCheck.mockResolvedValue(undefined);
+    mockPopup.mockReset();
+    mockSetSessionExpired.mockClear();
+    renewed.mockClear();
+    unsubscribe();
+    unsubscribe = onSessionRenewed(renewed);
+  });
+
+  it('a session that died while the tab was hidden shows the prompt before the user acts, with no popup', async () => {
+    // Breaks if the check is not wired to recovery: the user types into a
+    // dead page and only finds out when the send fails.
+    mockCheck.mockRejectedValue(
+      new InteractionRequiredAuthError('login_required')
+    );
+    mockRefresh.mockRejectedValue(
+      new InteractionRequiredAuthError('login_required')
+    );
+
+    await checkSessionOnVisible();
+
+    expect(mockSetSessionExpired).toHaveBeenCalledWith(true);
+    expect(mockPopup).not.toHaveBeenCalled();
+  });
+
+  it('a check that fails on the network starts no recovery', async () => {
+    mockCheck.mockRejectedValue(popupError('no_network_connectivity'));
+
+    await checkSessionOnVisible();
+
+    expect(mockRefresh).not.toHaveBeenCalled();
+    expect(mockSetSessionExpired).not.toHaveBeenCalled();
+  });
+
+  it('a prompt left up closes when the silent refresh now works, and keeps the attempt log', async () => {
+    // Breaks if a silent success clears the attempt log (a server rejecting
+    // every token loops forever), or if the guard stays set (the next expiry
+    // never recovers).
+    mockRefresh.mockRejectedValueOnce(
+      new InteractionRequiredAuthError('login_required')
+    );
+    await handleSessionExpired();
+    state.sessionExpired = true;
+    mockSetSessionExpired.mockClear();
+
+    await checkSessionOnVisible();
+
+    expect(mockSetSessionExpired).toHaveBeenCalledWith(false);
+    expect(renewed).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem('ss_reauth_log')).not.toBeNull();
+
+    state.sessionExpired = false;
+    await handleSessionExpired();
+    expect(mockRefresh).toHaveBeenCalledTimes(3);
+  });
+
+  it('a prompt left up stays up when the silent refresh still fails', async () => {
+    mockRefresh.mockRejectedValue(
+      new InteractionRequiredAuthError('login_required')
+    );
+    await handleSessionExpired();
+    state.sessionExpired = true;
+    mockSetSessionExpired.mockClear();
+
+    await checkSessionOnVisible();
+
+    expect(mockSetSessionExpired).not.toHaveBeenCalled();
+    expect(renewed).not.toHaveBeenCalled();
+  });
+
+  it('teams: does nothing', async () => {
+    state.inTeams = true;
+
+    await checkSessionOnVisible();
+
+    expect(mockCheck).not.toHaveBeenCalled();
+    expect(mockRefresh).not.toHaveBeenCalled();
   });
 });
