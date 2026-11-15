@@ -11,7 +11,8 @@ import { describe, expect, it } from 'vitest';
  *
  * - Every `useMutation({ ... })` has an `onError`. Without one a failed
  *   write shows the user nothing.
- * - No `onSuccess` calls `invalidateQueries`. A write that fails after the
+ * - Neither `onSuccess` nor `mutationFn` calls `invalidateQueries`. Both run
+ *   only as far as the write succeeds, so a write that fails after the
  *   server changed something leaves the cache stale; `onSettled` refreshes
  *   on both paths. A success toast or a follow-up stays in `onSuccess`.
  *
@@ -21,18 +22,21 @@ import { describe, expect, it } from 'vitest';
  * list. Shrink the lists; never add to them.
  *
  * Checked: the options object written inline in a `useMutation(...)` call,
- * on the TypeScript syntax tree. Not seen: options built elsewhere or spread
- * in, `useMutation` imported under another name, per-call
+ * on the TypeScript syntax tree, called bare or through a namespace
+ * (`RQ.useMutation`). Not seen: options built elsewhere or spread in,
+ * `useMutation` imported under another name, per-call
  * `mutate(vars, { onError })`, an invalidation inside a helper the handler
- * calls, and `refetchQueries` / `resetQueries` in `onSuccess`. "Has an
+ * calls, and `refetchQueries` / `resetQueries`. "Has an
  * `onError`" checks the key only: an empty handler passes.
  */
 
 // Mutations that tell the user about a failure without an onError, with
 // where. Exact match: one that gains an onError, or is deleted, leaves.
 const errorHandledElsewhere: Record<string, string> = {
+  // Only the send itself: the missing-thread-id throw and a cancelQueries
+  // rejection before it reach no toast.
   'packages/chat-ui/src/domains/messages/mutations.ts#useSendMessage':
-    'mutationFn catches, rolls back the optimistic message and toasts',
+    'mutationFn catches a failed send, rolls back the optimistic message and toasts',
 };
 
 // Shrink this list; never add to it.
@@ -44,6 +48,8 @@ const noOnErrorBaseline: string[] = [
 // Shrink this list; never add to it.
 const invalidatesOnSuccessBaseline: string[] = [
   'packages/chat-ui/src/domains/flowruns/mutations.ts#useUpdateFlowRunVariable',
+  // Invalidates at the end of mutationFn.
+  'packages/chat-ui/src/domains/messages/mutations.ts#useSendMessage',
   'src/domains/notifications/mutations.ts#useMarkAllAsRead',
   'src/domains/notifications/mutations.ts#useMarkAsRead',
 ];
@@ -107,10 +113,16 @@ function mutationsIn(file: string): Mutation[] {
   );
   const out: Mutation[] = [];
   const visit = (node: ts.Node) => {
+    const callee = ts.isCallExpression(node) ? node.expression : undefined;
+    const calleeName =
+      callee && ts.isIdentifier(callee)
+        ? callee.text
+        : callee && ts.isPropertyAccessExpression(callee)
+        ? callee.name.text
+        : undefined;
     if (
       ts.isCallExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === 'useMutation' &&
+      calleeName === 'useMutation' &&
       node.arguments[0] &&
       ts.isObjectLiteralExpression(node.arguments[0])
     ) {
@@ -120,10 +132,13 @@ function mutationsIn(file: string): Mutation[] {
           (p) => p.name && ts.isIdentifier(p.name) && p.name.text === name
         );
       const onSuccess = named('onSuccess');
+      const mutationFn = named('mutationFn');
       out.push({
         id: `${relPath}#${enclosingName(node)}`,
         hasOnError: !!named('onError'),
-        invalidatesOnSuccess: !!onSuccess && callsInvalidate(onSuccess),
+        invalidatesOnSuccess:
+          (!!onSuccess && callsInvalidate(onSuccess)) ||
+          (!!mutationFn && callsInvalidate(mutationFn)),
       });
     }
     ts.forEachChild(node, visit);
@@ -136,8 +151,8 @@ describe('architecture: mutations report failure and refresh on both paths', () 
   const mutations = scannedDirs.flatMap(sourceFilesUnder).flatMap(mutationsIn);
 
   it('scans the mutations', () => {
-    // Ten today; a scan that loses most of them fails here.
-    expect(mutations.length).toBeGreaterThan(7);
+    // 13 today; a scan that loses more than two of them fails here.
+    expect(mutations.length).toBeGreaterThan(10);
   });
 
   it('every mutation has an onError, or names where it reports failure', () => {
@@ -148,15 +163,15 @@ describe('architecture: mutations report failure and refresh on both paths', () 
 
     expect(
       silent,
-      `useMutation without onError. Add one that tells the user (toast.error). Found ${
+      `useMutation without onError. A new one: add an onError that tells the user (toast.error), or list it in errorHandledElsewhere with where it does. A listed one fixed: remove it from noOnErrorBaseline. Found ${
         silent.length
-      }:\n  ${silent.join('\n  ')}`
+      }, baseline ${noOnErrorBaseline.length}:\n  ${silent.join('\n  ')}`
     ).toEqual(
       [...noOnErrorBaseline, ...Object.keys(errorHandledElsewhere)].sort()
     );
   });
 
-  it('no onSuccess invalidates the cache; onSettled does', () => {
+  it('no onSuccess or mutationFn invalidates the cache; onSettled does', () => {
     const offenders = mutations
       .filter((m) => m.invalidatesOnSuccess)
       .map((m) => m.id)
@@ -164,7 +179,7 @@ describe('architecture: mutations report failure and refresh on both paths', () 
 
     expect(
       offenders,
-      `invalidateQueries inside onSuccess. Move it to onSettled. Found ${
+      `invalidateQueries inside onSuccess or mutationFn. A new one: move it to onSettled. A listed one fixed: remove it from invalidatesOnSuccessBaseline. Found ${
         offenders.length
       }, baseline ${invalidatesOnSuccessBaseline.length}:\n  ${offenders.join(
         '\n  '

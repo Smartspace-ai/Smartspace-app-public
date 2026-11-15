@@ -19,13 +19,18 @@ import { describe, expect, it } from 'vitest';
  * lower the count.
  *
  * Counted, outside `src/platform/` (which defines the transport): a method
- * call on `api`, `apiParsed` or `AXIOS_INSTANCE`, and a call of `request`,
- * `requestOrThrow`, `getParsed`, `requestParsed`, `fetchAuthed` or `fetch`.
- * Detection walks the TypeScript syntax tree. Not seen: any of these under
- * another name, and a destructured method.
+ * call on `api`, `apiParsed` or `AXIOS_INSTANCE`; a direct call of `api` or
+ * `AXIOS_INSTANCE`; a call of `request`, `requestOrThrow`, `getParsed`,
+ * `requestParsed`, `fetchAuthed` or `fetch`; and `window.fetch`,
+ * `globalThis.fetch` or `self.fetch`. Detection walks the TypeScript syntax
+ * tree. Not seen: any of these under another name, a destructured method,
+ * the SDK's `customInstance`, `EventSource` and `XMLHttpRequest`. Importing
+ * `axios` outside `src/platform/` is a lint error (`.eslintrc.js`), so it is
+ * not counted here.
  */
 // The SDK generates filesDownloadFile, flowRunsSetVariable,
-// flowRunsCancelFlowRun, speechGetConfig and speechGetToken. Moving a call
+// flowRunsCancelFlowRun, speechGetConfig, speechGetToken and
+// messagesStartThreadMessage. Moving a call
 // onto one changes what it throws: the `api` wrapper throws an AppError
 // (`type: 'Conflict'`), the generated client an AxiosError. Check the
 // callers' error handling when moving it (cancelFlowRun matches on
@@ -48,7 +53,7 @@ const allowed: Record<string, { count: number; reason: string }> = {
   'src/domains/messages/service.ts': {
     count: 3,
     reason:
-      'fetchAuthed: the three message endpoints stream (SSE), which the generated client cannot read',
+      'fetchAuthed: /messages/{id}/values and /MessageThreads/{id}/messages/stream stream (SSE), which the generated client cannot read. POST /Messages/start is plain JSON: messagesStartThreadMessage exists, not moved yet',
   },
   'packages/chat-ui/src/messages/smartCopy.ts': {
     count: 1,
@@ -85,6 +90,8 @@ const methods = new Set([
   'patch',
   'delete',
   'del',
+  'head',
+  'options',
   'request',
 ]);
 const functions = new Set([
@@ -94,17 +101,20 @@ const functions = new Set([
   'requestParsed',
   'fetchAuthed',
   'fetch',
+  // The axios instance called directly: api({ url }).
+  'api',
+  'AXIOS_INSTANCE',
 ]);
+const globals = new Set(['window', 'globalThis', 'self']);
 
 function isRawCall(node: ts.CallExpression): boolean {
   const callee = node.expression;
   if (ts.isIdentifier(callee)) return functions.has(callee.text);
-  return (
-    ts.isPropertyAccessExpression(callee) &&
-    ts.isIdentifier(callee.expression) &&
-    clients.has(callee.expression.text) &&
-    methods.has(callee.name.text)
-  );
+  if (!ts.isPropertyAccessExpression(callee)) return false;
+  if (!ts.isIdentifier(callee.expression)) return false;
+  const owner = callee.expression.text;
+  if (globals.has(owner)) return callee.name.text === 'fetch';
+  return clients.has(owner) && methods.has(callee.name.text);
 }
 
 function countRawCalls(file: string): number {

@@ -9,11 +9,12 @@ import { describe, expect, it } from 'vitest';
  * Fitness function: the domain owns its queries and mutations.
  *
  * - A `queryFn` is written only inside a `queryOptions(...)` or
- *   `infiniteQueryOptions(...)` call in a domain's `queries.ts`. A component
+ *   `infiniteQueryOptions(...)` factory in a domain's `queries.ts`: one that
+ *   is not itself inside a `use*` hook, so a loader can call it. A component
  *   or route spreads that factory and adds what is its own (`enabled`, a
  *   poll, a placeholder). A `queryFn` written anywhere else makes a cache
- *   entry the domain's key factory does not know, so nothing invalidates it
- *   and no loader can prefetch it.
+ *   entry no loader can prefetch, and one the domain's key factory may not
+ *   know.
  * - `useMutation` is called only in a domain's `mutations.ts`.
  *
  * A domain's `queries.ts` / `mutations.ts` is under `src/domains/<name>/` or
@@ -26,8 +27,9 @@ import { describe, expect, it } from 'vitest';
  *
  * Detection walks the TypeScript syntax tree, so a comment that mentions
  * `queryFn` does not count. Lists are per file, so a second stray `queryFn`
- * in a listed file is not seen. Also not seen: a quoted `'queryFn'` key, and
- * `useMutation` imported under another name.
+ * in a listed file is not seen. Also not seen: a quoted `'queryFn'` key, a
+ * hook not named `use*`, a factory that is never exported, and `useMutation`
+ * imported under another name.
  */
 
 const queryFnAllowed: Record<string, string> = {
@@ -42,7 +44,12 @@ const queryFnBaseline: string[] = [
   // useInfiniteQuery written inline; move it into an infiniteQueryOptions factory.
   'src/domains/notifications/queries.ts',
   'src/domains/threads/queries.ts',
-  // The upload mutation fetches with queryClient.fetchQuery and an inline queryFn.
+  // queryOptions written inside the hook (useFlowRunVariables, useModels,
+  // useSpeechConfig); export it as a factory and spread it.
+  'packages/chat-ui/src/domains/flowruns/queries.ts',
+  'packages/chat-ui/src/domains/models/queries.ts',
+  'packages/chat-ui/src/domains/speech/queries.ts',
+  // getFileBlobUrl caches blob URLs with queryClient.fetchQuery and an inline queryFn.
   'packages/chat-ui/src/domains/files/mutations.ts',
   // A useQuery written in the component.
   'packages/chat-ui/src/shared/markdown/MarkdownEditor.tsx',
@@ -87,15 +94,33 @@ function calleeName(node: ts.CallExpression): string | undefined {
   return undefined;
 }
 
+const isHookName = (name: string) => /^use[A-Z]/.test(name);
+
+/** The name a function is declared or assigned under, if any. */
+function functionName(n: ts.Node): string | undefined {
+  if (ts.isFunctionDeclaration(n)) return n.name?.text;
+  if (
+    (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) &&
+    ts.isVariableDeclaration(n.parent) &&
+    ts.isIdentifier(n.parent.name)
+  )
+    return n.parent.name.text;
+  return undefined;
+}
+
+/** Inside a queryOptions / infiniteQueryOptions call that no `use*` hook wraps. */
 function insideOptionsFactory(node: ts.Node): boolean {
+  let inOptions = false;
   for (let n = node.parent; n; n = n.parent) {
     if (ts.isCallExpression(n)) {
       const name = calleeName(n);
       if (name === 'queryOptions' || name === 'infiniteQueryOptions')
-        return true;
+        inOptions = true;
     }
+    const fn = functionName(n);
+    if (fn && isHookName(fn)) return false;
   }
-  return false;
+  return inOptions;
 }
 
 function scan(file: string, relPath: string) {
@@ -137,7 +162,8 @@ describe('architecture: the domain owns its queries and mutations', () => {
   it('scans the app and the chat-ui package', () => {
     expect(files.length).toBeGreaterThan(250);
     // The rule must see the factories it protects, or it passes on nothing.
-    expect(files.filter((f) => f.queryFnInFactory).length).toBeGreaterThan(10);
+    // 9 files hold one today.
+    expect(files.filter((f) => f.queryFnInFactory).length).toBeGreaterThan(7);
     expect(files.filter((f) => f.mutation).length).toBeGreaterThan(5);
   });
 
@@ -149,7 +175,7 @@ describe('architecture: the domain owns its queries and mutations', () => {
 
     expect(
       stray,
-      `queryFn outside a queryOptions() in a domain queries.ts. Add a factory there and spread it. Found ${
+      `queryFn outside a queryOptions() factory in a domain queries.ts. A new one: add a factory there and spread it. A listed file fixed: remove it from queryFnBaseline. Found ${
         stray.length
       }, baseline ${queryFnBaseline.length}:\n  ${stray.join('\n  ')}`
     ).toEqual([...queryFnBaseline].sort());
@@ -169,7 +195,7 @@ describe('architecture: the domain owns its queries and mutations', () => {
 
     expect(
       stray,
-      `useMutation outside a domain mutations.ts. Found ${
+      `useMutation outside a domain mutations.ts. A new one: move it there. A listed file fixed: remove it from mutationBaseline. Found ${
         stray.length
       }, baseline ${mutationBaseline.length}:\n  ${stray.join('\n  ')}`
     ).toEqual([...mutationBaseline].sort());
