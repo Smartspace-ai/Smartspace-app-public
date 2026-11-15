@@ -132,6 +132,53 @@ function consumePopupFallbackToken(): string | null {
   return accessToken;
 }
 
+/**
+ * Web session expiry, first step: ask Entra for a new token, skipping the
+ * cached one. No window opens. Throws when only an interactive sign-in can
+ * help.
+ */
+export async function refreshWebTokenSilently(): Promise<void> {
+  const msalInstance = getMsalInstance();
+  const account =
+    msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
+  if (!account) throw new Error('No account to refresh');
+  await msalInstance.acquireTokenSilent({
+    ...loginRequest,
+    account,
+    forceRefresh: true,
+  });
+}
+
+/**
+ * Web session expiry, second step: the sign-in popup. Call it straight from a
+ * click handler with nothing awaited first: a browser allows a popup only
+ * shortly after a click, and MSAL opens the window before its first await.
+ * Not routed through the adapter's `getAccessToken`, which runs a silent step
+ * first and makes every other token request wait on the popup.
+ *
+ * `switchedAccount` is true when the user picked a different account in the
+ * popup's account chooser.
+ */
+export function signInWithPopup(): Promise<{ switchedAccount: boolean }> {
+  const msalInstance = getMsalInstance();
+  const account = msalInstance.getActiveAccount();
+  return msalInstance
+    .acquireTokenPopup(
+      account
+        ? { ...interactiveLoginRequest, account }
+        : interactiveLoginRequest
+    )
+    .then((result) => {
+      if (result.account) msalInstance.setActiveAccount(result.account);
+      return {
+        switchedAccount:
+          !!account &&
+          !!result.account &&
+          result.account.homeAccountId !== account.homeAccountId,
+      };
+    });
+}
+
 export function createMsalWebAdapter(): AuthAdapter {
   const msalInstance = getMsalInstance();
   async function ensureActive() {

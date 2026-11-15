@@ -167,8 +167,9 @@ A failed call reaches its caller in one of three shapes:
 ## 8. Sign-in and expiry
 
 - The API layer only ever asks for a token silently (`getAccessToken({ silentOnly: true })` in `src/platform/api/configureApiClient.ts`). It never opens a popup or redirect itself.
-- A dead session reaches `handleSessionExpired()` (`src/platform/auth/sessionExpiry.ts`) from three places: the request interceptor when the silent token fails, a 401 carrying `X-Reauth-Required` (axios and `fetchAuthed`), and a SignalR 401. It runs one recovery at a time, and after 3 attempts in 60 seconds it stops and shows the stuck prompt.
+- A dead session reaches `handleSessionExpired()` (`src/platform/auth/sessionExpiry.ts`) from three places: the request interceptor when the silent token fails, a 401 carrying `X-Reauth-Required` (axios and `fetchAuthed`), and a SignalR 401. It runs one recovery at a time, and after 3 attempts in 60 seconds it stops and shows the stuck prompt. A click on the prompt is not an attempt.
 - A 401 without `X-Reauth-Required` is the API refusing the action, not an expired session. Leave it to the caller.
+- On the web, recovery first refreshes the token silently, skipping the cached one, and re-runs every active query and route loader (`onSessionRenewed`, wired in `src/main.tsx`; `RealtimeProvider` also rebuilds a hub that is down). If that fails, `SessionExpiryPrompt` shows and its click opens a sign-in popup (`renewSessionWithPopup`), so the page survives. Start the popup synchronously inside the click: a browser allows a popup only shortly after a click, so an await before it can get it blocked. If the popup does not complete, the prompt also offers the full-page sign-in.
 - In Teams a popup needs a click, so recovery shows `SessionExpiryPrompt` and the click signs in.
 
 ---
