@@ -151,12 +151,15 @@ export async function refreshWebTokenSilently(): Promise<void> {
 
 /**
  * Web session expiry, second step: the sign-in popup. Call it straight from a
- * click handler with nothing awaited first: a browser opens a popup only
- * inside a click, and MSAL opens the window before its first await. Not routed
- * through the adapter's `getAccessToken`, which runs a silent step first and
- * makes every other token request wait on the popup.
+ * click handler with nothing awaited first: a browser allows a popup only
+ * shortly after a click, and MSAL opens the window before its first await.
+ * Not routed through the adapter's `getAccessToken`, which runs a silent step
+ * first and makes every other token request wait on the popup.
+ *
+ * `switchedAccount` is true when the user picked a different account in the
+ * popup's account chooser.
  */
-export function signInWithPopup(): Promise<void> {
+export function signInWithPopup(): Promise<{ switchedAccount: boolean }> {
   const msalInstance = getMsalInstance();
   const account = msalInstance.getActiveAccount();
   return msalInstance
@@ -167,6 +170,12 @@ export function signInWithPopup(): Promise<void> {
     )
     .then((result) => {
       if (result.account) msalInstance.setActiveAccount(result.account);
+      return {
+        switchedAccount:
+          !!account &&
+          !!result.account &&
+          result.account.homeAccountId !== account.homeAccountId,
+      };
     });
 }
 

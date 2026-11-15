@@ -53,10 +53,23 @@ const button: React.CSSProperties = {
   cursor: 'pointer',
 };
 
+const linkButton: React.CSSProperties = {
+  padding: 0,
+  border: 'none',
+  background: 'none',
+  color: '#5b5bd6',
+  font: 'inherit',
+  textDecoration: 'underline',
+  cursor: 'pointer',
+};
+
 export function SessionExpiryPrompt() {
   const adapter = useAuth();
   const { sessionExpired, authStuck } = useAuthRuntime();
   const [signingIn, setSigningIn] = useState(false);
+  // Set when a popup did not complete (closed, blocked, or another sign-in
+  // holds MSAL's lock). The prompt then also offers the full-page sign-in.
+  const [popupFailed, setPopupFailed] = useState(false);
 
   // authStuck (re-auth looped without resolving) is terminal and takes
   // precedence over the ordinary Teams gesture prompt.
@@ -64,25 +77,27 @@ export function SessionExpiryPrompt() {
 
   const signInByPopup = !authStuck && !inTeamsEnvironment();
 
-  const onSignIn = async () => {
-    if (signInByPopup) {
-      setSigningIn(true);
-      // No await before this call: the popup must open inside the click.
-      await renewSessionWithPopup();
-      setSigningIn(false);
-      return;
-    }
+  const signInByRedirect = async (redirectUrl?: string) => {
     setSigningIn(true);
     // Clear flags + attempt budget before retrying so the redirect starts
     // fresh (signIn() navigates away on web, so post-call cleanup won't run).
     resetSessionExpiry();
     try {
-      await adapter.signIn();
+      await adapter.signIn(redirectUrl ? { redirectUrl } : undefined);
       queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
     } catch (e) {
       ssWarn('auth', 'sign-in from session-expiry prompt failed', e);
       setSigningIn(false);
     }
+  };
+
+  const onSignIn = async () => {
+    if (!signInByPopup) return signInByRedirect();
+    setSigningIn(true);
+    // No await before this call: the popup must open inside the click.
+    const renewed = await renewSessionWithPopup();
+    setPopupFailed(!renewed);
+    setSigningIn(false);
   };
 
   return (
@@ -109,6 +124,26 @@ export function SessionExpiryPrompt() {
         >
           {signingIn ? 'Signing in…' : signInByPopup ? 'Sign in' : 'Try again'}
         </button>
+        {signInByPopup && popupFailed && (
+          <p style={{ margin: '16px 0 0', fontSize: 13, lineHeight: 1.5 }}>
+            Sign-in didn’t finish.{' '}
+            <button
+              type="button"
+              onClick={() =>
+                void signInByRedirect(
+                  window.location.pathname +
+                    window.location.search +
+                    window.location.hash
+                )
+              }
+              disabled={signingIn}
+              style={linkButton}
+            >
+              Sign in on a full page instead
+            </button>{' '}
+            (this reloads the page).
+          </p>
+        )}
       </div>
     </div>
   );

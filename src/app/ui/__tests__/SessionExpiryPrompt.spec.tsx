@@ -39,8 +39,8 @@ describe('session expiry prompt', () => {
     // signs in through signIn() (a full-page redirect that loses the page).
     let finish: () => void = () => undefined;
     mockPopup.mockReturnValue(
-      new Promise<void>((resolve) => {
-        finish = resolve;
+      new Promise((resolve) => {
+        finish = () => resolve({ switchedAccount: false });
       })
     );
     act(() => setSessionExpired(true));
@@ -53,6 +53,34 @@ describe('session expiry prompt', () => {
 
     await act(async () => finish());
     expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('web: a popup that did not complete offers the full-page sign-in, back to this page', async () => {
+    // Breaks if the prompt only re-offers the popup: when another tab holds
+    // MSAL's sign-in lock, every click fails and the only way out is a reload.
+    mockPopup.mockRejectedValue(
+      Object.assign(new Error('interaction_in_progress'), {
+        errorCode: 'interaction_in_progress',
+      })
+    );
+    mockSignIn.mockReturnValue(new Promise(() => undefined));
+    act(() => setSessionExpired(true));
+    render(<SessionExpiryPrompt />);
+    expect(screen.queryByText(/Sign-in didn’t finish/)).toBeNull();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Sign in on a full page instead' })
+    );
+
+    expect(mockSignIn).toHaveBeenCalledWith({
+      redirectUrl:
+        window.location.pathname +
+        window.location.search +
+        window.location.hash,
+    });
   });
 
   it('web: a closed popup leaves the prompt up, ready for another click', async () => {

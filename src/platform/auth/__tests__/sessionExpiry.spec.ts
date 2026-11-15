@@ -83,7 +83,7 @@ describe('session expiry recovery', () => {
     mockRefresh.mockReset();
     mockRefresh.mockResolvedValue(undefined);
     mockPopup.mockReset();
-    mockPopup.mockResolvedValue(undefined);
+    mockPopup.mockResolvedValue({ switchedAccount: false });
     mockSetSessionExpired.mockClear();
     mockSetAuthStuck.mockClear();
     renewed.mockClear();
@@ -152,16 +152,16 @@ describe('session expiry recovery', () => {
   it('repeated clicks while the popup is open share one popup', async () => {
     let finish: () => void = () => undefined;
     mockPopup.mockReturnValue(
-      new Promise<void>((resolve) => {
-        finish = resolve;
+      new Promise((resolve) => {
+        finish = () => resolve({ switchedAccount: false });
       })
     );
 
     const first = renewSessionWithPopup();
     const second = renewSessionWithPopup();
     finish();
-    await Promise.all([first, second]);
 
+    await expect(Promise.all([first, second])).resolves.toEqual([true, true]);
     expect(mockPopup).toHaveBeenCalledTimes(1);
   });
 
@@ -187,12 +187,80 @@ describe('session expiry recovery', () => {
       mockSetSessionExpired.mockClear();
       mockPopup.mockRejectedValue(popupError(code));
 
-      await renewSessionWithPopup();
+      // False tells the prompt to offer the full-page sign-in.
+      await expect(renewSessionWithPopup()).resolves.toBe(false);
 
       expect(renewed).not.toHaveBeenCalled();
       expect(mockSetSessionExpired).not.toHaveBeenCalled();
     }
   );
+
+  it('a popup where the user picked a different account reloads the page instead of carrying on', async () => {
+    // Breaks if the switch is treated as a renewal: the previous user's
+    // composer text and realtime groups carry over to the new user.
+    const reload = vi.fn();
+    const realLocation = window.location;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...realLocation, pathname: '/', hash: '', reload },
+    });
+    mockPopup.mockResolvedValue({ switchedAccount: true });
+
+    try {
+      await renewSessionWithPopup();
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: realLocation,
+      });
+    }
+
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(renewed).not.toHaveBeenCalled();
+  });
+
+  it('one failing renewal listener does not stop the others', async () => {
+    const offThrowing = onSessionRenewed(() => {
+      throw new Error('listener failed');
+    });
+    // Registered after the throwing one, so it runs after it.
+    const later = vi.fn();
+    const offLater = onSessionRenewed(later);
+
+    await renewSessionWithPopup();
+    offThrowing();
+    offLater();
+
+    expect(later).toHaveBeenCalledTimes(1);
+  });
+
+  it("does nothing inside MSAL's hidden renewal frame, so it spends none of the tab's attempts", async () => {
+    // Breaks if the frame runs recovery: it shares sessionStorage with the
+    // tab, so it uses up the tab's 3 attempts where no one can see it.
+    const realLocation = window.location;
+    const realTop = window.top;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...realLocation, pathname: '/', hash: '#code=abc&state=x' },
+    });
+    Object.defineProperty(window, 'top', { configurable: true, value: {} });
+
+    try {
+      await handleSessionExpired();
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: realLocation,
+      });
+      Object.defineProperty(window, 'top', {
+        configurable: true,
+        value: realTop,
+      });
+    }
+
+    expect(mockRefresh).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('ss_reauth_log')).toBeNull();
+  });
 
   it('teams: flags the prompt, with no silent refresh and no popup', async () => {
     state.inTeams = true;

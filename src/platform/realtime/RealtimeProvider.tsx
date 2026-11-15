@@ -21,6 +21,7 @@ import { getClientScopes } from '@/platform/auth/scopes';
 import {
   handleSessionExpired,
   isUnauthorizedError,
+  onSessionRenewed,
 } from '@/platform/auth/sessionExpiry';
 import { ssConfig } from '@/platform/config/ssConfig';
 
@@ -221,10 +222,19 @@ export function RealtimeProvider({
       }, 5_000);
     });
 
+    // A rebuild while the session was dead failed its negotiate, and nothing
+    // starts the hub again after that. Once the session is renewed in the
+    // page (no reload), rebuild a hub that is down.
+    const offRenewed = onSessionRenewed(() => {
+      if (!disposed && conn.state === HubConnectionState.Disconnected)
+        setRebuildTick((t) => t + 1);
+    });
+
     setConnection(conn);
 
     return () => {
       disposed = true;
+      offRenewed();
       if (rebuildTimer) clearTimeout(rebuildTimer);
       startPromise.current = null;
       conn.stop().catch(() => {

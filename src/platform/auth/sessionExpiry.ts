@@ -78,7 +78,31 @@ export function onSessionRenewed(listener: () => void): () => void {
 }
 
 function notifyRenewed(): void {
-  for (const listener of renewedListeners) listener();
+  for (const listener of renewedListeners) {
+    try {
+      listener();
+    } catch (e) {
+      ssWarn('auth', 'session-renewed listener failed', e);
+    }
+  }
+}
+
+/**
+ * True inside the hidden iframe MSAL's silent renewal loads this app into: a
+ * frame whose URL carries an auth response. It shares sessionStorage, and so
+ * the attempt log, with the visible tab. Teams runs the app in a frame too,
+ * but without an auth response in the URL.
+ */
+function inAuthResponseFrame(): boolean {
+  try {
+    const hash = window.location.hash;
+    return (
+      window.self !== window.top &&
+      (hash.includes('code=') || hash.includes('error='))
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -96,6 +120,8 @@ export async function handleSessionExpired(): Promise<void> {
   // While the prompt waits for its click, reauthInProgress stays set, so more
   // failures spend no attempts.
   if (isE2E() || reauthInProgress || onLoginScreen()) return;
+  // Recovery from there would spend the tab's attempts where no one sees it.
+  if (inAuthResponseFrame()) return;
 
   // Stop looping if re-auth keeps firing without resolving the 401.
   if (!withinReauthBudget()) {
@@ -126,22 +152,27 @@ export async function handleSessionExpired(): Promise<void> {
   notifyRenewed();
 }
 
-let popupInFlight: Promise<void> | null = null;
+let popupInFlight: Promise<boolean> | null = null;
 
 /**
  * Web: open the sign-in popup from the prompt's click. Call it synchronously in
  * the click handler. Repeated clicks share one popup. Only a completed popup
- * renews the session; a closed, blocked or failed one leaves the prompt up.
+ * renews the session; a closed, blocked or failed one leaves the prompt up and
+ * resolves false, so the prompt can offer another way in. A different account
+ * signing in reloads the page, so nothing of the previous user's carries over.
  */
-export function renewSessionWithPopup(): Promise<void> {
+export function renewSessionWithPopup(): Promise<boolean> {
   if (popupInFlight) return popupInFlight;
   popupInFlight = signInWithPopup()
-    .then(() => {
+    .then(({ switchedAccount }) => {
       resetSessionExpiry();
-      notifyRenewed();
+      if (switchedAccount) window.location.reload();
+      else notifyRenewed();
+      return true;
     })
     .catch((e: unknown) => {
       ssWarn('auth', 'sign-in popup did not complete', e);
+      return false;
     })
     .finally(() => {
       popupInFlight = null;
