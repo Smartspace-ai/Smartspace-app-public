@@ -17,6 +17,9 @@ export const workspaceDetailOptions = ({
     queryKey: workspaceKeys.byId(workspaceId),
     queryFn: () => service.fetchWorkspace(workspaceId),
     staleTime: 30_000,
+    // The route loader has just tried and failed. Retrying on mount delays
+    // the header's error by several seconds.
+    retryOnMount: false,
   });
 
 export function useWorkspace(workspaceId: string) {
