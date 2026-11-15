@@ -2,6 +2,7 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { Suspense, useEffect, useMemo, type ReactNode } from 'react';
 
+import { isAuthError } from '@/platform/auth/errors';
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 import { defaultChatService } from '@/platform/chat/defaultChatService';
 import { isNotFoundError } from '@/platform/envelopes';
@@ -99,8 +100,14 @@ export const Route = createFileRoute(
       // bubbles into ProtectedErrorBoundary as a generic "Oops" screen
       // instead of sending them back to /workspace, whose own loader picks
       // another accessible workspace or lands on /workspace/no-workspaces.
-      if (!isNotFoundError(e)) throw e;
-      throw redirect({ to: '/workspace', replace: true });
+      if (isNotFoundError(e))
+        throw redirect({ to: '/workspace', replace: true });
+      // An auth failure goes to the boundary, which sends the user to sign
+      // in. Any other failure commits the layout: the header reads the same
+      // failed query and says the workspace failed to load, and the sidebar
+      // stays usable.
+      if (isAuthError(e)) throw e;
+      return null;
     }
   },
   component: () => (

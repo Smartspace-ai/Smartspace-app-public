@@ -2,7 +2,7 @@
 import { ErrorComponentProps, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
-import { AuthRequiredError } from '@/platform/auth/errors';
+import { isAuthError } from '@/platform/auth/errors';
 import { isInTeams } from '@/platform/auth/msalConfig';
 import { removeSplash } from '@/platform/boot/removeSplash';
 import type { AppError } from '@/platform/envelopes';
@@ -15,20 +15,6 @@ function isAppError(e: unknown): e is AppError {
     typeof e === 'object' &&
     e !== null &&
     'type' in (e as Record<string, unknown>)
-  );
-}
-
-function isHttp401(e: unknown): boolean {
-  if (!e || typeof e !== 'object' || !('response' in e)) return false;
-  const res = (e as { response?: { status?: number } }).response;
-  return res?.status === 401;
-}
-
-function isAuthError(e: unknown): boolean {
-  return (
-    e instanceof AuthRequiredError ||
-    (isAppError(e) && e.type === 'Unauthorized') ||
-    isHttp401(e)
   );
 }
 

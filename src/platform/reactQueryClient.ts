@@ -1,11 +1,30 @@
 // src/platform/reactQueryClient.ts
-import { MutationCache, QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 
 import { AuthRequiredError } from './auth/errors';
 import { SESSION_QUERY_KEY } from './auth/sessionQuery';
 import { isTransient, isTransientRead } from './envelopes';
+import { ssError } from './log';
 
 export const queryClient = new QueryClient({
+  // React Query does not log a failed query. Without this, a response that
+  // fails its zod schema shows only as a component's error state.
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      const { type, issues } = (error ?? {}) as {
+        type?: unknown;
+        issues?: unknown;
+      };
+      if (type === 'ValidationError') {
+        ssError('query', 'response failed validation', {
+          queryKey: query.queryKey,
+          issues,
+        });
+        return;
+      }
+      ssError('query', 'request failed', { queryKey: query.queryKey, error });
+    },
+  }),
   mutationCache: new MutationCache({
     onError: (error) => {
       if (error instanceof AuthRequiredError) {

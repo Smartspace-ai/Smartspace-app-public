@@ -3,6 +3,7 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { z } from 'zod';
 
+import { isAuthError } from '@/platform/auth/errors';
 import { defaultChatService } from '@/platform/chat/defaultChatService';
 import { isNotFoundError } from '@/platform/envelopes';
 
@@ -57,7 +58,14 @@ export const Route = createFileRoute(
       // the boot splash stays up forever and requests fire endlessly. When there
       // is no different thread to show, commit the route with no thread instead
       // of looping (the component renders an empty state and the splash lifts).
-      if (!isNotFoundError(e)) throw e;
+      if (!isNotFoundError(e)) {
+        // An auth failure goes to the boundary, which sends the user to sign
+        // in. Any other failure commits the route: MessageList reads the same
+        // failed query and shows its own error with Try again inside the
+        // chat column, so the sidebar and header stay usable.
+        if (isAuthError(e)) throw e;
+        return null;
+      }
 
       let list;
       try {
