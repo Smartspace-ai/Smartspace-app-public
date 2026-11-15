@@ -3,9 +3,11 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { z } from 'zod';
 
-import { isAuthError } from '@/platform/auth/errors';
 import { defaultChatService } from '@/platform/chat/defaultChatService';
-import { isNotFoundError } from '@/platform/envelopes';
+import {
+  isNotFoundError,
+  isServerOrNetworkFailure,
+} from '@/platform/envelopes';
 
 import { ensureDraftThread, threadsListOptions } from '@/domains/threads';
 
@@ -59,12 +61,13 @@ export const Route = createFileRoute(
       // is no different thread to show, commit the route with no thread instead
       // of looping (the component renders an empty state and the splash lifts).
       if (!isNotFoundError(e)) {
-        // An auth failure goes to the boundary, which sends the user to sign
-        // in. Any other failure commits the route: MessageList reads the same
-        // failed query and shows its own error with Try again inside the
-        // chat column, so the sidebar and header stay usable.
-        if (isAuthError(e)) throw e;
-        return null;
+        // A network failure or 5xx commits the route: MessageList reads the
+        // same failed query and shows its own error with Try again inside the
+        // chat column, so the sidebar and header stay usable. Anything else
+        // (auth, 403, a response that fails validation) goes to the boundary,
+        // which sends the user to sign in or says what is wrong.
+        if (isServerOrNetworkFailure(e)) return null;
+        throw e;
       }
 
       let list;
@@ -77,6 +80,7 @@ export const Route = createFileRoute(
         // list refetch too (threadsKeys.lists()) mid-recovery. That isn't
         // evidence the workspace is empty, so don't act on it.
         if (isCancelledError(listError)) return null;
+        // Any other failure of this read still lands on the full-screen error.
         throw listError;
       }
       const first = list.data[0];

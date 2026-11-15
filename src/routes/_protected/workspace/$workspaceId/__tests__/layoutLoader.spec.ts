@@ -1,6 +1,11 @@
+import { QueryClient } from '@tanstack/react-query';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AuthRequiredError } from '@/platform/auth/errors';
+
+import { server } from '@/test/mocks/server';
+import { workspaceKeys } from '@smartspace/chat-ui';
 
 import { Route } from '../_layout';
 
@@ -16,32 +21,65 @@ function makeArgs(ensureQueryData: ReturnType<typeof vi.fn>): LoaderArgs {
 }
 
 describe('workspace layout loader', () => {
-  it('commits the layout on a server error, so the header shows the failure and the sidebar stays', async () => {
-    // Breaks if the loader rethrows: the full-screen error page replaces the
-    // whole workspace.
-    const serverError = Object.assign(
-      new Error('Request failed with status 500'),
-      { response: { status: 500, data: { retryable: false } } }
+  it.each([
+    ['a 5xx', { isAxiosError: true, response: { status: 500, data: {} } }],
+    ['a network failure', { isAxiosError: true, message: 'Network Error' }],
+  ])(
+    'commits the layout on %s, so the header shows the failure and the sidebar stays',
+    async (_name, failure) => {
+      // Breaks if the loader rethrows: the full-screen error page replaces
+      // the whole workspace.
+      const ensureQueryData = vi.fn().mockRejectedValueOnce(failure);
+
+      await expect(
+        Route.options.loader?.(makeArgs(ensureQueryData))
+      ).resolves.toBeNull();
+    }
+  );
+
+  it.each([
+    ['an AuthRequiredError', new AuthRequiredError()],
+    ['a raw 401', { isAxiosError: true, response: { status: 401, data: {} } }],
+    ['an Unauthorized AppError', { type: 'Unauthorized' }],
+    ['a 403', { isAxiosError: true, response: { status: 403, data: {} } }],
+    ['a response that fails validation', { type: 'ValidationError' }],
+  ])(
+    'rethrows %s, so the boundary handles what trying again cannot fix',
+    async (_name, failure) => {
+      // Breaks if the loader swallows it: the user gets an inline Try again
+      // that can never succeed, or is never sent to sign in.
+      const ensureQueryData = vi.fn().mockRejectedValueOnce(failure);
+
+      await expect(
+        Route.options.loader?.(makeArgs(ensureQueryData))
+      ).rejects.toBe(failure);
+    }
+  );
+
+  it('commits on a real 503 from the API, leaving the failed query for the header', async () => {
+    // Starts from the error the generated client really throws, not a
+    // hand-built shape.
+    server.use(
+      http.get('*/workspaces/:workspaceId', () =>
+        HttpResponse.json({ code: 'unavailable' }, { status: 503 })
+      )
     );
-    const ensureQueryData = vi.fn().mockRejectedValueOnce(serverError);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
 
     await expect(
-      Route.options.loader?.(makeArgs(ensureQueryData))
+      Route.options.loader?.({
+        params: { workspaceId: 'ws-1' },
+        context: { queryClient },
+      } as unknown as LoaderArgs)
     ).resolves.toBeNull();
-  });
-
-  it('rethrows an auth failure, so the boundary sends the user to sign in', async () => {
-    const authFailure = new AuthRequiredError();
-    const ensureQueryData = vi.fn().mockRejectedValueOnce(authFailure);
-
-    await expect(
-      Route.options.loader?.(makeArgs(ensureQueryData))
-    ).rejects.toBe(authFailure);
+    expect(queryClient.getQueryState(workspaceKeys.byId('ws-1'))?.status).toBe(
+      'error'
+    );
   });
 
   it('still sends a workspace the user can no longer see back to /workspace', async () => {
-    // Unchanged behaviour, pinned here because the same catch now has a
-    // third branch.
     const ensureQueryData = vi.fn().mockRejectedValueOnce({ type: 'NotFound' });
 
     await expect(

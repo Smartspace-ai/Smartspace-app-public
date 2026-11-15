@@ -2,10 +2,12 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { Suspense, useEffect, useMemo, type ReactNode } from 'react';
 
-import { isAuthError } from '@/platform/auth/errors';
 import { useUserDisplayName, useUserId } from '@/platform/auth/session';
 import { defaultChatService } from '@/platform/chat/defaultChatService';
-import { isNotFoundError } from '@/platform/envelopes';
+import {
+  isNotFoundError,
+  isServerOrNetworkFailure,
+} from '@/platform/envelopes';
 import {
   RouteIdsProvider,
   useRouteIds,
@@ -102,12 +104,14 @@ export const Route = createFileRoute(
       // another accessible workspace or lands on /workspace/no-workspaces.
       if (isNotFoundError(e))
         throw redirect({ to: '/workspace', replace: true });
-      // An auth failure goes to the boundary, which sends the user to sign
-      // in. Any other failure commits the layout: the header reads the same
-      // failed query and says the workspace failed to load, and the sidebar
-      // stays usable.
-      if (isAuthError(e)) throw e;
-      return null;
+      // A network failure or 5xx commits the layout: the header reads the
+      // same failed query and says the workspace failed to load. Anything
+      // else (auth, 403, a response that fails validation) goes to the
+      // boundary. The child loaders still run: on `/workspace/$id/` the index
+      // loader's thread list read throws if the API is down, so that entry
+      // still lands on the full-screen error.
+      if (isServerOrNetworkFailure(e)) return null;
+      throw e;
     }
   },
   component: () => (

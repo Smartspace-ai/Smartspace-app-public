@@ -10,19 +10,36 @@ export const queryClient = new QueryClient({
   // React Query does not log a failed query. Without this, a response that
   // fails its zod schema shows only as a component's error state.
   queryCache: new QueryCache({
+    // Never log the raw error: an AxiosError carries the request's
+    // Authorization header, and the log is copied by Copy diagnostics.
     onError: (error, query) => {
-      const { type, issues } = (error ?? {}) as {
+      const e = (error ?? {}) as {
         type?: unknown;
         issues?: unknown;
+        message?: unknown;
+        status?: unknown;
+        code?: unknown;
+        traceId?: unknown;
+        response?: { status?: unknown; data?: unknown };
       };
-      if (type === 'ValidationError') {
+      if (e.type === 'ValidationError') {
         ssError('query', 'response failed validation', {
           queryKey: query.queryKey,
-          issues,
+          issues: e.issues,
         });
         return;
       }
-      ssError('query', 'request failed', { queryKey: query.queryKey, error });
+      const body = (e.response?.data ?? {}) as {
+        code?: unknown;
+        traceId?: unknown;
+      };
+      ssError('query', 'request failed', {
+        queryKey: query.queryKey,
+        status: e.response?.status ?? e.status,
+        code: body.code ?? e.code,
+        traceId: body.traceId ?? e.traceId,
+        message: e.message,
+      });
     },
   }),
   mutationCache: new MutationCache({

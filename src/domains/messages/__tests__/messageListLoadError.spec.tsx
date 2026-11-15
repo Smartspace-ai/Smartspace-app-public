@@ -8,6 +8,7 @@ import {
 } from '@/test/chatProviderHarness';
 import {
   MessageList,
+  threadDetailOptions,
   type MessageThread,
   type Workspace,
 } from '@smartspace/chat-ui';
@@ -81,5 +82,76 @@ describe('message list: a thread that fails to load', () => {
       expect(screen.queryByText('Failed to load thread')).toBeNull()
     );
     expect(fetchThread).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows the error the route loader left at once, without fetching again on mount', async () => {
+    // Breaks if the detail query retries on mount: the user waits through
+    // another request (several with retries) before seeing the error.
+    const fetchThread = vi.fn(async (): Promise<MessageThread> => {
+      throw new Error('Request failed with status 500');
+    });
+    const service = createFakeChatService({
+      fetchThread,
+      fetchMessages: async () => [],
+      fetchWorkspace: async () =>
+        ({ id: WORKSPACE_ID, name: 'Contract Review' } as unknown as Workspace),
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    // What the thread route's loader does before the page mounts.
+    await queryClient
+      .ensureQueryData(
+        threadDetailOptions({
+          service,
+          workspaceId: WORKSPACE_ID,
+          threadId: THREAD_ID,
+        })
+      )
+      .catch(() => undefined);
+
+    renderWithChat(<MessageList />, {
+      workspaceId: WORKSPACE_ID,
+      threadId: THREAD_ID,
+      queryClient,
+      service,
+    });
+
+    expect(await screen.findByText('Failed to load thread')).toBeTruthy();
+    expect(fetchThread).toHaveBeenCalledTimes(1);
+  });
+
+  it('Try again refetches only what failed', async () => {
+    // Breaks if Try again refetches both queries: a request the user did not
+    // need, and the loaded messages flicker.
+    const fetchMessages = vi.fn(async () => []);
+    const fetchThread = vi.fn(async (): Promise<MessageThread> => {
+      throw new Error('Request failed with status 500');
+    });
+    renderWithChat(<MessageList />, {
+      workspaceId: WORKSPACE_ID,
+      threadId: THREAD_ID,
+      queryClient: new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      }),
+      service: createFakeChatService({
+        fetchThread,
+        fetchMessages,
+        fetchWorkspace: async () =>
+          ({
+            id: WORKSPACE_ID,
+            name: 'Contract Review',
+          } as unknown as Workspace),
+      }),
+    });
+
+    expect(await screen.findByText('Failed to load thread')).toBeTruthy();
+    expect(fetchMessages).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => expect(fetchThread).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('Failed to load thread')).toBeTruthy();
+    expect(fetchMessages).toHaveBeenCalledTimes(1);
   });
 });

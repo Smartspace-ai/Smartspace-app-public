@@ -1,13 +1,28 @@
+import {
+  AxiosError,
+  AxiosHeaders,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ssError } from '@/platform/log';
 import { queryClient } from '@/platform/reactQueryClient';
 
 describe('queryClient failed-query logging', () => {
-  it('logs a failed query once, naming its query key', async () => {
+  it('logs a failed query once, naming its query key, status, code and traceId', async () => {
     // Breaks if the QueryCache has no onError: the failure is silent.
     vi.mocked(ssError).mockClear();
-    const failure = new Error('Request failed with status 500');
+    const failure = new AxiosError(
+      'Request failed with status code 503',
+      'ERR_BAD_RESPONSE',
+      undefined,
+      undefined,
+      {
+        status: 503,
+        data: { code: 'unavailable', traceId: 'trace-1' },
+      } as AxiosResponse
+    );
 
     await expect(
       queryClient.fetchQuery({
@@ -20,8 +35,39 @@ describe('queryClient failed-query logging', () => {
     expect(ssError).toHaveBeenCalledTimes(1);
     expect(ssError).toHaveBeenCalledWith('query', 'request failed', {
       queryKey: ['test', 'failing-request'],
-      error: failure,
+      status: 503,
+      code: 'unavailable',
+      traceId: 'trace-1',
+      message: 'Request failed with status code 503',
     });
+  });
+
+  it('never logs the bearer token the failed request carried', async () => {
+    // Breaks if the raw error is logged: AxiosError's toJSON includes the
+    // request config, so the token reaches the log Copy diagnostics copies.
+    vi.mocked(ssError).mockClear();
+    const failure = new AxiosError(
+      'Request failed with status code 500',
+      'ERR_BAD_RESPONSE',
+      {
+        headers: new AxiosHeaders({ Authorization: 'Bearer secret-token' }),
+      } as InternalAxiosRequestConfig,
+      undefined,
+      { status: 500, data: {} } as AxiosResponse
+    );
+
+    await expect(
+      queryClient.fetchQuery({
+        queryKey: ['test', 'token-request'],
+        queryFn: () => Promise.reject(failure),
+        retry: false,
+      })
+    ).rejects.toBe(failure);
+
+    expect(ssError).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(vi.mocked(ssError).mock.calls)).not.toContain(
+      'secret-token'
+    );
   });
 
   it('logs a response that fails validation with its zod issues', async () => {

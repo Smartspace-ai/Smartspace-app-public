@@ -217,7 +217,6 @@ export function MessageList({
           <Button
             size="sm"
             variant="outline"
-            disabled={threadFetching || messagesFetching}
             onClick={() => {
               if (threadError) void refetchThread();
               if (messagesError) void refetchMessages();
