@@ -61,11 +61,11 @@ src/
 
 ### Domain Pattern
 
-Each domain (`src/domains/<feature>/`) follows:
+A domain's files are split between `packages/chat-ui/src/domains/<feature>/` and `src/domains/<feature>/`. [PATTERNS.md](PATTERNS.md) §1 says which half owns what; read it before adding a domain, query, mutation, route or component.
 
-- `model.ts` — TypeScript interfaces
-- `schemas.ts` — Zod validation
-- `service.ts` — API calls
+- `model.ts` — TypeScript `type` aliases (and an `enum` where a value set needs one)
+- `schemas.ts` — Zod validation (either side)
+- `service.ts` — API calls (app side only)
 - `mapper.ts` — DTO ↔ model transformation
 - `queries.ts` / `mutations.ts` — TanStack Query hooks
 - `queryKeys.ts` — Query key factories
@@ -149,5 +149,5 @@ never happens?
 - **A user, an API caller or stored data gets a wrong result today:** it is a bug. Raise it for a
   bug ticket; never fold the fix into the current PR.
 - **A named cost** (maintainability, a test gap, a class of future bug): list it in the PR
-  description's *Not in this PR* table with its consequence. A person files it on Monday; agents
+  description's _Not in this PR_ table with its consequence. A person files it on Monday; agents
   never file it themselves.
