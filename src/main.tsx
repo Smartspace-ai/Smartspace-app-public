@@ -16,6 +16,7 @@ import '@smartspace/chat-ui/styles.css';
 
 import { configureApiClient } from '@/platform/api/configureApiClient';
 import { getMsalInstance } from '@/platform/auth/msalClient';
+import { onSessionRenewed } from '@/platform/auth/sessionExpiry';
 import { removeSplash } from '@/platform/boot/removeSplash';
 import { ssError, ssInfoAlways, ssWarn } from '@/platform/log';
 import { queryClient } from '@/platform/reactQueryClient';
@@ -83,6 +84,14 @@ declare module '@tanstack/react-router' {
     router: typeof router;
   }
 }
+
+// Requests made while the session was dead failed and stayed failed. Once the
+// silent refresh or the sign-in popup renews it, re-run every query and route
+// loader so the page recovers without a reload.
+onSessionRenewed(() => {
+  void queryClient.invalidateQueries();
+  void router.invalidate();
+});
 
 // Popup guard: if this page loaded inside an MSAL popup (window.opener is set
 // AND the URL contains an auth response hash), do NOT render the full SPA.

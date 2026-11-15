@@ -84,8 +84,8 @@ export function configureApiClient() {
       // Invalidate session query so UI reacts to auth failure
       queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
 
-      // Reactively escalate to interactive re-auth (redirect on web, prompt in
-      // Teams). De-duped inside handleSessionExpired — fire-and-forget.
+      // Start recovery (a silent refresh, then the sign-in prompt). De-duped
+      // inside handleSessionExpired — fire-and-forget.
       void handleSessionExpired();
 
       ssWarn('api', 'silent token attach failed (blocking request)', e);

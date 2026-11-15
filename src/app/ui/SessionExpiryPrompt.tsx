@@ -1,7 +1,8 @@
-// Root-level re-auth prompt for Teams (and any context where interactive
-// sign-in needs a user gesture). On pure web, handleSessionExpired() redirects
-// automatically and this never shows. In Teams, opening the auth popup requires
-// a click, so we surface a blocking prompt whose button drives signIn().
+// Root-level re-auth prompt, shown on every screen. A sign-in popup needs a
+// click, so when handleSessionExpired() cannot renew the session silently it
+// raises this prompt and the button signs in: on the web through a popup, so
+// the page and anything typed survive; in Teams through signIn(). The stuck
+// state (re-auth kept failing) signs in through signIn() everywhere.
 //
 // Styles are intentionally inline raw values, not theme tokens: this overlay is
 // the last-resort UI when the session (and often the rest of the app's data) is
@@ -10,7 +11,11 @@
 import { useState } from 'react';
 
 import { useAuth, useAuthRuntime } from '@/platform/auth/session';
-import { resetSessionExpiry } from '@/platform/auth/sessionExpiry';
+import {
+  inTeamsEnvironment,
+  renewSessionWithPopup,
+  resetSessionExpiry,
+} from '@/platform/auth/sessionExpiry';
 import { SESSION_QUERY_KEY } from '@/platform/auth/sessionQuery';
 import { ssWarn } from '@/platform/log';
 import { queryClient } from '@/platform/reactQueryClient';
@@ -57,7 +62,16 @@ export function SessionExpiryPrompt() {
   // precedence over the ordinary Teams gesture prompt.
   if (!sessionExpired && !authStuck) return null;
 
+  const signInByPopup = !authStuck && !inTeamsEnvironment();
+
   const onSignIn = async () => {
+    if (signInByPopup) {
+      setSigningIn(true);
+      // No await before this call: the popup must open inside the click.
+      await renewSessionWithPopup();
+      setSigningIn(false);
+      return;
+    }
     setSigningIn(true);
     // Clear flags + attempt budget before retrying so the redirect starts
     // fresh (signIn() navigates away on web, so post-call cleanup won't run).
@@ -93,7 +107,7 @@ export function SessionExpiryPrompt() {
           disabled={signingIn}
           style={{ ...button, opacity: signingIn ? 0.6 : 1 }}
         >
-          {signingIn ? 'Signing in…' : 'Try again'}
+          {signingIn ? 'Signing in…' : signInByPopup ? 'Sign in' : 'Try again'}
         </button>
       </div>
     </div>
