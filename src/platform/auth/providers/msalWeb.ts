@@ -180,13 +180,16 @@ async function acquireWebTokenSilently(forceRefresh: boolean): Promise<void> {
  * and Entra rejects an unregistered address with AADSTS50011. The popup guard
  * in main.tsx stops the app rendering when the root loads inside the popup.
  *
- * With an account, the popup sends it as a hint and no `prompt`: while the
- * user's Microsoft session is alive, Entra signs them in without asking and
- * the popup closes at once. `select_account` would make MSAL drop the hint and
- * always show the account chooser. With no account, the chooser stays.
+ * With an account, the popup sends it as a hint and no `prompt`.
+ * `select_account` would make MSAL drop the hint, so Entra would show the
+ * account chooser. The popup only opens after the silent refresh failed; when
+ * that was because the hidden iframe could not use the Microsoft session
+ * (third-party cookies blocked, or its redirect address not registered), a
+ * live session usually signs the user in without asking. With no account,
+ * the chooser stays.
  *
  * `switchedAccount` is true when a different account signed in, which is now
- * rare: the chooser is shown only when there is no account to hint.
+ * rarer, since the chooser is usually skipped when there is an account.
  */
 export function signInWithPopup(): Promise<{ switchedAccount: boolean }> {
   const msalInstance = getMsalInstance();

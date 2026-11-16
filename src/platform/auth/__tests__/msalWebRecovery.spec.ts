@@ -61,7 +61,7 @@ describe('web session recovery against MSAL', () => {
     ['a signed-in account', true, undefined],
     ['no account', false, 'select_account'],
   ])(
-    'with %s, the popup shows the account chooser only when there is no account to hint',
+    'with %s, the popup asks for select_account only when there is no account to hint',
     (_name, hasAccount, prompt) => {
       // Breaks if the popup always asks for select_account: MSAL drops the
       // account hint and the user picks an account even when their Microsoft
