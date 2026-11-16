@@ -90,9 +90,9 @@ export function configureApiClient() {
       // Invalidate session query so UI reacts to auth failure
       queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
 
-      // Start recovery (a silent refresh, then the sign-in prompt). De-duped
-      // inside handleSessionExpired — fire-and-forget.
-      void handleSessionExpired();
+      // Start recovery: the silent token just failed, so straight to the
+      // sign-in prompt. De-duped inside handleSessionExpired — fire-and-forget.
+      void handleSessionExpired({ silentTokenFailed: true });
 
       ssWarn('api', 'silent token attach failed (blocking request)', e);
       throw e instanceof AuthRequiredError ? e : new AuthRequiredError();

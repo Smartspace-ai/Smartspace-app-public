@@ -36,5 +36,10 @@ describe('fetchAuthed when no token can be had', () => {
     ).rejects.toBe(error);
 
     expect(mockHandleSessionExpired).toHaveBeenCalledTimes(recovers ? 1 : 0);
+    // The silent token already failed, so recovery skips its own retry.
+    if (recovers)
+      expect(mockHandleSessionExpired).toHaveBeenCalledWith({
+        silentTokenFailed: true,
+      });
   });
 });

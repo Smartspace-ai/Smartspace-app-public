@@ -119,6 +119,17 @@ describe('session expiry recovery', () => {
     expect(mockSetSessionExpired).not.toHaveBeenCalled();
   });
 
+  it('web: when the silent token itself failed, the prompt shows at once, with no second silent attempt', async () => {
+    // Breaks if recovery runs the forced refresh anyway: it goes through the
+    // same refresh token and hidden iframe, fails again, and the prompt comes
+    // seconds later.
+    await handleSessionExpired({ silentTokenFailed: true });
+
+    expect(mockRefresh).not.toHaveBeenCalled();
+    expect(mockSetSessionExpired).toHaveBeenCalledWith(true);
+    expect(mockPopup).not.toHaveBeenCalled();
+  });
+
   it('web: a failed refresh shows the sign-in prompt, and does not open a popup', async () => {
     mockRefresh.mockRejectedValue(new Error('interaction_required'));
 
@@ -390,6 +401,8 @@ describe('session check when the tab becomes visible', () => {
 
       expect(mockSetSessionExpired).toHaveBeenCalledWith(true);
       expect(mockPopup).not.toHaveBeenCalled();
+      // The check already failed silently; no second silent attempt.
+      expect(mockRefresh).not.toHaveBeenCalled();
     }
   );
 

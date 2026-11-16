@@ -135,8 +135,16 @@ export function isAuthResponsePage(): boolean {
  *   typed survive either way.
  * - Teams: a popup needs a user gesture, so flag the session as expired and let
  *   the root-level prompt drive `signIn()` on click.
+ *
+ * `silentTokenFailed`: the trigger was this app's own silent token request
+ * failing (not on the network). A forced refresh goes through the same refresh
+ * token and hidden iframe, so it would only fail again a few seconds later:
+ * the web shows the prompt at once instead. A server or realtime 401 leaves it
+ * false, since the token was fine locally and a refresh can help.
  */
-export async function handleSessionExpired(): Promise<void> {
+export async function handleSessionExpired({
+  silentTokenFailed = false,
+}: { silentTokenFailed?: boolean } = {}): Promise<void> {
   // While the prompt waits for its click, reauthInProgress stays set, so more
   // failures spend no attempts.
   if (isE2E() || reauthInProgress || onLoginScreen()) return;
@@ -154,6 +162,12 @@ export async function handleSessionExpired(): Promise<void> {
 
   if (inTeamsEnvironment()) {
     // Can't open a popup without a gesture — surface a prompt instead.
+    setSessionExpired(true);
+    return;
+  }
+
+  if (silentTokenFailed) {
+    ssInfoAlways('auth', 'silent token failed -> sign-in prompt');
     setSessionExpired(true);
     return;
   }
@@ -243,7 +257,8 @@ export async function checkSessionOnVisible(): Promise<void> {
   } catch (e) {
     // Offline is not expiry. Anything else is: a sign-in required, or the
     // hidden renewal iframe timing out once the refresh token has expired.
-    if (!isMsalNetworkFailure(e)) await handleSessionExpired();
+    if (!isMsalNetworkFailure(e))
+      await handleSessionExpired({ silentTokenFailed: true });
   }
 }
 
