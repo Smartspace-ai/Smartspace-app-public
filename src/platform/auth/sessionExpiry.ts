@@ -129,17 +129,19 @@ export function isAuthResponsePage(): boolean {
  * Recover from a session whose silent token can no longer be acquired (or whose
  * requests the server rejects with an auth-middleware 401). De-duplicated.
  *
- * - Web: one silent refresh that skips the cached token. If it works, the
- *   failed screens re-run. If not, the root prompt asks the user to sign in;
- *   its click opens the popup (`renewSessionWithPopup`). The page and anything
- *   typed survive either way.
+ * - Web: unless `silentTokenFailed`, one silent refresh that skips the cached
+ *   token; if it works, the failed screens re-run. Otherwise the root prompt
+ *   asks the user to sign in; its click opens the popup
+ *   (`renewSessionWithPopup`). The page and anything typed survive either way.
  * - Teams: a popup needs a user gesture, so flag the session as expired and let
  *   the root-level prompt drive `signIn()` on click.
  *
  * `silentTokenFailed`: the trigger was this app's own silent token request
  * failing (not on the network). A forced refresh goes through the same refresh
- * token and hidden iframe, so it would only fail again a few seconds later:
- * the web shows the prompt at once instead. A server or realtime 401 leaves it
+ * token and hidden iframe, so it usually fails again a few seconds later: the
+ * web shows the prompt at once instead. Where a retry would have worked (a slow
+ * iframe, an Entra hiccup), the popup usually completes with no input, and the
+ * tab-visible check retries the refresh. A server or realtime 401 leaves it
  * false, since the token was fine locally and a refresh can help.
  */
 export async function handleSessionExpired({
