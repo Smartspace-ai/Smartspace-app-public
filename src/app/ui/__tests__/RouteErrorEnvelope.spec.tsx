@@ -76,9 +76,10 @@ describe('RootErrorBoundary trace reference', () => {
 });
 
 describe('RootErrorBoundary Retry', () => {
-  it('re-runs the failed route, not only the boundary', () => {
-    // Breaks if Retry only resets the boundary: the router throws the stored
-    // loader error again and the same error page comes back.
+  it('asks the router to re-run the routes, not only the boundary to reset', () => {
+    // Breaks if Retry stops calling router.invalidate(). The router is mocked
+    // here, so this proves the call only; that invalidate reloads a failed
+    // loader is router behaviour, read in router-core's invalidate.
     const reset = vi.fn();
     mockInvalidate.mockClear();
     const error: AppError = { type: 'NetworkError', message: 'offline' };

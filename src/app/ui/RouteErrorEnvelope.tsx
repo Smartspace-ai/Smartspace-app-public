@@ -143,8 +143,9 @@ export function RootErrorBoundary({ error, reset }: ErrorComponentProps) {
   const authError = isAuthError(error);
   const detail = getErrorDetail(error);
   // `reset` alone only clears the boundary: while a route's match is in its
-  // error state the router throws the stored error again. `invalidate` marks
-  // the failed matches pending and re-runs their loaders.
+  // error state the router throws the stored error again. `invalidate` puts
+  // failed matches back to pending and re-runs every route's loader (the ones
+  // that worked mostly read their cached data).
   const retry = () => {
     reset();
     void router.invalidate();
