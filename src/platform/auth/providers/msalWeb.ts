@@ -157,12 +157,26 @@ function webAccount() {
   return msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
 }
 
+/**
+ * Where Entra sends a web sign-in response: the site root, which the main
+ * setup guide registers (Readme.md). `auth-redirect.html`, the default in
+ * msalConfig, is registered only for Teams; on a web-only deployment Entra
+ * rejects it (AADSTS50011), so MSAL's hidden renewal iframe waited out its
+ * timeout. MSAL reads the response and removes the iframe as soon as the
+ * root loads, normally before the app's scripts run; the guard in main.tsx is
+ * the backstop if the iframe outlives that.
+ */
+function siteRoot(): string {
+  return handleTrailingSlash(window.location.origin);
+}
+
 async function acquireWebTokenSilently(forceRefresh: boolean): Promise<void> {
   const msalInstance = getMsalInstance();
   const account = webAccount();
   if (!account) throw new Error('No account to refresh');
   await msalInstance.acquireTokenSilent({
     ...loginRequest,
+    redirectUri: siteRoot(),
     account,
     forceRefresh,
   });
@@ -197,7 +211,7 @@ export function signInWithPopup(): Promise<{ switchedAccount: boolean }> {
   return msalInstance
     .acquireTokenPopup({
       ...interactiveLoginRequest,
-      redirectUri: handleTrailingSlash(window.location.origin),
+      redirectUri: siteRoot(),
       ...(account && { account, prompt: undefined }),
     })
     .then((result) => {
@@ -260,9 +274,13 @@ export function createMsalWebAdapter(): AuthAdapter {
             account,
             // In Teams iframe, hidden-iframe token renewal is blocked by third-party
             // cookie restrictions. Limit to cache + refresh-token (both work in any context).
-            ...(isInTeams() && {
-              cacheLookupPolicy: CacheLookupPolicy.AccessTokenAndRefreshToken,
-            }),
+            // On the web the iframe may run, so it returns to the site root.
+            ...(isInTeams()
+              ? {
+                  cacheLookupPolicy:
+                    CacheLookupPolicy.AccessTokenAndRefreshToken,
+                }
+              : { redirectUri: siteRoot() }),
           });
           if (isInTeams()) setStoredUseMsalInTeams(true);
           return r.accessToken;

@@ -46,6 +46,7 @@ vi.mock('@/platform/log', () => ({
 import {
   checkSessionOnVisible,
   handleSessionExpired,
+  isAuthResponsePage,
   isReauthRequired,
   onSessionRenewed,
   renewSessionWithPopup,
@@ -298,6 +299,60 @@ describe('session expiry recovery', () => {
     expect(mockRefresh).toHaveBeenCalledTimes(2);
     expect(renewed).toHaveBeenCalledTimes(1);
   });
+});
+
+describe('isAuthResponsePage', () => {
+  it.each([
+    ['the sign-in popup', true, '#code=abc&state=x', true, false],
+    [
+      "MSAL's hidden renewal iframe",
+      true,
+      '#error=login_required',
+      false,
+      true,
+    ],
+    ['the app in Teams (a frame, no auth response)', false, '', false, true],
+    ['a normal tab with a hash', false, '#code=abc', false, false],
+  ])(
+    '%s is an auth-response page: %s',
+    (_name, expected, hash, hasOpener, inFrame) => {
+      // Breaks if isAuthResponsePage, which main.tsx's guard calls, misses the
+      // hidden iframe (the app could boot in it, now that web renewal returns
+      // to the site root) or catches Teams (the app never starts there).
+      const realLocation = window.location;
+      const realTop = window.top;
+      const realOpener = window.opener;
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: { ...realLocation, pathname: '/', hash },
+      });
+      Object.defineProperty(window, 'top', {
+        configurable: true,
+        value: inFrame ? {} : window,
+      });
+      Object.defineProperty(window, 'opener', {
+        configurable: true,
+        value: hasOpener ? {} : null,
+      });
+
+      try {
+        expect(isAuthResponsePage()).toBe(expected);
+      } finally {
+        Object.defineProperty(window, 'location', {
+          configurable: true,
+          value: realLocation,
+        });
+        Object.defineProperty(window, 'top', {
+          configurable: true,
+          value: realTop,
+        });
+        Object.defineProperty(window, 'opener', {
+          configurable: true,
+          value: realOpener,
+        });
+      }
+    }
+  );
 });
 
 describe('session check when the tab becomes visible', () => {

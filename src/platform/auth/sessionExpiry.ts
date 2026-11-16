@@ -97,11 +97,29 @@ function notifyRenewed(): void {
  */
 function inAuthResponseFrame(): boolean {
   try {
-    const hash = window.location.hash;
-    return (
-      window.self !== window.top &&
-      (hash.includes('code=') || hash.includes('error='))
-    );
+    return window.self !== window.top && hasAuthResponse();
+  } catch {
+    return false;
+  }
+}
+
+function hasAuthResponse(): boolean {
+  const hash = window.location.hash;
+  return hash.includes('code=') || hash.includes('error=');
+}
+
+/**
+ * True when this page is only carrying a sign-in response back to MSAL: the
+ * sign-in popup (opened by this app, so it has an opener) or MSAL's hidden
+ * renewal iframe. MSAL in the app tab reads the response from the URL and
+ * closes the window, so main.tsx must not boot the app here. A normal tab, or
+ * the app inside Teams, has no auth response in its URL.
+ */
+export function isAuthResponsePage(): boolean {
+  try {
+    if (!hasAuthResponse()) return false;
+    const inPopup = !!window.opener && window.opener !== window;
+    return inPopup || window.self !== window.top;
   } catch {
     return false;
   }
