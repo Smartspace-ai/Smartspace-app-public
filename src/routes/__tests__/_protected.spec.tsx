@@ -40,11 +40,21 @@ describe('protected route beforeLoad', () => {
   });
 
   it.each([
-    ['the network failed', false, new TransientAuthError()],
-    ['the session is dead', true, new Error('Silent token failed')],
+    [
+      'the network failed',
+      'stays on the page',
+      false,
+      new TransientAuthError(),
+    ],
+    [
+      'the session is dead',
+      'redirects to /login',
+      true,
+      new Error('Silent token failed'),
+    ],
   ])(
-    'when a token request fails because %s, it redirects to /login: %s',
-    async (_name, redirects, error) => {
+    'when a token request fails because %s, the navigation %s',
+    async (_name, _outcome, redirects, error) => {
       // Breaks if offline counts as signed out: clicking a link on flaky
       // Wi-Fi lands on the login page instead of an inline network error.
       vi.spyOn(auth, 'getAuthAdapter').mockReturnValue({
