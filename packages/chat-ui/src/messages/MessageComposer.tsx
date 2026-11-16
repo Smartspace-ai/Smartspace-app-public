@@ -409,7 +409,19 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
     // previously that caused the send to use/require old text and the subsequent
     // editor remount to wipe characters the user had just typed.
     const latestText = editorRef.current?.getMarkdown() ?? newMessage;
-    const sent = handleSendMessage(latestText, uploadedAttachments);
+    // A send that fails (a dead session, the network) hands the text back,
+    // unless the user has started typing another message. Attachments are not
+    // restored: clearing them revoked their preview URLs.
+    const restoreText = () => {
+      if ((editorRef.current?.getMarkdown() ?? '').trim()) return;
+      setNewMessage(latestText);
+      setEditorKey((k) => k + 1); // the editor takes `value` only on mount
+    };
+    const sent = handleSendMessage(
+      latestText,
+      uploadedAttachments,
+      restoreText
+    );
     // A refused send (empty, still uploading, flow running) must leave dictation
     // alone — stopping here would silently bin what the user just said.
     if (!sent) return;

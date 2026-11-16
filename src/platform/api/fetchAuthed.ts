@@ -38,7 +38,8 @@ export async function fetchAuthed(
   } catch (e) {
     // As the axios request interceptor: no token means the session needs
     // recovering, unless the network failed. Sending a message comes here.
-    if (!(e instanceof TransientAuthError)) void handleSessionExpired();
+    if (!(e instanceof TransientAuthError))
+      void handleSessionExpired({ silentTokenFailed: true });
     throw e;
   }
   const url = `${baseUrl}${
