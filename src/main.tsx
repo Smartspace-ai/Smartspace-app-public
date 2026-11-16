@@ -16,7 +16,10 @@ import '@smartspace/chat-ui/styles.css';
 
 import { configureApiClient } from '@/platform/api/configureApiClient';
 import { getMsalInstance } from '@/platform/auth/msalClient';
-import { onSessionRenewed } from '@/platform/auth/sessionExpiry';
+import {
+  checkSessionOnVisible,
+  onSessionRenewed,
+} from '@/platform/auth/sessionExpiry';
 import { removeSplash } from '@/platform/boot/removeSplash';
 import { ssError, ssInfoAlways, ssWarn } from '@/platform/log';
 import { queryClient } from '@/platform/reactQueryClient';
@@ -164,6 +167,13 @@ if (isInPopup) {
               msal.setActiveAccount(payload.account);
             }
           }
+        });
+
+        // A session can die while the tab is hidden; check it when the tab
+        // comes back. Registered once MSAL is initialised.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible')
+            void checkSessionOnVisible();
         });
 
         const rootElement =

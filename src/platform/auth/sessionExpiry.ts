@@ -10,8 +10,10 @@
 //
 // This is the single, de-duplicated escalation point: many concurrent failures
 // trigger exactly one recovery.
+import { isMsalNetworkFailure } from '@/platform/auth/errors';
 import { isInTeams } from '@/platform/auth/msalConfig';
 import {
+  checkWebTokenSilently,
   refreshWebTokenSilently,
   signInWithPopup,
 } from '@/platform/auth/providers/msalWeb';
@@ -142,6 +144,14 @@ export async function handleSessionExpired(): Promise<void> {
   try {
     await refreshWebTokenSilently();
   } catch (e) {
+    if (isMsalNetworkFailure(e)) {
+      // Offline, not signed out: a sign-in would fail too. The failed screens
+      // show their network error; the next auth failure starts recovery again.
+      // The attempt still counts, so a loop still reaches the stuck prompt.
+      ssWarn('auth', 'silent refresh failed on the network -> no prompt', e);
+      reauthInProgress = false;
+      return;
+    }
     ssWarn('auth', 'silent refresh failed -> sign-in prompt', e);
     setSessionExpired(true);
     return;
@@ -178,6 +188,45 @@ export function renewSessionWithPopup(): Promise<boolean> {
       popupInFlight = null;
     });
   return popupInFlight;
+}
+
+/**
+ * Web: run when the tab becomes visible again, so a session that died while
+ * the tab was hidden is caught before the user acts on it.
+ *
+ * - No prompt showing: check the token. If that fails for any reason but the
+ *   network, start recovery, which shows the prompt. No popup opens.
+ * - Prompt showing: try the silent refresh again. If it works now, close the
+ *   prompt and re-run the failed screens. Like the silent step in
+ *   handleSessionExpired, that keeps the attempt log.
+ */
+export async function checkSessionOnVisible(): Promise<void> {
+  if (isE2E() || onLoginScreen() || inAuthResponseFrame()) return;
+  if (inTeamsEnvironment()) return;
+  const { sessionExpired, authStuck } = getAuthRuntimeState();
+  if (authStuck || popupInFlight) return;
+
+  if (sessionExpired) {
+    try {
+      await refreshWebTokenSilently();
+    } catch {
+      return; // the prompt stays up
+    }
+    // The user clicked Sign in meanwhile: let the popup finish the job.
+    if (popupInFlight) return;
+    reauthInProgress = false;
+    setSessionExpired(false);
+    notifyRenewed();
+    return;
+  }
+
+  try {
+    await checkWebTokenSilently();
+  } catch (e) {
+    // Offline is not expiry. Anything else is: a sign-in required, or the
+    // hidden renewal iframe timing out once the refresh token has expired.
+    if (!isMsalNetworkFailure(e)) await handleSessionExpired();
+  }
 }
 
 /** Clear the guard + prompt + attempt log once a fresh session is established. */
