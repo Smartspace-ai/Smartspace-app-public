@@ -43,6 +43,28 @@ describe('web session recovery against MSAL', () => {
     expect(msal.acquireTokenSilent).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['the recovery refresh', () => refreshWebTokenSilently()],
+    [
+      'the request token',
+      () => createMsalWebAdapter().getAccessToken({ silentOnly: true }),
+    ],
+  ])(
+    "%s returns MSAL's hidden renewal iframe to the site root",
+    async (_name, request) => {
+      // Breaks if web silent requests return to auth-redirect.html: only
+      // Teams deployments register it, so on the web Entra rejects the iframe
+      // and MSAL waits out its 6 s timeout before the sign-in prompt.
+      msal.acquireTokenSilent.mockClear();
+
+      await request();
+
+      expect(msal.acquireTokenSilent).toHaveBeenCalledWith(
+        expect.objectContaining({ redirectUri: `${window.location.origin}/` })
+      );
+    }
+  );
+
   it('the popup returns to the site root, the address every deployment registers', () => {
     // Breaks if it returns to auth-redirect.html: only Teams deployments
     // register that, and Entra rejects the sign-in with AADSTS50011.

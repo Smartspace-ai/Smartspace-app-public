@@ -18,6 +18,7 @@ import { configureApiClient } from '@/platform/api/configureApiClient';
 import { getMsalInstance } from '@/platform/auth/msalClient';
 import {
   checkSessionOnVisible,
+  isAuthResponsePage,
   onSessionRenewed,
 } from '@/platform/auth/sessionExpiry';
 import { removeSplash } from '@/platform/boot/removeSplash';
@@ -96,30 +97,18 @@ onSessionRenewed(() => {
   void router.invalidate();
 });
 
-// Popup guard: if this page loaded inside an MSAL popup (window.opener is set
-// AND the URL contains an auth response hash), do NOT render the full SPA.
-// The parent window's MSAL instance monitors the popup URL, extracts the auth
-// hash, and closes it. Rendering the SPA here causes the "full app in popup"
-// and "double popup" bugs.
+// Auth-response guard: if this page loaded inside an MSAL popup or MSAL's
+// hidden renewal iframe (an opener or a parent frame, AND an auth response in
+// the URL hash), do NOT render the full SPA. The app tab's MSAL instance
+// monitors that window's URL, extracts the auth hash, and closes it. Rendering
+// the SPA here causes the "full app in popup" and "double popup" bugs.
 // We require an auth hash so that normal window.open(...) links (e.g. from the
-// admin portal) don't accidentally skip the entire app.
-const isInPopup = (() => {
-  try {
-    const hasOpener = !!window.opener && window.opener !== window;
-    const hasAuthHash =
-      window.location.hash.includes('code=') ||
-      window.location.hash.includes('error=');
-    return hasOpener && hasAuthHash;
-  } catch {
-    return false;
-  }
-})();
-
-if (isInPopup) {
+// admin portal), and the app inside Teams, don't skip the entire app.
+if (isAuthResponsePage()) {
   removeSplash();
   const rootEl = document.getElementById('root');
   if (rootEl) rootEl.textContent = 'Completing sign-in...';
-  ssInfoAlways('boot', 'Popup context detected; SPA bootstrap skipped.');
+  ssInfoAlways('boot', 'Auth response page; SPA bootstrap skipped.');
 } else {
   let msal: ReturnType<typeof getMsalInstance> | null = null;
   try {
