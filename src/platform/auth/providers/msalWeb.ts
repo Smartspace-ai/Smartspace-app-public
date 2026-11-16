@@ -144,17 +144,22 @@ export function refreshWebTokenSilently(): Promise<void> {
 
 /**
  * The check when the tab becomes visible again: the cached token if it is
- * still good, else a refresh. Throws MSAL's InteractionRequiredAuthError when
- * only an interactive sign-in can help.
+ * still good, else a refresh. Throws when it cannot get one. With no one
+ * signed in there is nothing to check, and it resolves.
  */
-export function checkWebTokenSilently(): Promise<void> {
-  return acquireWebTokenSilently(false);
+export async function checkWebTokenSilently(): Promise<void> {
+  if (!webAccount()) return;
+  await acquireWebTokenSilently(false);
+}
+
+function webAccount() {
+  const msalInstance = getMsalInstance();
+  return msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
 }
 
 async function acquireWebTokenSilently(forceRefresh: boolean): Promise<void> {
   const msalInstance = getMsalInstance();
-  const account =
-    msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
+  const account = webAccount();
   if (!account) throw new Error('No account to refresh');
   await msalInstance.acquireTokenSilent({
     ...loginRequest,

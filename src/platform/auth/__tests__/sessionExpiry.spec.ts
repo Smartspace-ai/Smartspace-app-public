@@ -319,21 +319,24 @@ describe('session check when the tab becomes visible', () => {
     unsubscribe = onSessionRenewed(renewed);
   });
 
-  it('a session that died while the tab was hidden shows the prompt before the user acts, with no popup', async () => {
-    // Breaks if the check is not wired to recovery: the user types into a
-    // dead page and only finds out when the send fails.
-    mockCheck.mockRejectedValue(
-      new InteractionRequiredAuthError('login_required')
-    );
-    mockRefresh.mockRejectedValue(
-      new InteractionRequiredAuthError('login_required')
-    );
+  it.each([
+    ['sign-in is required', new InteractionRequiredAuthError('login_required')],
+    // The refresh token expired and the hidden renewal iframe timed out.
+    ['the renewal iframe timed out', popupError('monitor_window_timeout')],
+  ])(
+    'a session that died while the tab was hidden (%s) shows the prompt before the user acts, with no popup',
+    async (_name, error) => {
+      // Breaks if the check is not wired to recovery, or only escalates some
+      // failures: the user types into a dead page and finds out on send.
+      mockCheck.mockRejectedValue(error);
+      mockRefresh.mockRejectedValue(error);
 
-    await checkSessionOnVisible();
+      await checkSessionOnVisible();
 
-    expect(mockSetSessionExpired).toHaveBeenCalledWith(true);
-    expect(mockPopup).not.toHaveBeenCalled();
-  });
+      expect(mockSetSessionExpired).toHaveBeenCalledWith(true);
+      expect(mockPopup).not.toHaveBeenCalled();
+    }
+  );
 
   it('a check that fails on the network starts no recovery', async () => {
     mockCheck.mockRejectedValue(popupError('no_network_connectivity'));
@@ -378,6 +381,40 @@ describe('session check when the tab becomes visible', () => {
 
     expect(mockSetSessionExpired).not.toHaveBeenCalled();
     expect(renewed).not.toHaveBeenCalled();
+  });
+
+  it('a prompt left up stays up when the user clicks Sign in during the refresh, so the popup finishes it', async () => {
+    // Breaks if the refresh closes the prompt under an open popup: a popup
+    // that then fails leaves no prompt to retry from.
+    mockRefresh.mockRejectedValueOnce(
+      new InteractionRequiredAuthError('login_required')
+    );
+    await handleSessionExpired();
+    state.sessionExpired = true;
+    mockSetSessionExpired.mockClear();
+    let finishRefresh: () => void = () => undefined;
+    mockRefresh.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishRefresh = resolve;
+      })
+    );
+    let closePopup: () => void = () => undefined;
+    mockPopup.mockReturnValue(
+      new Promise((_resolve, reject) => {
+        closePopup = () => reject(popupError('user_cancelled'));
+      })
+    );
+
+    const check = checkSessionOnVisible();
+    const popup = renewSessionWithPopup();
+    finishRefresh();
+    await check;
+
+    expect(mockSetSessionExpired).not.toHaveBeenCalled();
+    expect(renewed).not.toHaveBeenCalled();
+
+    closePopup();
+    await popup;
   });
 
   it('teams: does nothing', async () => {

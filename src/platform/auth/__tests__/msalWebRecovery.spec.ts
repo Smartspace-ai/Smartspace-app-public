@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { TransientAuthError } from '@/platform/auth/errors';
 import { getMsalInstance } from '@/platform/auth/msalClient';
 import {
+  checkWebTokenSilently,
   createMsalWebAdapter,
   refreshWebTokenSilently,
   signInWithPopup,
@@ -13,6 +14,8 @@ import { isServerOrNetworkFailure } from '@/platform/envelopes';
 // no acquireTokenPopup; each test adds one.
 const msal = getMsalInstance() as unknown as {
   acquireTokenSilent: ReturnType<typeof vi.fn>;
+  getActiveAccount: ReturnType<typeof vi.fn>;
+  getAllAccounts: ReturnType<typeof vi.fn>;
   acquireTokenPopup?: (...args: unknown[]) => Promise<unknown>;
 };
 
@@ -27,6 +30,17 @@ describe('web session recovery against MSAL', () => {
     expect(msal.acquireTokenSilent).toHaveBeenCalledWith(
       expect.objectContaining({ forceRefresh: true })
     );
+  });
+
+  it('the tab-visible check passes with no one signed in, so it starts no recovery', async () => {
+    // Breaks if it throws: every tab switch on a signed-out page would raise
+    // the sign-in prompt.
+    msal.acquireTokenSilent.mockClear();
+    msal.getActiveAccount.mockReturnValueOnce(null);
+    msal.getAllAccounts.mockReturnValueOnce([]);
+
+    await expect(checkWebTokenSilently()).resolves.toBeUndefined();
+    expect(msal.acquireTokenSilent).not.toHaveBeenCalled();
   });
 
   it('calls MSAL acquireTokenPopup synchronously', () => {

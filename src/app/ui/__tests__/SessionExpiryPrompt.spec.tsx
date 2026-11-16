@@ -83,6 +83,28 @@ describe('session expiry prompt', () => {
     });
   });
 
+  it('web: a prompt that closed and opens again does not still say the last sign-in failed', async () => {
+    // Breaks if the failed-popup state outlives the prompt: the next expiry
+    // opens with "Sign-in didn't finish" before the user has tried.
+    mockPopup.mockRejectedValue(
+      Object.assign(new Error('user_cancelled'), {
+        errorCode: 'user_cancelled',
+      })
+    );
+    act(() => setSessionExpired(true));
+    render(<SessionExpiryPrompt />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    });
+    expect(screen.getByText(/Sign-in didn’t finish/)).toBeTruthy();
+
+    // Closed by a silent refresh when the tab came back, then expired again.
+    act(() => setSessionExpired(false));
+    act(() => setSessionExpired(true));
+
+    expect(screen.queryByText(/Sign-in didn’t finish/)).toBeNull();
+  });
+
   it('web: a closed popup leaves the prompt up, ready for another click', async () => {
     mockPopup.mockRejectedValue(
       Object.assign(new Error('user_cancelled'), {

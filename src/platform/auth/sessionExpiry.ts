@@ -10,8 +10,6 @@
 //
 // This is the single, de-duplicated escalation point: many concurrent failures
 // trigger exactly one recovery.
-import { InteractionRequiredAuthError } from '@azure/msal-browser';
-
 import { isMsalNetworkFailure } from '@/platform/auth/errors';
 import { isInTeams } from '@/platform/auth/msalConfig';
 import {
@@ -196,8 +194,8 @@ export function renewSessionWithPopup(): Promise<boolean> {
  * Web: run when the tab becomes visible again, so a session that died while
  * the tab was hidden is caught before the user acts on it.
  *
- * - No prompt showing: check the token. If only a sign-in can help, start
- *   recovery, which shows the prompt. No popup opens.
+ * - No prompt showing: check the token. If that fails for any reason but the
+ *   network, start recovery, which shows the prompt. No popup opens.
  * - Prompt showing: try the silent refresh again. If it works now, close the
  *   prompt and re-run the failed screens. Like the silent step in
  *   handleSessionExpired, that keeps the attempt log.
@@ -214,6 +212,8 @@ export async function checkSessionOnVisible(): Promise<void> {
     } catch {
       return; // the prompt stays up
     }
+    // The user clicked Sign in meanwhile: let the popup finish the job.
+    if (popupInFlight) return;
     reauthInProgress = false;
     setSessionExpired(false);
     notifyRenewed();
@@ -223,7 +223,9 @@ export async function checkSessionOnVisible(): Promise<void> {
   try {
     await checkWebTokenSilently();
   } catch (e) {
-    if (e instanceof InteractionRequiredAuthError) await handleSessionExpired();
+    // Offline is not expiry. Anything else is: a sign-in required, or the
+    // hidden renewal iframe timing out once the refresh token has expired.
+    if (!isMsalNetworkFailure(e)) await handleSessionExpired();
   }
 }
 

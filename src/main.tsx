@@ -96,11 +96,6 @@ onSessionRenewed(() => {
   void router.invalidate();
 });
 
-// A session can die while the tab is hidden; check it when the tab comes back.
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') void checkSessionOnVisible();
-});
-
 // Popup guard: if this page loaded inside an MSAL popup (window.opener is set
 // AND the URL contains an auth response hash), do NOT render the full SPA.
 // The parent window's MSAL instance monitors the popup URL, extracts the auth
@@ -172,6 +167,13 @@ if (isInPopup) {
               msal.setActiveAccount(payload.account);
             }
           }
+        });
+
+        // A session can die while the tab is hidden; check it when the tab
+        // comes back. Registered once MSAL is initialised.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible')
+            void checkSessionOnVisible();
         });
 
         const rootElement =

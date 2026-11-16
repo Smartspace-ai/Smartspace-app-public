@@ -8,7 +8,7 @@
 // the last-resort UI when the session (and often the rest of the app's data) is
 // broken, so it must not depend on theme context being healthy.
 /* eslint-disable no-restricted-syntax -- intentional theme-independent styles */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useAuth, useAuthRuntime } from '@/platform/auth/session';
 import {
@@ -70,6 +70,10 @@ export function SessionExpiryPrompt() {
   // Set when a popup did not complete (closed, blocked, or another sign-in
   // holds MSAL's lock). The prompt then also offers the full-page sign-in.
   const [popupFailed, setPopupFailed] = useState(false);
+  // The prompt stays mounted, so forget a failed popup once it closes.
+  useEffect(() => {
+    if (!sessionExpired) setPopupFailed(false);
+  }, [sessionExpired]);
 
   // authStuck (re-auth looped without resolving) is terminal and takes
   // precedence over the ordinary Teams gesture prompt.

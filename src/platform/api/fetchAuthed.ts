@@ -13,6 +13,7 @@
 import { AXIOS_INSTANCE } from '@smartspace/api-client';
 
 import { getAuthAdapter } from '@/platform/auth';
+import { TransientAuthError } from '@/platform/auth/errors';
 import { getApiScopes } from '@/platform/auth/scopes';
 import {
   handleSessionExpired,
@@ -28,10 +29,18 @@ export async function fetchAuthed(
   init: FetchAuthedInit = {}
 ): Promise<Response> {
   const baseUrl = (AXIOS_INSTANCE.defaults.baseURL ?? '').replace(/\/$/, '');
-  const token = await getAuthAdapter().getAccessToken({
-    silentOnly: true,
-    scopes: getApiScopes(),
-  });
+  let token: string;
+  try {
+    token = await getAuthAdapter().getAccessToken({
+      silentOnly: true,
+      scopes: getApiScopes(),
+    });
+  } catch (e) {
+    // As the axios request interceptor: no token means the session needs
+    // recovering, unless the network failed. Sending a message comes here.
+    if (!(e instanceof TransientAuthError)) void handleSessionExpired();
+    throw e;
+  }
   const url = `${baseUrl}${
     endpoint.startsWith('/') ? endpoint : `/${endpoint}`
   }`;
