@@ -1,5 +1,9 @@
 // app/ui/RouteErrorEnvelope.tsx
-import { ErrorComponentProps, useNavigate } from '@tanstack/react-router';
+import {
+  ErrorComponentProps,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router';
 import { useEffect } from 'react';
 
 import { AuthRequiredError } from '@/platform/auth/errors';
@@ -134,9 +138,18 @@ function goToLogin(navigate: ReturnType<typeof useNavigate>) {
 export function RootErrorBoundary({ error, reset }: ErrorComponentProps) {
   removeSplash();
   const navigate = useNavigate();
+  const router = useRouter();
   const message = getErrorMessage(error);
   const authError = isAuthError(error);
   const detail = getErrorDetail(error);
+  // `reset` alone only clears the boundary: while a route's match is in its
+  // error state the router throws the stored error again. `invalidate` puts
+  // failed matches back to pending and re-runs every route's loader (the ones
+  // that worked mostly read their cached data).
+  const retry = () => {
+    reset();
+    void router.invalidate();
+  };
 
   return (
     <>
@@ -144,7 +157,7 @@ export function RootErrorBoundary({ error, reset }: ErrorComponentProps) {
         title="Oops"
         message={message}
         reference={getTraceId(error)}
-        onRetry={authError ? undefined : reset}
+        onRetry={authError ? undefined : retry}
         onSignIn={authError ? () => goToLogin(navigate) : undefined}
       />
       {detail ? (
