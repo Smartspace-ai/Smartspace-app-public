@@ -175,10 +175,10 @@ async function acquireWebTokenSilently(forceRefresh: boolean): Promise<void> {
  * Not routed through the adapter's `getAccessToken`, which runs a silent step
  * first and makes every other token request wait on the popup.
  *
- * The popup returns to the site root, the address every deployment registers
- * (Readme.md). `auth-redirect.html` is registered only for Teams, and Entra
- * rejects an unregistered address with AADSTS50011. The popup guard in
- * main.tsx stops the app rendering when the root loads inside the popup.
+ * The popup returns to the site root, the address the main setup guide
+ * registers (Readme.md). `auth-redirect.html` is registered only for Teams,
+ * and Entra rejects an unregistered address with AADSTS50011. The popup guard
+ * in main.tsx stops the app rendering when the root loads inside the popup.
  *
  * `switchedAccount` is true when the user picked a different account in the
  * popup's account chooser.
