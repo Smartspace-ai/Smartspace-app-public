@@ -43,6 +43,20 @@ describe('web session recovery against MSAL', () => {
     expect(msal.acquireTokenSilent).not.toHaveBeenCalled();
   });
 
+  it('the popup returns to the site root, the address every deployment registers', () => {
+    // Breaks if it returns to auth-redirect.html: only Teams deployments
+    // register that, and Entra rejects the sign-in with AADSTS50011.
+    msal.acquireTokenPopup = vi.fn(() => new Promise(() => undefined));
+
+    void signInWithPopup();
+
+    expect(msal.acquireTokenPopup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        redirectUri: `${window.location.origin}/`,
+      })
+    );
+  });
+
   it('calls MSAL acquireTokenPopup synchronously', () => {
     // Breaks if signInWithPopup awaits first (or goes through the adapter's
     // silent step): the popup can open after the click's allowance is gone.
