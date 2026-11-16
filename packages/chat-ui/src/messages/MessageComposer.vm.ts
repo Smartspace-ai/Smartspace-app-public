@@ -50,7 +50,8 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
 
   const internalSend = (
     text: string,
-    files?: { id: string; name: string }[]
+    files?: { id: string; name: string }[],
+    onFailed?: () => void
   ) => {
     if (!workspaceId || !threadId) return;
     const trimmed = text.trim();
@@ -59,13 +60,18 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
       : undefined;
     const vars =
       variables && Object.keys(variables).length > 0 ? variables : undefined;
-    sendMessage.mutate({
-      workspaceId,
-      threadId,
-      contentList,
-      files,
-      variables: vars,
-    });
+    sendMessage.mutate(
+      {
+        workspaceId,
+        threadId,
+        contentList,
+        files,
+        variables: vars,
+      },
+      // Per-call callbacks run only while this composer is mounted, so a send
+      // that fails after the user moved to another thread restores nothing.
+      { onError: () => onFailed?.() }
+    );
     setNewMessage('');
   };
 
@@ -86,13 +92,16 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
   /**
    * Returns true when the message was dispatched, false when blocked.
    * Callers use the return value to decide whether to clear local UI state.
+   * `onFailed` runs if the send then fails, so the caller can hand the text
+   * back.
    */
   const handleSendMessage = (
     text: string,
-    files?: { id: string; name: string }[]
+    files?: { id: string; name: string }[],
+    onFailed?: () => void
   ): boolean => {
     if (!canSend(text, files)) return false;
-    internalSend(text, files);
+    internalSend(text, files, onFailed);
     return true;
   };
 
