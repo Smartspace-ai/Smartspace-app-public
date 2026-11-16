@@ -101,8 +101,9 @@ onSessionRenewed(() => {
 // hidden renewal iframe (an opener or a parent frame, AND an auth response in
 // the URL hash), do NOT render the full SPA. The app tab's MSAL instance
 // monitors that window's URL, extracts the auth hash, and closes it. Rendering
-// the SPA here causes the "full app in popup" and "double popup" bugs.
-// We require an auth hash so that normal window.open(...) links (e.g. from the
+// the SPA here causes the "full app in popup" and "double popup" bugs. For the
+// iframe MSAL normally reads the hash and removes it before this runs; this is
+// the backstop. We require an auth hash so that normal window.open(...) links (e.g. from the
 // admin portal), and the app inside Teams, don't skip the entire app.
 if (isAuthResponsePage()) {
   removeSplash();

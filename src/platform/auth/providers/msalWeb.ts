@@ -162,7 +162,9 @@ function webAccount() {
  * setup guide registers (Readme.md). `auth-redirect.html`, the default in
  * msalConfig, is registered only for Teams; on a web-only deployment Entra
  * rejects it (AADSTS50011), so MSAL's hidden renewal iframe waited out its
- * timeout. The guard in main.tsx keeps the app from booting in that iframe.
+ * timeout. MSAL reads the response and removes the iframe as soon as the
+ * root loads, normally before the app's scripts run; the guard in main.tsx is
+ * the backstop if the iframe outlives that.
  */
 function siteRoot(): string {
   return handleTrailingSlash(window.location.origin);

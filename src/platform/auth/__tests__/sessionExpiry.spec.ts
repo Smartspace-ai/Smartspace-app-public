@@ -316,9 +316,9 @@ describe('isAuthResponsePage', () => {
   ])(
     '%s is an auth-response page: %s',
     (_name, expected, hash, hasOpener, inFrame) => {
-      // Breaks if main.tsx's guard misses the hidden iframe (the app boots in
-      // it, now that web renewal returns to the site root) or catches Teams
-      // (the app never starts there).
+      // Breaks if isAuthResponsePage, which main.tsx's guard calls, misses the
+      // hidden iframe (the app could boot in it, now that web renewal returns
+      // to the site root) or catches Teams (the app never starts there).
       const realLocation = window.location;
       const realTop = window.top;
       const realOpener = window.opener;
