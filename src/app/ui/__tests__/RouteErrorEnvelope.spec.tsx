@@ -1,12 +1,17 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AppError } from '@/platform/envelopes';
 
 import { RootErrorBoundary } from '../RouteErrorEnvelope';
 
+const { mockInvalidate } = vi.hoisted(() => ({
+  mockInvalidate: vi.fn(async () => undefined),
+}));
+
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn(),
+  useRouter: () => ({ invalidate: mockInvalidate }),
 }));
 
 const TRACE_ID = '0af7651916cd43dd8448eb211c80319c';
@@ -67,5 +72,23 @@ describe('RootErrorBoundary trace reference', () => {
 
     expect(screen.getByText(/network error occurred/)).toBeTruthy();
     expect(screen.queryByText(/Reference:/)).toBeNull();
+  });
+});
+
+describe('RootErrorBoundary Retry', () => {
+  it('re-runs the failed route, not only the boundary', () => {
+    // Breaks if Retry only resets the boundary: the router throws the stored
+    // loader error again and the same error page comes back.
+    const reset = vi.fn();
+    mockInvalidate.mockClear();
+    const error: AppError = { type: 'NetworkError', message: 'offline' };
+
+    render(
+      <RootErrorBoundary error={error as unknown as Error} reset={reset} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /retry|try again/i }));
+
+    expect(mockInvalidate).toHaveBeenCalledTimes(1);
+    expect(reset).toHaveBeenCalledTimes(1);
   });
 });
