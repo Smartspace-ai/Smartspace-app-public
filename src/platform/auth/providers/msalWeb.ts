@@ -180,8 +180,13 @@ async function acquireWebTokenSilently(forceRefresh: boolean): Promise<void> {
  * and Entra rejects an unregistered address with AADSTS50011. The popup guard
  * in main.tsx stops the app rendering when the root loads inside the popup.
  *
- * `switchedAccount` is true when the user picked a different account in the
- * popup's account chooser.
+ * With an account, the popup sends it as a hint and no `prompt`: while the
+ * user's Microsoft session is alive, Entra signs them in without asking and
+ * the popup closes at once. `select_account` would make MSAL drop the hint and
+ * always show the account chooser. With no account, the chooser stays.
+ *
+ * `switchedAccount` is true when a different account signed in, which is now
+ * rare: the chooser is shown only when there is no account to hint.
  */
 export function signInWithPopup(): Promise<{ switchedAccount: boolean }> {
   const msalInstance = getMsalInstance();
@@ -190,7 +195,7 @@ export function signInWithPopup(): Promise<{ switchedAccount: boolean }> {
     .acquireTokenPopup({
       ...interactiveLoginRequest,
       redirectUri: handleTrailingSlash(window.location.origin),
-      ...(account && { account }),
+      ...(account && { account, prompt: undefined }),
     })
     .then((result) => {
       if (result.account) msalInstance.setActiveAccount(result.account);
