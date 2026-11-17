@@ -7,7 +7,53 @@ import { AuthRequiredError } from '@/platform/auth/errors';
 import { server } from '@/test/mocks/server';
 import { threadsKeys } from '@smartspace/chat-ui';
 
-import { Route } from '../$threadId';
+import { Route, type ThreadRouteSearch } from '../$threadId';
+
+const validateSearch = Route.options.validateSearch as (
+  search: Record<string, unknown>
+) => ThreadRouteSearch;
+
+describe('$threadId route search', () => {
+  it('keeps valid values', () => {
+    expect(
+      validateSearch({
+        modal: 'rename',
+        targetId: 't-1',
+        panel: 'comments',
+        focusMessageId: 'm-1',
+      })
+    ).toEqual({
+      modal: 'rename',
+      targetId: 't-1',
+      panel: 'comments',
+      focusMessageId: 'm-1',
+    });
+  });
+
+  // A bad value must come back as the key set to undefined, not a missing
+  // key: the router lays this result over the raw search, so a missing key
+  // would let the raw value through to the component.
+  it('drops a bad modal and keeps the rest', () => {
+    // Breaks if a bad value throws: the user lands on the full-screen error
+    // page instead of the thread.
+    const search = validateSearch({ modal: 'foo', panel: 'comments' });
+
+    expect(search).toHaveProperty('modal', undefined);
+    expect(search.panel).toBe('comments');
+  });
+
+  it('drops a bad panel', () => {
+    expect(validateSearch({ panel: 'foo' })).toHaveProperty('panel', undefined);
+  });
+
+  it('drops a non-string id', () => {
+    // The router parses `?targetId=123` to a number.
+    const search = validateSearch({ targetId: 123, focusMessageId: 456 });
+
+    expect(search).toHaveProperty('targetId', undefined);
+    expect(search).toHaveProperty('focusMessageId', undefined);
+  });
+});
 
 type LoaderArgs = Parameters<
   NonNullable<(typeof Route)['options']['loader']>
