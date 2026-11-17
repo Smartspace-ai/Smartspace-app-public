@@ -181,7 +181,7 @@ if (isAuthResponsePage()) {
           <StrictMode>
             <ErrorBoundary fallbackRender={fallbackRender}>
               <MsalProvider instance={msal}>
-                <AppProviders>
+                <AppProviders queryClient={queryClient}>
                   <RouterProvider router={router} />
                   {import.meta.env.DEV ? (
                     <TanStackRouterDevtools
