@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { useChatContext } from '@/platform/chat';
 
@@ -34,6 +34,8 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
   const isUploadingFiles = props.isUploadingFiles ?? false;
 
   const sendMessage = useSendMessage();
+  const currentThreadId = useRef(threadId);
+  currentThreadId.current = threadId;
 
   /** Derived: can we send? */
   const sendDisabled = useMemo(() => {
@@ -50,7 +52,8 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
 
   const internalSend = (
     text: string,
-    files?: { id: string; name: string }[]
+    files?: { id: string; name: string }[],
+    onFailed?: () => void
   ) => {
     if (!workspaceId || !threadId) return;
     const trimmed = text.trim();
@@ -59,13 +62,22 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
       : undefined;
     const vars =
       variables && Object.keys(variables).length > 0 ? variables : undefined;
-    sendMessage.mutate({
-      workspaceId,
-      threadId,
-      contentList,
-      files,
-      variables: vars,
-    });
+    sendMessage.mutate(
+      {
+        workspaceId,
+        threadId,
+        contentList,
+        files,
+        variables: vars,
+      },
+      // The composer stays mounted across threads: a send that fails after
+      // the user moved to another thread must not put its text in that one.
+      {
+        onError: () => {
+          if (currentThreadId.current === threadId) onFailed?.();
+        },
+      }
+    );
     setNewMessage('');
   };
 
@@ -86,13 +98,16 @@ export function useMessageComposerVm(props: MessageComposerVmProps = {}) {
   /**
    * Returns true when the message was dispatched, false when blocked.
    * Callers use the return value to decide whether to clear local UI state.
+   * `onFailed` runs if the send then fails, so the caller can hand the text
+   * back.
    */
   const handleSendMessage = (
     text: string,
-    files?: { id: string; name: string }[]
+    files?: { id: string; name: string }[],
+    onFailed?: () => void
   ): boolean => {
     if (!canSend(text, files)) return false;
-    internalSend(text, files);
+    internalSend(text, files, onFailed);
     return true;
   };
 

@@ -3,6 +3,7 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
 import { getAuthAdapter } from '@/platform/auth';
+import { TransientAuthError } from '@/platform/auth/errors';
 import {
   SESSION_QUERY_KEY,
   sessionQueryOptions,
@@ -37,7 +38,11 @@ export const Route = createFileRoute('/_protected')({
     // Token validation (MSAL/NAA have their own caching)
     try {
       await getAuthAdapter().getAccessToken({ silentOnly: true });
-    } catch {
+    } catch (e) {
+      // Offline is not signed out: carry on, and the page's own requests show
+      // their network error. Once back online, a dead session still reaches
+      // recovery through those requests.
+      if (e instanceof TransientAuthError) return;
       context.queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
       throw redirect({ to: '/login', search: { redirect: redirectTo } });
     }

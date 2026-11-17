@@ -1,11 +1,47 @@
 // src/platform/reactQueryClient.ts
-import { MutationCache, QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 
 import { AuthRequiredError } from './auth/errors';
 import { SESSION_QUERY_KEY } from './auth/sessionQuery';
 import { isTransient, isTransientRead } from './envelopes';
+import { ssError } from './log';
 
 export const queryClient = new QueryClient({
+  // React Query does not log a failed query. Without this, a response that
+  // fails its zod schema shows only as a component's error state.
+  queryCache: new QueryCache({
+    // Never log the raw error: an AxiosError carries the request's
+    // Authorization header, and the log is copied by Copy diagnostics.
+    onError: (error, query) => {
+      const e = (error ?? {}) as {
+        type?: unknown;
+        issues?: unknown;
+        message?: unknown;
+        status?: unknown;
+        code?: unknown;
+        traceId?: unknown;
+        response?: { status?: unknown; data?: unknown };
+      };
+      if (e.type === 'ValidationError') {
+        ssError('query', 'response failed validation', {
+          queryKey: query.queryKey,
+          issues: e.issues,
+        });
+        return;
+      }
+      const body = (e.response?.data ?? {}) as {
+        code?: unknown;
+        traceId?: unknown;
+      };
+      ssError('query', 'request failed', {
+        queryKey: query.queryKey,
+        status: e.response?.status ?? e.status,
+        code: body.code ?? e.code,
+        traceId: body.traceId ?? e.traceId,
+        message: e.message,
+      });
+    },
+  }),
   mutationCache: new MutationCache({
     onError: (error) => {
       if (error instanceof AuthRequiredError) {

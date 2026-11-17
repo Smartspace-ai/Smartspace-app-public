@@ -24,6 +24,9 @@ export const threadDetailOptions = ({
     queryFn: () => service.fetchThread(workspaceId, threadId),
     refetchOnWindowFocus: false,
     staleTime: 60_000,
+    // The route loader has just tried and failed. Retrying on mount delays
+    // the inline error by several seconds; the user has Try again.
+    retryOnMount: false,
   });
 
 /**

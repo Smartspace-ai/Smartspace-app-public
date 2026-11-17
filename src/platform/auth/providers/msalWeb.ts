@@ -10,6 +10,7 @@ import {
 import { interactiveTeamsAuth } from '@/platform/auth/teamsAuthHelper';
 import { ssInfo, ssWarn } from '@/platform/log';
 
+import { isMsalNetworkFailure, TransientAuthError } from '../errors';
 import { setStoredUseMsalInTeams } from '../runtime';
 import { AuthAdapter, GetTokenOptions, SignInOptions } from '../types';
 
@@ -132,6 +133,98 @@ function consumePopupFallbackToken(): string | null {
   return accessToken;
 }
 
+/**
+ * Web session expiry, first step: ask Entra for a new token, skipping the
+ * cached one. No window opens. Throws when only an interactive sign-in can
+ * help.
+ */
+export function refreshWebTokenSilently(): Promise<void> {
+  return acquireWebTokenSilently(true);
+}
+
+/**
+ * The check when the tab becomes visible again: the cached token if it is
+ * still good, else a refresh. Throws when it cannot get one. With no one
+ * signed in there is nothing to check, and it resolves.
+ */
+export async function checkWebTokenSilently(): Promise<void> {
+  if (!webAccount()) return;
+  await acquireWebTokenSilently(false);
+}
+
+function webAccount() {
+  const msalInstance = getMsalInstance();
+  return msalInstance.getActiveAccount() ?? msalInstance.getAllAccounts()[0];
+}
+
+/**
+ * Where Entra sends a web sign-in response: the site root, which the main
+ * setup guide registers (Readme.md). `auth-redirect.html`, the default in
+ * msalConfig, is registered only for Teams; on a web-only deployment Entra
+ * rejects it (AADSTS50011), so MSAL's hidden renewal iframe waited out its
+ * timeout. MSAL reads the response and removes the iframe as soon as the
+ * root loads, normally before the app's scripts run; the guard in main.tsx is
+ * the backstop if the iframe outlives that.
+ */
+function siteRoot(): string {
+  return handleTrailingSlash(window.location.origin);
+}
+
+async function acquireWebTokenSilently(forceRefresh: boolean): Promise<void> {
+  const msalInstance = getMsalInstance();
+  const account = webAccount();
+  if (!account) throw new Error('No account to refresh');
+  await msalInstance.acquireTokenSilent({
+    ...loginRequest,
+    redirectUri: siteRoot(),
+    account,
+    forceRefresh,
+  });
+}
+
+/**
+ * Web session expiry, second step: the sign-in popup. Call it straight from a
+ * click handler with nothing awaited first: a browser allows a popup only
+ * shortly after a click, and MSAL opens the window before its first await.
+ * Not routed through the adapter's `getAccessToken`, which runs a silent step
+ * first and makes every other token request wait on the popup.
+ *
+ * The popup returns to the site root, the address the main setup guide
+ * registers (Readme.md). `auth-redirect.html` is registered only for Teams,
+ * and Entra rejects an unregistered address with AADSTS50011. The popup guard
+ * in main.tsx stops the app rendering when the root loads inside the popup.
+ *
+ * With an account, the popup sends it as a hint and no `prompt`.
+ * `select_account` would make MSAL drop the hint, so Entra would show the
+ * account chooser. The popup only opens after the silent refresh failed; when
+ * that was because the hidden iframe could not use the Microsoft session
+ * (third-party cookies blocked, or its redirect address not registered), a
+ * live session usually signs the user in without asking. With no account,
+ * the chooser stays.
+ *
+ * `switchedAccount` is true when a different account signed in, which is now
+ * rarer, since the chooser is usually skipped when there is an account.
+ */
+export function signInWithPopup(): Promise<{ switchedAccount: boolean }> {
+  const msalInstance = getMsalInstance();
+  const account = msalInstance.getActiveAccount();
+  return msalInstance
+    .acquireTokenPopup({
+      ...interactiveLoginRequest,
+      redirectUri: siteRoot(),
+      ...(account && { account, prompt: undefined }),
+    })
+    .then((result) => {
+      if (result.account) msalInstance.setActiveAccount(result.account);
+      return {
+        switchedAccount:
+          !!account &&
+          !!result.account &&
+          result.account.homeAccountId !== account.homeAccountId,
+      };
+    });
+}
+
 export function createMsalWebAdapter(): AuthAdapter {
   const msalInstance = getMsalInstance();
   async function ensureActive() {
@@ -181,9 +274,13 @@ export function createMsalWebAdapter(): AuthAdapter {
             account,
             // In Teams iframe, hidden-iframe token renewal is blocked by third-party
             // cookie restrictions. Limit to cache + refresh-token (both work in any context).
-            ...(isInTeams() && {
-              cacheLookupPolicy: CacheLookupPolicy.AccessTokenAndRefreshToken,
-            }),
+            // On the web the iframe may run, so it returns to the site root.
+            ...(isInTeams()
+              ? {
+                  cacheLookupPolicy:
+                    CacheLookupPolicy.AccessTokenAndRefreshToken,
+                }
+              : { redirectUri: siteRoot() }),
           });
           if (isInTeams()) setStoredUseMsalInTeams(true);
           return r.accessToken;
@@ -221,7 +318,11 @@ export function createMsalWebAdapter(): AuthAdapter {
               }
             }
           }
-          if (opts?.silentOnly) throw new Error('Silent token failed');
+          if (opts?.silentOnly) {
+            throw isMsalNetworkFailure(e)
+              ? new TransientAuthError()
+              : new Error('Silent token failed');
+          }
           // Cooldown: after a popup, retry silent first (token should be cached). Avoids AADSTS50196 loop.
           const now = Date.now();
           if (now < popupCooldownUntil) {

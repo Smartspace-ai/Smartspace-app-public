@@ -119,6 +119,22 @@ export const isTransientRead = (e: unknown): boolean => {
   return problemOf(body).retryable === true;
 };
 
+/**
+ * True when a read failed in a way trying again can fix: no response at all
+ * (network, timeout) or a 5xx. A 401, 403, 404 or a response that fails
+ * validation is false: trying again gets the same answer.
+ */
+export function isServerOrNetworkFailure(e: unknown): boolean {
+  const err = asRecord(e);
+  if (!err) return false;
+  if (err.type === 'NetworkError') return true;
+  if (err.type === 'UnknownError' && typeof err.status === 'number')
+    return err.status >= 500;
+  if (err.isAxiosError !== true) return false;
+  const status = asRecord(err.response)?.status;
+  return status === undefined || (typeof status === 'number' && status >= 500);
+}
+
 /** True when error is AppError NotFound or HTTP 404 (e.g. axios error). */
 export function isNotFoundError(e: unknown): boolean {
   const r = e && typeof e === 'object' ? (e as Record<string, unknown>) : null;

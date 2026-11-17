@@ -28,16 +28,6 @@ vi.mock('@smartspace/api-client', () => ({
   AXIOS_INSTANCE: mockAxiosInstance,
 }));
 
-vi.mock('@/platform/auth/errors', () => {
-  class AuthRequiredError extends Error {
-    constructor(msg = 'Authentication required') {
-      super(msg);
-      this.name = 'AuthRequiredError';
-    }
-  }
-  return { AuthRequiredError };
-});
-
 vi.mock('@/platform/auth/index', () => ({
   getAuthAdapter: () => mockGetAuthAdapter(),
 }));
@@ -80,6 +70,7 @@ vi.mock('@/platform/reactQueryClient', () => ({
 }));
 
 import { configureApiClient } from '@/platform/api/configureApiClient';
+import { TransientAuthError } from '@/platform/auth/errors';
 
 describe('configureApiClient', () => {
   beforeEach(() => {
@@ -159,7 +150,10 @@ describe('configureApiClient', () => {
       expect(mockSetRuntimeAuthError).toHaveBeenCalledWith(null);
     });
 
-    it('throws AuthRequiredError on token failure', async () => {
+    it('throws AuthRequiredError on token failure, and goes straight to the sign-in prompt', async () => {
+      // Breaks if recovery is told nothing: it retries the same silent path
+      // and the prompt comes seconds later.
+      mockHandleSessionExpired.mockReset();
       mockGetAuthAdapter.mockReturnValue({
         getAccessToken: vi.fn().mockRejectedValue(new Error('no token')),
       });
@@ -167,6 +161,25 @@ describe('configureApiClient', () => {
       await expect(interceptor({ headers: {} })).rejects.toThrow(
         'Authentication required'
       );
+      expect(mockHandleSessionExpired).toHaveBeenCalledWith({
+        silentTokenFailed: true,
+      });
+    });
+
+    it('a token request that failed on the network fails as offline, with no sign-in recovery', async () => {
+      // Breaks if a network failure escalates: an offline blip shows the
+      // sign-in prompt, and the loaders show a full-screen auth error instead
+      // of the inline network error.
+      mockHandleSessionExpired.mockReset();
+      mockGetAuthAdapter.mockReturnValue({
+        getAccessToken: vi.fn().mockRejectedValue(new TransientAuthError()),
+      });
+
+      const rejection = interceptor({ headers: {} });
+
+      await expect(rejection).rejects.toBeInstanceOf(TransientAuthError);
+      await expect(rejection).rejects.toMatchObject({ type: 'NetworkError' });
+      expect(mockHandleSessionExpired).not.toHaveBeenCalled();
     });
 
     it('skips auth on /login path', async () => {

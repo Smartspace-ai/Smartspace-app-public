@@ -9,6 +9,7 @@ import { useThread, useThreadIsRunning } from '@/domains/threads/queries';
 import { useWorkspace } from '@/domains/workspaces/queries';
 
 import { MessageMarkdown } from '@/shared/markdown/MessageMarkdown';
+import { Button } from '@/shared/mui-compat/button';
 import { Skeleton } from '@/shared/mui-compat/skeleton';
 
 import { MessageItem } from './MessageItem';
@@ -76,6 +77,7 @@ export function MessageList({
     isPending: threadPending,
     isFetching: threadFetching,
     error: threadError,
+    refetch: refetchThread,
   } = useThread({ workspaceId, threadId });
   const isRunning = useThreadIsRunning(workspaceId, threadId);
   const {
@@ -83,6 +85,7 @@ export function MessageList({
     isPending: messagesPending,
     isFetching: messagesFetching,
     error: messagesError,
+    refetch: refetchMessages,
   } = useMessages(threadId);
 
   // When the host page can bleed a dark background through (e.g. Teams web),
@@ -211,6 +214,16 @@ export function MessageList({
               </span>
             </div>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (threadError) void refetchThread();
+              if (messagesError) void refetchMessages();
+            }}
+          >
+            Try again
+          </Button>
         </div>
       </div>
     );

@@ -1,16 +1,21 @@
-// Root-level re-auth prompt for Teams (and any context where interactive
-// sign-in needs a user gesture). On pure web, handleSessionExpired() redirects
-// automatically and this never shows. In Teams, opening the auth popup requires
-// a click, so we surface a blocking prompt whose button drives signIn().
+// Root-level re-auth prompt, shown on every screen. A sign-in popup needs a
+// click, so when handleSessionExpired() cannot renew the session silently it
+// raises this prompt and the button signs in: on the web through a popup, so
+// the page and anything typed survive; in Teams through signIn(). The stuck
+// state (re-auth kept failing) signs in through signIn() everywhere.
 //
 // Styles are intentionally inline raw values, not theme tokens: this overlay is
 // the last-resort UI when the session (and often the rest of the app's data) is
 // broken, so it must not depend on theme context being healthy.
 /* eslint-disable no-restricted-syntax -- intentional theme-independent styles */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useAuth, useAuthRuntime } from '@/platform/auth/session';
-import { resetSessionExpiry } from '@/platform/auth/sessionExpiry';
+import {
+  inTeamsEnvironment,
+  renewSessionWithPopup,
+  resetSessionExpiry,
+} from '@/platform/auth/sessionExpiry';
 import { SESSION_QUERY_KEY } from '@/platform/auth/sessionQuery';
 import { ssWarn } from '@/platform/log';
 import { queryClient } from '@/platform/reactQueryClient';
@@ -48,27 +53,55 @@ const button: React.CSSProperties = {
   cursor: 'pointer',
 };
 
+const linkButton: React.CSSProperties = {
+  padding: 0,
+  border: 'none',
+  background: 'none',
+  color: '#5b5bd6',
+  font: 'inherit',
+  textDecoration: 'underline',
+  cursor: 'pointer',
+};
+
 export function SessionExpiryPrompt() {
   const adapter = useAuth();
   const { sessionExpired, authStuck } = useAuthRuntime();
   const [signingIn, setSigningIn] = useState(false);
+  // Set when a popup did not complete (closed, blocked, or another sign-in
+  // holds MSAL's lock). The prompt then also offers the full-page sign-in.
+  const [popupFailed, setPopupFailed] = useState(false);
+  // The prompt stays mounted, so forget a failed popup once it closes.
+  useEffect(() => {
+    if (!sessionExpired) setPopupFailed(false);
+  }, [sessionExpired]);
 
   // authStuck (re-auth looped without resolving) is terminal and takes
   // precedence over the ordinary Teams gesture prompt.
   if (!sessionExpired && !authStuck) return null;
 
-  const onSignIn = async () => {
+  const signInByPopup = !authStuck && !inTeamsEnvironment();
+
+  const signInByRedirect = async (redirectUrl?: string) => {
     setSigningIn(true);
     // Clear flags + attempt budget before retrying so the redirect starts
     // fresh (signIn() navigates away on web, so post-call cleanup won't run).
     resetSessionExpiry();
     try {
-      await adapter.signIn();
+      await adapter.signIn(redirectUrl ? { redirectUrl } : undefined);
       queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
     } catch (e) {
       ssWarn('auth', 'sign-in from session-expiry prompt failed', e);
       setSigningIn(false);
     }
+  };
+
+  const onSignIn = async () => {
+    if (!signInByPopup) return signInByRedirect();
+    setSigningIn(true);
+    // No await before this call: the popup must open inside the click.
+    const renewed = await renewSessionWithPopup();
+    setPopupFailed(!renewed);
+    setSigningIn(false);
   };
 
   return (
@@ -93,8 +126,28 @@ export function SessionExpiryPrompt() {
           disabled={signingIn}
           style={{ ...button, opacity: signingIn ? 0.6 : 1 }}
         >
-          {signingIn ? 'Signing in…' : 'Try again'}
+          {signingIn ? 'Signing in…' : signInByPopup ? 'Sign in' : 'Try again'}
         </button>
+        {signInByPopup && popupFailed && (
+          <p style={{ margin: '16px 0 0', fontSize: 13, lineHeight: 1.5 }}>
+            Sign-in didn’t finish.{' '}
+            <button
+              type="button"
+              onClick={() =>
+                void signInByRedirect(
+                  window.location.pathname +
+                    window.location.search +
+                    window.location.hash
+                )
+              }
+              disabled={signingIn}
+              style={linkButton}
+            >
+              Sign in on a full page instead
+            </button>{' '}
+            (this reloads the page).
+          </p>
+        )}
       </div>
     </div>
   );
