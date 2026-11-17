@@ -1,5 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render as rtlRender, screen } from '@testing-library/react';
+import {
+  fireEvent,
+  render as rtlRender,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -58,6 +63,65 @@ describe('ThreadItem', () => {
   beforeEach(() => {
     goToThread.mockClear();
     togglePin.mockClear();
+    remove.mockClear();
+  });
+
+  it('asks before deleting and deletes nothing from the menu alone', () => {
+    render(<ThreadItem thread={thread} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'More options' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.textContent).toContain('Delete thread?');
+    expect(dialog.textContent).toContain(thread.name);
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('deletes once when the dialog is confirmed', () => {
+    render(<ThreadItem thread={thread} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'More options' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  it('deletes once on a double-click while the dialog fades out', () => {
+    render(<ThreadItem thread={thread} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'More options' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    const confirm = screen.getByRole('button', { name: 'Delete' });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+
+    expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  it('deletes nothing and closes when cancelled', async () => {
+    render(<ThreadItem thread={thread} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'More options' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(remove).not.toHaveBeenCalled();
+  });
+
+  it('does not open the thread on a pointer inside the delete dialog', () => {
+    render(<ThreadItem thread={thread} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'More options' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+
+    // The dialog is portalled out of the row in the DOM but still a child of
+    // it in the React tree, so its pointer events reach the row's handler.
+    // The text is not a button, so only the row's portal guard stops it.
+    fireEvent.pointerDown(screen.getByText(/can.t be undone/));
+    expect(goToThread).not.toHaveBeenCalled();
   });
 
   it('opens the thread from the row itself', () => {
