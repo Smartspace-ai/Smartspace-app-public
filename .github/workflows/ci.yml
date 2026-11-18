@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+  merge_group:
+    types: [checks_requested]
   push:
     # The dev DEPLOY is gated instead: deploy-dev.yml calls this workflow as a
     # job so the deploy can depend on it, and a push trigger here as well would
@@ -45,8 +47,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Empty on push and pull_request, which means the triggering ref - the
-          # behaviour before this input existed.
+          # Empty on push, pull_request and merge_group, which means the triggering
+          # ref - the behaviour before this input existed.
           ref: ${{ inputs.ref }}
 
       - name: Quality check
