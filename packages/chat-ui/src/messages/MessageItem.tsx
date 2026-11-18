@@ -24,6 +24,7 @@ import { getChatbotName } from '@/theme/public-config';
 // local UI
 import { MessageBubble } from './MessageBubble';
 import { MessageErrorDetails } from './MessageErrorDetails';
+import { MessageReasoning } from './MessageReasoning';
 import type { MessageResponseSource } from './MessageSources';
 import { ThinkingSection } from './ThinkingSection';
 
@@ -225,6 +226,17 @@ export const MessageItem: FC<MessageItemProps> = ({
   // a user's own prompt bubble must not count, or the indicator would vanish
   // in the gap between sending and the first token.
   let hasOutputContent = false;
+  // Where the first assistant output bubble sits, so the reasoning disclosure
+  // goes above the answer whatever order the values arrived in: a streamed
+  // answer is in `values` before the reasoning its call sends at the end.
+  let firstOutputIndex: number | null = null;
+  const markOutput = () => {
+    if (firstOutputIndex === null) firstOutputIndex = bubbles.length;
+    hasOutputContent = true;
+  };
+  // Every non-empty `reasoning` value (one per LLM call), shown as one
+  // disclosure.
+  const reasoningTexts: string[] = [];
 
   const groupHasAnything = () =>
     groupContent.length > 0 || groupFiles.length > 0 || groupSources.length > 0;
@@ -234,7 +246,7 @@ export const MessageItem: FC<MessageItemProps> = ({
     // `sources` output followed by a status flush) — pushing it would
     // paint an empty bubble.
     if (groupHasAnything()) {
-      if (groupType === MessageValueType.OUTPUT) hasOutputContent = true;
+      if (groupType === MessageValueType.OUTPUT) markOutput();
       bubbles.push(
         <MessageBubble
           key={`bubble-${message.id ?? 'msg'}-${keyCounter++}`}
@@ -393,6 +405,15 @@ export const MessageItem: FC<MessageItemProps> = ({
         break;
       }
 
+      case 'reasoning': {
+        // An LLM block's `reasoning` pin sends '' on every call with nothing
+        // to report, so only non-empty text renders.
+        if (typeof v.value === 'string' && v.value.trim() !== '') {
+          reasoningTexts.push(v.value);
+        }
+        continue;
+      }
+
       case 'sources': {
         groupSources = coerceSources(v.value);
         // an empty sources output (common when a flow wires the pin but
@@ -418,7 +439,7 @@ export const MessageItem: FC<MessageItemProps> = ({
 
   // Final pending group
   if (groupOpen && groupHasAnything()) {
-    if (groupType === MessageValueType.OUTPUT) hasOutputContent = true;
+    if (groupType === MessageValueType.OUTPUT) markOutput();
     bubbles.push(
       <MessageBubble
         key={`bubble-final-${message.id ?? 'msg'}-${keyCounter++}`}
@@ -433,6 +454,17 @@ export const MessageItem: FC<MessageItemProps> = ({
         chatbotName={chatbotName}
         userOutput={null}
         userInput={null}
+      />
+    );
+  }
+
+  if (reasoningTexts.length > 0) {
+    bubbles.splice(
+      firstOutputIndex ?? bubbles.length,
+      0,
+      <MessageReasoning
+        key={`reasoning-${message.id ?? 'msg'}`}
+        text={reasoningTexts.join('\n\n')}
       />
     );
   }
