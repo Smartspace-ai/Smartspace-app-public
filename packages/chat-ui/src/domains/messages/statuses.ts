@@ -10,6 +10,8 @@
  * plain-string behaviour.
  */
 
+import type { ErrorCodeKnown } from '@smartspace/api-client';
+
 export type RetryStatus = {
   type: 'retry';
   attempt: number;
@@ -63,12 +65,13 @@ export const parseRetryStatus = (value: unknown): RetryStatus | null => {
   };
 };
 
-const RETRY_REASON_TEXT: Record<string, string> = {
+// Keyed by the codes the API publishes, so a misspelt or retired code fails to compile.
+const RETRY_REASON_TEXT: Partial<Record<string, string>> = {
   'llm.rate_limit': 'the model is busy',
   'llm.timeout': 'the model took too long',
   'llm.transient_connection': 'the connection dropped',
-  'llm.server_error': 'the model provider had a problem',
-};
+  'llm.upstream_error': 'the model provider had a problem',
+} satisfies Partial<Record<ErrorCodeKnown, string>>;
 
 export const getRetryStatusText = (status: RetryStatus): string => {
   const reason = status.errorCode
