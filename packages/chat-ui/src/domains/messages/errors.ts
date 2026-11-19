@@ -9,10 +9,14 @@
  * fallback keeps older messages and not-yet-upgraded backends readable.
  */
 
+import type { ErrorCodeKnown } from '@smartspace/api-client';
+
 const GENERIC_ERROR_TEXT =
   '⚠️ **Error**\n\nAn unexpected error occurred. Please try again.';
 
-const ERROR_CODE_TEXT: Record<string, string> = {
+// Keyed by the codes the API publishes, so a misspelt or retired code fails to
+// compile. llm.provider_error has no entry: it reads by its HTTP status.
+const ERROR_CODE_TEXT = {
   'llm.rate_limit':
     "⚠️ **The model is receiving too many requests**\n\nI'm being rate limited right now. Please wait a moment and try again.",
   'llm.timeout':
@@ -21,8 +25,6 @@ const ERROR_CODE_TEXT: Record<string, string> = {
     '⚠️ **The connection to the model was interrupted**\n\nThis is usually temporary. Please try again.',
   'llm.upstream_error':
     '⚠️ **The model provider had a problem**\n\nPlease try again in a moment.',
-  'llm.auth':
-    "⚠️ **The model connection isn't authorised**\n\nAn administrator needs to check the model configuration.",
   'llm.not_found':
     '⚠️ **The model or deployment could not be found**\n\nAn administrator needs to check the model configuration.',
   'llm.invalid_request':
@@ -35,8 +37,6 @@ const ERROR_CODE_TEXT: Record<string, string> = {
     '⚠️ **The model returned an invalid response**\n\nPlease try again.',
   'llm.unsupported_modality':
     "⚠️ **This model can't read images**\n\nSwitch to a vision-capable model, or remove the attachment and describe it instead.",
-  'llm.unknown': GENERIC_ERROR_TEXT,
-  // The AI API's current name for llm.auth; older messages stored that one.
   'llm.auth_failed':
     "⚠️ **The model connection isn't authorised**\n\nAn administrator needs to check the model configuration.",
   'llm.unsupported_tools':
@@ -51,7 +51,7 @@ const ERROR_CODE_TEXT: Record<string, string> = {
   // Managed secrets. A secret's failure arrives as a 404 or 400, which the
   // status table below would read as a missing model or a generic error.
   'secret.user_value_not_set':
-    "⚠️ **Your own key for this isn't set**\n\nThis step uses a credential each person sets for themselves, and none is set for you yet. Ask an administrator to add it.",
+    "⚠️ **Your own key for this isn't set**\n\nThis step uses a credential that is set separately for each person, and none is set for you yet. Ask an administrator to add yours.",
   'secret.run_has_no_user':
     "⚠️ **This step needs a signed-in user**\n\nIt uses a person's own credential, so it can't run when no one started the run.",
   'secret.user_mismatch':
@@ -60,16 +60,25 @@ const ERROR_CODE_TEXT: Record<string, string> = {
     "⚠️ **A credential couldn't be loaded**\n\nAn administrator needs to check this flow's secrets.",
   'secret.not_found':
     "⚠️ **A secret this flow uses doesn't exist**\n\nAn administrator needs to add it, or point the flow at another one.",
-  // The API's name for secret.not_found before it was renamed; older messages stored it.
-  MS404:
-    "⚠️ **A secret this flow uses doesn't exist**\n\nAn administrator needs to add it, or point the flow at another one.",
+} satisfies Partial<Record<ErrorCodeKnown, string>>;
+
+// Codes the API no longer sends, kept so stored messages still read.
+const LEGACY_CODE_TEXT: Record<string, string> = {
+  'llm.auth': ERROR_CODE_TEXT['llm.auth_failed'],
+  'llm.unknown': GENERIC_ERROR_TEXT,
+  MS404: ERROR_CODE_TEXT['secret.not_found'],
+};
+
+const CODE_TEXT: Partial<Record<string, string>> = {
+  ...LEGACY_CODE_TEXT,
+  ...ERROR_CODE_TEXT,
 };
 
 const STATUS_CODE_TEXT: Record<number, string> = {
   408: ERROR_CODE_TEXT['llm.timeout'],
   429: ERROR_CODE_TEXT['llm.rate_limit'],
-  401: ERROR_CODE_TEXT['llm.auth'],
-  403: ERROR_CODE_TEXT['llm.auth'],
+  401: ERROR_CODE_TEXT['llm.auth_failed'],
+  403: ERROR_CODE_TEXT['llm.auth_failed'],
   404: ERROR_CODE_TEXT['llm.not_found'],
   500: ERROR_CODE_TEXT['llm.upstream_error'],
   502: ERROR_CODE_TEXT['llm.upstream_error'],
@@ -85,8 +94,9 @@ export const getMessageErrorText = (error: MessageErrorLike): string => {
   if (typeof error === 'number') {
     return STATUS_CODE_TEXT[error] ?? GENERIC_ERROR_TEXT;
   }
-  if (error.errorCode && ERROR_CODE_TEXT[error.errorCode]) {
-    return ERROR_CODE_TEXT[error.errorCode];
+  const codeText = error.errorCode ? CODE_TEXT[error.errorCode] : undefined;
+  if (codeText) {
+    return codeText;
   }
   // The status table's wording is about the model, so it speaks only for a
   // failure with no code or a model one.

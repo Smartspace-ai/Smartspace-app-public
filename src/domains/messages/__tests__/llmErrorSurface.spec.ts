@@ -1,3 +1,4 @@
+import { ErrorCode, errorCodeInfo } from '@smartspace/api-client';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -87,6 +88,28 @@ describe('getMessageErrorText', () => {
     ['ai_api.stream_broken', 503, 'interrupted'],
   ])('keeps the model wording for %s', (errorCode, code, fragment) => {
     expect(getMessageErrorText({ code, errorCode })).toContain(fragment);
+  });
+
+  // From the API's published list, not the text map. At 418 the status table
+  // has no row, so a code without its own text shows the generic one.
+  // llm.provider_error reads by its HTTP status (tested above).
+  it.each(
+    Object.values(ErrorCode).filter(
+      (code) =>
+        /^(llm|embeddings)\./.test(code) && code !== 'llm.provider_error'
+    )
+  )('has text of its own for published code %s', (errorCode) => {
+    expect(getMessageErrorText({ code: 418, errorCode })).not.toContain(
+      'unexpected error'
+    );
+  });
+
+  // A stored message from before llm.provider_error; its llm. prefix would
+  // otherwise let the status table speak for it.
+  it('reads a stored llm.unknown as the generic error', () => {
+    expect(
+      getMessageErrorText({ code: 503, errorCode: 'llm.unknown' })
+    ).toContain('unexpected error');
   });
 
   it('maps bare HTTP codes for older messages (back-compat)', () => {
@@ -189,6 +212,22 @@ describe('getRetryStatusText', () => {
     });
     expect(text).toContain('attempt 3 of 3');
     expect(text).not.toContain('~');
+  });
+
+  // The model codes the API publishes as retryable should match the ones the
+  // AI API's retry loop retries, so each can arrive on a retry status.
+  it.each(
+    Object.entries(errorCodeInfo)
+      .filter(([code, info]) => code.startsWith('llm.') && info?.retryable)
+      .map(([code]) => code)
+  )('gives a reason for retryable code %s', (errorCode) => {
+    const text = getRetryStatusText({
+      type: 'retry',
+      attempt: 1,
+      maxAttempts: 3,
+      errorCode,
+    });
+    expect(text).toContain('Hit a snag — ');
   });
 });
 

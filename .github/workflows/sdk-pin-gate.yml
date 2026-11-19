@@ -1,0 +1,86 @@
+# Smartspace-internal: safe to delete in forks.
+# PR -> main: @smartspace/api-client must be pinned to the exact version its `main`
+# dist-tag points at, in every tracked package.json that depends on it and in
+# pnpm-lock.yaml. update-release-next.yml writes those pins; this checks them, so a
+# hand-made PR, or a release branch built before a newer SDK was published, fails
+# here instead of merging with another version.
+#
+# It runs when the PR is opened or pushed to. A `main` tag that moves after that is
+# not seen until the next push or a re-run.
+
+name: SDK pin gate
+
+on:
+  pull_request:
+    branches: [main]
+    # No paths filter: sdk-pin-gate is shaped to be a required check, so it must
+    # always report.
+
+permissions:
+  contents: read
+
+jobs:
+  sdk-pin-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same registry as internal-bump-sdk.yml and update-release-next.yml: public
+      # npm, no token.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Compare the pins with the `main` dist-tag
+        run: |
+          set -euo pipefail
+          pkg=@smartspace/api-client
+          expected=$(npm view "$pkg@main" version || true)
+          if [ -z "$expected" ]; then
+            echo "::error::Could not resolve $pkg@main from the registry."
+            exit 1
+          fi
+          {
+            echo "\`$pkg\` \`main\` dist-tag: \`$expected\`"
+            echo
+            echo "| File | Found | Result |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          fail=0
+          check() {
+            local file=$1 found=$2 result=ok
+            if [ "$found" != "$expected" ]; then
+              echo "::error file=$file::$pkg: expected $expected (the main dist-tag), found $found."
+              result=FAIL
+              fail=1
+            fi
+            echo "| $file | $found | $result |" >> "$GITHUB_STEP_SUMMARY"
+          }
+
+          # Every manifest that lists the package under dependencies or
+          # devDependencies. peerDependencies is left out: chat-ui declares "*"
+          # there for its consumers, and update-release-next.yml does not pin it.
+          manifests=0
+          while IFS= read -r manifest; do
+            while IFS= read -r spec; do
+              check "$manifest" "$spec"
+              manifests=$((manifests + 1))
+            done < <(jq -r --arg p "$pkg" '(.dependencies[$p], .devDependencies[$p]) | select(. != null)' "$manifest")
+          done < <(git ls-files -- ':(glob)**/package.json')
+
+          # Every version of the package the lockfile resolves.
+          locked=0
+          while IFS= read -r version; do
+            check pnpm-lock.yaml "$version"
+            locked=$((locked + 1))
+          done < <(grep -oE "^  '?$pkg@[^(':]+" pnpm-lock.yaml | sed -E "s|^  '?$pkg@||" | sort -u)
+
+          # Nothing found is a broken check, not a pass.
+          if [ "$manifests" -eq 0 ] || [ "$locked" -eq 0 ]; then
+            echo "::error::Found $manifests manifest pin(s) and $locked lockfile version(s) of $pkg; expected at least one of each."
+            exit 1
+          fi
+          exit "$fail"

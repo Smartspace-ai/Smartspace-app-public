@@ -7,6 +7,7 @@ import {
   useSearch,
 } from '@tanstack/react-router';
 import { useEffect } from 'react';
+import { z } from 'zod';
 
 import { getAuthAdapter } from '@/platform/auth';
 import { sessionQueryOptions } from '@/platform/auth/sessionQuery';
@@ -15,10 +16,14 @@ import { normalizeRedirectPath } from '@/platform/routing/normalizeRedirectPath'
 
 import { Login } from '@/pages/Login/Login';
 
+// A bad value drops the field instead of throwing.
+const loginSearchSchema = z.object({
+  redirect: z.string().optional().catch(undefined),
+});
+
 export const Route = createFileRoute('/login')({
-  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
-    redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
-  }),
+  validateSearch: (search): z.infer<typeof loginSearchSchema> =>
+    loginSearchSchema.parse(search),
   beforeLoad: async ({ context, location }) => {
     // Cached session check via React Query
     const session = await context.queryClient.ensureQueryData(

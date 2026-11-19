@@ -14,6 +14,8 @@ import { isInTeams as detectIsInTeams } from '@/platform/auth/msalConfig';
 import { setRuntimeIsInTeams } from '@/platform/auth/runtime';
 import { ssInfo, ssWarn } from '@/platform/log';
 
+import { setHostColorScheme } from '@/theme/colorScheme';
+
 type TeamsTheme = 'default' | 'dark' | 'contrast';
 
 type TeamsContextLike = {
@@ -71,101 +73,12 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
     setRuntimeIsInTeams(isInTeams);
   }, [isInTeams]);
 
-  // Apply Teams theme to our document so Tailwind/shadcn CSS variables switch correctly.
-  // Tailwind "dark" mode is class-based in this app.
+  // Follow the Teams theme. The app has light and dark only, so high
+  // contrast shows dark.
   useEffect(() => {
-    if (typeof document === 'undefined') return;
-    if (!likelyInTeams) return;
-
-    const root = document.documentElement;
-    try {
-      const applyLight = () => {
-        // TEMP: force light theme in Teams regardless of host theme.
-        // This keeps the UI consistent with the (light) web UI.
-        root.classList.remove('dark');
-        document.body?.classList?.remove?.('dark');
-        document.getElementById('root')?.classList?.remove?.('dark');
-
-        // Force the critical CSS vars used by bg-background / from-background so Teams web
-        // can't make the page look "dark" via host-injected styling.
-        // (HSL tokens; matches the light theme defaults in src/_theme.scss)
-        root.style.setProperty('--background', '0 0% 100%');
-        root.style.setProperty('--popover', '0 0% 100%');
-
-        // Ensure any transparent areas don't show a dark host/iframe background.
-        root.style.backgroundColor = 'hsl(0 0% 100%)';
-        if (document.body) {
-          document.body.style.backgroundColor = 'hsl(0 0% 100%)';
-        }
-        const appRoot = document.getElementById('root');
-        if (appRoot) {
-          appRoot.style.backgroundColor = 'hsl(0 0% 100%)';
-        }
-
-        // Prefer light form control rendering too.
-        (
-          root.style as unknown as CSSStyleDeclaration & {
-            colorScheme?: string;
-          }
-        ).colorScheme = 'light';
-      };
-
-      applyLight();
-
-      // Also stamp a theme marker for any future CSS overrides.
-      root.setAttribute('data-teams-theme', 'default');
-
-      // Teams web can re-apply classes/styles after load; keep light pinned.
-      //
-      // CRITICAL: applyLight() mutates root/body `style` + `class` — the very
-      // attributes this observer watches. A naive `new MutationObserver(() =>
-      // applyLight())` therefore re-triggers itself (and fights Teams' own theme
-      // observer) in an UNBOUNDED microtask loop that pegs the Teams-iframe main
-      // thread — timers and network callbacks never run, so the app freezes on
-      // the boot splash (and can lock the whole tab/machine). This only runs in
-      // Teams, which is why the app works fine in a plain browser.
-      //
-      // Guard it two ways: (1) disconnect while we mutate so our own changes
-      // can't re-fire the observer, and (2) throttle re-application via a macro-
-      // task timer so even a tug-of-war with Teams stays bounded (≤ a few/sec)
-      // and always yields the event loop.
-      let reapplyScheduled = false;
-      let lastApplyAt = Date.now();
-      let obs: MutationObserver | null = null;
-      const observe = () => {
-        if (!obs) return;
-        obs.observe(root, {
-          attributes: true,
-          attributeFilter: ['class', 'style'],
-        });
-        try {
-          if (document.body)
-            obs.observe(document.body, {
-              attributes: true,
-              attributeFilter: ['class', 'style'],
-            });
-        } catch {
-          /* ignore */
-        }
-      };
-      obs = new MutationObserver(() => {
-        if (reapplyScheduled) return;
-        reapplyScheduled = true;
-        const wait = Math.max(0, 250 - (Date.now() - lastApplyAt));
-        window.setTimeout(() => {
-          reapplyScheduled = false;
-          lastApplyAt = Date.now();
-          obs?.disconnect();
-          applyLight();
-          observe();
-        }, wait);
-      });
-      observe();
-      return () => obs?.disconnect();
-    } catch {
-      // ignore DOM failures
-    }
-  }, [teamsTheme, likelyInTeams]);
+    if (!isInTeams || !isTeamsInitialized) return;
+    setHostColorScheme(teamsTheme === 'default' ? 'light' : 'dark');
+  }, [isInTeams, isTeamsInitialized, teamsTheme]);
 
   useEffect(() => {
     if (!likelyInTeams) {

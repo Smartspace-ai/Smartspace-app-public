@@ -50,6 +50,8 @@ export function applyColorScheme(scheme: ColorScheme): void {
 }
 
 let current: ColorScheme = resolveInitialColorScheme();
+/** True once a host (Teams) sets the scheme; the user toggle and OS no longer apply. */
+let followsHost = false;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -68,6 +70,15 @@ export function setColorScheme(scheme: ColorScheme): void {
   emit();
 }
 
+/** Follow the host's scheme. Not saved, so it never becomes the browser preference. */
+export function setHostColorScheme(scheme: ColorScheme): void {
+  if (followsHost && scheme === current) return;
+  followsHost = true;
+  current = scheme;
+  applyColorScheme(scheme);
+  emit();
+}
+
 function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => {
@@ -79,6 +90,10 @@ function getSnapshot(): ColorScheme {
   return current;
 }
 
+function getFollowsHost(): boolean {
+  return followsHost;
+}
+
 /**
  * Apply the resolved scheme immediately, and keep following the OS for as long
  * as the user hasn't picked a scheme themselves. Called once at boot.
@@ -88,7 +103,7 @@ export function initColorScheme(): void {
   if (typeof window === 'undefined' || readStored()) return;
   const mql = window.matchMedia('(prefers-color-scheme: dark)');
   mql.addEventListener('change', () => {
-    if (readStored()) return;
+    if (followsHost || readStored()) return;
     current = mql.matches ? 'dark' : 'light';
     applyColorScheme(current);
     emit();
@@ -101,6 +116,11 @@ export function useColorScheme() {
     getSnapshot,
     () => 'light'
   );
+  const hostControlled = useSyncExternalStore<boolean>(
+    subscribe,
+    getFollowsHost,
+    () => false
+  );
   const toggle = useCallback(
     () => setColorScheme(scheme === 'dark' ? 'light' : 'dark'),
     [scheme]
@@ -108,6 +128,7 @@ export function useColorScheme() {
   return {
     scheme,
     isDark: scheme === 'dark',
+    hostControlled,
     setScheme: setColorScheme,
     toggle,
   };
