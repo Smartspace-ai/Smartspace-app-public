@@ -51,7 +51,7 @@ const ERROR_CODE_TEXT = {
   // Managed secrets. A secret's failure arrives as a 404 or 400, which the
   // status table below would read as a missing model or a generic error.
   'secret.user_value_not_set':
-    "⚠️ **Your own key for this isn't set**\n\nThis step uses a credential each person sets for themselves, and none is set for you yet. Ask an administrator to add it.",
+    "⚠️ **Your own key for this isn't set**\n\nThis step uses a credential that is set separately for each person, and none is set for you yet. Ask an administrator to add yours.",
   'secret.run_has_no_user':
     "⚠️ **This step needs a signed-in user**\n\nIt uses a person's own credential, so it can't run when no one started the run.",
   'secret.user_mismatch':
