@@ -5,9 +5,15 @@
 
 import { Box, Skeleton, useTheme } from '@mui/material';
 
+import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
+
 export function PageSkeleton() {
   const theme = useTheme();
   const s = theme.spacing;
+  // Match the real shell: on a phone the thread list is a closed drawer, and
+  // on a desktop the user may have collapsed it.
+  const { isMobile, leftOpen } = useSidebar();
+  const showSidebar = !isMobile && leftOpen;
 
   return (
     <Box
@@ -21,12 +27,13 @@ export function PageSkeleton() {
       {/* Sidebar strip */}
       <Box
         sx={{
-          width: s(35),
+          display: showSidebar ? 'flex' : 'none',
+          // 300px, the real sidebar's SIDEBAR_WIDTH in mui-compat/sidebar.tsx.
+          width: s(37.5),
           flexShrink: 0,
           borderRight: 1,
           borderColor: 'divider',
           p: 2,
-          display: 'flex',
           flexDirection: 'column',
           gap: 2,
         }}

@@ -1,22 +1,26 @@
-name: chat UI artifact (main)
+name: chat UI artifact
 
-# Every main commit: build the chat UI once and publish it to the registry as
-# a versioned zip, the OCI artifact smartspace-chat-ui:main-<run#>. A release
-# pins one of these; nothing is rebuilt from a tag. Nothing installs from the
-# artifact yet.
+# Every main and develop commit: build the chat UI once and publish it to the
+# registry as a versioned zip, the OCI artifact smartspace-chat-ui:main-<run#>
+# or :dev-<run#>. A release pins a main one; nothing is rebuilt from a tag.
+# A dev one is sent to Smartspace-app, whose develop workflow puts it on the
+# dev install.
+#
+# The file keeps its old name: renaming a workflow restarts run_number, and
+# main-<run#> tags must keep rising.
 #
 # Internal to Smartspace-ai/Smartspace-app-public: in a fork or a clone the job
 # is skipped, and a self-hosted site keeps deploying with deploy.yml.
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: read
 
 concurrency:
-  group: chat-ui-artifact-main
+  group: chat-ui-artifact-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -25,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # Scopes the OIDC subject to environment:registry, the only subject the
-    # registry identity trusts. The environment allows the main branch only.
+    # registry identity trusts. The environment allows main and develop only.
     environment: registry
     permissions:
       contents: read
@@ -69,9 +73,14 @@ jobs:
           version: 1.3.4
 
       - name: Publish the chat UI as an OCI artifact
+        id: publish
         run: |
           set -euo pipefail
-          VERSION="main-${{ github.run_number }}"
+          case "$GITHUB_REF_NAME" in
+            main) VERSION="main-${{ github.run_number }}" ;;
+            develop) VERSION="dev-${{ github.run_number }}" ;;
+            *) echo "::error::No artifact version prefix for branch $GITHUB_REF_NAME."; exit 1 ;;
+          esac
           ARTIFACT="iacsmartspaceappacr.azurecr.io/smartspace-chat-ui:$VERSION"
           if oras manifest fetch "$ARTIFACT" >/dev/null 2>&1; then
             echo "::error::$ARTIFACT already exists. A published version is never overwritten."
@@ -96,7 +105,28 @@ jobs:
             --annotation "ai.smartspace.sdk.version=$SDK_VERSION" \
             --annotation "ai.smartspace.chat-ui.tree=$CHAT_UI_TREE" \
             "chat-$VERSION.zip:application/zip"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Published \`smartspace-chat-ui:$VERSION\` (SDK $SDK_VERSION, chat-ui tree $CHAT_UI_TREE)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Generate CI_DISPATCH_APP token
+        if: github.ref_name == 'develop'
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CI_DISPATCH_APP_ID }}
+          private-key: ${{ secrets.CI_DISPATCH_APP_PRIVATE_KEY }}
+          owner: Smartspace-ai
+          repositories: Smartspace-app
+
+      - name: Send the dev artifact to Smartspace-app
+        if: github.ref_name == 'develop'
+        run: |
+          gh api repos/Smartspace-ai/Smartspace-app/dispatches \
+            --method POST \
+            -f event_type=chat-ui-artifact-published \
+            -f "client_payload[tag]=${{ steps.publish.outputs.version }}"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Azure logout
         if: always()

@@ -1,12 +1,16 @@
 // src/app/AppProviders.tsx
 import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
-import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ReactNode, useMemo } from 'react';
 
 import { AuthProvider, useAuth } from '@/platform/auth/session';
 import { sessionQueryOptions } from '@/platform/auth/sessionQuery';
-import { queryClient } from '@/platform/reactQueryClient';
+import { queryClient as defaultQueryClient } from '@/platform/reactQueryClient';
 import { RealtimeProvider } from '@/platform/realtime/RealtimeProvider';
 
 import { SessionExpiryPrompt } from '@/app/ui/SessionExpiryPrompt';
@@ -43,7 +47,15 @@ function RealtimeBridge({ children }: { children: ReactNode }) {
   );
 }
 
-export default function AppProviders({ children }: { children: ReactNode }) {
+// `queryClient` must be the router context's client, so loaders and
+// components share one cache. A spec can pass its own.
+export default function AppProviders({
+  children,
+  queryClient = defaultQueryClient,
+}: {
+  children: ReactNode;
+  queryClient?: QueryClient;
+}) {
   return (
     <TeamsProvider>
       <QueryClientProvider client={queryClient}>

@@ -17,6 +17,7 @@ import { isDraftThreadId } from '@/shared/utils/threadId';
 
 import { parseDateTimeHuman, type MessageThread } from '@smartspace/chat-ui';
 
+import { ThreadDeleteDialog } from './ThreadDeleteDialog';
 import { useThreadItemVm } from './ThreadItem.vm';
 import { ThreadRenameModal } from './ThreadRenameModal';
 
@@ -30,6 +31,7 @@ const revealOnHover =
 
 export default function ThreadItem({ thread }: Props) {
   const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
   const isDraft = isDraftThreadId(thread.id);
 
@@ -166,7 +168,7 @@ export default function ThreadItem({ thread }: Props) {
                 onClick={(e) => {
                   e.preventDefault();
                   setMenuOpen(false);
-                  remove();
+                  setIsDeleteOpen(true);
                 }}
               >
                 <Trash2 className="mr-2 h-3.5 w-3.5" />
@@ -181,6 +183,13 @@ export default function ThreadItem({ thread }: Props) {
         isOpen={isRenameOpen}
         onClose={() => setIsRenameOpen(false)}
         thread={thread}
+      />
+
+      <ThreadDeleteDialog
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={remove}
+        threadName={thread.name}
       />
     </div>
   );

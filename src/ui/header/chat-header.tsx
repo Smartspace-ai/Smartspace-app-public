@@ -59,7 +59,7 @@ export function ChatHeader() {
   const { data: activeThread } = useThread({ workspaceId, threadId });
   const { data: threadUsers } = useThreadUsers(threadId);
   const { rightOpen } = useSidebar();
-  const { isDark, toggle: toggleTheme } = useColorScheme();
+  const { isDark, hostControlled, toggle: toggleTheme } = useColorScheme();
   const activeUser = useActiveUser();
   const { instance } = useMsal();
   const [addUsersOpen, setAddUsersOpen] = useState(false);
@@ -244,22 +244,25 @@ export function ChatHeader() {
               {activeUser.name}
             </p>
             <hr className="my-3 border-border" />
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="text-sm text-foreground">Appearance</span>
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-                aria-label="Toggle theme"
-              >
-                {isDark ? (
-                  <Sun className="h-3.5 w-3.5" />
-                ) : (
-                  <Moon className="h-3.5 w-3.5" />
-                )}
-                {isDark ? 'Light' : 'Dark'}
-              </button>
-            </div>
+            {/* Teams sets the theme there, so the toggle would not stick */}
+            {!hostControlled && (
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-sm text-foreground">Appearance</span>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  aria-label="Toggle theme"
+                >
+                  {isDark ? (
+                    <Sun className="h-3.5 w-3.5" />
+                  ) : (
+                    <Moon className="h-3.5 w-3.5" />
+                  )}
+                  {isDark ? 'Light' : 'Dark'}
+                </button>
+              </div>
+            )}
             <button
               type="button"
               onClick={handleLogout}

@@ -79,6 +79,11 @@ const router = createRouter({
     api: ChatApi.getSmartSpaceChatAPI(),
   },
   defaultPreload: 'intent',
+  // A blocking loader holds the old page this long before the route's
+  // pendingComponent shows (library default 1000ms reads as a dead click);
+  // the skeleton then stays at least this long so it does not flash.
+  defaultPendingMs: 200,
+  defaultPendingMinMs: 300,
   scrollRestoration: true,
   defaultNotFoundComponent: ({ data }) => <NotFoundPage data={data} />,
 });
@@ -176,7 +181,7 @@ if (isAuthResponsePage()) {
           <StrictMode>
             <ErrorBoundary fallbackRender={fallbackRender}>
               <MsalProvider instance={msal}>
-                <AppProviders>
+                <AppProviders queryClient={queryClient}>
                   <RouterProvider router={router} />
                   {import.meta.env.DEV ? (
                     <TanStackRouterDevtools

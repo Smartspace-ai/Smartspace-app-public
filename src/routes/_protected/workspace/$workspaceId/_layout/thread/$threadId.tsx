@@ -17,11 +17,13 @@ import { useSidebar } from '@/shared/ui/mui-compat/sidebar';
 
 import { threadDetailOptions, useThread } from '@smartspace/chat-ui';
 
+// A bad value drops that field instead of throwing, so a stale or hand-edited
+// URL opens the thread rather than the full-screen error page.
 const threadRouteSearchSchema = z.object({
-  modal: z.enum(['rename', 'delete']).optional(),
-  targetId: z.string().optional(),
-  panel: z.enum(['comments']).optional(),
-  focusMessageId: z.string().optional(),
+  modal: z.enum(['rename', 'delete']).optional().catch(undefined),
+  targetId: z.string().optional().catch(undefined),
+  panel: z.enum(['comments']).optional().catch(undefined),
+  focusMessageId: z.string().optional().catch(undefined),
 });
 
 export type ThreadRouteSearch = z.infer<typeof threadRouteSearchSchema>;

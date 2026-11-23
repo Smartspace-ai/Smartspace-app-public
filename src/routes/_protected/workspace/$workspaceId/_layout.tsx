@@ -15,6 +15,7 @@ import {
 
 import { useDrainPendingThreadUsersOnSend } from '@/domains/thread-users';
 
+import { PageSkeleton } from '@/ui/feedback';
 import { PendingThreadsProvider } from '@/ui/threads/PendingThreadsContext';
 
 import ChatBotPage from '@/pages/WorkspaceThreadPage/chat';
@@ -87,6 +88,9 @@ function WorkspaceBodyBackground() {
 export const Route = createFileRoute(
   '/_protected/workspace/$workspaceId/_layout'
 )({
+  // Shown while the workspace detail loads (entering a workspace, or
+  // switching to one not yet cached), after the router's defaultPendingMs.
+  pendingComponent: PageSkeleton,
   loader: async ({ params, context }) => {
     try {
       return await context.queryClient.ensureQueryData(
