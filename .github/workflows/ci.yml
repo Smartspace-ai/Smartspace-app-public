@@ -9,10 +9,9 @@ on:
     # job so the deploy can depend on it, and a push trigger here as well would
     # run the same check twice on the same commit.
     #
-    # Only that one consumer is gated. chat-ui-publish-develop.yml and
-    # internal-notify-app.yml both still fire on every push to develop with no
-    # dependency on this check, so a red develop commit still reaches the npm
-    # `dev` dist-tag and the downstream Smartspace-app image rebuild.
+    # Only that one consumer is gated. chat-ui-publish-develop.yml still fires
+    # on every push to develop with no dependency on this check, so a red
+    # develop commit still reaches the npm `dev` dist-tag.
     #
     # main keeps its push run, which is a parallel check and NOT a gate -
     # deploy-production.yml does not depend on it, so a red commit on main can

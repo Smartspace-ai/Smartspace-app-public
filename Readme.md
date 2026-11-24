@@ -58,11 +58,10 @@ To see the available versions: `git ls-remote --tags https://github.com/Smartspa
 
 ### Optional: remove the internal workflows
 
-Three GitHub Actions workflows exist only for SmartSpace-internal automation. They are gated on the upstream repository and will not run in your copy, but you can delete them for cleanliness. Each carries a `# Smartspace-internal: safe to delete in forks.` comment at the top:
+Two GitHub Actions workflows exist only for SmartSpace-internal automation. They are gated on the upstream repository and will not run in your copy, but you can delete them for cleanliness. Each carries a `# Smartspace-internal: safe to delete in forks.` comment at the top:
 
 ```bash
 rm .github/workflows/internal-bump-sdk.yml
-rm .github/workflows/internal-notify-app.yml
 rm .github/workflows/update-release-next.yml
 ```
 
