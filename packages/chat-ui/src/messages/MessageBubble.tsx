@@ -53,7 +53,7 @@ export interface MessageBubbleProps {
   chatbotName?: string;
   /**
    * True while this bubble is the tail of a running flow. Drives the design's
-   * reveal animation and the blinking caret on the last line.
+   * reveal animation.
    */
   isStreaming?: boolean;
   onSubmitUserForm?: (name: string, value: unknown) => void;
