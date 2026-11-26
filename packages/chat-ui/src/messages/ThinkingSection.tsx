@@ -8,14 +8,23 @@ interface ThinkingSectionProps {
    * reported one we fall back to the generic waiting label.
    */
   status?: string | null;
+  /**
+   * True once the message has painted assistant output. Switches the
+   * generic label from "Thinking…" to "Still working…", since the flow is
+   * now producing more output rather than starting.
+   */
+  hasOutput?: boolean;
 }
 
 /**
- * The single "the assistant is working" affordance. Owned by `MessageItem`
- * so the same place that knows whether output has started printing also
- * decides whether this shows — see the `showThinking` gate there.
+ * The single "the assistant is working" affordance. Owned by `MessageItem`,
+ * which shows it for as long as the message's flow is running — see the
+ * `showThinking` gate there.
  */
-export const ThinkingSection: FC<ThinkingSectionProps> = ({ status }) => (
+export const ThinkingSection: FC<ThinkingSectionProps> = ({
+  status,
+  hasOutput = false,
+}) => (
   <div
     className="flex items-center gap-2 py-2 text-[13px]"
     role="status"
@@ -27,7 +36,7 @@ export const ThinkingSection: FC<ThinkingSectionProps> = ({ status }) => (
       <span />
     </span>
     <span className="chat-thinking-shimmer">
-      {status?.trim() ? status : 'Thinking…'}
+      {status?.trim() ? status : hasOutput ? 'Still working…' : 'Thinking…'}
     </span>
   </div>
 );
