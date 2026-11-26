@@ -116,9 +116,10 @@ export type MarkdownEditorProps = {
   ghostMessage?: string;
   placeholder?: string;
   /**
-   * Accessible name of the editor's textbox. Falls back to the placeholder,
-   * which is a sibling element shown only while the editor is empty and
-   * unfocused, so it does not name the textbox by itself.
+   * Accessible name of the editor's textbox. Falls back to the placeholder
+   * (`placeholder`, else `ghostMessage`), which is a sibling element shown only
+   * while the editor is empty and unfocused, so it does not name the textbox by
+   * itself.
    */
   ariaLabel?: string;
   workspaceId?: string;
