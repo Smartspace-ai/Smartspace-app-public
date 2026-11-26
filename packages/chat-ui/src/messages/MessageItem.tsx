@@ -220,11 +220,10 @@ export const MessageItem: FC<MessageItemProps> = ({
   // transient status: only the last status is kept, cleared when content follows
   let lastStatusText: string | null = null;
 
-  // Whether this message has painted any assistant output yet. Drives the
-  // thinking gate below: once the answer starts printing there's nothing left
-  // to wait on, so the indicator goes away. Deliberately tracks OUTPUT only —
-  // a user's own prompt bubble must not count, or the indicator would vanish
-  // in the gap between sending and the first token.
+  // Whether this message has painted any assistant output yet. Picks the
+  // thinking row's generic label below ("Thinking…" before output, "Still
+  // working…" after). Deliberately tracks OUTPUT only — a user's own prompt
+  // bubble must not count, or the label would change before the first token.
   let hasOutputContent = false;
   // Where the first assistant output bubble sits, so the reasoning disclosure
   // goes above the answer whatever order the values arrived in: a streamed
@@ -479,17 +478,17 @@ export const MessageItem: FC<MessageItemProps> = ({
   // another's content with no clearing frame to overwrite it — and without
   // this gate it would sit there permanently.
   //
-  // While live, it shows when either the flow has something to narrate, or
-  // nothing has printed yet. Once the answer starts streaming and no status is
-  // outstanding there is nothing left to wait on, so it goes away rather than
-  // sitting under the output for the rest of the run. A later tool round
-  // brings it back with that round's status.
-  const showThinking = isLive && (lastStatusText !== null || !hasOutputContent);
+  // While live, it shows for the whole run, under the output: a flow can send
+  // more outputs after its first answer, and this row is how the user knows
+  // they are still coming. It reads the flow's latest status when there is
+  // one, else a generic label.
+  const showThinking = isLive;
   if (showThinking) {
     bubbles.push(
       <ThinkingSection
         key={`thinking-${message.id ?? 'msg'}`}
         status={lastStatusText}
+        hasOutput={hasOutputContent}
       />
     );
   }
