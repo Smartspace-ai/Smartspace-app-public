@@ -203,6 +203,8 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
   if (isBotResponse) {
     return (
       <div
+        role="article"
+        aria-label="Reply"
         className={`group chat-prose ${isStreaming ? 'chat-streaming' : ''}`}
       >
         {messageBody}
@@ -215,7 +217,11 @@ export const MessageBubble: FC<MessageBubbleProps> = (props) => {
   // The user's own turn: a right-aligned raised bubble holding just the message,
   // with the byline tucked underneath it.
   return (
-    <div className="group flex flex-col items-end">
+    <div
+      role="article"
+      aria-label="Your message"
+      className="group flex flex-col items-end"
+    >
       <div className="chat-bubble-user chat-prose min-w-0 max-w-xl">
         {messageBody}
         {extras}
