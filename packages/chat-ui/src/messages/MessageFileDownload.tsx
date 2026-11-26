@@ -26,7 +26,7 @@ export function ChatMessageFileDownload({ file }: { file: FileInfo }) {
   return (
     <Button
       size="icon"
-      aria-label="Download file"
+      aria-label={`Download ${file.name || 'Untitled'}`}
       variant="ghost"
       className="h-7 w-7 text-muted-foreground hover:text-foreground transition-opacity"
       onClick={() => downloadFileMutation.mutateAsync(file)}

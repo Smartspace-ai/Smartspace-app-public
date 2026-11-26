@@ -115,6 +115,13 @@ export type MarkdownEditorProps = {
   maxHeight?: number | string;
   ghostMessage?: string;
   placeholder?: string;
+  /**
+   * Accessible name of the editor's textbox. Falls back to the placeholder
+   * (`placeholder`, else `ghostMessage`), which is a sibling element shown only
+   * while the editor is empty and unfocused, so it does not name the textbox by
+   * itself.
+   */
+  ariaLabel?: string;
   workspaceId?: string;
   threadId?: string;
   enableMentions?: boolean;
@@ -196,6 +203,7 @@ function EditorInner({
   maxHeight,
   ghostMessage,
   placeholder,
+  ariaLabel,
   workspaceId,
   enableMentions,
   fetchMentionUsers,
@@ -215,6 +223,7 @@ function EditorInner({
   maxHeight?: MarkdownEditorProps['maxHeight'];
   ghostMessage?: MarkdownEditorProps['ghostMessage'];
   placeholder?: MarkdownEditorProps['placeholder'];
+  ariaLabel?: MarkdownEditorProps['ariaLabel'];
   workspaceId?: MarkdownEditorProps['workspaceId'];
   enableMentions?: MarkdownEditorProps['enableMentions'];
   fetchMentionUsers?: MarkdownEditorProps['fetchMentionUsers'];
@@ -942,6 +951,7 @@ function EditorInner({
         }
       }}
       role="textbox"
+      aria-label={ariaLabel ?? effectivePlaceholder}
       aria-readonly={isEditable ? 'false' : 'true'}
       aria-disabled={isEditable ? 'false' : 'true'}
       aria-multiline="true"

@@ -573,6 +573,7 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
             workspaceId={workspaceId}
             disabled={disabled}
             placeholder="What would you like to do?"
+            ariaLabel="Message"
             className="md-editor--bare px-5 pb-3 pt-4 text-sm"
             /* The reference's 76px textarea block carries its own controls; ours
                stacks an action bar under the editor, so reserving the rest of
@@ -765,6 +766,7 @@ export default function MessageComposer(_props: MessageComposerProps = {}) {
                       fileHandlingMode="attachments"
                       workspaceId={workspaceId}
                       disabled={disabled}
+                      ariaLabel="Message"
                       className="md-editor--bare text-sm h-full"
                     />
                   </div>

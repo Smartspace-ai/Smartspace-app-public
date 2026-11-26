@@ -324,6 +324,9 @@ export function MessageList({
         >
           <div
             ref={contentRef}
+            role="log"
+            aria-label="Messages"
+            aria-busy={isRunning}
             className="chat-column chat-turns flex w-full flex-col px-4 py-6"
           >
             {safeMessages.map((message, index) => {
